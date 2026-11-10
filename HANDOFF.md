@@ -12,19 +12,17 @@
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
 | 소스 버전 | **0.2.2** |
 | 실제 공개된 설치 파일 | **0.2.1 EXE/TGZ**. 새 MCP 6종이 포함되지 않는다 |
-| 0.2.2 EXE/TGZ | **아직 생성·발행하지 않았다** |
-| 바로 다음 작업 | 고정 Windows 브라우저 확보 → 완성된 MCP 번들 검증 → EXE 생성·실제 내용 검사 → TGZ 생성·게시 |
+| 0.2.2 EXE/TGZ | **EXE 생성·실제 내용 검증 완료. TGZ 생성·게시 진행 중** |
+| 바로 다음 작업 | 검증한 EXE의 TGZ 생성·전체 체크섬 검증·게시 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.2 검증 상태](docs/validation-0.2.2.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
 
-**새 환경 재개 기록:** 원격 개발 소스, Bun/Node, Windows OpenViking·REA·MCP staging 및 Linux 회귀 검증 환경을 복원했다. 설치 검증 자동화를 보강한 뒤 `npm run verify` **48개 통과, 실패/건너뜀 0**을 재현했다. 현재 환경은 `storage.googleapis.com`과 `api.github.com`의 정책 403 때문에 브라우저 및 Desktop 의존성 설치가 막혀 있다. 두 호스트 허용 후 §8을 재개한다. 0.2.2 EXE/TGZ는 계속 미생성이다.
-
-**후속 진행:** 검증된 기존 Ghostty/CLI 캐시에 `desktop-dependencies.py`를 다시 적용해 공식 Desktop 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**과 main/preload/renderer 빌드를 통과했다. Windows Electron **44.9.1** 및 NSIS **3.0.4.1**도 확보했다. 사용자가 두 도메인 추가를 알린 뒤에도 이 채팅의 실행 환경은 `spec_revision: 1`, `observed_spec_revision: 1`, `allowed_hosts: []`였고 두 URL 모두 CONNECT 403이었다. 설정 수정과 현재 실행 환경에 대한 적용을 구분해 확인해야 한다. 현재 패키징에 남은 다운로드 차단은 고정 Chrome이며, 이 파일은 캐시에 없다.
+**새 환경 재개 기록:** 실행 환경 정책 revision 2에서 고정 Chrome 다운로드와 GitHub API 접근을 확인했다. Bun workspace 설치를 완료했고 Windows Chrome 157.0.8103.50을 포함한 MCP **21,031개 파일, complete=true, 누락 0개**를 검증했다. `npm run verify` **48개 통과, 실패/건너뜀 0**, 공식 Desktop 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**, main/preload/renderer 빌드를 통과했다. Windows Electron **44.9.1** 및 NSIS **3.0.4.1**도 확보했다. 약 3.17 GB의 전체 앱 묶음은 기존 NSIS solid 모드의 31비트 data block 한도를 넘으므로 파일별 zlib 압축으로 수정했다. 설치 EXE 1,055,821,574 bytes를 생성하고 실제 추출한 모든 런타임·스킬·앱/CLI의 해시 검증을 통과했다. TGZ 생성·게시를 진행 중이다.
 
 ### 이어받는 AI에게 붙여 넣을 요청
 
-> 이 저장소의 HANDOFF.md를 먼저 읽고 L-Vibe 작업을 이어가라. work 브랜치를 사용한다. 마지막 구현 기준은 a5dd07a이며 소스는 0.2.2, 공개 설치본은 0.2.1이다. MCP 6종 소스의 Linux 실호출과 45개 회귀 검사는 통과했지만 0.2.2 EXE/TGZ는 없다. 현재 다음 목표는 Windows 브라우저 번들을 확보해 오프라인 설치 EXE/TGZ를 완성하고 실제 파일·해시를 확인해 게시하는 것이다. 새 PC에 없는 캐시·테스트 런타임부터 확인하고, 기존 잠금 버전을 유지하라. 직원 PC에서 추가 설치나 다운로드하게 만들지 말라. 실제 키·사용자 데이터·캐시는 공개 저장소에 넣지 말고, 단계별 커밋·푸시를 계속하라. 완료된 항목을 처음부터 다시 구현하지 말고, 확인되지 않은 설치·수용·게시 결과를 완료했다고 말하지 말라.
+> 이 저장소의 HANDOFF.md를 먼저 읽고 L-Vibe 작업을 이어가라. work 브랜치를 사용한다. 마지막 구현 기준은 a5dd07a이며 소스는 0.2.2, 공개 설치본은 0.2.1이다. MCP 6종의 Linux 실호출 기록이 있으며 새 환경의 48개 회귀 검사도 통과했다. Windows 브라우저를 포함한 MCP 21,031개 파일 번들이 완성됐다. 파일별 zlib EXE 생성과 실제 리소스 검증은 완료했다. 현재 다음 목표는 검증한 EXE의 TGZ를 생성하고 전체 파일·해시를 확인해 게시하는 것이다. 새 PC에 없는 캐시·테스트 런타임부터 확인하고, 기존 잠금 버전을 유지하라. 직원 PC에서 추가 설치나 다운로드하게 만들지 말라. 실제 키·사용자 데이터·캐시는 공개 저장소에 넣지 말고, 단계별 커밋·푸시를 계속하라. 완료된 항목을 처음부터 다시 구현하지 말고, 확인되지 않은 설치·수용·게시 결과를 완료했다고 말하지 말라.
 
 ## 2. 사용자가 확정한 요구사항과 작업 방식
 
@@ -75,12 +73,12 @@ Serena의 통계 호출과 `shell=True`를 제거했다. clangd의 redirect-only
 - `npm run verify`: **45개 통과, 실패/건너뜀 0**, 기본 스킬 34개 무결성 및 Desktop overlay 검사 통과.
 - 공식 Desktop 타입 검사: 2개 프로젝트·2,549개 파일, 오류 없음. main/preload/renderer 빌드 성공.
 - `scripts/test-mcp-live.ts`: 6종 실제 호출. Office/PDF·데이터 파일·C++ 정의/참조·컴파일 DB·외부 헤더 차단·브라우저/성능·승인 거부·포트 차단·자식 종료 검사 통과.
-- Windows staging 파일 **20,726개** 해시 대조. 현재 manifest는 **미완성**이며 누락은 `browser/chrome-win64/chrome.exe`다.
-- 미완성 manifest SHA-256: `88ca8f878d662d1f1d0c4b85625c47836e191b710f49116b63ff1da21d154457`. 브라우저를 포함해 다시 만들면 값이 바뀌어야 한다. 이 값을 완성 설치본의 값으로 재사용하지 않는다.
+- Windows Chrome을 포함한 MCP **21,031개 파일, complete=true, 누락 0**. 실제 설치 EXE를 추출한 런타임·스킬·CLI 해시 검사도 통과했다. 자세한 EXE 크기·SHA는 [0.2.2 검증 상태](docs/validation-0.2.2.md)를 따른다.
+- 완성 MCP manifest SHA-256: `002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1`. 이전 미완성 해시를 사용하지 않는다.
 
 아직 필요한 작업:
 
-1. Windows 브라우저 포함 전체 번들 및 **0.2.2 실제 EXE/TGZ** 생성·검사·게시.
+1. 검증한 **0.2.2 EXE의 TGZ 생성·검사·게시**. Windows 브라우저 포함 전체 번들 및 실제 EXE 리소스 검증은 완료했다.
 2. Windows 10/11 일반 사용자 설치·첫 실행·업데이트·ACL·DPAPI·DLL 로딩·경로·Job Object 자식 종료·DNS/TCP 관찰.
 3. 실제 사내 Qwen/임베딩 서버와 실제 C/C++ 프로젝트·SDK의 수용 검사.
 4. 새 Desktop의 반복 감지 → 중지 확인 → 수동 도구 없는 재출력 이관, 세션 전체 스냅샷 diff UI, 일반 명령 승인·프로세스 종료 정책 등.
@@ -129,7 +127,7 @@ GIT_LFS_SKIP_SMUDGE=1 git merge --ff-only origin/work
 | `release/` | 로컬 빌드/설치본. 소스 clone에 포함되지 않는다 |
 | `.cache/packaged-runtime-audit.json` | 실제 패키지 검사 결과. 새 설치본에서 새로 검증해 작성한다 |
 
-현재 환경에서 `.cache`는 약 10 GB, `vendor/runtime`은 약 2.4 GB, `release/desktop`은 약 3.9 GB다. 크기는 참고값이다. 소스를 clone했다고 이 파일들이 준비되지는 않는다.
+초기 인계 당시 `.cache`는 약 10 GB, `vendor/runtime`은 약 2.4 GB, `release/desktop`은 약 3.9 GB였다. 이후 번들/산출물 추가로 달라지는 참고값이다. 소스를 clone했다고 이 파일들이 준비되지는 않는다.
 
 이동 시간을 줄이려면 공개 원본의 다운로드 archive와 검증된 staging 런타임만 별도 반출할 수 있다. 가져온 뒤 잠금 해시를 다시 검사한다. `.cache` 전체·개인 프로필·사용자 DB·평문 키를 무차별 복사하지 않는다. Python 가상환경과 `node_modules`는 플랫폼/절대 경로에 묶일 수 있으므로 새 PC에서 재생성하는 것을 기본으로 한다.
 
@@ -167,6 +165,7 @@ npm ci
 npm install --prefix .cache/build-tools --no-save --ignore-scripts --package-lock=false @oven/bun-linux-x64@1.4.4
 export L_VIBE_BUN="$(pwd)/.cache/build-tools/node_modules/@oven/bun-linux-x64/bin/bun"
 "$L_VIBE_BUN" --version
+export PATH="$(dirname "$L_VIBE_BUN"):$PATH"
 
 npm run desktop:prepare
 (
@@ -265,9 +264,9 @@ npm run build
 
 ## 8. 현재 차단 사항과 0.2.2 패키징 재개
 
-현재 관리형 빌드 실행기의 공식 Chrome 다운로드는 정책 HTTP 403으로 차단되었다. 이 문서 작성 시에도 허용 호스트에 `storage.googleapis.com`가 없었다. **다른 PC까지 차단된다는 뜻은 아니다.** 새 PC에서 정상적인 네트워크 정책과 접근 가능 여부를 먼저 확인한다. 정책 거부가 있으면 해당 환경의 허용 도메인을 변경하고, 우회 프록시나 직원 PC 다운로드로 대체하지 않는다.
+현재 실행 환경 정책 revision 2에서 `storage.googleapis.com`과 `api.github.com` 접근이 정상이다. 이전 revision 1의 정책 403은 해소됐고 Bun workspace 설치도 완료했다. 고정 Chrome은 확보·해시 검증을 마쳤다. 새 환경에서는 실제 접근 상태와 캐시를 확인하고 아래 재생성 순서를 따른다.
 
-새 환경 복구에서도 Chrome의 `storage.googleapis.com`과 Bun이 고정 Ghostty archive를 요청하는 `api.github.com` 모두 CONNECT HTTP 403을 확인했다. 사용자의 도메인 추가 알림 뒤에도 현재 실행 환경의 revision 1과 빈 추가 허용 목록은 그대로였다. Desktop workspace의 `bun install --frozen-lockfile`은 후자에서 중단됐지만, 이미 검증된 로컬 archive를 `desktop-dependencies.py`로 복원해 공식 Desktop 타입 검사/빌드를 완료했다. 빈 캐시에서 workspace 설치가 성공했다고 취급하거나 기존 lock을 바꾸지 않는다. Chrome 허용 후 아래 순서를 실행하면 MCP lock 변경으로 생성 소스가 갱신되므로 build도 다시 수행한다.
+NSIS 3.0.4.1의 solid 모드는 약 3.17 GB의 원본 payload를 31비트 data block에 먼저 쌓으면서 SIGBUS로 중단됐다. `distribution/windows-installer.nsi`를 **SetCompressor zlib**로 변경하여 파일별로 압축한 데이터를 저장한다. 컴파일러 버전과 전체 구성 요소를 유지하며, 하나의 완전한 EXE를 생성한다. `/SOLID`를 다시 추가하지 않는다.
 
 고정 Windows 파일:
 
@@ -301,7 +300,7 @@ NSIS/7-Zip 의존성은 빌드 PC에서 확보한다. 현재 커스텀 NSIS 패�
 ### EXE 검사를 끝낸 뒤 TGZ 생성
 
 1. `7zz t` 또는 동등한 도구로 EXE archive를 검사한다. 실제 EXE에서 리소스를 추출해 OpenViking/Python·REA·스킬·**새 MCP 전체**를 각 고정 manifest와 대조한다. staging 검사만으로 EXE 내부 검사라고 기록하지 않는다.
-2. `npm run audit:installer`가 EXE를 실행하지 않고 archive 검사·추출 후 앱 버전/AMD64, OpenViking·REA·MCP·34개 스킬의 manifest/파일 해시, 고정 Windows CLI, 설정 예제를 검사하고 `.cache/packaged-runtime-audit.json`을 만든다. 검사 로그는 `.cache/installer-test.log`, `.cache/installer-extract.log`다. TGZ 생성은 이 audit의 실제 EXE 크기/SHA-256, 앱 ASAR/실행 파일, 모든 런타임 manifest와 CLI를 현재 파일에 다시 대조한다. 다른 EXE나 staging 검증 기록을 재사용하지 않는다. 자동화의 회귀 검사는 통과했지만 **0.2.2 실제 EXE에 대한 실행은 EXE 생성 후 수행해야 한다.**
+2. `npm run audit:installer`가 EXE를 실행하지 않고 archive 검사·추출 후 앱 버전/AMD64, OpenViking·REA·MCP·34개 스킬의 manifest/파일 해시, 고정 Windows CLI, 설정 예제를 검사하고 `.cache/packaged-runtime-audit.json`을 만든다. 검사 로그는 `.cache/installer-test.log`, `.cache/installer-extract.log`다. TGZ 생성은 이 audit의 실제 EXE 크기/SHA-256, 앱 ASAR/실행 파일, 모든 런타임 manifest와 CLI를 현재 파일에 다시 대조한다. 다른 EXE나 staging 검증 기록을 재사용하지 않는다. 자동화의 회귀 검사 및 **0.2.2 실제 EXE에 대한 실행을 모두 통과했다.** 새 설치본마다 새로 실행한다.
 3. `scripts/offline-bundle.mjs`는 정식 생성 소스인 `.cache/l-vibe-desktop/source/LICENSE`를 사용하며 `upstream-lock.json`의 원본 해시와 일치할 때만 복사한다. 예전 `.cache/opencode-desktop/source`는 설치 번들 생성에 필요하지 않다. 일반 회귀 검사의 원본 fixture로는 계속 사용한다.
 4. [docs/validation-0.2.2.md](docs/validation-0.2.2.md)에 실제 OS·명령·EXE 크기/SHA·리소스 검사 결과를 갱신하고 커밋한다. 기존 source/lock 변경도 모두 커밋되어 있어야 한다. bundle 스크립트는 tracked 파일 변경이 남으면 거부한다.
 5. 다음을 실행하고 archive 내용·해시·설정 예제·라이선스·대응 소스를 확인한다.

@@ -33,8 +33,8 @@ Windows x64 wheel을 Windows 플랫폼 마커·CPython 3.12 ABI로 해결하고 
 
 Windows PE import table 698개를 정적으로 조사하여 ONNXRuntime의 MSVCP140/140_1 누락을 찾았다. 고정 `msvc-runtime 14.51.36231`의 재배포 DLL을 변경 없이 앱 내부에 넣고 라이선스·출처·해시를 기록했다. pywin32 GUI/MFC 도구는 노출하거나 실행하지 않는다. PE 이름 대조는 Windows의 실제 DLL 로딩 검증을 대신하지 않는다.
 
-staging에는 Python·Git·clangd·Node MCP·worker·라이선스가 있다. 공식 Chrome for Testing 157.0.8103.50의 `storage.googleapis.com`는 빌드 실행기 정책에서 HTTP 403으로 차단되어 확보하지 못했다. 직원 PC 최초 다운로드나 개인 브라우저로 대체하지 않는다. `mcp:verify`, EXE 패키징과 TGZ 생성은 누락 상태를 오류로 처리한다.
+Windows Chrome for Testing 157.0.8103.50을 확보했고 완성 staging의 21,031개 파일을 manifest와 전수 대조했다. `complete=true`, 누락은 없다. 완성 manifest SHA-256은 `002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1`이다. Chrome ZIP SHA-256은 `36088dd9c76c992f6e745fc20f94aca873f69c3331ce25ea3df36835cc4af73f`이며 공식 응답 MD5·ZIP CRC와 대조했다. 이전 정책 403/미완성 manifest 기록은 현재 상태로 사용하지 않는다.
 
-확보한 20,726개 파일은 staging manifest와 전수 대조했다. 현재 미완성 manifest SHA-256은 `88ca8f878d662d1f1d0c4b85625c47836e191b710f49116b63ff1da21d154457`이며 누락 목록은 `browser/chrome-win64/chrome.exe`다. 이 값을 완성된 설치본의 검증 값으로 사용하지 않는다. 누락 상태를 패키징 gate가 실제 거부하는 것도 확인했다.
+NSIS의 원본 데이터 2 GB 한계를 피하도록 파일별 zlib 모드로 전체 EXE를 생성했다. 실제 EXE archive를 검사·추출한 뒤 MCP 21,031개 파일 전체를 현재 manifest와 대조했다. 상세 EXE·앱·CLI 해시와 48개 회귀 검사 결과는 [0.2.2 검증 상태](validation-0.2.2.md)에 있다. 이 설치 리소스 검사는 위 Linux 실호출 검사와 구분한다.
 
 Windows 10/11 일반 사용자 설치·6종 실호출·DLL·경로/ACL·Job Object 자식 종료·DNS/TCP 관찰, 실제 사내 Qwen·임베딩 검증이 남아 있다. `releaseReady`는 false다.
