@@ -18,7 +18,7 @@
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.2 검증 상태](docs/validation-0.2.2.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
 
-**새 환경 재개 기록:** 실행 환경 정책 revision 2에서 고정 Chrome 다운로드와 GitHub API 접근을 확인했다. Bun workspace 설치를 완료했고 Windows Chrome 157.0.8103.50을 포함한 MCP **21,031개 파일, complete=true, 누락 0개**를 검증했다. `npm run verify` **48개 통과, 실패/건너뜀 0**, 공식 Desktop 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**, main/preload/renderer 빌드를 통과했다. Windows Electron **44.9.1** 및 NSIS **3.0.4.1**도 확보했다. 약 3.17 GB의 전체 앱 묶음은 기존 NSIS solid 모드의 31비트 data block 한도를 넘으므로 파일별 zlib 압축으로 수정했다. 설치 EXE 1,055,821,574 bytes를 생성하고 실제 추출한 모든 런타임·스킬·앱/CLI의 해시 검증을 통과했다. TGZ 내부 23개 파일의 체크섬·0.2.2 설치 안내·대응 소스 검사도 통과했다. 최신 후보와 해시는 [다운로드 안내](downloads/README.md)를 따른다.
+**새 환경 재개 기록:** 실행 환경 정책 revision 2에서 고정 Chrome 다운로드와 GitHub API 접근을 확인했다. Bun workspace 설치를 완료했고 Windows Chrome 157.0.8103.50을 포함한 MCP **21,031개 파일, complete=true, 누락 0개**를 검증했다. `npm run verify` **48개 통과, 실패/건너뜀 0**, 공식 Desktop 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**, main/preload/renderer 빌드를 통과했다. Windows Electron **44.9.1** 및 NSIS **3.0.4.1**도 확보했다. 약 3.17 GB의 전체 앱 묶음은 기존 NSIS solid 모드의 31비트 data block 한도를 넘으므로 파일별 zlib 압축으로 수정했다. 설치 EXE 1,055,821,574 bytes를 생성하고 실제 추출한 모든 런타임·스킬·앱/CLI의 해시 검증을 통과했다. TGZ 내부 23개 파일의 체크섬·0.2.2 설치 안내·대응 소스 검사도 통과했다. 공개 EXE/TGZ 주소의 HTTP 200·전체 바이트 수·SHA-256도 로컬 산출물과 일치했다. TGZ의 소스 체크포인트는 `b8722666e20e0525d320e636f5b41e689e2879b3`이며 최신 후보와 해시는 [다운로드 안내](downloads/README.md)를 따른다.
 
 ### 이어받는 AI에게 붙여 넣을 요청
 
