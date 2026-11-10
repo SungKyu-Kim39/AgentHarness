@@ -6,12 +6,12 @@
 
 Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배포판**입니다. 공식 Desktop/엔진 v2.2.6을 고정하고, 사내 모델 설정·승인 중계·로컬 서비스를 결합합니다. 기존 PC의 OpenCode·Zed·개인 설정·플러그인을 읽거나 복제하지 않습니다.
 
-공개된 0.2.1은 설치·모델·로컬 도구의 **검증 후보**입니다. work 브랜치의 0.2.2 소스에는 MCP 6종을 연결했으나 Windows 브라우저 반입 파일 확보가 차단되어 새 EXE/TGZ는 아직 발행하지 않았습니다. [MCP 구현·검증 상태](docs/mcp-validation.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
+0.2.2는 설치·모델·로컬 도구의 **검증 후보**입니다. 고정 브라우저를 포함한 MCP 6종을 완성하고 실제 설치 EXE의 런타임·스킬·CLI 무결성을 확인했습니다. [0.2.2 검증 상태](docs/validation-0.2.2.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
 
 ## 폐쇄망에서 설치
 
-1. 반입한 `L-Vibe-0.2.1-windows-x64.tgz`를 압축 해제합니다.
-2. `L-Vibe-0.2.1-win-x64.exe`로 일반 사용자에게 설치합니다.
+1. 반입한 `L-Vibe-0.2.2-windows-x64.tgz`를 압축 해제합니다.
+2. `L-Vibe-0.2.2-win-x64.exe`로 일반 사용자에게 설치합니다.
 3. 자동으로 열린 설정 JSON을 편집하고 저장합니다.
 4. L-Vibe를 실행하고 프로젝트 폴더와 모델을 선택합니다.
 
@@ -38,7 +38,7 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배�
 - morluto/rea 6.8.0의 제한된 정적 분석, Graphify 0.9.105의 네트워크 없는 AST 추출.
 - Aegis·Conductor 순수 지침 어댑터와 오프라인 기본 스킬 34개. 최초 실행에서 OpenViking skills에 참조·라이선스와 함께 자동 등록하며 재실행 중복 색인과 사용자 편집본 덮어쓰기를 방지합니다. [추가 스킬·MCP 조사와 선택 목록](docs/offline-extensions-research.md)을 참고하세요.
 
-공개된 0.2.1 설치본에는 Serena/clangd 의미 분석이 없습니다. 0.2.2 소스의 MCP 연동은 위 검증 기록과 구분해서 확인하세요. 일반 명령 실행과 새 Desktop의 반복 감지·답변 재출력, Windows 설치·업데이트·ACL·자식 종료·DNS/TCP 관찰과 실제 사내 Qwen 수용 검증은 남아 있습니다.
+0.2.2에는 Serena/clangd·Git·Playwright·MarkItDown·Chrome DevTools·DuckDB의 통제된 MCP가 포함됩니다. 실제 Linux 호출과 Windows 설치 리소스 검사를 구분해 검증 기록을 확인하세요. 일반 명령 실행과 새 Desktop의 반복 감지·답변 재출력, Windows 설치·업데이트·ACL·자식 종료·DNS/TCP 관찰과 실제 사내 Qwen 수용 검증은 남아 있습니다.
 
 ## 빌드 PC
 
@@ -57,6 +57,8 @@ npm run skills:verify
 npm run verify
 npm run build
 npm run package:win
+npm run audit:installer
+# 소스와 검증 문서를 커밋한 뒤 TGZ를 생성합니다.
 npm run bundle:offline
 ```
 
