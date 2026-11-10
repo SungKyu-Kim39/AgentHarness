@@ -32,7 +32,7 @@
 - 앱 ASAR SHA-256: `c195326d1b0189ebf465ef48acead10ba334a05e14b6d6ebfde423e1b1687f26`. 앱 EXE SHA-256: `b9c8cccfb6c2eda8cd99d7515a32fd81696265c6ecbcfaab66d5cdbb32f0b3ab`.
 - NSIS는 파일별 zlib 모드이며 컴파일러/번들 버전을 변경하지 않았다. L-Vibe 자체의 배포 서명은 없다. EXE 정적 검사는 Windows 설치·실행 검증을 대신하지 않는다.
 
-TGZ는 이 EXE·빈 설정 예제·검증 기록/상태·런타임 audit·라이선스·대응 소스·커밋된 앱 소스를 포함한다. 실제 EXE 해시와 모든 런타임 manifest/앱/CLI를 다시 확인한 뒤 생성한다. archive의 SHA-256은 옆 `.sha256` 파일로 제공한다. TGZ 생성·게시 결과는 다운로드 안내와 후속 기록으로 확인한다.
+TGZ는 이 EXE·빈 설정 예제·검증 기록/상태·런타임 audit·라이선스·대응 소스·커밋된 앱 소스를 포함한다. 실제 EXE 해시와 모든 런타임 manifest/앱/CLI를 다시 확인한 뒤 생성한다. archive의 SHA-256은 옆 `.sha256` 파일로 제공한다. 최종 TGZ `L-Vibe-0.2.2-windows-x64.tgz`는 **1,121,427,289 bytes**, SHA-256 `43fa97c107f168b0121b7c7d720b879ac1391e04d01cc01d4a93bbfe24594b8a`다. 내부 23개 파일의 체크섬, 0.2.2 설치 안내, 실제 EXE/audit 및 대응 소스를 전부 대조했다. sourceCommit은 `b8722666e20e0525d320e636f5b41e689e2879b3`다. [다운로드 안내](../downloads/README.md)를 따른다. 공개 링크의 전체 파일 해시 검증 결과는 게시 후 기록한다.
 
 ## 남은 Windows 수용
 
