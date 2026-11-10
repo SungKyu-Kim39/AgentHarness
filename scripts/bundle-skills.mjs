@@ -2,7 +2,7 @@ import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { adaptDocument, policies } from './skill-adapters.mjs';
+import { adaptDocument, policies, documentLayouts } from './skill-adapters.mjs';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const sources = {
   local: ['L-Vibe', '0.2.0', '.'],
@@ -16,12 +16,18 @@ const sources = {
   ecc: ['affaan-m/ECC', 'd2ef2680594f9a17526a6e1a2e18b3d242c5d17b', '.cache/skill-research/ecc'],
   wshobson: ['wshobson/agents', '9c61ab243def98f72da12abd41cfcf5bcd91af9d', '.cache/skill-research/wshobson'],
   trailofbits: ['trailofbits/skills', 'e4dd0bb5b15535f7c5a0834187dffba6ac37e4ff', '.cache/skill-research/trailofbits'],
+  anthropicWork: ['anthropics/knowledge-work-plugins', 'e605d8ddbfb688da57dfaaceebd93f12a64ef1d3', '.cache/skill-research/anthropicWork'],
+  marketing: ['coreyhaines31/marketingskills', '9d6d7ce8d18eb155dc2f9762435f097e60cdad7c', '.cache/skill-research/marketing'],
+  vercelInterface: ['vercel-labs/web-interface-guidelines', '434b7f91364665f2f733b310ec54809bf8f37937', '.cache/skill-research/vercelInterface'],
 };
 const sourceArchiveHashes = {
   jeffallan: 'ec911f76f63e1f4fd4b28925474cbae7c9f7b652a26ddba586b1173af94e2870',
   ecc: 'dc15cf3bfbb7985f203ba643290be61c500b0679f5d02255c9277c6ad6ea4cc9',
   wshobson: 'b5bcfff7fcba3c8ae961a860e03b0900a3c8bdfc1773ca0e2d787bc8c5f2c5f2',
   trailofbits: 'ef7634604172b06f8fec967c726d0402f8f616d2dff9eae7eb1156e1c6e3ae4b',
+  anthropicWork: '45429c6ef7dba465cba93eec02d4cf09822b9c783630e94c7c5312d7d5fc3fe9',
+  marketing: '48a1f6187dff0eb9176e6d38906dbcb5e2581a08716c56f8cc3ee2f17f0791d6',
+  vercelInterface: 'f0f61f41f0b53522eb065b268e18a617bf2cacb54d9502ed6b7411cb62de8745',
 };
 const definitions = [
   ['goal-framing','aegis','skills/goal-framing','요구사항 구체화','자연어 아이디어를 목적·범위·수용 기준으로 정리'],
@@ -52,6 +58,12 @@ const definitions = [
   ['architecture-decision-records','wshobson','plugins/documentation-generation/skills/architecture-decision-records','설계 결정 기록','대안·선택 근거·결과·되돌리기를 기존 트랙 또는 짧은 ADR로 정리'],
   ['differential-review','trailofbits','plugins/differential-review/skills/differential-review','보안 변경 리뷰','변경 전후의 보안 회귀·영향 범위·공격 조건·테스트 근거 검토'],
   ['session-handoff','local','skills/session-handoff','작업 인계·재개','장기 작업의 사용자 결정·확인한 사실·변경·검증·미결 사항을 근거와 함께 인계'],
+  ['explore-data','anthropicWork','data/skills/explore-data','로컬 데이터 탐색','CSV·JSON·테이블 결과의 단위·키·결측·중복·분포·품질 조사'],
+  ['validate-data','anthropicWork','data/skills/validate-data','분석 결과 검증','조인·분모·기간·편향·계산·시각화·결론의 근거와 재현성 검토'],
+  ['data-visualization','anthropicWork','data/skills/data-visualization','데이터 시각화','로컬 결과의 차트·축·단위·불확실성·접근성; 외부 CDN 없는 산출물'],
+  ['statistical-analysis','anthropicWork','data/skills/statistical-analysis','통계 해석','분포·이상치·가설 검정·효과 크기·신뢰 구간·표본·인과 해석의 한계'],
+  ['ab-testing','marketing','skills/ab-testing','A/B 실험 설계·판정','가설·무작위 배정·MDE·검정력·표본 수·가드레일·중지 규칙; 로컬 계산 예제'],
+  ['web-design-guidelines','vercelInterface','.','UI 품질 검토','로컬 고정 UI 규칙으로 접근성·포커스·폼·상태·반응형·성능·한국어 사용성 검토'],
 ];
 async function tree(root) {
   const files = [];
@@ -65,7 +77,8 @@ if (process.argv[2] === 'fetch') {
   const skills = [];
   for (const [id, sourceId, directory, name, description] of definitions) {
     const [repo, commit, root] = sources[sourceId];
-    try { await readFile(path.join(root, directory, 'SKILL.md')); }
+    const layout = documentLayouts[id];
+    try { await readFile(path.join(root, directory, layout?.entry ?? 'SKILL.md')); }
     catch {
       await mkdir(root, { recursive: true }); await mkdir('.cache/skill-sources', { recursive: true });
       const response = await fetch(`https://codeload.github.com/${repo}/tar.gz/${commit}`); if (!response.ok) throw new Error(`skill source HTTP ${response.status}`);
@@ -77,11 +90,14 @@ if (process.argv[2] === 'fetch') {
     const source = path.join(root, directory); const files = []; const modifications = [];
     // Only static Markdown/text is exposed; upstream scripts and executable plugins are excluded.
     for (const file of await tree(source)) if (/\.(md|txt)$/i.test(file) || /^(LICENSE|COPYING)$/i.test(path.basename(file))) {
-      const relative = path.relative(source, file).split(path.sep).join('/'); const target = path.join(destination, relative);
+      const upstreamRelative = path.relative(source, file).split(path.sep).join('/');
+      if (layout && !layout.files.includes(upstreamRelative)) continue;
+      const relative = upstreamRelative === layout?.entry ? 'SKILL.md' : upstreamRelative;
+      const target = path.join(destination, relative);
       if (policies[id] && relative !== 'SKILL.md' && path.basename(relative) === 'SKILL.md') throw new Error(`${id}: unexpected nested Desktop skill`);
       const original = await readFile(file); const adapted = /\.md$/i.test(file) ? Buffer.from(adaptDocument(id, relative, original.toString('utf8'), description)) : original;
       await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, adapted); files.push({ path: relative, sha256: hash(adapted) });
-      if (!original.equals(adapted)) modifications.push({ path: relative, upstreamSha256: hash(original), bundledSha256: hash(adapted) });
+      if (!original.equals(adapted)) modifications.push({ path: relative, ...(upstreamRelative !== relative ? { upstreamPath: upstreamRelative } : {}), upstreamSha256: hash(original), bundledSha256: hash(adapted) });
     }
     let licenses = files.filter(f => /(?:^|\/)(LICENSE|COPYING)/i.test(f.path));
     if (!licenses.length) for (const f of ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'license.md']) {
@@ -96,8 +112,8 @@ if (process.argv[2] === 'fetch') {
     if (!licenses.length) throw new Error(`${id}: explicit redistribution license is required`);
     const adapter = 'Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.' + (sourceId === 'qdrant' ? ' Apply retrieval-quality principles to OpenViking; Qdrant APIs/database are not installed.' : '') + (policies[id] ? ' ' + policies[id] : '');
     if (policies[id]) {
-      const licenseName = sourceId === 'trailofbits' ? 'CC-BY-SA-4.0' : 'MIT';
-      const notice = `# L-Vibe offline adaptation\n\nUpstream: ${sourceId === 'local' ? 'L-Vibe original guidance' : `https://github.com/${repo}/tree/${commit}/${directory}`}\n\nCommit: ${commit}\n\nLicense: ${licenseName}; see ${licenses.map(l => l.path).join(', ')}. Original author attribution and license are retained. ${sourceId === 'trailofbits' ? 'This adapted skill, including this notice, is distributed under CC-BY-SA-4.0; the application license does not replace it.' : 'Adaptations by L-Vibe contributors are MIT.'}\n\nModified for L-Vibe on 2026-11-10: static documents only; Desktop frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.\n\nSpecific policy: ${policies[id]}\n\nChanged documents (hashes are also retained in the manifest):\n\n${modifications.map(m => `- ${m.path}: upstream ${m.upstreamSha256}; bundled ${m.bundledSha256}`).join('\n')}\n`;
+      const licenseName = sourceId === 'trailofbits' ? 'CC-BY-SA-4.0' : sourceId === 'anthropicWork' ? 'Apache-2.0' : 'MIT';
+      const notice = `# L-Vibe offline adaptation\n\nUpstream: ${sourceId === 'local' ? 'L-Vibe original guidance' : `https://github.com/${repo}/tree/${commit}/${directory}`}\n\nOriginal authors: ${sourceId === 'local' ? 'L-Vibe contributors' : `${repo} contributors`}\n\nCommit: ${commit}\n\nLicense: ${licenseName}; see ${licenses.map(l => l.path).join(', ')}. Original author attribution and license are retained. This adapted skill and notice are distributed under ${licenseName}; the application license does not replace the upstream license. Modifications by L-Vibe contributors.\n\nModified for L-Vibe on 2026-11-10: static documents only; Desktop frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.\n\nSpecific policy: ${policies[id]}\n\nChanged documents (hashes are also retained in the manifest):\n\n${modifications.map(m => `- ${m.path}${m.upstreamPath ? ` (upstream ${m.upstreamPath})` : ''}: upstream ${m.upstreamSha256}; bundled ${m.bundledSha256}`).join('\n')}\n`;
       await writeFile(path.join(destination, 'ADAPTATION.md'), notice); files.push({ path: 'ADAPTATION.md', sha256: hash(notice) });
     }
     skills.push({ id, name, description, directory: id, source: sourceId === 'local' ? 'L-Vibe original MIT guidance' : `https://github.com/${repo}/tree/${commit}/${directory}`, commit, license: licenses.map(l => l.path).join(', '), adapter, ...(policies[id] ? { modifications } : {}), files: files.sort((a,b) => a.path.localeCompare(b.path)) });

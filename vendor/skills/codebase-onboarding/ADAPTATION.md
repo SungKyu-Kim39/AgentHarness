@@ -2,9 +2,11 @@
 
 Upstream: https://github.com/affaan-m/ECC/tree/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/codebase-onboarding
 
+Original authors: affaan-m/ECC contributors
+
 Commit: d2ef2680594f9a17526a6e1a2e18b3d242c5d17b
 
-License: MIT; see LICENSE. Original author attribution and license are retained. Adaptations by L-Vibe contributors are MIT.
+License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by L-Vibe contributors.
 
 Modified for L-Vibe on 2026-11-10: static documents only; Desktop frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.
 

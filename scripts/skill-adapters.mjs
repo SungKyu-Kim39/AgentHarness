@@ -10,7 +10,19 @@ export const policies = {
   'architecture-decision-records': '실제 범위·호환성·데이터 보존에 영향을 주는 결정만 짧게 기록한다. 기존 Conductor spec/plan·ADR을 재사용한다. 팀 리뷰·알림·티켓 생성은 사용자가 요구하거나 기존 팀 정책이 있을 때만 다루며 메시지를 자동 전송하지 않는다. ADR 파일 생성·상태 변경은 승인된 프로젝트 편집이다.',
   'differential-review': '프로젝트 안의 변경 전후·호스트 스냅샷·사용자가 제공한 diff를 근거로 보안 회귀를 조사한다. Git 실행기가 없으면 blame/이력을 실행한 것으로 기록하지 않는다. 실제 호출자·권한·입력·자원 수명과 테스트 근거를 확인하고 분석 한계를 밝힌다. 다른 플러그인·하위 에이전트에 자동 위임하지 않는다. 보고서는 대화로 제공할 수 있고 파일은 요청에 필요할 때 프로젝트 안에 승인된 편집으로 제안한다.',
   'session-handoff': '작업 중 확인한 사실·사용자 결정·변경·검증·미결 사항을 근거와 함께 인계한다. 대화·지식 저장소·프로젝트 문서 사이의 자동 복사를 하지 않는다. 영속 문서가 필요하면 승인된 프로젝트 편집으로 제안한다.',
+  'explore-data': '승인된 프로젝트의 CSV·JSON·스키마와 사용자가 제공한 결과부터 조사한다. 데이터의 단위·키·중복·결측·시간대·표본 범위를 확인한다. 커넥터 연결이나 데이터웨어하우스 계정을 요구하지 않는다. Excel/Parquet 파서와 SQL/Python 실행기는 별도 전제이며 없으면 코드/질의 제안으로 한정한다. 임계값은 도메인에 맞는 휴리스틱으로 설명하고 계산하지 않은 수치는 만들지 않는다.',
+  'validate-data': '사용자가 제공한 로컬 분석·질의·실제 결과의 재현성과 결론을 검토한다. 원본 데이터와 실행기가 없으면 검토 범위와 재계산 미실행을 밝힌다. 집계 단위·조인 증폭·분모·기간·시간대·선택 편향·불확실성을 점검한다. 자료를 외부 서비스나 다른 저장소에 자동 전송하지 않는다.',
+  'data-visualization': '실제 로컬 결과에 맞는 차트·축·단위·표본·신뢰 구간을 선택한다. matplotlib·seaborn·pandas·plotly·브라우저가 설치됐다고 가정하지 않는다. 실행기가 없으면 코드와 시각화 명세만 제안한다. HTML은 로컬 JS·글꼴·이미지만 사용하며 CDN·외부 지도·원격 렌더링을 사용하지 않는다. 산출물 저장은 승인된 프로젝트 편집/실행 대상이다.',
+  'statistical-analysis': '분석 단위·무작위 배정·독립성·누락·표본 수와 가정을 먼저 확인한다. A/B에서는 SRM·사전 지정한 주 지표/MDE·검정력·효과 크기·신뢰 구간·다중 비교·중지 규칙을 확인한다. 반복 관측과 클러스터를 독립 표본으로 세지 않는다. p값은 귀무가설이 참일 확률이나 결과가 우연일 확률이 아니다. 유의하지 않다는 결과를 동등성 증명으로 표현하지 않는다. 실제 로컬 계산 근거 없이 p값·구간을 생성하지 않는다.',
+  'ab-testing': '사내 기능/성능/모델 프롬프트 비교에도 가설·무작위 배정 단위·노출·주 지표·가드레일·MDE·표본 수·중지 규칙을 명시한다. 같은 문제를 여러 번 평가하면 짝지음/클러스터를 고려한다. SRM과 누락·교차 노출을 검사하고 사후 세그먼트는 탐색으로 표시한다. 클라우드 분석·기능 플래그·온라인 계산기를 연결하지 않는다. 실험 실행/출시/기록 변경은 별도 승인 대상이며 마케팅 목표·실험 횟수를 일률적으로 강제하지 않는다.',
+  'web-design-guidelines': '규칙은 함께 반입한 이 문서의 고정본을 사용하고 최신 규칙을 온라인에서 조회하지 않는다. 기존 UI 토큰·한국어 문구·Windows 입력 관례와 사용자의 디자인 결정을 존중한다. 승인된 프로젝트 소스로 점검하고 실제 브라우저가 없으면 렌더링·키보드·대비 검증의 미실행을 밝힌다. CDN·Google Fonts 등 외부 자산을 추가하지 않는다. 파일·줄·영향·수정안을 근거와 함께 제시한다.',
 };
+
+export const documentLayouts = {
+  'web-design-guidelines': { entry: 'command.md', files: ['command.md', 'LICENSE'] },
+};
+
+const localSampleSize = `## Local sample-size calculation\n\nNo online calculator is required. For two independent binary-outcome arms with equal allocation, a fixed horizon, two-sided alpha and target power, this normal approximation returns participants per arm. Rare events, clustering, paired/repeated measurements, sequential stopping, non-binary outcomes and multiple comparisons require a design-specific method. Check assumptions and validate against the project analysis plan. This example requires an approved local Python executor; it has not run merely because it is shown.\n\n\`\`\`python\nfrom math import ceil, sqrt\nfrom statistics import NormalDist\n\ndef participants_per_arm(p0, relative_lift, alpha=0.05, power=0.80):\n    p1 = p0 * (1 + relative_lift)\n    if not (0 < p0 < 1 and 0 < p1 < 1 and p1 != p0\n            and 0 < alpha < 1 and 0.5 < power < 1):\n        raise ValueError("Invalid design parameters")\n    pooled = (p0 + p1) / 2\n    normal = NormalDist()\n    numerator = (normal.inv_cdf(1-alpha/2) * sqrt(2*pooled*(1-pooled))\n                 + normal.inv_cdf(power) * sqrt(p0*(1-p0)+p1*(1-p1)))\n    return ceil(numerator**2 / (p1-p0)**2)\n\`\`\`\n\nNumbers in upstream tables are illustrative estimates, not a substitute for the actual design calculation.\n\n`;
 
 function replace(text, before, after, label) {
   if (!text.includes(before)) throw new Error(`Pinned skill adaptation no longer matches: ${label}`);
@@ -64,6 +76,34 @@ export function adaptDocument(id, document, original, description) {
     const tail = text.indexOf('## Integration with issue-writer');
     if (tail < 0) throw new Error('Missing pinned report integration');
     text = text.slice(0, tail) + '## Write failure\n\nIf an approved project write fails, report the failure and provide the report in the conversation. Do not retry outside the approved project.\n';
+  }
+  if (id === 'explore-data' || id === 'validate-data') text = text.replace('> If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../../CONNECTORS.md).', '> L-Vibe local-file adaptation: no warehouse connector or external service is installed or required.');
+  if (id === 'explore-data' && document === 'SKILL.md') {
+    const start = text.indexOf('**If a data warehouse MCP server is connected:**'); const end = text.indexOf('### 2. Understand Structure', start);
+    if (start < 0 || end < 0) throw new Error('Missing pinned dataset access workflow');
+    text = text.slice(0, start) + 'Read the approved local CSV/JSON file, schema, or user-provided query result. If a required binary format parser or approved executor is unavailable, propose profiling code or queries and state that the calculations have not run. Do not request a warehouse connection.\n\n' + text.slice(end);
+    text = text.replace('When connected to a data warehouse, use these patterns to discover schema:', 'For an approved local PostgreSQL database, these are optional query templates; they do not create a connection or execute SQL:');
+  }
+  if (id === 'data-visualization' && document === 'SKILL.md') text = text.replace("fig.write_html('interactive_chart.html')\nfig.show()", "fig.write_html('interactive_chart.html', include_plotlyjs=True, full_html=True)").replace('fig.show()', "fig.write_html('scatter_chart.html', include_plotlyjs=True, full_html=True)");
+  if (id === 'statistical-analysis' && document === 'SKILL.md') {
+    text = replace(text, '**Statistical significance** means the difference is unlikely due to chance.', '**Statistical significance** means the observed statistic is incompatible with the null model at the planned threshold under its assumptions; it does not assign a probability to the null or prove causation.', id);
+    text = replace(text, '5. **Interpret**: If p < alpha, reject H0 (evidence of a real difference)', '5. **Interpret**: Compare p with the pre-specified alpha under the planned design; report effect size, interval, assumptions and multiplicity, not a probability that a variant is better', id);
+  }
+  if (id === 'ab-testing' && document === 'SKILL.md') {
+    const start = text.indexOf('**Calculators:**'); const end = text.indexOf('**For detailed sample size', start);
+    if (start < 0 || end < 0) throw new Error('Missing pinned online calculators');
+    text = text.slice(0, start) + 'Use the local calculation example and assumptions in references/sample-size-guide.md. Do not open external calculators.\n\n' + text.slice(end);
+    text = text.replace('- Tools: PostHog, Optimizely, VWO', '- Use the existing reviewed local implementation; no hosted experimentation service is required.').replace('- Tools: PostHog, LaunchDarkly, Split', '- Use existing local allocation and logging code; no hosted feature-flag service is required.');
+  }
+  if (id === 'ab-testing' && document === 'references/sample-size-guide.md') {
+    const start = text.indexOf('## Online Calculators'); const end = text.indexOf('## Adjusting for Multiple Variants', start);
+    if (start < 0 || end < 0) throw new Error('Missing pinned calculator appendix');
+    text = text.slice(0, start) + localSampleSize + text.slice(end);
+  }
+  if (id === 'ab-testing' && document === 'references/test-templates.md') text = text.replace('**Statistical significance**: p = X.XX (95% = sig / not sig)', '**Statistical assessment**: p = [value], alpha = [pre-specified threshold], effect = [estimate], interval = [method and bounds], sample-ratio check = [result], multiplicity/stopping rule = [plan]');
+  if (id === 'web-design-guidelines' && document === 'SKILL.md') {
+    text = text.replace('$ARGUMENTS', 'the requested approved project files');
+    text = replace(text, '- Add `<link rel="preconnect">` for CDN/asset domains', '- Bundle assets locally; do not add CDN preconnects or other external origins in this offline application', id);
   }
   if (document === 'SKILL.md') {
     // Official Desktop discovers SKILL.md directly, so the safety mapping must

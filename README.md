@@ -34,7 +34,7 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배�
 - 네이티브 선택기로 허용한 프로젝트만 읽는 MCP 중계, 읽기·텍스트 검색, 수정 승인·충돌 검사·호스트 스냅샷.
 - OpenViking 0.5.4와 단일 임베딩, 선택한 프로젝트 파일의 승인 후 색인·검색. 개인 대화 자동 업로드 없음.
 - morluto/rea 6.8.0의 제한된 정적 분석, Graphify 0.9.105의 네트워크 없는 AST 추출.
-- Aegis·Conductor 순수 지침 어댑터와 선별한 오프라인 개발 스킬 18개.
+- Aegis·Conductor 순수 지침 어댑터와 선별한 오프라인 개발 스킬. 현재 기본 소스 번들은 34개이며, 공개된 0.2.0 설치본에는 이전 18개가 들어 있습니다. [추가 스킬·MCP 조사와 선택 목록](docs/offline-extensions-research.md)을 참고하세요.
 
 Serena/clangd 의미 분석, 승인된 명령 실행, 새 Desktop의 반복 감지·답변 재출력은 아직 연결되지 않았습니다. 텍스트 검색·AST 결과를 Serena 의미 분석 성공으로 표시하지 않습니다. 외부 DNS/TCP 관찰, Windows 설치·업데이트·ACL·자식 프로세스 검증과 실제 사내 Qwen 테스트가 남아 있습니다.
 
@@ -50,6 +50,7 @@ npm run desktop:prepare
 python3 scripts/desktop-dependencies.py
 npm run bundle:python
 npm run bundle:rea
+npm run skills:verify
 npm run verify
 npm run build
 npm run package:win

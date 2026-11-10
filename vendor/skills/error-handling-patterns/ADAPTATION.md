@@ -2,9 +2,11 @@
 
 Upstream: https://github.com/wshobson/agents/tree/9c61ab243def98f72da12abd41cfcf5bcd91af9d/plugins/developer-essentials/skills/error-handling-patterns
 
+Original authors: wshobson/agents contributors
+
 Commit: 9c61ab243def98f72da12abd41cfcf5bcd91af9d
 
-License: MIT; see LICENSE. Original author attribution and license are retained. Adaptations by L-Vibe contributors are MIT.
+License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by L-Vibe contributors.
 
 Modified for L-Vibe on 2026-11-10: static documents only; Desktop frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.
 

@@ -55,14 +55,32 @@
       "trailofbits/skills",
       "e4dd0bb5b15535f7c5a0834187dffba6ac37e4ff",
       ".cache/skill-research/trailofbits"
+    ],
+    "anthropicWork": [
+      "anthropics/knowledge-work-plugins",
+      "e605d8ddbfb688da57dfaaceebd93f12a64ef1d3",
+      ".cache/skill-research/anthropicWork"
+    ],
+    "marketing": [
+      "coreyhaines31/marketingskills",
+      "9d6d7ce8d18eb155dc2f9762435f097e60cdad7c",
+      ".cache/skill-research/marketing"
+    ],
+    "vercelInterface": [
+      "vercel-labs/web-interface-guidelines",
+      "434b7f91364665f2f733b310ec54809bf8f37937",
+      ".cache/skill-research/vercelInterface"
     ]
   },
   "sourceArchiveHashes": {
     "jeffallan": "ec911f76f63e1f4fd4b28925474cbae7c9f7b652a26ddba586b1173af94e2870",
     "ecc": "dc15cf3bfbb7985f203ba643290be61c500b0679f5d02255c9277c6ad6ea4cc9",
     "wshobson": "b5bcfff7fcba3c8ae961a860e03b0900a3c8bdfc1773ca0e2d787bc8c5f2c5f2",
-    "trailofbits": "ef7634604172b06f8fec967c726d0402f8f616d2dff9eae7eb1156e1c6e3ae4b"
+    "trailofbits": "ef7634604172b06f8fec967c726d0402f8f616d2dff9eae7eb1156e1c6e3ae4b",
+    "anthropicWork": "45429c6ef7dba465cba93eec02d4cf09822b9c783630e94c7c5312d7d5fc3fe9",
+    "marketing": "48a1f6187dff0eb9176e6d38906dbcb5e2581a08716c56f8cc3ee2f17f0791d6",
+    "vercelInterface": "f0f61f41f0b53522eb065b268e18a617bf2cacb54d9502ed6b7411cb62de8745"
   },
-  "manifestSha256": "ae24e7459d3aa4afaa262ad3b8dda94fbf40b6799c3769bdf98c8a2ad9385dd6",
-  "count": 28
+  "manifestSha256": "aa706325bf3786488346342a1b9a743e6229d29c72b0e9f83788200f16fbd4ee",
+  "count": 34
 }

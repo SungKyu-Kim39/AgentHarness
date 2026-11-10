@@ -1010,7 +1010,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "4f5fe37ce8b4ec32661ec4bccd09fc72bdeac6d763a687101221d87daedb3ecc"
+          "sha256": "e7f0841f46e161218a0419e39d89092eeca68b72ad7446c2862369afb5186dee"
         },
         {
           "path": "LICENSE",
@@ -1061,7 +1061,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "e043a96ffc53472c3193a14035d4b83eb0e44f6403aa5b04cfc0add244a473ac"
+          "sha256": "541dbd808f8492262a0abf0c67b4c7ddd1af73a5f85dae5a6f5c250281a8e2e3"
         },
         {
           "path": "LICENSE",
@@ -1097,7 +1097,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "89fc75cce2abc3f0b6b9dbe6c10ef077fcfb2d41f418dbbdce6cd913c4a42273"
+          "sha256": "831c9d5bcb2fd61ce1eafed5518e415791a1dbfeb786f93309b581fa2557d39f"
         },
         {
           "path": "LICENSE",
@@ -1148,7 +1148,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "dd756a38c2dd4c2d69416ff78ca393f5acd20d0ea744ada036b031260d91f789"
+          "sha256": "209011744ca8b2763c566f2d09206f68e79c078fcd56c52fdd6d753ded445c31"
         },
         {
           "path": "LICENSE",
@@ -1179,7 +1179,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "1e963d6717228d1e34de44d7ba11d6b704bb0bfed07fa7d5c304e6127dc93e3f"
+          "sha256": "a3654c6bcf2c28108bdff342886a506eccd99713761154f6c2843ab26a60653b"
         },
         {
           "path": "LICENSE",
@@ -1210,7 +1210,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "c5fbd79cccfc4888876c7e1907415da2559d0d77a3afe14c2e9902f62f42aa58"
+          "sha256": "0258940ebfb4ac68960677dce8b3154274f929b561aa00701088a577101d626b"
         },
         {
           "path": "LICENSE",
@@ -1241,7 +1241,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "c6a57039fc8c2314b04d5d365e51fb567aae8d8406f8cb12ecd18ae010658e33"
+          "sha256": "513ff3ce8a11f86db9207e0c95f963906b8b2ffee2b12ba87b5fd46c0ee8798d"
         },
         {
           "path": "LICENSE",
@@ -1276,7 +1276,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "be76862bbb1964ff7282973afee6bb160ef6935213c96996c6f8780153922cde"
+          "sha256": "23af9e88125e607da8a616401c36c5ac3ee4e4e1db712e678d276352f49d1fcc"
         },
         {
           "path": "LICENSE",
@@ -1320,7 +1320,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "878e946c07c21957521b0649e066b49b86e7eff099b6609335534af8ad9a9b01"
+          "sha256": "2482ffffb7b26693140ac8e205df6dbf7a9c7c5bdad18b0916bd27b5320b25f5"
         },
         {
           "path": "adversarial.md",
@@ -1367,7 +1367,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "f9b01b8d1c0e14474763b79719ef55b3bb2d6c19d8702b6df31e2fe5e19b1a27"
+          "sha256": "08b0e0082f2b87fcf7663014e21590379c153f49ac49cc01bd64d729db67321e"
         },
         {
           "path": "LICENSE",
@@ -1376,6 +1376,211 @@
         {
           "path": "SKILL.md",
           "sha256": "b0cec6601a77103f6348232a8c453a74933a2c69aff63115dd86e88bda41fdd7"
+        }
+      ]
+    },
+    {
+      "id": "explore-data",
+      "name": "로컬 데이터 탐색",
+      "description": "CSV·JSON·테이블 결과의 단위·키·결측·중복·분포·품질 조사",
+      "directory": "explore-data",
+      "source": "https://github.com/anthropics/knowledge-work-plugins/tree/e605d8ddbfb688da57dfaaceebd93f12a64ef1d3/data/skills/explore-data",
+      "commit": "e605d8ddbfb688da57dfaaceebd93f12a64ef1d3",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 승인된 프로젝트의 CSV·JSON·스키마와 사용자가 제공한 결과부터 조사한다. 데이터의 단위·키·중복·결측·시간대·표본 범위를 확인한다. 커넥터 연결이나 데이터웨어하우스 계정을 요구하지 않는다. Excel/Parquet 파서와 SQL/Python 실행기는 별도 전제이며 없으면 코드/질의 제안으로 한정한다. 임계값은 도메인에 맞는 휴리스틱으로 설명하고 계산하지 않은 수치는 만들지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "af7590fa616360259da712b5ede5f79b817beb854c47a465f95774354988e8a2",
+          "bundledSha256": "42c216f3d65d663609e6fb6fb8c4f5ccc48d10f0f74597ffaa6bdfea64bc4cd4"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "6b6914db01dbe325d1490f1bfe7c1c716d201032b9f0a3473a1faf25fbdfe384"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "a6946284993aeec75c7d75906064b66210c46051e562077efb30eb6dcfe72e26"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "42c216f3d65d663609e6fb6fb8c4f5ccc48d10f0f74597ffaa6bdfea64bc4cd4"
+        }
+      ]
+    },
+    {
+      "id": "validate-data",
+      "name": "분석 결과 검증",
+      "description": "조인·분모·기간·편향·계산·시각화·결론의 근거와 재현성 검토",
+      "directory": "validate-data",
+      "source": "https://github.com/anthropics/knowledge-work-plugins/tree/e605d8ddbfb688da57dfaaceebd93f12a64ef1d3/data/skills/validate-data",
+      "commit": "e605d8ddbfb688da57dfaaceebd93f12a64ef1d3",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 사용자가 제공한 로컬 분석·질의·실제 결과의 재현성과 결론을 검토한다. 원본 데이터와 실행기가 없으면 검토 범위와 재계산 미실행을 밝힌다. 집계 단위·조인 증폭·분모·기간·시간대·선택 편향·불확실성을 점검한다. 자료를 외부 서비스나 다른 저장소에 자동 전송하지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "1e424822043480375b80aef9416227b1c8083af749ca536568716265f79ca54b",
+          "bundledSha256": "a6db69fad39ea48d3259c495075d69229c46d57bb22d89062288d596a1d561aa"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "b15d8fd13f030f83a4db5a0351d9b59dd86b9f46c553597716c46d11368a60ff"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "a6946284993aeec75c7d75906064b66210c46051e562077efb30eb6dcfe72e26"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a6db69fad39ea48d3259c495075d69229c46d57bb22d89062288d596a1d561aa"
+        }
+      ]
+    },
+    {
+      "id": "data-visualization",
+      "name": "데이터 시각화",
+      "description": "로컬 결과의 차트·축·단위·불확실성·접근성; 외부 CDN 없는 산출물",
+      "directory": "data-visualization",
+      "source": "https://github.com/anthropics/knowledge-work-plugins/tree/e605d8ddbfb688da57dfaaceebd93f12a64ef1d3/data/skills/data-visualization",
+      "commit": "e605d8ddbfb688da57dfaaceebd93f12a64ef1d3",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 실제 로컬 결과에 맞는 차트·축·단위·표본·신뢰 구간을 선택한다. matplotlib·seaborn·pandas·plotly·브라우저가 설치됐다고 가정하지 않는다. 실행기가 없으면 코드와 시각화 명세만 제안한다. HTML은 로컬 JS·글꼴·이미지만 사용하며 CDN·외부 지도·원격 렌더링을 사용하지 않는다. 산출물 저장은 승인된 프로젝트 편집/실행 대상이다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "5811e8b3547cda6bc8af118aaf0d7589e8861cdc9facce6372dc78aea99ab87d",
+          "bundledSha256": "a85ed1a8e099c3302823ec8a93e87ce99cff01b97f31866e0b58884944d60b0c"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "686d8a0f69f6bf7a049cb40de387d33293bdaa813f738f1fbf6a02383629eda9"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "a6946284993aeec75c7d75906064b66210c46051e562077efb30eb6dcfe72e26"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a85ed1a8e099c3302823ec8a93e87ce99cff01b97f31866e0b58884944d60b0c"
+        }
+      ]
+    },
+    {
+      "id": "statistical-analysis",
+      "name": "통계 해석",
+      "description": "분포·이상치·가설 검정·효과 크기·신뢰 구간·표본·인과 해석의 한계",
+      "directory": "statistical-analysis",
+      "source": "https://github.com/anthropics/knowledge-work-plugins/tree/e605d8ddbfb688da57dfaaceebd93f12a64ef1d3/data/skills/statistical-analysis",
+      "commit": "e605d8ddbfb688da57dfaaceebd93f12a64ef1d3",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 분석 단위·무작위 배정·독립성·누락·표본 수와 가정을 먼저 확인한다. A/B에서는 SRM·사전 지정한 주 지표/MDE·검정력·효과 크기·신뢰 구간·다중 비교·중지 규칙을 확인한다. 반복 관측과 클러스터를 독립 표본으로 세지 않는다. p값은 귀무가설이 참일 확률이나 결과가 우연일 확률이 아니다. 유의하지 않다는 결과를 동등성 증명으로 표현하지 않는다. 실제 로컬 계산 근거 없이 p값·구간을 생성하지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "91a15cfc144efffcd622b09827362a73993a3ff30e3a78114801832477c9f8a0",
+          "bundledSha256": "64f09a4485f188a1bd61ee924ced6886fecb4e80cc1596e0bf8267dcdc575723"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "3818e658f8d63e8230a19aedf692c34aba9424bd02006acba23565c9a622197b"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "a6946284993aeec75c7d75906064b66210c46051e562077efb30eb6dcfe72e26"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "64f09a4485f188a1bd61ee924ced6886fecb4e80cc1596e0bf8267dcdc575723"
+        }
+      ]
+    },
+    {
+      "id": "ab-testing",
+      "name": "A/B 실험 설계·판정",
+      "description": "가설·무작위 배정·MDE·검정력·표본 수·가드레일·중지 규칙; 로컬 계산 예제",
+      "directory": "ab-testing",
+      "source": "https://github.com/coreyhaines31/marketingskills/tree/9d6d7ce8d18eb155dc2f9762435f097e60cdad7c/skills/ab-testing",
+      "commit": "9d6d7ce8d18eb155dc2f9762435f097e60cdad7c",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 사내 기능/성능/모델 프롬프트 비교에도 가설·무작위 배정 단위·노출·주 지표·가드레일·MDE·표본 수·중지 규칙을 명시한다. 같은 문제를 여러 번 평가하면 짝지음/클러스터를 고려한다. SRM과 누락·교차 노출을 검사하고 사후 세그먼트는 탐색으로 표시한다. 클라우드 분석·기능 플래그·온라인 계산기를 연결하지 않는다. 실험 실행/출시/기록 변경은 별도 승인 대상이며 마케팅 목표·실험 횟수를 일률적으로 강제하지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "938a9a9246c6b05657f509e7ab181f1c961dc14f9dcb5d452c574d3e44a39be2",
+          "bundledSha256": "ab3c2d2f057402ac28e9118ad2794c428dfbf8606148cc7d1ff121930235b3ad"
+        },
+        {
+          "path": "references/sample-size-guide.md",
+          "upstreamSha256": "53525ddf0e904477262dc3dbc89d4bd4205f2e07d655616de91e22a310f768c4",
+          "bundledSha256": "973f89aab0991fb3aaa7e8092f3127d269a3d73d2df4d624310cd6eb1abe55b5"
+        },
+        {
+          "path": "references/test-templates.md",
+          "upstreamSha256": "761a40b9de8d16f18fa7f60b59e77aa749607ac8014af43e0b022f47fa87c812",
+          "bundledSha256": "42b6cd49ab1dc5137bd09e4fec145dabeace3e53784d6548e2a48752d85590ca"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "d3ef460f2d6a3b917dd5bf683a729fc3a8e379f62f71f5526cb5e804d4e229b2"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591"
+        },
+        {
+          "path": "references/sample-size-guide.md",
+          "sha256": "973f89aab0991fb3aaa7e8092f3127d269a3d73d2df4d624310cd6eb1abe55b5"
+        },
+        {
+          "path": "references/test-templates.md",
+          "sha256": "42b6cd49ab1dc5137bd09e4fec145dabeace3e53784d6548e2a48752d85590ca"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "ab3c2d2f057402ac28e9118ad2794c428dfbf8606148cc7d1ff121930235b3ad"
+        }
+      ]
+    },
+    {
+      "id": "web-design-guidelines",
+      "name": "UI 품질 검토",
+      "description": "로컬 고정 UI 규칙으로 접근성·포커스·폼·상태·반응형·성능·한국어 사용성 검토",
+      "directory": "web-design-guidelines",
+      "source": "https://github.com/vercel-labs/web-interface-guidelines/tree/434b7f91364665f2f733b310ec54809bf8f37937/.",
+      "commit": "434b7f91364665f2f733b310ec54809bf8f37937",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 규칙은 함께 반입한 이 문서의 고정본을 사용하고 최신 규칙을 온라인에서 조회하지 않는다. 기존 UI 토큰·한국어 문구·Windows 입력 관례와 사용자의 디자인 결정을 존중한다. 승인된 프로젝트 소스로 점검하고 실제 브라우저가 없으면 렌더링·키보드·대비 검증의 미실행을 밝힌다. CDN·Google Fonts 등 외부 자산을 추가하지 않는다. 파일·줄·영향·수정안을 근거와 함께 제시한다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamPath": "command.md",
+          "upstreamSha256": "d246b026f4f29b5823a9cc857f9edf3d2507002e055e32040cadeaf3b38e0234",
+          "bundledSha256": "634e49c130cf9ecb0865eae8826932693dd44364ed661a016d070382777af13f"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "fa2bdbd5f9fcc28f8b8754afe06aa74c7dd115cc8c85faf53ee344656630047e"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "6cd1609c9c12233507cdd2ce0d32e9a721e3c27494951be06b90090deeeb7af2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "634e49c130cf9ecb0865eae8826932693dd44364ed661a016d070382777af13f"
         }
       ]
     }
