@@ -1,7 +1,8 @@
-import { readFile, writeFile, mkdir, readdir, cp } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { adaptDocument, policies } from './skill-adapters.mjs';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const sources = {
   local: ['L-Vibe', '0.2.0', '.'],
@@ -11,6 +12,16 @@ const sources = {
   vercel: ['vercel-labs/agent-skills', '1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62', '.cache/skill-sources/vercel-skills'],
   postgres: ['supabase/agent-skills', 'c9be0e931b7930f7d02126d04774d904c381e7d7', '.cache/skill-sources/postgres-skills'],
   qdrant: ['qdrant/skills', '1d010729e5e573c4736cae520b47b1acce785c02', '.cache/skill-sources/qdrant-skills'],
+  jeffallan: ['Jeffallan/claude-skills', '078a25cc5bfd8011459be7b91d004e900c1d02d3', '.cache/skill-research/jeffallan'],
+  ecc: ['affaan-m/ECC', 'd2ef2680594f9a17526a6e1a2e18b3d242c5d17b', '.cache/skill-research/ecc'],
+  wshobson: ['wshobson/agents', '9c61ab243def98f72da12abd41cfcf5bcd91af9d', '.cache/skill-research/wshobson'],
+  trailofbits: ['trailofbits/skills', 'e4dd0bb5b15535f7c5a0834187dffba6ac37e4ff', '.cache/skill-research/trailofbits'],
+};
+const sourceArchiveHashes = {
+  jeffallan: 'ec911f76f63e1f4fd4b28925474cbae7c9f7b652a26ddba586b1173af94e2870',
+  ecc: 'dc15cf3bfbb7985f203ba643290be61c500b0679f5d02255c9277c6ad6ea4cc9',
+  wshobson: 'b5bcfff7fcba3c8ae961a860e03b0900a3c8bdfc1773ca0e2d787bc8c5f2c5f2',
+  trailofbits: 'ef7634604172b06f8fec967c726d0402f8f616d2dff9eae7eb1156e1c6e3ae4b',
 };
 const definitions = [
   ['goal-framing','aegis','skills/goal-framing','요구사항 구체화','자연어 아이디어를 목적·범위·수용 기준으로 정리'],
@@ -31,6 +42,16 @@ const definitions = [
   ['composition-patterns','vercel','skills/composition-patterns','컴포넌트 구조','재사용 가능한 구성과 복잡성 관리'],
   ['postgres-best-practices','postgres','skills/supabase-postgres-best-practices','PostgreSQL 품질','SQL·인덱스·트랜잭션·권한 검토'],
   ['rag-search-quality','qdrant','skills/qdrant-search-quality','검색 품질','임베딩·청킹·관련성·회귀 평가; OpenViking에 원리 적용'],
+  ['cpp-pro','jeffallan','skills/cpp-pro','C++ 구현·성능','C++ 코드·자원 수명·동시성·빌드 문제; 기존 SDK·컴파일러 표준 유지'],
+  ['cpp-testing','ecc','skills/cpp-testing','C++ 테스트','C++ 회귀·특성화·GoogleTest/CTest·sanitizer; 반입된 로컬 도구만 사용'],
+  ['legacy-modernizer','jeffallan','skills/legacy-modernizer','레거시 개선·포팅','기존 동작 조사·점진 이행·플랫폼 제약·롤백 검증'],
+  ['codebase-onboarding','ecc','skills/codebase-onboarding','기존 코드 파악','처음 여는 저장소의 진입점·구조·데이터 흐름·규칙을 실제 파일로 확인'],
+  ['api-design','ecc','skills/api-design','API 계약 설계','REST 경로·응답·오류·페이지 처리·호환성·멱등성 검토'],
+  ['database-migrations','ecc','skills/database-migrations','DB 마이그레이션','스키마·데이터 변경의 백업·호환성·복구·검증; 변경은 승인 대상'],
+  ['error-handling-patterns','wshobson','plugins/developer-essentials/skills/error-handling-patterns','오류 처리·복구','예외·Result·오류 코드·취소·제한된 재시도·자원 정리'],
+  ['architecture-decision-records','wshobson','plugins/documentation-generation/skills/architecture-decision-records','설계 결정 기록','대안·선택 근거·결과·되돌리기를 기존 트랙 또는 짧은 ADR로 정리'],
+  ['differential-review','trailofbits','plugins/differential-review/skills/differential-review','보안 변경 리뷰','변경 전후의 보안 회귀·영향 범위·공격 조건·테스트 근거 검토'],
+  ['session-handoff','local','skills/session-handoff','작업 인계·재개','장기 작업의 사용자 결정·확인한 사실·변경·검증·미결 사항을 근거와 함께 인계'],
 ];
 async function tree(root) {
   const files = [];
@@ -48,14 +69,19 @@ if (process.argv[2] === 'fetch') {
     catch {
       await mkdir(root, { recursive: true }); await mkdir('.cache/skill-sources', { recursive: true });
       const response = await fetch(`https://codeload.github.com/${repo}/tar.gz/${commit}`); if (!response.ok) throw new Error(`skill source HTTP ${response.status}`);
-      const archive = `.cache/skill-sources/${sourceId}.tgz`; await writeFile(archive, Buffer.from(await response.arrayBuffer())); execFileSync('tar', ['-xzf', archive, '--strip-components=1', '-C', root]);
+      const bytes = Buffer.from(await response.arrayBuffer());
+      if (sourceArchiveHashes[sourceId] && hash(bytes) !== sourceArchiveHashes[sourceId]) throw new Error(`${sourceId}: source archive hash mismatch`);
+      const archive = `.cache/skill-sources/${sourceId}.tgz`; await writeFile(archive, bytes); execFileSync('tar', ['-xzf', archive, '--strip-components=1', '-C', root]);
     }
-    const destination = `vendor/skills/${id}`; await mkdir(destination, { recursive: true });
-    const source = path.join(root, directory); const files = [];
+    const destination = `vendor/skills/${id}`; await rm(destination, { recursive: true, force: true }); await mkdir(destination, { recursive: true });
+    const source = path.join(root, directory); const files = []; const modifications = [];
     // Only static Markdown/text is exposed; upstream scripts and executable plugins are excluded.
     for (const file of await tree(source)) if (/\.(md|txt)$/i.test(file) || /^(LICENSE|COPYING)$/i.test(path.basename(file))) {
       const relative = path.relative(source, file).split(path.sep).join('/'); const target = path.join(destination, relative);
-      await mkdir(path.dirname(target), { recursive: true }); await cp(file, target); files.push({ path: relative, sha256: hash(await readFile(target)) });
+      if (policies[id] && relative !== 'SKILL.md' && path.basename(relative) === 'SKILL.md') throw new Error(`${id}: unexpected nested Desktop skill`);
+      const original = await readFile(file); const adapted = /\.md$/i.test(file) ? Buffer.from(adaptDocument(id, relative, original.toString('utf8'), description)) : original;
+      await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, adapted); files.push({ path: relative, sha256: hash(adapted) });
+      if (!original.equals(adapted)) modifications.push({ path: relative, upstreamSha256: hash(original), bundledSha256: hash(adapted) });
     }
     let licenses = files.filter(f => /(?:^|\/)(LICENSE|COPYING)/i.test(f.path));
     if (!licenses.length) for (const f of ['LICENSE', 'LICENSE.md', 'LICENSE.txt', 'license.md']) {
@@ -68,16 +94,30 @@ if (process.argv[2] === 'fetch') {
     }
     // Vercel distributes its skill guidance as MIT, declared in its skill package metadata.
     if (!licenses.length) throw new Error(`${id}: explicit redistribution license is required`);
-    const adapter = 'Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.' + (sourceId === 'qdrant' ? ' Apply retrieval-quality principles to OpenViking; Qdrant APIs/database are not installed.' : '');
-    skills.push({ id, name, description, directory: id, source: sourceId === 'local' ? 'L-Vibe original MIT guidance' : `https://github.com/${repo}/tree/${commit}/${directory}`, commit, license: licenses.map(l => l.path).join(', '), adapter, files: files.sort((a,b) => a.path.localeCompare(b.path)) });
+    const adapter = 'Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.' + (sourceId === 'qdrant' ? ' Apply retrieval-quality principles to OpenViking; Qdrant APIs/database are not installed.' : '') + (policies[id] ? ' ' + policies[id] : '');
+    if (policies[id]) {
+      const licenseName = sourceId === 'trailofbits' ? 'CC-BY-SA-4.0' : 'MIT';
+      const notice = `# L-Vibe offline adaptation\n\nUpstream: ${sourceId === 'local' ? 'L-Vibe original guidance' : `https://github.com/${repo}/tree/${commit}/${directory}`}\n\nCommit: ${commit}\n\nLicense: ${licenseName}; see ${licenses.map(l => l.path).join(', ')}. Original author attribution and license are retained. ${sourceId === 'trailofbits' ? 'This adapted skill, including this notice, is distributed under CC-BY-SA-4.0; the application license does not replace it.' : 'Adaptations by L-Vibe contributors are MIT.'}\n\nModified for L-Vibe on 2026-11-10: static documents only; Desktop frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.\n\nSpecific policy: ${policies[id]}\n\nChanged documents (hashes are also retained in the manifest):\n\n${modifications.map(m => `- ${m.path}: upstream ${m.upstreamSha256}; bundled ${m.bundledSha256}`).join('\n')}\n`;
+      await writeFile(path.join(destination, 'ADAPTATION.md'), notice); files.push({ path: 'ADAPTATION.md', sha256: hash(notice) });
+    }
+    skills.push({ id, name, description, directory: id, source: sourceId === 'local' ? 'L-Vibe original MIT guidance' : `https://github.com/${repo}/tree/${commit}/${directory}`, commit, license: licenses.map(l => l.path).join(', '), adapter, ...(policies[id] ? { modifications } : {}), files: files.sort((a,b) => a.path.localeCompare(b.path)) });
   }
   const manifest = { schemaVersion: 1, purpose: 'offline vibe coding', skills };
   await writeFile('vendor/skills/manifest.json', JSON.stringify(manifest, null, 2) + '\n');
-  await writeFile('skills-lock.json', JSON.stringify({ schemaVersion: 1, sources, manifestSha256: hash(await readFile('vendor/skills/manifest.json')), count: skills.length }, null, 2) + '\n');
+  await writeFile('skills-lock.json', JSON.stringify({ schemaVersion: 1, sources, sourceArchiveHashes, manifestSha256: hash(await readFile('vendor/skills/manifest.json')), count: skills.length }, null, 2) + '\n');
   console.log(`Bundled ${skills.length} offline skills; executable scripts excluded.`);
 } else if (process.argv[2] === 'verify') {
   const lock = JSON.parse(await readFile('skills-lock.json', 'utf8'));
   const bytes = await readFile('vendor/skills/manifest.json'); if (hash(bytes) !== lock.manifestSha256) throw new Error('스킬 목록 해시 불일치');
-  const manifest = JSON.parse(bytes); for (const skill of manifest.skills) for (const f of skill.files) if (hash(await readFile(path.join('vendor/skills', skill.directory, f.path))) !== f.sha256) throw new Error(`스킬 해시 불일치: ${skill.id}/${f.path}`);
+  const manifest = JSON.parse(bytes);
+  if (manifest.skills.length !== lock.count || new Set(manifest.skills.map(s => s.id)).size !== lock.count) throw new Error('스킬 개수/ID 불일치');
+  const registered = new Set(['manifest.json']);
+  for (const skill of manifest.skills) for (const f of skill.files) {
+    const relative = path.posix.join(skill.directory, f.path);
+    if (relative.startsWith('../') || path.isAbsolute(relative)) throw new Error('스킬 경로 범위 오류');
+    registered.add(relative);
+    if (hash(await readFile(path.join('vendor/skills', relative))) !== f.sha256) throw new Error(`스킬 해시 불일치: ${skill.id}/${f.path}`);
+  }
+  for (const file of await tree('vendor/skills')) if (!registered.has(path.relative('vendor/skills', file).split(path.sep).join('/'))) throw new Error(`미등록 스킬 파일: ${file}`);
   console.log(`Verified ${manifest.skills.length} offline skills.`);
 } else throw new Error('Usage: node scripts/bundle-skills.mjs fetch|verify');

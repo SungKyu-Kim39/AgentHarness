@@ -985,6 +985,399 @@
           "sha256": "13aa52bba98d28c390c5c0e2ef240964214ed017402f41cd61bf51680f280a17"
         }
       ]
+    },
+    {
+      "id": "cpp-pro",
+      "name": "C++ 구현·성능",
+      "description": "C++ 코드·자원 수명·동시성·빌드 문제; 기존 SDK·컴파일러 표준 유지",
+      "directory": "cpp-pro",
+      "source": "https://github.com/Jeffallan/claude-skills/tree/078a25cc5bfd8011459be7b91d004e900c1d02d3/skills/cpp-pro",
+      "commit": "078a25cc5bfd8011459be7b91d004e900c1d02d3",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 먼저 실제 컴파일러·SDK·C++ 표준·ABI·예외/RTTI 정책을 조사한다. C++20/23, concepts, GCC 플래그, sanitizer를 기존 프로젝트에 강제하지 않는다. VxWorks 지원 유지 여부가 미결이면 해당 변경만 보류하고 분석은 계속한다. compile_commands.json과 SDK 헤더가 없으면 의미 분석의 정확도 제한을 밝힌다. MSVC/VxWorks에서 지원하지 않는 검증을 실행했다고 기록하지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "53017f862c526df6080210a1a00e6678c2cd5382b5d1a51026bf3b0bde7f7ed2",
+          "bundledSha256": "a769488c5a0e0d6d40cc3e4185e9ba9e4385520f829bf4417aaf1c9a6199f8c6"
+        },
+        {
+          "path": "references/build-tooling.md",
+          "upstreamSha256": "337ae8b622628fafae86f89d914561ee6176b8d74073db2d5580e91ddd240f30",
+          "bundledSha256": "dbab0e785275d5c592379e5c8483f45a2db98920e8ea0d87231c076a563e568e"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "4f5fe37ce8b4ec32661ec4bccd09fc72bdeac6d763a687101221d87daedb3ecc"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "06dcddbb6908a0c6dd4a9e8ec822eea41d5a460a53089fecccc8a68049e99241"
+        },
+        {
+          "path": "references/build-tooling.md",
+          "sha256": "dbab0e785275d5c592379e5c8483f45a2db98920e8ea0d87231c076a563e568e"
+        },
+        {
+          "path": "references/concurrency.md",
+          "sha256": "cb772cec134530ed7ca4af25c261d42850ce27e92133657849e09d6cb2544891"
+        },
+        {
+          "path": "references/memory-performance.md",
+          "sha256": "9bf813632158c49f3843d1b0d803aa710a5ae67a5f37df6420bee42f4f161caa"
+        },
+        {
+          "path": "references/modern-cpp.md",
+          "sha256": "7410851bb066f5e6d825fab2efe7d767ed0ca2ea44cd377ff4f6ef7f90a21736"
+        },
+        {
+          "path": "references/templates.md",
+          "sha256": "d7a8e294439879126cd5df5b415eecf171d193f97368a2142607162c106a3ee8"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a769488c5a0e0d6d40cc3e4185e9ba9e4385520f829bf4417aaf1c9a6199f8c6"
+        }
+      ]
+    },
+    {
+      "id": "cpp-testing",
+      "name": "C++ 테스트",
+      "description": "C++ 회귀·특성화·GoogleTest/CTest·sanitizer; 반입된 로컬 도구만 사용",
+      "directory": "cpp-testing",
+      "source": "https://github.com/affaan-m/ECC/tree/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/cpp-testing",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 기존 테스트 프레임워크와 컴파일러를 우선한다. GoogleTest·CMake·sanitizer는 런타임에 포함됐다는 뜻이 아니다. 반입된 로컬 패키지만 사용하고 FetchContent나 자동 패키지 복구로 다운로드하지 않는다. 실제 테스트 실행기가 없으면 테스트 코드와 실행 계획만 제안하고 미실행으로 기록한다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "a92fb5da9b7e3cd1b4dee185b3eb9d0a55352af6396bf996d2eef72d683784df",
+          "bundledSha256": "e5e6778715a9ca1c5c092d7c33d2c126662d6eeb6431a1e81ebafdffb6b6b62c"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "e043a96ffc53472c3193a14035d4b83eb0e44f6403aa5b04cfc0add244a473ac"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "e5e6778715a9ca1c5c092d7c33d2c126662d6eeb6431a1e81ebafdffb6b6b62c"
+        }
+      ]
+    },
+    {
+      "id": "legacy-modernizer",
+      "name": "레거시 개선·포팅",
+      "description": "기존 동작 조사·점진 이행·플랫폼 제약·롤백 검증",
+      "directory": "legacy-modernizer",
+      "source": "https://github.com/Jeffallan/claude-skills/tree/078a25cc5bfd8011459be7b91d004e900c1d02d3/skills/legacy-modernizer",
+      "commit": "078a25cc5bfd8011459be7b91d004e900c1d02d3",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 기존 동작의 특성화 테스트·의존성·플랫폼 제약부터 확인한다. 웹 트래픽 전환·마이크로서비스·80% 커버리지·상용 모니터링을 일률적으로 요구하지 않는다. 임베디드/VxWorks→Windows 포팅은 스레드·스케줄링·엔디언·정렬·소켓·시간·파일 경로·ABI와 롤백을 검토한다. 독점 SDK는 자동 반입하지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "3214e018c4aeedb5a4710f24979fef8f959a799ebb8888288e80dbe6bd2f7a1f",
+          "bundledSha256": "b4a8d5045b06d2e3d299ccdd49de631e68701aa6e6847a73e87f7254edfcb127"
+        },
+        {
+          "path": "references/legacy-testing.md",
+          "upstreamSha256": "da01c4b6240ad43b1994bae819e1de0cf9c9a44db8522f5f674c9cb27d7bcfd0",
+          "bundledSha256": "603620a10622b2c32f3bd7ec8eff60f91dd561d1e2ae6c783b537d2e7092562a"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "89fc75cce2abc3f0b6b9dbe6c10ef077fcfb2d41f418dbbdce6cd913c4a42273"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "06dcddbb6908a0c6dd4a9e8ec822eea41d5a460a53089fecccc8a68049e99241"
+        },
+        {
+          "path": "references/legacy-testing.md",
+          "sha256": "603620a10622b2c32f3bd7ec8eff60f91dd561d1e2ae6c783b537d2e7092562a"
+        },
+        {
+          "path": "references/migration-strategies.md",
+          "sha256": "a1387efa79f4970a0ad608e8b4bb38e02a201538cff90dfe3199249ebd884b9c"
+        },
+        {
+          "path": "references/refactoring-patterns.md",
+          "sha256": "a2ad7703cc259c9965525ae0db32254bf2a592ef6a6e006bad692f2f398a8e13"
+        },
+        {
+          "path": "references/strangler-fig-pattern.md",
+          "sha256": "a802264c2520793e4ba3b567d1450de7056e24b20a632d4b070ae2cc76e984b1"
+        },
+        {
+          "path": "references/system-assessment.md",
+          "sha256": "652749f4378e43d2eae0c57ce136aae6384d29671afb5b0bd160630c1b390ec4"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "b4a8d5045b06d2e3d299ccdd49de631e68701aa6e6847a73e87f7254edfcb127"
+        }
+      ]
+    },
+    {
+      "id": "codebase-onboarding",
+      "name": "기존 코드 파악",
+      "description": "처음 여는 저장소의 진입점·구조·데이터 흐름·규칙을 실제 파일로 확인",
+      "directory": "codebase-onboarding",
+      "source": "https://github.com/affaan-m/ECC/tree/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/codebase-onboarding",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 호스트의 승인된 프로젝트 읽기·검색과 실제 Graphify/REA 결과만 사용한다. 텍스트 검색을 의미 분석으로 표현하지 않는다. 먼저 기존 프로젝트 지침·Conductor 트랙을 읽는다. 온보딩 설명은 대화로 제공하며 CLAUDE.md 등 추가 문서는 요청에 필요할 때만 승인된 편집으로 제안한다. 전역 설정·개인 설정·엔진 권한을 수정하지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "ef88873a4b0d0fe155c0a196ffecd5c7b5e28edd00fbbdb5c1fd2ca8fd0eb6f0",
+          "bundledSha256": "5914dbf366e121aff29166532576d481c423336a62d435f359f52e2d3d2c9303"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "dd756a38c2dd4c2d69416ff78ca393f5acd20d0ea744ada036b031260d91f789"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "5914dbf366e121aff29166532576d481c423336a62d435f359f52e2d3d2c9303"
+        }
+      ]
+    },
+    {
+      "id": "api-design",
+      "name": "API 계약 설계",
+      "description": "REST 경로·응답·오류·페이지 처리·호환성·멱등성 검토",
+      "directory": "api-design",
+      "source": "https://github.com/affaan-m/ECC/tree/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/api-design",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 실제 사내 API 계약과 서버 제약을 먼저 읽는다. 예제는 로컬 코드 설계 참고이며 외부 API 호출·배포·인증 설정 권한을 부여하지 않는다. 호환성·입력 검증·인증/인가·오류 응답·재시도/멱등성을 확인하고 키와 개인정보를 예제·로그에서 제거한다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "250e464413a13c0eb93cc73447b423df1f9aa8e4f80e5e68c41f895b2c33e352",
+          "bundledSha256": "2493203a6f5de0cd5ba3ff6cd362e21f9d24c011163c4643b0218ce8003c4009"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "1e963d6717228d1e34de44d7ba11d6b704bb0bfed07fa7d5c304e6127dc93e3f"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "2493203a6f5de0cd5ba3ff6cd362e21f9d24c011163c4643b0218ce8003c4009"
+        }
+      ]
+    },
+    {
+      "id": "database-migrations",
+      "name": "DB 마이그레이션",
+      "description": "스키마·데이터 변경의 백업·호환성·복구·검증; 변경은 승인 대상",
+      "directory": "database-migrations",
+      "source": "https://github.com/affaan-m/ECC/tree/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/database-migrations",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 대상 DB와 버전을 확인하고 실제 백업·복구 절차를 정한다. 예제 ORM/DB 런타임은 설치되지 않는다. 로컬에 이미 반입된 실행 파일과 의존성만 사용한다. 스키마·데이터 변경, reset, 배포는 명시적 대상·영향·백업·사용자 승인이 필요하다. 자동 복구나 다운그레이드가 가능하다고 추정하지 않는다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "dad2f1964295eee14a96e06213ce3f60992bbcdc1f37a50c828bbc2e1abd79dd",
+          "bundledSha256": "3fee8e7deda2e233fb4bee6c874893b735db98326bf4e881a4cbe4ef026b049f"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "c5fbd79cccfc4888876c7e1907415da2559d0d77a3afe14c2e9902f62f42aa58"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "3fee8e7deda2e233fb4bee6c874893b735db98326bf4e881a4cbe4ef026b049f"
+        }
+      ]
+    },
+    {
+      "id": "error-handling-patterns",
+      "name": "오류 처리·복구",
+      "description": "예외·Result·오류 코드·취소·제한된 재시도·자원 정리",
+      "directory": "error-handling-patterns",
+      "source": "https://github.com/wshobson/agents/tree/9c61ab243def98f72da12abd41cfcf5bcd91af9d/plugins/developer-essentials/skills/error-handling-patterns",
+      "commit": "9c61ab243def98f72da12abd41cfcf5bcd91af9d",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 기존 예외/Result/오류 코드 정책과 ABI를 존중한다. 로그의 키·토큰·개인정보를 제거한다. 재시도에는 횟수·기한·멱등성·취소를 둔다. 파일 수정·명령의 승인이나 중지 상태가 불명확하면 자동 재시도하지 않는다. 외부 결제/네트워크 예제는 패턴 설명이며 연결할 서비스가 아니다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "5fb7f4d995fc05386a8c04b045f96fd3cb652cbd31fd52d78966f86323b373b8",
+          "bundledSha256": "0213f345282a3818ae5586a2408cb0b9256df0f6b7b7716e8fd7b4a20b1418b1"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "c6a57039fc8c2314b04d5d365e51fb567aae8d8406f8cb12ecd18ae010658e33"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "f89abb55d9f073f38f1703e4518f0613c788c6174be7f13b8dfe48a1c076c746"
+        },
+        {
+          "path": "references/details.md",
+          "sha256": "705db82352df6a5f7d6d0a96bf848aecef734ca8dc3446904ddceead6aaf91d2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "0213f345282a3818ae5586a2408cb0b9256df0f6b7b7716e8fd7b4a20b1418b1"
+        }
+      ]
+    },
+    {
+      "id": "architecture-decision-records",
+      "name": "설계 결정 기록",
+      "description": "대안·선택 근거·결과·되돌리기를 기존 트랙 또는 짧은 ADR로 정리",
+      "directory": "architecture-decision-records",
+      "source": "https://github.com/wshobson/agents/tree/9c61ab243def98f72da12abd41cfcf5bcd91af9d/plugins/documentation-generation/skills/architecture-decision-records",
+      "commit": "9c61ab243def98f72da12abd41cfcf5bcd91af9d",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 실제 범위·호환성·데이터 보존에 영향을 주는 결정만 짧게 기록한다. 기존 Conductor spec/plan·ADR을 재사용한다. 팀 리뷰·알림·티켓 생성은 사용자가 요구하거나 기존 팀 정책이 있을 때만 다루며 메시지를 자동 전송하지 않는다. ADR 파일 생성·상태 변경은 승인된 프로젝트 편집이다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "79059f17da8b20cdf27327f6de0ea005c73c2c442f48f70688abca4c77cb6f8f",
+          "bundledSha256": "3a5eb5515131a56ddd6be969ae1338960e24f0e65729d09276ae53f4cb051235"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "be76862bbb1964ff7282973afee6bb160ef6935213c96996c6f8780153922cde"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "f89abb55d9f073f38f1703e4518f0613c788c6174be7f13b8dfe48a1c076c746"
+        },
+        {
+          "path": "references/decision-templates.md",
+          "sha256": "22cf12aafcad223597451c91c8590f325aad8f1a7c83c1c0690dbfef151f5823"
+        },
+        {
+          "path": "references/deprecation-rfc-templates.md",
+          "sha256": "942320bdb31f835ffa4eacf009dae4857472056754dbc9478062c9c82d19741d"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "3a5eb5515131a56ddd6be969ae1338960e24f0e65729d09276ae53f4cb051235"
+        }
+      ]
+    },
+    {
+      "id": "differential-review",
+      "name": "보안 변경 리뷰",
+      "description": "변경 전후의 보안 회귀·영향 범위·공격 조건·테스트 근거 검토",
+      "directory": "differential-review",
+      "source": "https://github.com/trailofbits/skills/tree/e4dd0bb5b15535f7c5a0834187dffba6ac37e4ff/plugins/differential-review/skills/differential-review",
+      "commit": "e4dd0bb5b15535f7c5a0834187dffba6ac37e4ff",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 프로젝트 안의 변경 전후·호스트 스냅샷·사용자가 제공한 diff를 근거로 보안 회귀를 조사한다. Git 실행기가 없으면 blame/이력을 실행한 것으로 기록하지 않는다. 실제 호출자·권한·입력·자원 수명과 테스트 근거를 확인하고 분석 한계를 밝힌다. 다른 플러그인·하위 에이전트에 자동 위임하지 않는다. 보고서는 대화로 제공할 수 있고 파일은 요청에 필요할 때 프로젝트 안에 승인된 편집으로 제안한다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "f9af6a8193fc1a9f8ca3c54bb8d19095a5f20c9472ca6d014488bbde50b67da0",
+          "bundledSha256": "dcd1203f29fbea1f309e4d3585809e76dff7e617ca18119db74bc125b1a5e94f"
+        },
+        {
+          "path": "reporting.md",
+          "upstreamSha256": "0016876dc6f158e926448bff1b6f634796757c7afe09dff177cfe30250724fc4",
+          "bundledSha256": "02232ac2aafcc0ad0c666ad1bc6688e3aa4032dd48bbc35da959b81a4d1af2be"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "878e946c07c21957521b0649e066b49b86e7eff099b6609335534af8ad9a9b01"
+        },
+        {
+          "path": "adversarial.md",
+          "sha256": "3cb823f38c6e551cbcf5f72325d2bb219dacdad774072519c31d50d92db19800"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "7abe19ec9bb73b36141b999b861d24ad855e808bafe0f81e84cce28556f6c297"
+        },
+        {
+          "path": "methodology.md",
+          "sha256": "16b335d24cf2145e3dc4a37f50056550d29db2efa20e6df78fec95ec1e6fb0b4"
+        },
+        {
+          "path": "patterns.md",
+          "sha256": "52abb18abbc73502a3d3b2f36a7a035adc1db40fd812d1d5424cf065036a06e9"
+        },
+        {
+          "path": "reporting.md",
+          "sha256": "02232ac2aafcc0ad0c666ad1bc6688e3aa4032dd48bbc35da959b81a4d1af2be"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "dcd1203f29fbea1f309e4d3585809e76dff7e617ca18119db74bc125b1a5e94f"
+        }
+      ]
+    },
+    {
+      "id": "session-handoff",
+      "name": "작업 인계·재개",
+      "description": "장기 작업의 사용자 결정·확인한 사실·변경·검증·미결 사항을 근거와 함께 인계",
+      "directory": "session-handoff",
+      "source": "L-Vibe original MIT guidance",
+      "commit": "0.2.0",
+      "license": "LICENSE",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 작업 중 확인한 사실·사용자 결정·변경·검증·미결 사항을 근거와 함께 인계한다. 대화·지식 저장소·프로젝트 문서 사이의 자동 복사를 하지 않는다. 영속 문서가 필요하면 승인된 프로젝트 편집으로 제안한다.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "68b8781a489abc358644d9efdf4bf24998dfae319b4c6d79f2fd5cf07a927aef",
+          "bundledSha256": "b0cec6601a77103f6348232a8c453a74933a2c69aff63115dd86e88bda41fdd7"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "f9b01b8d1c0e14474763b79719ef55b3bb2d6c19d8702b6df31e2fe5e19b1a27"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "b0cec6601a77103f6348232a8c453a74933a2c69aff63115dd86e88bda41fdd7"
+        }
+      ]
     }
   ]
 }

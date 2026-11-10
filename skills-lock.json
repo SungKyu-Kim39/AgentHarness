@@ -35,8 +35,34 @@
       "qdrant/skills",
       "1d010729e5e573c4736cae520b47b1acce785c02",
       ".cache/skill-sources/qdrant-skills"
+    ],
+    "jeffallan": [
+      "Jeffallan/claude-skills",
+      "078a25cc5bfd8011459be7b91d004e900c1d02d3",
+      ".cache/skill-research/jeffallan"
+    ],
+    "ecc": [
+      "affaan-m/ECC",
+      "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      ".cache/skill-research/ecc"
+    ],
+    "wshobson": [
+      "wshobson/agents",
+      "9c61ab243def98f72da12abd41cfcf5bcd91af9d",
+      ".cache/skill-research/wshobson"
+    ],
+    "trailofbits": [
+      "trailofbits/skills",
+      "e4dd0bb5b15535f7c5a0834187dffba6ac37e4ff",
+      ".cache/skill-research/trailofbits"
     ]
   },
-  "manifestSha256": "bd5bf5f92de9ccc43ff4890b37873108f72dcec8f5d02a10d786ccb0ac7377cc",
-  "count": 18
+  "sourceArchiveHashes": {
+    "jeffallan": "ec911f76f63e1f4fd4b28925474cbae7c9f7b652a26ddba586b1173af94e2870",
+    "ecc": "dc15cf3bfbb7985f203ba643290be61c500b0679f5d02255c9277c6ad6ea4cc9",
+    "wshobson": "b5bcfff7fcba3c8ae961a860e03b0900a3c8bdfc1773ca0e2d787bc8c5f2c5f2",
+    "trailofbits": "ef7634604172b06f8fec967c726d0402f8f616d2dff9eae7eb1156e1c6e3ae4b"
+  },
+  "manifestSha256": "ae24e7459d3aa4afaa262ad3b8dda94fbf40b6799c3769bdf98c8a2ad9385dd6",
+  "count": 28
 }
