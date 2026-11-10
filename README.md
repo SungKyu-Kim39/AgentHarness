@@ -1,8 +1,12 @@
 # L-Vibe
 
-Windows 10·11 x64 폐쇄망에서 프로젝트 코드 분석·수정과 개발 문서 작성을 돕는 Electron 데스크톱 앱입니다. 제품명·설치 경로·데이터 경로를 **L-Vibe**로 적용했고, 지정된 네이비 LIG 로고를 유지했습니다.
+Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 사내 바이브 코딩 배포판**입니다. 제품명은 L-Vibe입니다. 공식 화면·세션·파일·diff·모델 선택을 재사용하고, 사내 설정·정책·고정 로컬 서비스를 결합합니다.
 
-현재 산출물은 **0.1 검증 후보**입니다. [검증 보고서](docs/validation.md)의 Windows 실검증과 미구현 항목이 남아 있으므로 1.0 출시 완료로 분류하지 않습니다. 기존 PC의 OpenCode·Zed·플러그인·설정은 읽거나 복제하지 않습니다.
+**설계 전환 중입니다.** 기준은 [새 아키텍처](docs/architecture.md)와 [구현 계획](docs/implementation-plan.md)입니다. 현재 `src/renderer` 및 아래 기존 Electron 빌드 명령은 독립 UI 원형의 비교·회귀 검증용이며 새 배포판의 완료본이 아닙니다. 공식 Desktop과 서버는 동일 upstream 커밋으로 고정합니다. 기존 PC의 OpenCode·Zed·개인 플러그인·설정은 읽거나 복제하지 않습니다.
+
+여러 사내 LLM 중 선택하고, OpenViking 임베딩은 한 개로 유지합니다. OpenViking·Serena·REA·Graphify·Aegis·Conductor·선별한 개발 스킬은 폐쇄망 고정 번들 대상으로 관리합니다. 실제 연결·Windows·사내 모델 검증 전에는 1.0 완료로 표시하지 않습니다.
+
+아래는 이관 전 원형의 사용·검증 기록입니다. 새 배포 경로는 구현이 검증되는 순서대로 추가합니다.
 
 ## 직원 PC에서 사용
 
