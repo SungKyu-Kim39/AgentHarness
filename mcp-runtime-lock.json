@@ -1683,10 +1683,11 @@
     },
     "browser": {
       "version": "157.0.8103.50",
-      "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.50/win64/chrome-win64.zip"
+      "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.50/win64/chrome-win64.zip",
+      "sha256": "36088dd9c76c992f6e745fc20f94aca873f69c3331ce25ea3df36835cc4af73f"
     }
   },
-  "manifestSha256": "88ca8f878d662d1f1d0c4b85625c47836e191b710f49116b63ff1da21d154457",
+  "manifestSha256": "002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1",
   "nativePackages": {
     "msvc-runtime": {
       "version": "14.51.36231",

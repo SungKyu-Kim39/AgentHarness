@@ -14,7 +14,18 @@ test(
   { skip: !existsSync("vendor/runtime/linux-x64/opencode"), timeout: 90000 },
   async (t) => {
     const root = await mkdtemp(path.join(tmpdir(), "l-vibe-host-"));
-    t.after(() => rm(root, { recursive: true, force: true }));
+    let cleanupHost: Host | undefined;
+    let cleanupModel: ReturnType<typeof createServer> | undefined;
+    t.after(async () => {
+      try {
+        await cleanupHost?.close();
+      } finally {
+        cleanupModel?.closeAllConnections();
+        if (cleanupModel?.listening)
+          await new Promise<void>((resolve) => cleanupModel!.close(() => resolve()));
+        await rm(root, { recursive: true, force: true });
+      }
+    });
     const project = path.join(root, "project");
     await mkdir(project);
     await writeFile(path.join(project, "main.c"), "unchanged");
@@ -52,13 +63,10 @@ test(
       );
       // Intentionally keep generation open so stop must abort an actual in-flight request.
     });
+    cleanupModel = model;
     await new Promise<void>((resolve) => model.listen(0, "127.0.0.1", resolve));
     const address = model.address();
     assert.ok(address && typeof address !== "string");
-    t.after(() => {
-      model.closeAllConnections();
-      model.close();
-    });
     // Test double for the Electron-only DPAPI boundary; real encryption is covered separately.
     const vault = new ConfigVault(path.join(root, "data"), {
       isEncryptionAvailable: () => true,
@@ -88,7 +96,7 @@ test(
         state = s;
       },
     });
-    t.after(() => host.close());
+    cleanupHost = host;
     await host.initialize();
     assert.equal((await host.handle({ action: "openProject" })).ok, true);
     const sessionId = host.state().activeSessionId;
