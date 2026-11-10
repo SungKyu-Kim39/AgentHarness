@@ -3,7 +3,7 @@
   "sources": {
     "local": [
       "L-Vibe",
-      "0.2.0",
+      "0.2.1",
       "."
     ],
     "aegis": [
@@ -81,6 +81,6 @@
     "marketing": "48a1f6187dff0eb9176e6d38906dbcb5e2581a08716c56f8cc3ee2f17f0791d6",
     "vercelInterface": "f0f61f41f0b53522eb065b268e18a617bf2cacb54d9502ed6b7411cb62de8745"
   },
-  "manifestSha256": "aa706325bf3786488346342a1b9a743e6229d29c72b0e9f83788200f16fbd4ee",
+  "manifestSha256": "2aec810670e3f3999ff63fcb8688fd0bc33c7180fd9e1eac6b33c288a88c4f4c",
   "count": 34
 }

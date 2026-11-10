@@ -2,7 +2,7 @@ import { app, dialog, safeStorage, Menu, Tray, nativeImage } from 'electron';
 import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { prepareNative, replaceConfiguration } from './l-vibe-control.mjs';
+import { prepareNative, replaceConfiguration, getRuntime } from './l-vibe-control.mjs';
 
 export async function prepareLVibe() {
   const resources = app.isPackaged ? process.resourcesPath : path.resolve(import.meta.dirname, '../../resources');
@@ -32,6 +32,14 @@ export async function prepareLVibe() {
     const tray = new Tray(nativeImage.createFromPath(path.join(app.getAppPath(), 'resources/icons/icon.ico')));
     tray.setToolTip('L-Vibe');
     tray.setContextMenu(Menu.buildFromTemplate([
+      { label: 'OpenViking 기본 스킬 등록 상태', click: async () => {
+        const state = getRuntime().status().knowledge;
+        const skills = state?.skills;
+        await dialog.showMessageBox({ type: skills?.status === 'error' ? 'warning' : 'info', title: 'L-Vibe 기본 스킬',
+          message: skills ? `OpenViking 기본 스킬 ${skills.registered}/${skills.total}개 · ${skills.status}` : `OpenViking ${state?.status ?? '설정 필요'}`,
+          detail: skills?.message ?? 'JSON의 임베딩 모델을 설정하면 기본 스킬을 로컬 OpenViking skills에 자동 등록합니다. 사용자 대화와 프로젝트 파일은 자동 등록하지 않습니다.',
+        });
+      } },
       { label: '모델 설정 JSON 가져와 교체 후 재시작', click: async () => {
         const result = await dialog.showOpenDialog({ title: '저장된 모델 설정을 교체할 JSON 선택', properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
         if (result.canceled) return;

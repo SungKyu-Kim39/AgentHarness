@@ -57,7 +57,7 @@ export class Host {
       path.join(options.data, "history.json"),
       this.redactor,
     );
-    this.knowledge = options.knowledge ?? new OpenVikingService(options.runtime, options.data, () => this.emit());
+    this.knowledge = options.knowledge ?? new OpenVikingService(options.runtime, options.data, () => this.emit(), undefined, options.skills);
     if (options.skills) this.skills = new OfflineSkills(options.skills);
   }
   async initialize() {

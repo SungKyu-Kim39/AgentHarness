@@ -364,7 +364,7 @@
       "description": "요구사항·설계·운영·검증 문서의 구조화",
       "directory": "developer-documents",
       "source": "L-Vibe original MIT guidance",
-      "commit": "0.2.0",
+      "commit": "0.2.1",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.",
       "files": [
@@ -384,7 +384,7 @@
       "description": "키보드·포커스·상태·반응형 동작 검토",
       "directory": "ui-accessibility",
       "source": "L-Vibe original MIT guidance",
-      "commit": "0.2.0",
+      "commit": "0.2.1",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.",
       "files": [
@@ -1354,7 +1354,7 @@
       "description": "장기 작업의 사용자 결정·확인한 사실·변경·검증·미결 사항을 근거와 함께 인계",
       "directory": "session-handoff",
       "source": "L-Vibe original MIT guidance",
-      "commit": "0.2.0",
+      "commit": "0.2.1",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 작업 중 확인한 사실·사용자 결정·변경·검증·미결 사항을 근거와 함께 인계한다. 대화·지식 저장소·프로젝트 문서 사이의 자동 복사를 하지 않는다. 영속 문서가 필요하면 승인된 프로젝트 편집으로 제안한다.",
       "modifications": [
@@ -1367,7 +1367,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "08b0e0082f2b87fcf7663014e21590379c153f49ac49cc01bd64d729db67321e"
+          "sha256": "ac9828b13675ce05535b046a123846a440a76fdf1f7ac661e79b40563c5a8b6b"
         },
         {
           "path": "LICENSE",

@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 const project = path.resolve(import.meta.dirname, '..');
 const output = path.join(project, 'release/desktop');
-const version = '0.2.0';
+const version = JSON.parse(await readFile(path.join(project, 'package.json'), 'utf8')).version;
 const folder = `L-Vibe-${version}-windows-x64`;
 const root = path.join(output, folder);
 const exe = `L-Vibe-${version}-win-x64.exe`;
@@ -18,7 +18,7 @@ await mkdir(path.join(root, 'source'), { recursive: true });
 await cp(path.join(output, exe), path.join(root, exe));
 await cp(path.join(project, 'agent-config.example.json'), path.join(root, 'agent-config.json'));
 await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, '시작하기.txt'));
-await cp(path.join(project, 'docs/validation-offline-candidate.md'), path.join(root, '검증보고서.md'));
+await cp(path.join(project, `docs/validation-${version}.md`), path.join(root, '검증보고서.md'));
 await cp(path.join(project, '.cache/packaged-runtime-audit.json'), path.join(root, 'runtime-audit.json'));
 await cp(path.join(project, 'distribution/readiness.json'), path.join(root, '검증상태.json'));
 for (const [from, to] of [

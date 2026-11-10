@@ -4,8 +4,9 @@ import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { adaptDocument, policies, documentLayouts } from './skill-adapters.mjs';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const productVersion = JSON.parse(await readFile('package.json', 'utf8')).version;
 const sources = {
-  local: ['L-Vibe', '0.2.0', '.'],
+  local: ['L-Vibe', productVersion, '.'],
   aegis: ['GanyuanRan/Aegis', 'e5f43c548a06c3f302c521a4c23f258296ccc947', 'vendor/sources/aegis'],
   openai: ['openai/skills', '49f948faa9258a0c61caceaf225e179651397431', '.cache/skill-sources/openai-skills'],
   anthropic: ['anthropics/skills', '2c5958ecac7cee2b583967a2c4981d0f4a75c579', '.cache/skill-sources/anthropic-skills'],

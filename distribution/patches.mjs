@@ -72,6 +72,7 @@ export const Logo = (props: { class?: string }) => <svg class={props.class} view
       { from: ${JSON.stringify(path.join(project, 'vendor/runtime'))}, to: "runtime", filter: ["windows-x64/openviking/**/*", "windows-x64/rea/**/*"] },
       { from: ${JSON.stringify(path.join(project, 'agent-config.example.json'))}, to: "l-vibe/agent-config.example.json" },
       { from: ${JSON.stringify(path.join(project, 'vendor/skills'))}, to: "l-vibe/skills", filter: ["**/*", "!doc-coauthoring{,/**/*}"] },
+      { from: ${JSON.stringify(path.join(project, 'skills-lock.json'))}, to: "l-vibe/skills-lock.json" },
       { from: ${JSON.stringify(path.join(project, 'distribution/methodology'))}, to: "l-vibe/methodology" },
     ],
     npmRebuild: false,
@@ -103,6 +104,7 @@ export function prepareNative(options: {
 export function getRuntime(): {
   connection(command: readonly string[]): Promise<Credentials>;
   authorizeProject(directory: string): Promise<void>;
+  status(): { knowledge?: { status: string; skills?: { status: string; registered: number; total: number; conflicts: string[]; failed: string[]; message?: string } } };
   close(): Promise<void>;
 };
 export function replaceConfiguration(text: string): Promise<void>;

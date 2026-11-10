@@ -92,7 +92,7 @@ export class NativeRuntime {
       const skillDirectory = path.join(this.resources, 'l-vibe/skills');
       const manifest = await readFile(path.join(skillDirectory, 'manifest.json'), 'utf8').then(text => JSON.parse(text) as { skills: Array<{ id: string; directory: string }> }).catch(() => undefined);
       this.engineConfig = JSON.stringify(engineConfiguration(config, this.models, manifest?.skills.map(s => s.directory), manifest ? skillDirectory : undefined, this.tools));
-      this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => {});
+      this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => {}, undefined, skillDirectory);
       await this.knowledge.configure(config);
       if (config.openViking?.enabled && this.knowledge.state().status !== 'ready')
         throw new Error(this.knowledge.state().message ?? 'OpenViking을 시작할 수 없습니다.');

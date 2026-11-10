@@ -4,7 +4,7 @@ Upstream: L-Vibe original guidance
 
 Original authors: L-Vibe contributors
 
-Commit: 0.2.0
+Commit: 0.2.1
 
 License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by L-Vibe contributors.
 
