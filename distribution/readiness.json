@@ -1,10 +1,8 @@
 {
   "schemaVersion": 1,
-  "stage": "desktop-foundation",
+  "stage": "native-config-and-owned-engine",
   "releaseReady": false,
   "blockers": [
-    "Bind native encrypted configuration and model gateways to the v2 provider/model UI.",
-    "Replace the private but persistent upstream service with an app-owned server lifecycle and validated child environment.",
     "Bind the approval broker and stop/replay state to v2 sessions and tool events.",
     "Wire and validate pinned OpenViking, Serena/clangd, REA, Graphify and skill adapters.",
     "Audit external network and arbitrary plugin paths; observe DNS/TCP on isolated Windows VMs.",

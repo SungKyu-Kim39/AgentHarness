@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "name": "@opencode/cli-windows-x64-baseline",
+      "version": "2.2.6",
+      "url": "https://registry.npmjs.org/@opencode/cli-windows-x64-baseline/-/cli-windows-x64-baseline-2.2.6.tgz",
+      "integrity": "sha512-wjj3zDmM6JCPXafftTvWBD2tQj7FLyJUkMGtMDNG8vKDKOYqgcb9S//qyQxz5pWhbRBXK6yXNc6WQtWntxUclA==",
+      "sha256": "c21c9aaa61053aec0b161ebbe1cc418e82e12dec5e6ef397c4a888424270d42a",
+      "license": "MIT"
+    },
+    {
+      "name": "@opencode/cli-linux-x64-baseline",
+      "version": "2.2.6",
+      "url": "https://registry.npmjs.org/@opencode/cli-linux-x64-baseline/-/cli-linux-x64-baseline-2.2.6.tgz",
+      "integrity": "sha512-GA7bnrvfJHOHXWsoiGLzzt2SKcL2oMD5LhHIyfQUP14L2XXpxzG/S8QoEMor1m/q9961f9nv4dTqYr9vuMOSjA==",
+      "sha256": "00d8b036689fc35927d8f20f57000d5c091fe7a5a3345fef5326f330bfe6d0ce",
+      "license": "MIT"
+    },
+    {
+      "name": "@lydell/node-pty-win32-x64",
+      "version": "1.2.0-beta.12",
+      "url": "https://registry.npmjs.org/@lydell/node-pty-win32-x64/-/node-pty-win32-x64-1.2.0-beta.12.tgz",
+      "integrity": "sha512-IDFa00g7qUDGUYgByrUBJtC+mOjYVt/8KYyWivCg5JjGOHbBUACUQZLl0jTWmnr+tld/UyTpX90a2PY6oTVtRw==",
+      "sha256": "88fb6655b0493e5e7abaeca53bec0078b99e76a94398562fbcf1c2bb4ddb887c",
+      "license": "MIT"
+    },
+    {
+      "name": "ghostty-web",
+      "commit": "e91e38a9ceb13c566ddfa15185a9393849f712a9",
+      "url": "https://codeload.github.com/anomalyco/ghostty-web/legacy.tar.gz/e91e38a9ceb13c566ddfa15185a9393849f712a9",
+      "integrity": "sha512-EUTn6D7Pc61P8EA4qFiy1KNXW8ORr23mkerDdyZR6ngDh0do/m1QP++t/uzzw6kRpxMes1gRifxjbTvdU7w++Q==",
+      "sha256": "b5d44d44ec4571fbd2bf12f5fd6cd320d2b3793fe55665f2056250afb7623530",
+      "license": "MIT"
+    }
+  ]
+}

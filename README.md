@@ -6,6 +6,10 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 사내 바이브 코�
 
 새 설계는 여러 사내 LLM 선택과 한 개의 OpenViking 임베딩을 지원하도록 합니다. OpenViking·Serena·REA·Graphify·Aegis·Conductor·선별한 개발 스킬은 폐쇄망 고정 번들 대상으로 관리합니다. 새 Desktop에서 실제 연결·Windows·사내 모델 검증을 마치기 전에는 이관 또는 1.0 완료로 표시하지 않습니다.
 
+모델 JSON은 OpenCode v2의 `providers → settings / models` 형식을 사용합니다. [설정 예제](agent-config.example.json)의 `settings.baseURL`, `settings.apiKey`, `models.<별칭>.modelID`를 사내 값으로 편집합니다. `APIKey` 표기도 허용합니다. `model`은 `{ "providerID": "intranet", "model": "model-1" }`처럼 기본 모델의 별칭을 선택합니다. capabilities·cost·limit는 유지하며, OpenViking 임베딩은 별도의 `openViking.embedding` 한 개입니다. 실제 키는 Git에 넣지 않습니다.
+
+반입 묶음은 TGZ 안에 설치 EXE·자리표시자 설정 JSON·한국어 안내·해시·라이선스를 담습니다. 설치 후 `%APPDATA%\L-Vibe\config-import.json`을 편집하고 실행하면 검증·암호화한 뒤 준비 평문을 삭제합니다. 이전 설정이 있으면 유지하며 교체는 파일 선택으로 명시적으로 수행합니다. 빌드는 Windows 검증 후보를 만들 수 있고, `distribution/readiness.json`은 별도로 출시 검증 상태를 기록합니다.
+
 공식 소스 준비와 초기 패치 검증:
 
 ```sh
@@ -16,7 +20,7 @@ npm run verify
 
 `upstream-lock.json`의 커밋·archive·경계 파일을 검증한 뒤 `.cache/l-vibe-desktop/source`에 수정 소스를 준비합니다. 원본 전체를 Git에 복제하지 않고 고정 lock과 검토 가능한 overlay를 관리합니다. 이 다운로드는 빌드 PC에서만 수행합니다. 초기 점검과 남은 이관은 [upstream 점검 기록](docs/upstream-audit.md)을 확인하세요.
 
-`dev`, `start`, `build`, `package:win`은 새 Desktop 경로입니다. native 설정·서버 수명·정책 이관과 Windows 검증이 끝나기 전에는 `distribution/readiness.json`의 차단 항목을 표시하고 중단합니다. 아래 원형 기록의 실행 명령은 `dev:prototype`, `build:prototype`, `start:prototype`, `test:ui:prototype`으로 분리했습니다. 원형의 설치본을 새 배포판으로 제공하지 않습니다.
+`dev`, `start`, `build`, `package:win`은 새 Desktop 경로입니다. Windows 검증 전 빌드는 검증 후보로 표시합니다. 아래 원형 기록의 실행 명령은 `dev:prototype`, `build:prototype`, `start:prototype`, `test:ui:prototype`으로 분리했습니다. 원형의 설치본을 새 배포판으로 제공하지 않습니다.
 
 아래는 이관 전 원형의 사용·검증 기록입니다.
 

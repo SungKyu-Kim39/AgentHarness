@@ -11,16 +11,52 @@ export const openVikingSchema = z.object({
   vlm: z.object({ baseUrl: endpoint, apiKey: z.string().trim().min(1).max(8192), id: z.string().trim().min(1).max(256) }).strict().optional(),
 }).strict();
 const modelSchema = z.object({ baseUrl: endpoint, apiKey: z.string().trim().min(1).max(8192), id: z.string().trim().min(1).max(256) }).strict();
-const namedModelSchema = modelSchema.extend({ name: z.string().trim().min(1).max(128) }).strict();
-export const configSchema = z.object({
-  schemaVersion: z.union([z.literal(1), z.literal(2)]), model: modelSchema.optional(),
+const namedModelSchema = modelSchema.extend({ name: z.string().trim().min(1).max(128), providerID: z.string().optional(), modelKey: z.string().optional() }).strict();
+const providerSettings = z.object({
+  baseURL: endpoint, apiKey: z.string().trim().min(1).max(8192).optional(), APIKey: z.string().trim().min(1).max(8192).optional(),
+}).passthrough().superRefine((data, ctx) => {
+  if (!data.apiKey && !data.APIKey) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['apiKey'], message: 'settings.apiKey 또는 APIKey를 입력하세요.' });
+  if (data.apiKey && data.APIKey && data.apiKey !== data.APIKey) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['APIKey'], message: 'apiKey와 APIKey의 값이 다릅니다.' });
+});
+const providerModel = z.object({
+  name: z.string().min(1).max(128).optional(), modelID: z.string().min(1).max(256).optional(),
+  capabilities: z.object({ tools: z.boolean().optional(), input: z.array(z.enum(['text', 'image', 'audio', 'video', 'pdf'])).optional(), output: z.array(z.enum(['text', 'image', 'audio', 'video', 'pdf'])).optional() }).passthrough().optional(),
+  cost: z.object({ input: z.number().nonnegative(), output: z.number().nonnegative(), cache: z.object({ read: z.number().nonnegative(), write: z.number().nonnegative() }).optional() }).optional(),
+  limit: z.object({ context: z.number().int().positive().optional(), input: z.number().int().positive().optional(), output: z.number().int().positive().optional() }).optional(),
+  settings: z.record(z.unknown()).optional(),
+}).passthrough();
+const providerSchema = z.object({
+  name: z.string().min(1).max(128).optional(), package: z.literal('@opencode/ai/providers/openai-compatible').default('@opencode/ai/providers/openai-compatible'),
+  env: z.array(z.string().min(1).max(128)).max(32).optional(), settings: providerSettings,
+  models: z.record(z.string().min(1).max(256).refine(value => !value.includes('#')), providerModel).refine(value => Object.keys(value).length > 0 && Object.keys(value).length <= 32),
+}).strict();
+const selectionSchema = z.union([z.string().min(3), z.object({ providerID: z.string().min(1), model: z.string().min(1), variant: z.string().optional() }).strict()]);
+const rawConfigSchema = z.object({
+  schemaVersion: z.union([z.literal(1), z.literal(2)]).default(2), model: z.union([modelSchema, selectionSchema]).optional(),
+  providers: z.record(z.string().min(1).max(128).refine(value => !/[\/#]/.test(value)), providerSchema).optional(),
   models: z.array(namedModelSchema).min(1).max(32).optional(), defaultModel: z.string().max(128).optional(), openViking: openVikingSchema.optional(),
-}).strict().superRefine((data, ctx) => {
-  if (!data.model && !data.models?.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['models'], message: 'LLM 모델을 한 개 이상 등록하세요.' });
+}).strict();
+type RawConfig = z.infer<typeof rawConfigSchema>;
+type ConfiguredModel = z.infer<typeof namedModelSchema>;
+export type AgentConfig = Omit<RawConfig, 'model' | 'models'> & { model: z.infer<typeof modelSchema>; models?: ConfiguredModel[] };
+export const configSchema = rawConfigSchema.superRefine((data, ctx) => {
+  if (!data.model && !data.models?.length && !Object.keys(data.providers ?? {}).length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['providers'], message: 'LLM 모델을 한 개 이상 등록하세요.' });
   if (data.models && new Set(data.models.map(m => m.name)).size !== data.models.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['models'], message: 'LLM 표시 이름은 고유해야 합니다.' });
-  if (data.defaultModel && !data.models?.some(m => m.name === data.defaultModel)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultModel'], message: '등록된 모델 이름을 선택하세요.' });
-}).transform(data => ({ ...data, model: data.models?.find(m => m.name === data.defaultModel) ?? data.models?.[0] ?? data.model! }));
-export type AgentConfig = z.infer<typeof configSchema>;
+  if (data.defaultModel && !data.providers && !data.models?.some(m => m.name === data.defaultModel)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultModel'], message: '등록된 모델 이름을 선택하세요.' });
+  if (data.model && (typeof data.model === 'string' || 'providerID' in data.model)) {
+    const selection = typeof data.model === 'string' ? { providerID: data.model.split('/')[0], model: data.model.slice(data.model.indexOf('/') + 1) } : data.model;
+    if (!data.providers?.[selection.providerID]?.models[selection.model]) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['model'], message: '등록된 providers와 models의 별칭을 지정하세요.' });
+  }
+}).transform((data): AgentConfig => {
+  const fromProviders = Object.entries(data.providers ?? {}).flatMap(([providerID, provider]) => Object.entries(provider.models).map(([modelKey, definition]) => ({
+    name: `${provider.name ?? providerID} · ${definition.name ?? modelKey}`.slice(0, 128), providerID, modelKey,
+    baseUrl: provider.settings.baseURL, apiKey: (provider.settings.apiKey ?? provider.settings.APIKey)!, id: definition.modelID ?? modelKey,
+  })));
+  const models = fromProviders.length ? fromProviders : data.models;
+  const selection = typeof data.model === 'string' ? { providerID: data.model.split('/')[0], model: data.model.slice(data.model.indexOf('/') + 1) } : data.model && 'providerID' in data.model ? data.model : undefined;
+  const model = models?.find(m => selection ? m.providerID === selection.providerID && m.modelKey === selection.model : m.name === data.defaultModel) ?? models?.[0] ?? (data.model as z.infer<typeof modelSchema>);
+  return { ...data, ...(models ? { models, defaultModel: models.find(m => m === model)?.name ?? data.defaultModel } : {}), model: { baseUrl: model.baseUrl, apiKey: model.apiKey, id: model.id } };
+});
 export type Phase =
   | "idle"
   | "running"

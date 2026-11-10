@@ -24,7 +24,7 @@ test('locked real upstream accepts a deterministic, syntactically valid Desktop 
   const first = await planPatches(root, project), second = await planPatches(root, project);
   assert.ok(first.changes.size > 10);
   assert.deepEqual([...first.changes].map(([f,b]) => [f,digest(b)]), [...second.changes].map(([f,b]) => [f,digest(b)]));
-  for (const [file, bytes] of first.changes) if (file.endsWith('.ts')) await transform(bytes.toString(), { loader: 'ts', target: 'esnext', format: 'esm' });
+  for (const [file, bytes] of first.changes) if (/\.tsx?$/.test(file)) await transform(bytes.toString(), { loader: file.endsWith('.tsx') ? 'tsx' : 'ts', target: 'esnext', format: 'esm' });
   const manifest = await applyPatches(root, project);
   for (const [file, sha] of Object.entries(manifest.files)) assert.equal(digest(await readFile(path.join(root, file))), sha);
   // The official authentication boundary is reused byte-for-byte.

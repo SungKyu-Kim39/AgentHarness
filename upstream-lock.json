@@ -32,6 +32,12 @@
     "packages/schema/src/config.ts": "807a70bae2c0d83812fe9722a6e1312ae2974a036d27e3b973c415291ecab1a5",
     "packages/schema/src/config/provider.ts": "3d792fa642760b7c6d8d4b043ccb2268ed8aae45c61d3d0239258849cb30342b",
     "packages/schema/src/config/policy.ts": "72586095738f791dc7cef2c3e134c19be9b85130d66fdaa0dbebb74e9530df52",
-    "packages/schema/src/permission.ts": "45b63a6d9f7619d9285663111f26a9a939d64683cac3272881e6dd196409bc1d"
+    "packages/schema/src/permission.ts": "45b63a6d9f7619d9285663111f26a9a939d64683cac3272881e6dd196409bc1d",
+    "packages/desktop/src/main/index.ts": "b0a106075ddbf44edcadcb01d99327b51ab71b8ec47cd30b300c04603d221904",
+    "packages/desktop/script/utils.ts": "764628712fedaaf8fb183d952d13495d3246b1d9cd1f53452c1ca2175db96396",
+    "packages/desktop/src/main/files/index.ts": "6d862981e5dc78e2abb39d2c22fba636aa68ae53147f4ebd33b1539f507fee2b",
+    "packages/gui-plugins/src/main.ts": "ca29584f8286c1f902c234d95195f22bec3b3c81d6c2136a9bd3b8c9cefa3af4",
+    "packages/gui-plugins/src/renderer.ts": "f0775678e22784e8f884b01b7c79a5dafbef5c46afe1dc39aefa4d131a45839a",
+    "packages/ui/src/components/logo.tsx": "eaa160ae3d3e54f184694f361185c6b0f5a923a5b23bc5fbffd810cfef37838a"
   }
 }

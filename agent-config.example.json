@@ -1,6 +1,31 @@
 {
-  "schemaVersion": 1,
-  "model": { "baseUrl": "https://model.internal.example/v1", "apiKey": "REPLACE_AT_DISTRIBUTION", "id": "REPLACE_WITH_SERVER_MODEL_ID" },
+  "schemaVersion": 2,
+  "model": { "providerID": "intranet", "model": "model-1" },
+  "providers": {
+    "intranet": {
+      "name": "사내 코딩 모델",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "env": ["VLLM_KEY_1"],
+      "settings": { "baseURL": "https://model.internal.example/v1", "apiKey": "REPLACE_WITH_API_KEY" },
+      "models": {
+        "model-1": {
+          "name": "코딩 모델",
+          "modelID": "REPLACE_WITH_SERVER_MODEL_ID",
+          "capabilities": { "tools": true, "input": ["text"], "output": ["text"] },
+          "limit": { "context": 32768, "output": 4096 }
+        }
+      }
+    },
+    "intranet-secondary": {
+      "name": "사내 보조 모델",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "env": [],
+      "settings": { "baseURL": "https://second-model.internal.example/v1", "apiKey": "REPLACE_WITH_API_KEY" },
+      "models": {
+        "model-2": { "name": "보조 모델", "modelID": "REPLACE_WITH_SECOND_SERVER_MODEL_ID", "capabilities": { "tools": true, "input": ["text"], "output": ["text"] } }
+      }
+    }
+  },
   "openViking": {
     "enabled": true,
     "embedding": { "baseUrl": "https://embedding.internal.example/v1", "apiKey": "REPLACE_AT_DISTRIBUTION", "id": "EXACT_EMBEDDING_MODEL_ID", "dimension": 1024 }

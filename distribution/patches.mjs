@@ -1,6 +1,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
+import { build } from 'esbuild';
 export const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 const once = (text, before, after) => {
   if (text.split(before).length !== 2) throw new Error(`Upstream patch anchor changed: ${before.slice(0, 90)}`);
@@ -18,6 +19,25 @@ export async function planPatches(root, project) {
   }
   const changes = new Map();
   const edit = (file, transform) => changes.set(file, Buffer.from(transform(originals.get(file))));
+  edit('packages/desktop/src/main/index.ts', text => once(text, '    marks.ready = Date.now()', '    const { prepareLVibe } = await import("./l-vibe-startup")\n    if (!await prepareLVibe()) { app.quit(); return }\n    marks.ready = Date.now()'));
+  edit('packages/desktop/script/utils.ts', text => once(text, 'process.platform === "win32" ? ".exe" : ""', 'getCurrentCli().os === "win32" ? ".exe" : ""'));
+  edit('packages/desktop/src/main/files/index.ts', text => {
+    text = 'import { getRuntime } from "../l-vibe-control.mjs"\n' + text;
+    return once(text, '      if (result.canceled) return null\n\n      return options?.multiple', '      if (result.canceled) return null\n      yield* Effect.promise(() => Promise.all(result.filePaths.map(directory => getRuntime().authorizeProject(directory))))\n\n      return options?.multiple');
+  });
+  for (const file of ['packages/gui-plugins/src/main.ts', 'packages/gui-plugins/src/renderer.ts']) {
+    edit(file, text => {
+      const disabled = ['debug', 'terminal', 'browser', 'pairing', 'updater', 'ssh', 'wsl', 'microsoftOffice', 'sources'];
+      return text.split('\n').filter(line => !disabled.some(id => line.startsWith(`import ${id} `) || line.startsWith(`import ${id}Renderer `) || new RegExp(`^  ${id}:|^  ${id},`).test(line)) && !line.startsWith('  "microsoft-office":')).join('\n');
+    });
+  }
+  const logo = 'data:image/png;base64,' + (await readFile(path.join(project, 'assets/lig-icon.png'))).toString('base64');
+  changes.set('packages/ui/src/components/logo.tsx', Buffer.from(`import type { ComponentProps } from "solid-js"
+const icon = ${JSON.stringify(logo)}
+export const Mark = (props: { class?: string }) => <svg data-component="logo-mark" class={props.class} viewBox="0 0 42 42" aria-label="L-Vibe"><image href={icon} width="42" height="42" /></svg>
+export const Splash = (props: Pick<ComponentProps<"svg">, "ref" | "class">) => <svg ref={props.ref} data-component="logo-splash" class={props.class} viewBox="0 0 100 100" aria-label="L-Vibe"><image href={icon} width="100" height="100" /></svg>
+export const Logo = (props: { class?: string }) => <svg class={props.class} viewBox="0 0 234 42" aria-label="L-Vibe"><image href={icon} width="42" height="42" /><text x="52" y="32" fill="currentColor" font-size="32" font-weight="700">L-Vibe</text></svg>
+`));
   edit('packages/desktop/src/main/constants.ts', text => text.replaceAll('OpenCode Dev', 'L-Vibe Dev').replaceAll('OpenCode Beta', 'L-Vibe Beta').replaceAll('"OpenCode"', '"L-Vibe"').replaceAll('ai.opencode.desktop', 'com.lig.l-vibe'));
   edit('packages/desktop/src/main/lifecycle/configure.ts', text => {
     text = once(text, 'import { homedir, tmpdir } from "node:os"', 'import { tmpdir } from "node:os"');
@@ -48,6 +68,13 @@ export async function planPatches(root, project) {
     productName: "L-Vibe",
     artifactName: "L-Vibe-\${version}-\${os}-\${arch}.\${ext}",
     extraMetadata: { ...upstream.extraMetadata, name: "l-vibe" },
+    extraResources: [...(upstream.extraResources ?? []),
+      { from: ${JSON.stringify(path.join(project, 'vendor/runtime'))}, to: "runtime", filter: ["windows-x64/**/*"] },
+      { from: ${JSON.stringify(path.join(project, 'agent-config.example.json'))}, to: "l-vibe/agent-config.example.json" },
+      { from: ${JSON.stringify(path.join(project, 'vendor/skills'))}, to: "l-vibe/skills", filter: ["**/*", "!doc-coauthoring{,/**/*}"] },
+      { from: ${JSON.stringify(path.join(project, 'distribution/methodology'))}, to: "l-vibe/methodology" },
+    ],
+    npmRebuild: false,
     publish: null,
     protocols: { name: "L-Vibe", schemes: ["l-vibe"] },
     nsis: {
@@ -56,12 +83,29 @@ export async function planPatches(root, project) {
       allowElevation: false,
       packElevateHelper: false,
       deleteAppDataOnUninstall: false,
+      runAfterFinish: false,
     },
   } satisfies Configuration
 }
 
 export default getConfig()`);
   });
+  const native = await build({ entryPoints: [path.join(project, 'distribution/native-control.ts')], bundle: true, platform: 'node', format: 'esm', target: 'node22', write: false });
+  changes.set('packages/desktop/src/main/l-vibe-control.mjs', native.outputFiles[0].contents);
+  changes.set('packages/desktop/src/main/l-vibe-control.d.mts', Buffer.from(`export interface Credentials { url: string; password: string }
+export interface Cipher { isEncryptionAvailable(): boolean; encryptString(value: string): Buffer; decryptString(value: Buffer): string }
+export function prepareNative(options: {
+  root: string; resources: string; cipher: Cipher;
+  decide: (message: string, hasStored: boolean) => Promise<'retry' | 'edit' | 'import' | 'cancel'>;
+  select: () => Promise<string | undefined>; edit: (file: string) => void;
+  approve?: (message: string, detail: string) => Promise<boolean>;
+}): Promise<boolean>;
+export function getRuntime(): {
+  connection(command: readonly string[]): Promise<Credentials>;
+  authorizeProject(directory: string): Promise<void>;
+  close(): Promise<void>;
+};
+`));
   edit('packages/desktop/script/pack.ts', text => {
     const start = text.indexOf('async function writeUpdateConfig(resources: string) {');
     if (start < 0) throw new Error('Update metadata writer changed');
@@ -80,6 +124,8 @@ await cp("resources/l-vibe/icon.ico", destination + "/icon.ico")
 `));
   for (const [source, target] of [
     ['distribution/l-vibe-environment.ts', 'packages/desktop/src/main/lifecycle/l-vibe.ts'],
+    ['distribution/native-startup.ts', 'packages/desktop/src/main/l-vibe-startup.ts'],
+    ['distribution/native-background-service.ts', 'packages/desktop/src/main/service/background-service.ts'],
     ['distribution/windows-installer.nsh', 'packages/desktop/resources/windows/installer.nsh'],
     ['assets/lig-icon.png', 'packages/desktop/resources/l-vibe/icon.png'],
     ['assets/lig-icon.ico', 'packages/desktop/resources/l-vibe/icon.ico'],
