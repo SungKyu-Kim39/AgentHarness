@@ -2,6 +2,8 @@
 
 [설치 EXE · 폐쇄망 반입 TGZ 다운로드](downloads/README.md)
 
+[다른 PC에서 개발 이어가기 · 작업 인계서](HANDOFF.md)
+
 Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배포판**입니다. 공식 Desktop/엔진 v2.2.6을 고정하고, 사내 모델 설정·승인 중계·로컬 서비스를 결합합니다. 기존 PC의 OpenCode·Zed·개인 설정·플러그인을 읽거나 복제하지 않습니다.
 
 공개된 0.2.1은 설치·모델·로컬 도구의 **검증 후보**입니다. work 브랜치의 0.2.2 소스에는 MCP 6종을 연결했으나 Windows 브라우저 반입 파일 확보가 차단되어 새 EXE/TGZ는 아직 발행하지 않았습니다. [MCP 구현·검증 상태](docs/mcp-validation.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
