@@ -1,0 +1,11 @@
+node_modules/
+dist/
+release/
+artifacts/
+vendor/runtime/
+vendor/sources/
+.cache/
+*.log
+agent-config.json
+!agent-config.example.json
+test-results/

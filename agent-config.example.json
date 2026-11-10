@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "model": { "baseUrl": "https://model.internal.example/v1", "apiKey": "REPLACE_AT_DISTRIBUTION", "id": "REPLACE_WITH_SERVER_MODEL_ID" },
+  "openViking": {
+    "enabled": true,
+    "embedding": { "baseUrl": "https://embedding.internal.example/v1", "apiKey": "REPLACE_AT_DISTRIBUTION", "id": "EXACT_EMBEDDING_MODEL_ID", "dimension": 1024 }
+  }
+}

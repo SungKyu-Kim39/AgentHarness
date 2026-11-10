@@ -1,0 +1,101 @@
+{
+  "name": "l-vibe",
+  "productName": "L-Vibe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "폐쇄망 개발 지원 데스크톱 에이전트",
+  "license": "MIT",
+  "author": "SungKyu Kim",
+  "type": "module",
+  "main": "dist/main/index.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "verify": "npm run typecheck && npm test && npm run build",
+    "start": "electron .",
+    "vendor:fetch": "node scripts/vendor.mjs fetch",
+    "vendor:verify": "node scripts/vendor.mjs verify",
+    "package:win": "npm run build && npm run vendor:verify && electron-builder --win nsis --x64 --publish never",
+    "preview": "vite --host 0.0.0.0",
+    "test:ui": "node scripts/ui-smoke.mjs",
+    "format": "prettier --write src scripts tests vite.config.ts tsconfig.json package.json"
+  },
+  "dependencies": {
+    "diff": "8.0.2",
+    "lucide-react": "0.468.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/diff": "7.0.2",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vitejs/plugin-react": "5.1.0",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "prettier": "3.6.2",
+    "esbuild": "0.25.12",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "vite": "7.2.2",
+    "playwright": "1.56.1"
+  },
+  "build": {
+    "appId": "com.lig.l-vibe",
+    "productName": "L-Vibe",
+    "asar": true,
+    "toolsets": {
+      "wine": "1.0.1"
+    },
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/runtime/windows-x64",
+        "to": "runtime/windows-x64"
+      },
+      {
+        "from": "vendor/runtime/manifest.json",
+        "to": "runtime/manifest.json"
+      },
+      {
+        "from": "vendor/sources",
+        "to": "methodologies"
+      },
+      {
+        "from": "vendor-lock.json",
+        "to": "vendor-lock.json"
+      },
+      {
+        "from": "vendor/LICENSE.OpenCode.txt",
+        "to": "licenses/OpenCode.txt"
+      },
+      {
+        "from": "vendor/THIRD_PARTY_NOTICES.md",
+        "to": "licenses/THIRD_PARTY_NOTICES.md"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "signAndEditExecutable": false,
+      "artifactName": "L-Vibe-${version}-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "packElevateHelper": false,
+      "deleteAppDataOnUninstall": false,
+      "include": "installer/custom.nsh"
+    }
+  }
+}
