@@ -9,6 +9,7 @@ const folder = `L-Vibe-${version}-windows-x64`;
 const root = path.join(output, folder);
 const exe = `L-Vibe-${version}-win-x64.exe`;
 if ((await stat(path.join(output, exe))).size < 10 * 1024 * 1024) throw new Error('Full installer is missing');
+execFileSync('python3', [path.join(project, 'scripts/bundle-mcp.py'), 'verify'], { cwd: project, stdio: 'inherit' });
 execFileSync('git', ['diff', '--quiet'], { cwd: project });
 execFileSync('git', ['diff', '--cached', '--quiet'], { cwd: project });
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: project, encoding: 'utf8' }).trim();
@@ -28,7 +29,7 @@ for (const [from, to] of [
   ['vendor/runtime/windows-x64/rea/LICENSE', 'REA-LICENSE'], ['vendor/runtime/windows-x64/rea/THIRD_PARTY_NOTICES.md', 'REA-THIRD_PARTY-NOTICES.md'],
   ['distribution/methodology/aegis-LICENSE', 'Aegis-LICENSE'], ['distribution/methodology/conductor-LICENSE', 'Conductor-LICENSE'],
 ]) await cp(path.join(project, from), path.join(root, 'licenses', to));
-for (const file of ['upstream-lock.json', 'desktop-runtime-lock.json', 'python-runtime-lock.json', 'rea-runtime-lock.json', 'skills-lock.json'])
+for (const file of ['upstream-lock.json', 'desktop-runtime-lock.json', 'python-runtime-lock.json', 'rea-runtime-lock.json', 'skills-lock.json', 'mcp-runtime-lock.json', 'mcp-node-lock.json'])
   await cp(path.join(project, file), path.join(root, 'licenses', file));
 execFileSync('git', ['archive', '--format=tar.gz', '--output', path.join(root, 'source', 'L-Vibe-' + commit.slice(0, 12) + '-source.tgz'), commit], { cwd: project });
 const readiness = JSON.parse(await readFile(path.join(project, 'distribution/readiness.json'), 'utf8'));
@@ -37,7 +38,7 @@ await writeFile(path.join(root, 'bundle-manifest.json'), JSON.stringify({
   createdAt: new Date().toISOString(), releaseReady: readiness.releaseReady,
   setup: ['extract TGZ', 'run installer EXE', 'edit and save the JSON opened by the installer', 'launch L-Vibe'],
   requiresEmployeePackageInstall: false, includesModelWeights: false, includesRealCredentials: false,
-  components: { desktop: 'OpenCode 2.2.6', electron: '44.9.1', python: '3.12.16', openViking: '0.5.4', graphify: '0.9.105', rea: '6.8.0' },
+  components: { desktop: 'OpenCode 2.2.6', electron: '44.9.1', python: '3.12.16', openViking: '0.5.4', graphify: '0.9.105', rea: '6.8.0', mcp: JSON.parse(await readFile(path.join(project, 'vendor/runtime/windows-x64/mcp/manifest.json'), 'utf8')).versions },
 }, null, 2) + '\n');
 const checksums = [];
 async function files(relative = '') {

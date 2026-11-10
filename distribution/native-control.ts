@@ -87,7 +87,9 @@ export class NativeRuntime {
       const redactor = new Redactor();
       for (const model of configured) redactor.add(model.apiKey);
       if (config.openViking) { redactor.add(config.openViking.embedding.apiKey); if (config.openViking.vlm) redactor.add(config.openViking.vlm.apiKey); }
-      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), approve: (message, detail, signal) => this.approve(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor });
+      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), approve: (message, detail, signal) => this.approve(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor,
+        reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
+      });
       await this.tools.start();
       const skillDirectory = path.join(this.resources, 'l-vibe/skills');
       const manifest = await readFile(path.join(skillDirectory, 'manifest.json'), 'utf8').then(text => JSON.parse(text) as { skills: Array<{ id: string; directory: string }> }).catch(() => undefined);

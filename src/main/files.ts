@@ -84,8 +84,8 @@ export class ProjectFiles {
       })) {
         if (
           entry.isSymbolicLink() ||
-          protectedParts.has(entry.name) ||
-          ["dist", "build", ".venv", "vendor"].includes(entry.name)
+          protectedParts.has(entry.name.toLowerCase()) ||
+          ["dist", "build", ".venv", "vendor"].includes(entry.name.toLowerCase())
         )
           continue;
         const next = relative ? `${relative}/${entry.name}` : entry.name;

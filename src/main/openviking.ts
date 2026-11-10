@@ -34,6 +34,7 @@ export class OpenVikingService implements KnowledgeService {
   private registration?: Promise<void>; private registrationAbort?: AbortController;
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
   state() { return structuredClone(this.value); }
+  localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
   private update(status: NonNullable<AppState['knowledge']>['status'], message?: string) { this.value.status = status; this.value.message = message; this.changed(); }
   configure(config?: AgentConfig) {
     this.operation = this.operation.catch(() => {}).then(async () => {

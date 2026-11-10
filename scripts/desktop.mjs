@@ -9,6 +9,7 @@ const preparedSource = path.join(cache, 'source');
 const lock = JSON.parse(await readFile(path.join(project, 'upstream-lock.json'), 'utf8'));
 const version = JSON.parse(await readFile(path.join(project, 'package.json'), 'utf8')).version;
 const overlays = ['distribution/patches.mjs', 'distribution/l-vibe-environment.ts', 'distribution/native-control.ts', 'distribution/host-tools.ts', 'distribution/sidecar-proxy.ts', 'distribution/native-startup.ts', 'distribution/native-background-service.ts', 'distribution/native-pack.ts', 'src/shared/contracts.ts', 'src/main/config.ts', 'src/main/files.ts', 'src/main/skills.ts', 'src/main/model-gateway.ts', 'src/main/openviking.ts', 'src/main/openviking-gateway.ts', 'src/main/openviking-skills.ts', 'distribution/windows-installer.nsh', 'distribution/windows-installer.nsi', 'assets/lig-icon.png', 'assets/lig-icon.ico'];
+overlays.push('src/main/mcp-client.ts', 'src/main/mcp-extensions.ts', 'src/main/browser-proxy.ts', 'scripts/mcp-python-worker.py', 'scripts/mcp-node-worker.cjs', 'mcp-runtime-lock.json', 'mcp-node-lock.json');
 async function fingerprint() { return digest(Buffer.concat(await Promise.all(overlays.map(f => readFile(path.join(project, f)))))); }
 async function verify() {
   const manifest = JSON.parse(await readFile(path.join(preparedSource, '.l-vibe-patches.json'), 'utf8'));
@@ -60,6 +61,7 @@ const mode = process.argv[2];
 if (mode === 'prepare') await prepare();
 else if (mode === 'verify') await verify();
 else if (mode === 'build' || mode === 'package' || mode === 'dev') {
+  if (mode === 'package') execFileSync('python3', [path.join(project, 'scripts/bundle-mcp.py'), 'verify'], { cwd: project, stdio: 'inherit' });
   await verify();
   const readiness = JSON.parse(await readFile(path.join(project, 'distribution/readiness.json'), 'utf8'));
   if (readiness.releaseReady !== true) console.warn('Building a validation candidate; Windows release acceptance is pending.');

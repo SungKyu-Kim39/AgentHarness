@@ -16,6 +16,7 @@ export class PrivateMcpClient {
   private closed = false; private uncertain = false;
   constructor(readonly launch: McpLaunch) {}
   get stoppingUnconfirmed() { return this.uncertain; }
+  get stopping() { return !!this.closing; }
   private rejectPending(message: string) { for (const request of this.pending.values()) { request.cleanup(); request.reject(new Error(message)); } this.pending.clear(); }
   async start() {
     if (this.startTask) return this.startTask;
@@ -73,7 +74,7 @@ export class PrivateMcpClient {
     if (!this.launch.allowedTools.includes(name)) throw new Error('승인 중계에 등록되지 않은 MCP 도구입니다.');
     await this.start(); signal?.throwIfAborted(); this.bytes = 0;
     const result = await this.rpc('tools/call', { name, arguments: structuredClone(args) }, signal);
-    if (!Array.isArray(result?.content) || result.content.some((item: McpContent) => !['text', 'image'].includes(item.type))) throw new Error('지원하지 않는 MCP 응답 형식입니다.');
+    if (!Array.isArray(result?.content) || result.content.some((item: McpContent) => item.type === 'text' ? typeof item.text !== 'string' : item.type !== 'image' || !['image/png', 'image/jpeg'].includes(item.mimeType ?? '') || typeof item.data !== 'string' || item.data.length > 6 * 1024 * 1024 || !/^[A-Za-z0-9+/]*={0,2}$/.test(item.data))) throw new Error('지원하지 않는 MCP 응답 형식입니다.');
     return result;
   }
   close() {

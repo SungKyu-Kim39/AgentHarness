@@ -66,6 +66,21 @@
       ]
     }
   ],
+  "desktopExtensions": {
+    "scope": "Desktop 0.2.2 source; prototype runtime/source locks above remain historical",
+    "lockfile": "mcp-runtime-lock.json",
+    "nodeLockfile": "mcp-node-lock.json",
+    "serena": {
+      "repository": "https://github.com/oraios/serena",
+      "version": "2.1.0",
+      "releaseTag": "v2.1.0",
+      "commit": "5e4f5cd173c7ff3eed37ee3f1de6c266b937c5dc",
+      "usage": "host-read-only-tools-MCP; private snapshot; no REPL/dashboard/activation/telemetry; direct fixed clangd argv",
+      "sourceArchiveSha256": "312c8c7cb3fa70e3fa7fe4685e09594e31e9a9d7d090d59136a0faf2fa939a91",
+      "windowsAcceptance": "pending"
+    },
+    "installerStatus": "pending pinned browser download; existing 0.2.1 installer has no six-MCP bundle"
+  },
   "disabled": [
     "commands",
     "third-party-executable-plugins",

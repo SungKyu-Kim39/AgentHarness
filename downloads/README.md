@@ -11,3 +11,5 @@
 Windows 실환경 수용 검증 전 후보입니다. Serena/clangd, 명령 실행 및 새 Desktop의 재출력 등은 후속 구현입니다. [0.2.1 검증 보고서](../docs/validation-0.2.1.md)와 [스킬·MCP 조사](../docs/offline-extensions-research.md)를 확인하세요.
 
 이전 0.2.0 EXE/TGZ는 같은 폴더에 유지합니다. 해당 이전 설치본의 기본 스킬은 18개이며 자동 등록 기능은 없습니다.
+
+work 브랜치의 **0.2.2 소스**에는 MCP 6종을 연결했지만 새 EXE/TGZ는 아직 발행하지 않았습니다. 위 0.2.1 파일에는 새 MCP가 없습니다. [진행 상태와 차단 사유](../docs/mcp-validation.md)를 확인하세요.

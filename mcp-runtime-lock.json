@@ -292,7 +292,7 @@
       {
         "name": "proxy_tools",
         "version": "0.1.0",
-        "url": "file:///workspace/AgentHarness/.cache/mcp-build/pure-wheels/proxy_tools-0.1.0-py3-none-any.whl",
+        "url": "build-cache:proxy_tools-0.1.0-py3-none-any.whl",
         "sha256": "359a52d8cb5af5f51784e7521b7f778701cd5cb3d41be10877701da50f4e9921",
         "license": "MIT"
       },
@@ -1673,15 +1673,40 @@
   "archives": {
     "clangd": {
       "version": "23.1.0",
-      "url": "https://github.com/clangd/clangd/releases/download/23.1.0/clangd-windows-23.1.0.zip"
+      "url": "https://github.com/clangd/clangd/releases/download/23.1.0/clangd-windows-23.1.0.zip",
+      "sha256": "23412a240756a162e7b98a282f36aa2a23a88db5ce16a0cbc4fef7253768c810"
     },
     "git": {
       "version": "2.56.0.windows.4",
-      "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-64-bit.zip"
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.56.0.windows.4/MinGit-2.56.0.4-64-bit.zip",
+      "sha256": "e3bf78351fe777fba47ddee5950082f8a98bb0f02604fdc7ba3ee2cb68ffa877"
     },
     "browser": {
       "version": "157.0.8103.50",
       "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.50/win64/chrome-win64.zip"
+    }
+  },
+  "manifestSha256": "120a482315050c6d7fcf9280c63af179d3dbdbd047f7e51263222effa75f986d",
+  "nativePackages": {
+    "msvc-runtime": {
+      "version": "14.51.36231",
+      "url": "https://files.pythonhosted.org/packages/98/33/be9ef68901200813fc174a06758b4ae48ca4eb58fa783280dd879d5fd048/msvc_runtime-14.51.36231-cp312-cp312-win_amd64.whl",
+      "sha256": "89f70d1a37bb64164cdb09d02dd82d6b1400e1310be2995b4ed5a9f23efe2222",
+      "license": "Microsoft Visual Studio 2022 Distributable Code; bundled license applies; unmodified app-local DLLs"
+    }
+  },
+  "sourceArchives": {
+    "serena": {
+      "url": "https://files.pythonhosted.org/packages/32/ef/872f87ec7bff916d0653a9bc061e80b1b9ad3fa9d408903fdbea6a9a3ac4/serena_agent-2.1.0.tar.gz",
+      "sha256": "312c8c7cb3fa70e3fa7fe4685e09594e31e9a9d7d090d59136a0faf2fa939a91"
+    },
+    "git": {
+      "url": "https://codeload.github.com/git-for-windows/git/tar.gz/v2.56.0.windows.4",
+      "sha256": "34f83d6af52f09b997e295db337ede5bbd1613db4405c4b32a05fc9c5363758c"
+    },
+    "proxy-tools": {
+      "file": "distribution/mcp/wheels/proxy_tools-0.1.0.tar.gz",
+      "sha256": "ccb3751f529c047e2d8a58440d86b205303cf0fe8146f784d1cbcd94f0a28010"
     }
   }
 }

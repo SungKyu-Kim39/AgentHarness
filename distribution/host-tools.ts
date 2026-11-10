@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { ProjectFiles } from '../src/main/files';
 import { atomicJSON, Redactor } from '../src/main/config';
 import { OfflineSkills } from '../src/main/skills';
+import { McpExtensions, extensionTools } from '../src/main/mcp-extensions';
 import type { Proposal } from '../src/shared/contracts';
 import type { KnowledgeService } from '../src/main/openviking';
 
@@ -26,6 +27,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'knowledge_index', description: 'Index one project text file in local OpenViking after explicit native approval. Never upload conversations.', inputSchema: object({ path: string }, ['path']) },
   { name: 'graphify_analyze', description: 'Run pinned Graphify AST extraction on up to 50 selected project text files. Returns static nodes/edges; no LLM, browser, hosted graph or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 50 } }, ['paths']) },
   { name: 'rea_inspect', description: 'Run pinned Reverse Engineer Anything static analysis on a copied project artifact. Never executes the target. No debugger, device, browser, shell or arbitrary REA tool.', inputSchema: object({ path: string, kind: { type: 'string', enum: ['go', 'rust', 'python-pyc', 'electron-fuses', 'model'] } }, ['path', 'kind']) },
+  ...extensionTools,
 ];
 const pathArg = z.string().min(1).max(4096);
 export class HostTools {
@@ -35,12 +37,17 @@ export class HostTools {
   private operations = new Map<string, Set<AbortController>>();
   private cancelled = new Set<string>();
   readonly skills: OfflineSkills;
+  readonly extensions: McpExtensions;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     knowledge: () => KnowledgeService | undefined;
     redactor: Redactor;
-  }) { this.skills = new OfflineSkills(path.join(resources, 'l-vibe/skills')); }
+    reservedPorts?: () => number[];
+  }) {
+    this.skills = new OfflineSkills(path.join(resources, 'l-vibe/skills'));
+    this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
+  }
   async start() {
     await this.skills.load().catch(() => {});
     this.server = createServer(async (req, res) => {
@@ -62,7 +69,13 @@ export class HostTools {
           controllers.add(abort); this.operations.set(session, controllers);
           res.once('close', () => abort.abort());
           const work = this.call(input.params.name, input.params.arguments ?? {}, session, abort.signal); this.active.add(work);
-          try { result = { content: [{ type: 'text', text: this.options.redactor.text(await work) }] }; }
+          try {
+            const text = await work;
+            if (extensionTools.some(t => t.name === input.params.name)) {
+              const response = JSON.parse(text);
+              result = { isError: response.isError, content: response.content.map((item: { type: string; text?: string; data?: string; mimeType?: string }) => item.type === 'text' ? { type: 'text', text: this.options.redactor.text(item.text ?? '') } : { type: 'image', data: item.data, mimeType: item.mimeType }) };
+            } else result = { content: [{ type: 'text', text: this.options.redactor.text(text) }] };
+          }
           catch (error) { result = { isError: true, content: [{ type: 'text', text: this.options.redactor.text(error instanceof Error ? error.message : '도구 실행 실패') }] }; }
           finally { this.active.delete(work); controllers.delete(abort); if (!controllers.size) this.operations.delete(session); }
         } else { res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ jsonrpc: '2.0', id: input.id, error: { code: -32601, message: 'Method not found' } })); return; }
@@ -80,6 +93,7 @@ export class HostTools {
     if (!hostTools.some(t => t.name === name)) throw new Error('등록되지 않은 도구입니다.');
     const project = await this.options.project(session), files = new ProjectFiles(project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
+    if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (name === 'list_files') { z.object({}).strict().parse(args); return JSON.stringify(await files.list()); }
     if (name === 'read_file') { const a = z.object({ path: pathArg }).strict().parse(args); return files.read(a.path); }
     if (name === 'search_text') {
@@ -181,6 +195,7 @@ export class HostTools {
   async close() {
     this.accepting = false;
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
+    await this.extensions.close();
     for (const child of this.children) child.kill('SIGKILL');
     await Promise.allSettled(this.active);
     this.server?.closeAllConnections();

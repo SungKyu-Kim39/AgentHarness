@@ -69,7 +69,7 @@ export const Logo = (props: { class?: string }) => <svg class={props.class} view
     artifactName: "L-Vibe-\${version}-\${os}-\${arch}.\${ext}",
     extraMetadata: { ...upstream.extraMetadata, name: "l-vibe" },
     extraResources: [...(upstream.extraResources ?? []),
-      { from: ${JSON.stringify(path.join(project, 'vendor/runtime'))}, to: "runtime", filter: ["windows-x64/openviking/**/*", "windows-x64/rea/**/*"] },
+      { from: ${JSON.stringify(path.join(project, 'vendor/runtime'))}, to: "runtime", filter: ["windows-x64/openviking/**/*", "windows-x64/rea/**/*", "windows-x64/mcp/**/*"] },
       { from: ${JSON.stringify(path.join(project, 'agent-config.example.json'))}, to: "l-vibe/agent-config.example.json" },
       { from: ${JSON.stringify(path.join(project, 'vendor/skills'))}, to: "l-vibe/skills", filter: ["**/*", "!doc-coauthoring{,/**/*}"] },
       { from: ${JSON.stringify(path.join(project, 'skills-lock.json'))}, to: "l-vibe/skills-lock.json" },
