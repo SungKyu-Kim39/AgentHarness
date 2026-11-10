@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir, cp, rm, readdir, stat } from 'node:fs/promi
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
+import { fileHash, verifyInstallerAudit } from './installer-audit.mjs';
 const project = path.resolve(import.meta.dirname, '..');
 const output = path.join(project, 'release/desktop');
 const version = JSON.parse(await readFile(path.join(project, 'package.json'), 'utf8')).version;
@@ -21,12 +22,13 @@ await cp(path.join(project, 'agent-config.example.json'), path.join(root, 'agent
 await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, '시작하기.txt'));
 await cp(path.join(project, `docs/validation-${version}.md`), path.join(root, '검증보고서.md'));
 const audit = JSON.parse(await readFile(path.join(project, '.cache/packaged-runtime-audit.json'), 'utf8'));
-const mcpLock = JSON.parse(await readFile(path.join(project, 'mcp-runtime-lock.json'), 'utf8'));
-if (audit.mcp?.manifestSha256 !== mcpLock.manifestSha256) throw new Error('Actual packaged MCP runtime audit is missing or stale; do not reuse the 0.2.1 audit');
+await verifyInstallerAudit(audit, path.join(output, exe));
+const upstream = JSON.parse(await readFile(path.join(project, 'upstream-lock.json'), 'utf8'));
+if (await fileHash(path.join(project, '.cache/l-vibe-desktop/source/LICENSE')) !== upstream.files.LICENSE) throw new Error('OpenCode license differs from the locked upstream source');
 await cp(path.join(project, '.cache/packaged-runtime-audit.json'), path.join(root, 'runtime-audit.json'));
 await cp(path.join(project, 'distribution/readiness.json'), path.join(root, '검증상태.json'));
 for (const [from, to] of [
-  ['LICENSE', 'L-Vibe-LICENSE'], ['.cache/opencode-desktop/source/LICENSE', 'OpenCode-LICENSE'],
+  ['LICENSE', 'L-Vibe-LICENSE'], ['.cache/l-vibe-desktop/source/LICENSE', 'OpenCode-LICENSE'],
   ['vendor/runtime/windows-x64/openviking/licenses/openviking-0.5.4-source.tar.gz', 'OpenViking-0.5.4-corresponding-source.tar.gz'],
   ['vendor/runtime/windows-x64/openviking/licenses/packages.json', 'Python-packages.json'],
   ['vendor/runtime/windows-x64/rea/LICENSE', 'REA-LICENSE'], ['vendor/runtime/windows-x64/rea/THIRD_PARTY_NOTICES.md', 'REA-THIRD_PARTY-NOTICES.md'],

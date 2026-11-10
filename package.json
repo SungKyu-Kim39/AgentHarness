@@ -12,7 +12,7 @@
     "dev": "node scripts/desktop.mjs dev",
     "build": "node scripts/desktop.mjs build",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
     "verify": "npm run typecheck && npm run skills:verify && npm test && npm run desktop:verify",
     "skills:bundle": "node scripts/bundle-skills.mjs fetch",
     "skills:verify": "node scripts/bundle-skills.mjs verify",
@@ -34,7 +34,8 @@
     "bundle:mcp": "python3 scripts/bundle-mcp.py fetch",
     "mcp:verify": "python3 scripts/bundle-mcp.py verify",
     "test:mcp:live": "tsx scripts/test-mcp-live.ts",
-    "bundle:offline": "node scripts/offline-bundle.mjs"
+    "bundle:offline": "node scripts/offline-bundle.mjs",
+    "audit:installer": "node scripts/installer-audit.mjs"
   },
   "dependencies": {
     "diff": "8.0.2",

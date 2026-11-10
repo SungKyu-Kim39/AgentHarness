@@ -9,7 +9,7 @@
 | 최종 제품명 | **L-Vibe**. 이전 명칭 LIG Agent/L-Harness로 되돌리지 않는다 |
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
-| 이 문서 작성 전 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
+| MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
 | 소스 버전 | **0.2.2** |
 | 실제 공개된 설치 파일 | **0.2.1 EXE/TGZ**. 새 MCP 6종이 포함되지 않는다 |
 | 0.2.2 EXE/TGZ | **아직 생성·발행하지 않았다** |
@@ -17,6 +17,8 @@
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.2 검증 상태](docs/validation-0.2.2.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+
+**새 환경 재개 기록:** 원격 개발 소스, Bun/Node, Windows OpenViking·REA·MCP staging 및 Linux 회귀 검증 환경을 복원했다. 설치 검증 자동화를 보강한 뒤 `npm run verify` **48개 통과, 실패/건너뜀 0**을 재현했다. 현재 환경은 `storage.googleapis.com`과 `api.github.com`의 정책 403 때문에 브라우저 및 Desktop 의존성 설치가 막혀 있다. 두 호스트 허용 후 §8을 재개한다. 0.2.2 EXE/TGZ는 계속 미생성이다.
 
 ### 이어받는 AI에게 붙여 넣을 요청
 
@@ -106,6 +108,14 @@ git lfs pull --include='downloads/L-Vibe-0.2.1-*'
 
 일반 GitHub 소스 ZIP이나 LFS 미다운로드 clone의 EXE/TGZ 파일은 작은 pointer일 수 있다. 실제 파일 크기·옆의 `.sha256`과 대조한다. [다운로드 안내](downloads/README.md)를 사용한다. 지금까지 설치본은 **work/downloads의 Git LFS**로 게시했다. GitHub Releases에 새 버전이 있다고 가정하지 않는다.
 
+이미 clone된 폴더도 브랜치 이름만 믿지 말고 실제 커밋을 확인한다. 이 관리형 환경의 초기 `work`는 `1947a47`이었고 LICENSE만 있었다. 로컬 변경이 없는 것을 확인한 뒤 다음으로 원격 개발 소스를 복원했다.
+
+```sh
+git status --short
+GIT_LFS_SKIP_SMUDGE=1 git fetch origin work:refs/remotes/origin/work
+GIT_LFS_SKIP_SMUDGE=1 git merge --ff-only origin/work
+```
+
 ### Git에 없는 항목
 
 | 경로 | 내용 / 새 PC에서 할 일 |
@@ -141,6 +151,14 @@ Windows의 암호화된 `%APPDATA%\L-Vibe` 설정은 다른 PC/사용자에서 �
 다음은 **인터넷이 허용된 빌드 PC에서의 복구 순서**다. 빈 PC에서 모든 단계를 한 번에 자동 복원한 검증은 아직 없다. 실패하면 단계별로 원인을 해결하되 버전·해시를 임의로 완화하거나 최신 버전으로 바꾸지 않는다.
 
 ```sh
+# 관리형 환경에서 사용자 홈에 쓸 수 없으면 빌드 캐시만 작업 폴더로 지정한다.
+export npm_config_cache="$PWD/.cache/npm"
+export ELECTRON_CACHE="$PWD/.cache/electron"
+export ELECTRON_BUILDER_CACHE="$PWD/.cache/electron-builder"
+export BUN_INSTALL_CACHE_DIR="$PWD/.cache/bun"
+export UV_CACHE_DIR="$PWD/.cache/uv"
+# Node 24의 fetch가 관리형 환경의 기본 프록시를 사용하게 한다.
+export NODE_USE_ENV_PROXY=1
 npm ci
 
 # Linux x64에서 스크립트의 기본 Bun 경로를 준비하는 예시
@@ -247,6 +265,8 @@ npm run build
 
 현재 관리형 빌드 실행기의 공식 Chrome 다운로드는 정책 HTTP 403으로 차단되었다. 이 문서 작성 시에도 허용 호스트에 `storage.googleapis.com`가 없었다. **다른 PC까지 차단된다는 뜻은 아니다.** 새 PC에서 정상적인 네트워크 정책과 접근 가능 여부를 먼저 확인한다. 정책 거부가 있으면 해당 환경의 허용 도메인을 변경하고, 우회 프록시나 직원 PC 다운로드로 대체하지 않는다.
 
+새 환경 복구에서도 Chrome의 `storage.googleapis.com`과 Bun이 고정 Ghostty archive를 요청하는 `api.github.com` 모두 CONNECT HTTP 403을 확인했다. 두 호스트의 환경 허용 설정을 요청한 상태다. Desktop workspace의 `bun install --frozen-lockfile`은 후자에서 중단됐으므로 허용 후 다시 설치하고 `desktop-dependencies.py`를 실행한 뒤 타입 검사/빌드를 진행한다. 기존 lock을 바꾸거나 설치 완료로 취급하지 않는다.
+
 고정 Windows 파일:
 
 ```text
@@ -262,6 +282,7 @@ npm run desktop:prepare
 npm run verify
 npm run build
 npm run package:win
+npm run audit:installer
 ```
 
 새 브라우저 archive 해시와 완성 manifest가 lock에 기록되어야 한다. 이전 미완성 manifest와 값이 다른 것을 확인하고 실제 파일·라이선스·DLL을 검사한다. 최종 source/lock 변경은 커밋·푸시한다. 실패한 해시에 맞춰 기준값을 임의로 바꾸거나 `complete`를 직접 true로 바꾸지 않는다.
@@ -278,8 +299,8 @@ NSIS/7-Zip 의존성은 빌드 PC에서 확보한다. 현재 커스텀 NSIS 패�
 ### EXE 검사를 끝낸 뒤 TGZ 생성
 
 1. `7zz t` 또는 동등한 도구로 EXE archive를 검사한다. 실제 EXE에서 리소스를 추출해 OpenViking/Python·REA·스킬·**새 MCP 전체**를 각 고정 manifest와 대조한다. staging 검사만으로 EXE 내부 검사라고 기록하지 않는다.
-2. `.cache/packaged-runtime-audit.json`을 실제 새 설치 리소스 검사 결과로 작성한다. 이전 형식은 `openviking`, `rea`, `skills`, `cliSha256`을 기록했다. 새로 **`mcp.manifestSha256`**도 현재 `mcp-runtime-lock.json` 값과 일치해야 한다. 파일 수·버전·EXE 해시 등 검사 근거도 남긴다. 예전 0.2.1 audit를 그대로 복사하지 않는다. 이 audit를 완전히 자동 생성하는 전용 스크립트는 아직 없다.
-3. `scripts/offline-bundle.mjs`는 OpenCode 라이선스를 `.cache/opencode-desktop/source/LICENSE`에서 복사한다. 빈 새 PC에서는 경로가 없을 수 있다. `upstream-lock.json`으로 검증한 같은 원본의 LICENSE를 준비하거나 스크립트를 정식 생성 소스 경로로 수정·검증한다. 임의 다른 버전 파일로 채우지 않는다.
+2. `npm run audit:installer`가 EXE를 실행하지 않고 archive 검사·추출 후 앱 버전/AMD64, OpenViking·REA·MCP·34개 스킬의 manifest/파일 해시, 고정 Windows CLI, 설정 예제를 검사하고 `.cache/packaged-runtime-audit.json`을 만든다. 검사 로그는 `.cache/installer-test.log`, `.cache/installer-extract.log`다. TGZ 생성은 이 audit의 실제 EXE 크기/SHA-256, 앱 ASAR/실행 파일, 모든 런타임 manifest와 CLI를 현재 파일에 다시 대조한다. 다른 EXE나 staging 검증 기록을 재사용하지 않는다. 자동화의 회귀 검사는 통과했지만 **0.2.2 실제 EXE에 대한 실행은 EXE 생성 후 수행해야 한다.**
+3. `scripts/offline-bundle.mjs`는 정식 생성 소스인 `.cache/l-vibe-desktop/source/LICENSE`를 사용하며 `upstream-lock.json`의 원본 해시와 일치할 때만 복사한다. 예전 `.cache/opencode-desktop/source`는 설치 번들 생성에 필요하지 않다. 일반 회귀 검사의 원본 fixture로는 계속 사용한다.
 4. [docs/validation-0.2.2.md](docs/validation-0.2.2.md)에 실제 OS·명령·EXE 크기/SHA·리소스 검사 결과를 갱신하고 커밋한다. 기존 source/lock 변경도 모두 커밋되어 있어야 한다. bundle 스크립트는 tracked 파일 변경이 남으면 거부한다.
 5. 다음을 실행하고 archive 내용·해시·설정 예제·라이선스·대응 소스를 확인한다.
 

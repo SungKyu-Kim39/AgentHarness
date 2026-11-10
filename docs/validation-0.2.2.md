@@ -7,3 +7,16 @@ Windows용 Python·MCP별 site-packages·MinGit·clangd·MSVC DLL을 확보하�
 `npm run verify`에서 45개 테스트와 기본 스킬 34개 무결성 검사를 통과했다. 공식 Desktop 타입 검사는 2개 프로젝트·2,549개 파일에서 오류가 없고 main/preload/renderer 빌드도 성공했다. 종료 확인 실패 시 다른 서비스를 정리하고 새 실행을 차단하는 오류 경로를 포함한다. 일반 회귀 검사에는 원형 0.1의 반복·재출력 검사도 있으므로 새 Desktop의 미구현 기능 완료로 계산하지 않는다.
 
 Windows 10/11 설치·실제 DLL 로딩·6종 도구 호출·ACL·DPAPI·Job Object의 자식 종료·DNS/TCP 관찰·실제 사내 모델 검증과 새 Desktop의 남은 기능은 수용 전제다. `releaseReady`는 false다.
+
+## 새 관리형 환경에서 작업 재개 — 2026-11-10 UTC
+
+초기 커밋만 있던 로컬 폴더를 원격 `work`의 `6832d44`로 fast-forward하고 필요한 개발 캐시와 검증 환경을 다시 준비했다. Debian 13.6 x86_64, Node 24.22.1, Bun 1.4.4, 빌드용 CPython 3.12.14다. 직원용 Windows Python은 고정 3.12.16을 유지한다.
+
+- `npm run verify`: **48개 통과, 실패·건너뜀 0**, 타입 검사·기본 스킬 34개 무결성·공식 Desktop overlay 검증 통과. 기존 45개에 설치 검증 회귀 검사 3개를 추가했다. 실제 로컬 OpenViking 등록/재시작과 고정 v2 엔진의 승인 검사를 포함한다.
+- OpenViking/Python 63,060개, REA 9,019개 파일을 각 staging manifest와 대조했다. MCP 20,726개 파일의 manifest는 기존 미완성 해시를 유지하며 누락은 `browser/chrome-win64/chrome.exe` 하나다. 이 상태를 `mcp:verify`가 오류로 거부하는 것을 다시 확인했다.
+- `npm run audit:installer`를 추가했다. EXE archive 검사·추출 후 앱 버전/AMD64·OpenViking·REA·MCP·스킬·CLI·설정 예제를 검증하여 audit를 작성한다. TGZ 생성은 해당 EXE 크기/해시, 현재 앱 ASAR/실행 파일·모든 런타임 manifest·CLI와 audit를 다시 대조한다. 변조 파일, 미완성 MCP, 경로 이탈, 다른 EXE/staging/오래된 앱·런타임의 audit를 거부하는 회귀 검사를 통과했다.
+- TGZ의 OpenCode 라이선스를 정식 생성 소스 경로에서 가져오고 고정 upstream 해시를 확인하도록 수정했다.
+
+현재 `storage.googleapis.com`의 고정 Chrome과 `api.github.com`의 고정 Ghostty archive 요청은 CONNECT HTTP 403이다. Desktop workspace의 `bun install --frozen-lockfile`이 완료되지 않아 이 환경에서 새 Desktop 전체 타입 검사/빌드·패키징을 수행하지 못했다. 위 48개 검사는 루트 타입 검사와 overlay 검증이며 새 Desktop 전체 빌드 결과로 계산하지 않는다. 이번에 추가한 audit 자동화도 실제 0.2.2 EXE에는 아직 실행하지 않았다. 새 MCP 6종의 별도 Linux 실호출 기록은 이전 검증 환경의 결과이며 이번 환경에서 재실행했다고 표현하지 않는다.
+
+복구/검증 로그와 Linux 테스트 의존성 목록은 `.cache/resume-2026-11-10/`에 보관했다. 환경 허용 설정 후 인계서 §8의 순서로 Desktop 의존성 설치, Chrome 확보, 완성 bundle 검증·빌드·EXE 실검사·TGZ 생성을 진행한다. 공개 설치본은 계속 0.2.1이며 `releaseReady`도 false다.
