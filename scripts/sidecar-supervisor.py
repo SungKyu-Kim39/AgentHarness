@@ -41,7 +41,11 @@ def main():
                              creationflags=0x08000000 if os.name == 'nt' else 0)
     def watch_parent():
         try:
-            while sys.stdin.buffer.read(1): pass
+            while True:
+                data = sys.stdin.buffer.read1(65536)
+                if not data: break
+                child.stdin.write(data)
+                child.stdin.flush()
         finally:
             child.stdin.close()
             try: child.wait(timeout=5)

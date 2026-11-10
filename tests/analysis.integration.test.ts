@@ -1,0 +1,43 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
+import { HostTools } from '../distribution/host-tools';
+import { Redactor } from '../src/main/config';
+const execute = promisify(execFile);
+const python = path.resolve('.cache/openviking/env-linux/bin/python3');
+test('a late native approval cannot modify a cancelled MCP session', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-cancel-')); t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(path.join(root, 'main.c'), 'before\n');
+  let entered!: () => void, decide!: (value: boolean) => void;
+  const pending = new Promise<void>(resolve => { entered = resolve; });
+  const host = new HostTools(root, root, { project: async () => root, approve: async () => { entered(); return new Promise<boolean>(resolve => { decide = resolve; }); }, knowledge: () => undefined, redactor: new Redactor() });
+  await host.start(); t.after(() => host.close());
+  const response = fetch(host.url, { method: 'POST', headers: { Authorization: 'Bearer ' + host.token, 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'propose_edit', arguments: { path: 'main.c', content: 'after\n' }, _meta: { 'ai.opencode/sessionID': 'session-test' } } }) });
+  await pending; assert.equal(await readFile(path.join(root, 'main.c'), 'utf8'), 'before\n');
+  host.cancelSession('session-test'); decide(true);
+  assert.equal((await (await response).json()).result.isError, true);
+  assert.equal(await readFile(path.join(root, 'main.c'), 'utf8'), 'before\n');
+});
+test('pinned Graphify extracts an actual static call graph with network disabled', { skip: !existsSync(python) }, async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-graphify-')); t.after(() => rm(root, { recursive: true, force: true }));
+  await mkdir(path.join(root, 'source'));
+  await writeFile(path.join(root, 'source/main.py'), 'def helper():\n    return 7\n\ndef main():\n    return helper()\n');
+  const { stdout } = await execute(python, ['-I', '-B', path.resolve('scripts/analysis-worker.py'), root], { timeout: 60000 });
+  const graph = JSON.parse(stdout);
+  assert.equal(graph.source, 'Graphify'); assert.equal(graph.mode, 'static-AST'); assert.ok(graph.nodeCount >= 3); assert.ok(graph.edgeCount >= 1);
+  assert.ok(JSON.stringify(graph).includes('helper'));
+});
+test('guarded REA runs its actual static Python bytecode inspector on a copied artifact', { skip: !existsSync('vendor/runtime/windows-x64/rea/scripts/rea.mjs') }, async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-rea-')); t.after(() => rm(root, { recursive: true, force: true }));
+  await writeFile(path.join(root, 'fixture.py'), 'def value():\n    return 7\n');
+  await execute('python3', ['-I', '-c', 'import py_compile,sys; py_compile.compile(sys.argv[1],cfile=sys.argv[2],doraise=True)', path.join(root, 'fixture.py'), path.join(root, 'fixture.pyc')]);
+  const host = new HostTools(root, path.resolve('vendor'), { project: async () => root, approve: async () => false, knowledge: () => undefined, redactor: new Redactor() });
+  const result = JSON.parse(await host.call('rea_inspect', { path: 'fixture.pyc', kind: 'python-pyc' }, 'session-test'));
+  assert.equal(result.source, 'morluto/rea'); assert.equal(result.mode, 'static-only'); assert.equal(result.tool, 'inspect_python_pyc');
+  assert.ok(JSON.stringify(result).includes('value'));
+});

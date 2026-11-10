@@ -70,7 +70,7 @@ export class NativeRuntime {
   private queue: Promise<unknown> = Promise.resolve();
   private engineConfig = '';
   private config?: AgentConfig;
-  constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string) => Promise<boolean> = async () => false) {
+  constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean> = async () => false) {
     this.vault = new ConfigVault(root, cipher);
   }
   async load() { return this.vault.load(); }
@@ -87,7 +87,7 @@ export class NativeRuntime {
       const redactor = new Redactor();
       for (const model of configured) redactor.add(model.apiKey);
       if (config.openViking) { redactor.add(config.openViking.embedding.apiKey); if (config.openViking.vlm) redactor.add(config.openViking.vlm.apiKey); }
-      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), approve: this.approve, knowledge: () => this.knowledge, redactor });
+      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), approve: (message, detail, signal) => this.approve(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor });
       await this.tools.start();
       const skillDirectory = path.join(this.resources, 'l-vibe/skills');
       const manifest = await readFile(path.join(skillDirectory, 'manifest.json'), 'utf8').then(text => JSON.parse(text) as { skills: Array<{ id: string; directory: string }> }).catch(() => undefined);
@@ -171,7 +171,7 @@ export class NativeRuntime {
           child.stdout.on('data', onData); child.once('exit', onError); child.once('error', onError);
         });
         child.stdout.on('data', () => {});
-        this.backend = { url, password }; this.proxy = new SidecarProxy(this.backend);
+        this.backend = { url, password }; this.proxy = new SidecarProxy(this.backend, this.tools);
         this.current = await this.proxy.start(); return this.current;
       } catch (error) { await this.stopEngine(); throw error; }
     });
@@ -198,12 +198,13 @@ export class NativeRuntime {
 
 let runtime: NativeRuntime | undefined;
 export function getRuntime() { if (!runtime) throw new Error('L-Vibe 설정이 준비되지 않았습니다.'); return runtime; }
+export async function replaceConfiguration(text: string) { await getRuntime().vault.importText(text, true); }
 
 export async function prepareNative(options: {
   root: string; resources: string; cipher: Cipher;
   decide: (message: string, hasStored: boolean) => Promise<'retry' | 'edit' | 'import' | 'cancel'>;
   select: () => Promise<string | undefined>; edit: (file: string) => void;
-  approve?: (message: string, detail: string) => Promise<boolean>;
+  approve?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
 }) {
   await mkdir(options.root, { recursive: true, mode: 0o700 });
   runtime = new NativeRuntime(options.root, options.resources, options.cipher, options.approve);

@@ -69,7 +69,7 @@ export const Logo = (props: { class?: string }) => <svg class={props.class} view
     artifactName: "L-Vibe-\${version}-\${os}-\${arch}.\${ext}",
     extraMetadata: { ...upstream.extraMetadata, name: "l-vibe" },
     extraResources: [...(upstream.extraResources ?? []),
-      { from: ${JSON.stringify(path.join(project, 'vendor/runtime'))}, to: "runtime", filter: ["windows-x64/**/*"] },
+      { from: ${JSON.stringify(path.join(project, 'vendor/runtime'))}, to: "runtime", filter: ["windows-x64/openviking/**/*", "windows-x64/rea/**/*"] },
       { from: ${JSON.stringify(path.join(project, 'agent-config.example.json'))}, to: "l-vibe/agent-config.example.json" },
       { from: ${JSON.stringify(path.join(project, 'vendor/skills'))}, to: "l-vibe/skills", filter: ["**/*", "!doc-coauthoring{,/**/*}"] },
       { from: ${JSON.stringify(path.join(project, 'distribution/methodology'))}, to: "l-vibe/methodology" },
@@ -98,13 +98,14 @@ export function prepareNative(options: {
   root: string; resources: string; cipher: Cipher;
   decide: (message: string, hasStored: boolean) => Promise<'retry' | 'edit' | 'import' | 'cancel'>;
   select: () => Promise<string | undefined>; edit: (file: string) => void;
-  approve?: (message: string, detail: string) => Promise<boolean>;
+  approve?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
 }): Promise<boolean>;
 export function getRuntime(): {
   connection(command: readonly string[]): Promise<Credentials>;
   authorizeProject(directory: string): Promise<void>;
   close(): Promise<void>;
 };
+export function replaceConfiguration(text: string): Promise<void>;
 `));
   edit('packages/desktop/script/pack.ts', text => {
     const start = text.indexOf('async function writeUpdateConfig(resources: string) {');
@@ -126,7 +127,9 @@ await cp("resources/l-vibe/icon.ico", destination + "/icon.ico")
     ['distribution/l-vibe-environment.ts', 'packages/desktop/src/main/lifecycle/l-vibe.ts'],
     ['distribution/native-startup.ts', 'packages/desktop/src/main/l-vibe-startup.ts'],
     ['distribution/native-background-service.ts', 'packages/desktop/src/main/service/background-service.ts'],
+    ['distribution/native-pack.ts', 'packages/desktop/script/pack.ts'],
     ['distribution/windows-installer.nsh', 'packages/desktop/resources/windows/installer.nsh'],
+    ['distribution/windows-installer.nsi', 'packages/desktop/resources/windows/l-vibe-installer.nsi'],
     ['assets/lig-icon.png', 'packages/desktop/resources/l-vibe/icon.png'],
     ['assets/lig-icon.ico', 'packages/desktop/resources/l-vibe/icon.ico'],
     ['assets/lig-icon.png', 'packages/app/public/favicon-96x96-v3.png'],

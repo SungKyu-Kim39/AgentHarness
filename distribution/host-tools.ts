@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { readFile, mkdir, mkdtemp, writeFile, copyFile, lstat, rm } from 'node:fs/promises';
-import { spawn } from 'node:child_process';
+import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { z } from 'zod';
 import { ProjectFiles } from '../src/main/files';
@@ -31,10 +31,13 @@ const pathArg = z.string().min(1).max(4096);
 export class HostTools {
   readonly token = randomBytes(32).toString('hex');
   url = ''; private server?: Server; private accepting = true; private active = new Set<Promise<string>>();
+  private children = new Set<ChildProcess>();
+  private operations = new Map<string, Set<AbortController>>();
+  private cancelled = new Set<string>();
   readonly skills: OfflineSkills;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
-    approve: (message: string, detail: string) => Promise<boolean>;
+    approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     knowledge: () => KnowledgeService | undefined;
     redactor: Redactor;
   }) { this.skills = new OfflineSkills(path.join(resources, 'l-vibe/skills')); }
@@ -54,10 +57,14 @@ export class HostTools {
         else if (input.method === 'tools/list') result = { tools: hostTools };
         else if (input.method === 'tools/call') {
           const session = input.params?._meta?.['ai.opencode/sessionID'];
-          const work = this.call(input.params.name, input.params.arguments ?? {}, session); this.active.add(work);
+          const abort = new AbortController();
+          const controllers = this.operations.get(session) ?? new Set<AbortController>();
+          controllers.add(abort); this.operations.set(session, controllers);
+          res.once('close', () => abort.abort());
+          const work = this.call(input.params.name, input.params.arguments ?? {}, session, abort.signal); this.active.add(work);
           try { result = { content: [{ type: 'text', text: this.options.redactor.text(await work) }] }; }
           catch (error) { result = { isError: true, content: [{ type: 'text', text: this.options.redactor.text(error instanceof Error ? error.message : '도구 실행 실패') }] }; }
-          finally { this.active.delete(work); }
+          finally { this.active.delete(work); controllers.delete(abort); if (!controllers.size) this.operations.delete(session); }
         } else { res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ jsonrpc: '2.0', id: input.id, error: { code: -32601, message: 'Method not found' } })); return; }
         res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ jsonrpc: '2.0', id: input.id, result }));
       } catch { res.writeHead(400).end(); }
@@ -66,8 +73,10 @@ export class HostTools {
     const address = this.server.address(); if (!address || typeof address === 'string') throw new Error('MCP 포트 할당 실패');
     this.url = `http://127.0.0.1:${address.port}/mcp`;
   }
-  async call(name: string, args: unknown, session: string): Promise<string> {
+  async call(name: string, args: unknown, session: string, signal?: AbortSignal): Promise<string> {
     if (!this.accepting || typeof session !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(session)) throw new Error('유효한 세션이 필요합니다.');
+    if (this.cancelled.has(session)) throw new Error('중지된 작업입니다.');
+    signal?.throwIfAborted();
     if (!hostTools.some(t => t.name === name)) throw new Error('등록되지 않은 도구입니다.');
     const project = await this.options.project(session), files = new ProjectFiles(project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
@@ -85,10 +94,10 @@ export class HostTools {
     if (name === 'propose_edit') {
       const a = z.object({ path: pathArg, content: z.string().max(2 * 1024 * 1024) }).strict().parse(args);
       const proposal = await files.propose(randomUUID(), a.path, a.content);
-      const approved = await this.options.approve(`파일 수정 승인: ${a.path}`, `변경 전\n${proposal.before}\n\n변경 후\n${proposal.after}`);
-      if (!approved || !this.accepting) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
+      const approved = await this.options.approve(`파일 수정 승인: ${a.path}`, `변경 전\n${proposal.before}\n\n변경 후\n${proposal.after}`, signal);
+      if (!approved || !this.accepting || signal?.aborted || this.cancelled.has(session)) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
       await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
-      await files.apply(proposal);
+      await files.apply(proposal, signal);
       return JSON.stringify({ status: 'applied', path: proposal.path, before: proposal.before, after: proposal.after, snapshot: proposal.id });
     }
     if (name === 'read_methodology') {
@@ -103,7 +112,7 @@ export class HostTools {
     if (name === 'knowledge_index') {
       const a = z.object({ path: pathArg }).strict().parse(args); if (!knowledge) throw new Error('OpenViking 설정이 필요합니다.');
       const text = await files.read(a.path);
-      if (!await this.options.approve('프로젝트 지식 색인 승인', `${a.path}\n선택한 텍스트를 로컬 OpenViking과 설정한 사내 임베딩 API로 전달합니다.\n\n${text}`) || !this.accepting) throw new Error('색인을 취소했습니다.');
+      if (!await this.options.approve('프로젝트 지식 색인 승인', `${a.path}\n선택한 텍스트를 로컬 OpenViking과 설정한 사내 임베딩 API로 전달합니다.\n\n${text}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(session)) throw new Error('색인을 취소했습니다.');
       return knowledge.index(projectID, a.path, text);
     }
     const tempRoot = path.join(this.root, 'analysis'); await mkdir(tempRoot, { recursive: true, mode: 0o700 });
@@ -131,7 +140,10 @@ export class HostTools {
     const executable = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
     const script = path.join(this.resources, 'runtime/windows-x64/openviking/analysis-worker.py');
     return new Promise<string>((resolve, reject) => {
-      const child = spawn(executable, ['-I', '-B', script, folder], { windowsHide: true, cwd: folder, env: { SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HF_HUB_OFFLINE: '1', DO_NOT_TRACK: '1' }, stdio: ['ignore', 'pipe', 'pipe'] });
+      const supervisor = path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py');
+      const args = process.platform === 'win32' ? ['-I', '-B', supervisor, executable, '-I', '-B', script, folder] : ['-I', '-B', script, folder];
+      const child = spawn(executable, args, { windowsHide: true, cwd: folder, env: { SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HF_HUB_OFFLINE: '1', DO_NOT_TRACK: '1' }, stdio: ['pipe', 'pipe', 'pipe'] });
+      this.children.add(child); child.once('exit', () => this.children.delete(child)); child.once('error', () => this.children.delete(child));
       let output = ''; const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('Graphify 분석 시간 초과')); }, 60000);
       child.stdout.on('data', data => { output += data; if (output.length > 2 * 1024 * 1024) child.kill('SIGKILL'); }); child.stderr.on('data', () => {});
       child.once('error', () => { clearTimeout(timer); reject(new Error('Graphify 런타임 실행 실패')); });
@@ -141,7 +153,12 @@ export class HostTools {
   private async rea(file: string, kind: string) {
     const tool = { go: 'inspect_go_binary', rust: 'inspect_rust_binary', 'python-pyc': 'inspect_python_pyc', 'electron-fuses': 'inspect_electron_fuses', model: 'inspect_model_artifact' }[kind];
     const script = path.join(this.resources, 'runtime/windows-x64/rea/scripts/rea.mjs');
-    const child = spawn(process.execPath, [script, '--mcp'], { cwd: path.dirname(file), windowsHide: true, stdio: 'pipe', env: { ELECTRON_RUN_AS_NODE: '1', SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HOME: path.dirname(file), USERPROFILE: path.dirname(file), APPDATA: path.dirname(file), LOCALAPPDATA: path.dirname(file), PATH: '', DO_NOT_TRACK: '1' } });
+    const python = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
+    const supervisor = path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py');
+    const binary = process.platform === 'win32' ? python : process.execPath;
+    const argv = process.platform === 'win32' ? ['-I', '-B', supervisor, process.execPath, script, '--mcp'] : [script, '--mcp'];
+    const child = spawn(binary, argv, { cwd: path.dirname(file), windowsHide: true, stdio: 'pipe', env: { ELECTRON_RUN_AS_NODE: '1', SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HOME: path.dirname(file), USERPROFILE: path.dirname(file), APPDATA: path.dirname(file), LOCALAPPDATA: path.dirname(file), PATH: '', DO_NOT_TRACK: '1' } });
+    this.children.add(child); child.once('exit', () => this.children.delete(child)); child.once('error', () => this.children.delete(child));
     let buffer = ''; let sequence = 0; const pending = new Map<number, { resolve(value: any): void; reject(error: Error): void }>();
     const rpc = (method: string, params: unknown) => new Promise<any>((resolve, reject) => { const id = ++sequence; pending.set(id, { resolve, reject }); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'); });
     child.stdout.on('data', data => {
@@ -163,8 +180,16 @@ export class HostTools {
   }
   async close() {
     this.accepting = false;
+    for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
+    for (const child of this.children) child.kill('SIGKILL');
     await Promise.allSettled(this.active);
     this.server?.closeAllConnections();
     await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); });
   }
+  cancelSession(session: string) {
+    this.cancelled.add(session);
+    for (const controller of this.operations.get(session) ?? []) controller.abort();
+    for (const child of this.children) child.kill('SIGKILL');
+  }
+  resumeSession(session: string) { this.cancelled.delete(session); }
 }

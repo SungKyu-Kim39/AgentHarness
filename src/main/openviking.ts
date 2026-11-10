@@ -14,7 +14,7 @@ export interface KnowledgeService {
   index(project: string, filename: string, content: string): Promise<string>;
   close(): Promise<void>;
 }
-export interface VikingLaunch { executable: string; launcher: string; cwd: string }
+export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
 const pause = (ms: number) => new Promise(r => setTimeout(r, ms));
 export function knowledgeRoot(project: string) {
   if (!/^[a-zA-Z0-9-]{1,128}$/.test(project)) throw new Error('프로젝트 지식 범위가 올바르지 않습니다.');
@@ -68,7 +68,7 @@ export class OpenVikingService implements KnowledgeService {
     this.configFile = path.join(folder, `runtime-${randomBytes(8).toString('hex')}.json`);
     await atomicJSON(this.configFile, {
       storage: { workspace: path.join(folder, 'data'), agfs: { backend: 'local' }, vectordb: { backend: 'local', name: 'context' } },
-      server: { host: '127.0.0.1', port, workers: 1, auth_mode: 'api_key', root_api_key: this.token },
+      server: { host: '127.0.0.1', port, workers: 1, auth_mode: 'trusted', root_api_key: this.token },
       embedding: { dense: { provider: 'openai', api_base: gateway.baseUrl, api_key: gateway.token, model: embedding.id, dimension: embedding.dimension } },
       vlm: { provider: 'openai', api_base: gateway.baseUrl, api_key: gateway.token, model: vlm.id },
       telemetry: { tracer: { enabled: false } },
@@ -83,7 +83,7 @@ export class OpenVikingService implements KnowledgeService {
         TIKTOKEN_CACHE_DIR: path.join(launch.cwd, 'tokenizers'),
       },
     });
-    this.process.stdout!.on('data', () => {}); this.process.stderr!.on('data', () => {});
+    this.process.stdout!.on('data', () => {}); this.process.stderr!.on('data', bytes => launch.diagnostic?.(bytes.toString()));
     this.process.once('error', () => { this.exited = true; if (!this.expectedExit) this.update('error', 'OpenViking 프로세스를 실행할 수 없습니다.'); });
     this.process.once('exit', () => { this.exited = true; if (!this.expectedExit) this.update('error', 'OpenViking이 종료되었습니다. 설정에서 다시 시작할 수 있습니다.'); });
     const deadline = Date.now() + 45000;
@@ -94,7 +94,7 @@ export class OpenVikingService implements KnowledgeService {
     throw new Error('OpenViking 준비 시간 초과');
   }
   private async request(route: string, body?: unknown, timeout = 120000): Promise<any> {
-    const response = await fetch(this.baseUrl + route, { method: body === undefined ? 'GET' : 'POST', redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(timeout) });
+    const response = await fetch(this.baseUrl + route, { method: body === undefined ? 'GET' : 'POST', redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': 'local-user', 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(timeout) });
     if (!response.ok) throw new Error(`OpenViking HTTP ${response.status}`);
     const text = await response.text(); if (text.length > 8 * 1024 * 1024) throw new Error('지식 응답 크기 초과');
     const json = JSON.parse(text); if (json.status === 'error') throw new Error('OpenViking 요청 실패'); return json;
@@ -114,8 +114,8 @@ export class OpenVikingService implements KnowledgeService {
     this.ready();
     if (Buffer.byteLength(content) > 2 * 1024 * 1024) throw new Error('2 MiB 이하 텍스트만 색인할 수 있습니다.');
     const form = new FormData(); form.append('file', new Blob([content], { type: 'text/plain' }), path.basename(filename).replace(/[^a-zA-Z0-9_.-]/g, '_') + '.txt');
-    const response = await fetch(this.baseUrl + '/api/v1/resources/temp_upload', { method: 'POST', redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token }, body: form, signal: AbortSignal.timeout(30000) });
-    if (!response.ok) throw new Error('OpenViking 파일 전달 실패');
+    const response = await fetch(this.baseUrl + '/api/v1/resources/temp_upload', { method: 'POST', redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': 'local-user' }, body: form, signal: AbortSignal.timeout(30000) });
+    if (!response.ok) { this.testLaunch?.diagnostic?.(`Upload HTTP ${response.status}: ${await response.text()}`); throw new Error('OpenViking 파일 전달 실패'); }
     const upload = await response.json(); const id = upload.result?.temp_file_id ?? upload.temp_file_id;
     if (typeof id !== 'string') throw new Error('OpenViking 업로드 확인 실패');
     const target = knowledgeRoot(project) + '/' + createHash('sha256').update(filename).digest('hex').slice(0, 20);

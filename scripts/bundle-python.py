@@ -1,5 +1,6 @@
 """Build-PC only: freeze and assemble a Windows Python distribution, not a copied venv."""
 import concurrent.futures
+import email
 import hashlib
 import json
 import os
@@ -10,6 +11,10 @@ import sys
 import tarfile
 import urllib.request
 import zipfile
+from packaging.markers import default_environment
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+from packaging.version import Version
 
 ROOT = Path('vendor/runtime/windows-x64/openviking')
 CACHE = Path('.cache/python-bundle')
@@ -60,6 +65,7 @@ def main():
     if lock['python'].get('sha256', current) != current:
         raise RuntimeError('Portable Python archive changed')
     lock['python']['sha256'] = current
+    shutil.rmtree(ROOT, ignore_errors=True)
     ROOT.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive) as source:
         source.extractall(ROOT, filter='data')
@@ -77,6 +83,39 @@ def main():
         return file
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         wheels = list(pool.map(fetch_wheel, lock['packages']))
+    # pip --platform selects Windows wheels but evaluates sys_platform markers
+    # on the Linux build host. Close that gap explicitly, including extras.
+    env = default_environment()
+    env.update({'sys_platform': 'win32', 'platform_system': 'Windows', 'os_name': 'nt', 'platform_machine': 'AMD64', 'python_version': '3.12', 'python_full_version': '3.12.16'})
+    extras = {'graphifyy': {'mcp'}}
+    for iteration in range(12):
+        installed = {canonicalize_name(p['name']): p for p in lock['packages']}
+        missing = set()
+        for entry, wheel in zip(lock['packages'], wheels):
+            key = canonicalize_name(entry['name'])
+            with zipfile.ZipFile(wheel) as archive_file:
+                meta = email.message_from_bytes(archive_file.read(next(n for n in archive_file.namelist() if n.endswith('.dist-info/METADATA'))))
+            for text in meta.get_all('Requires-Dist', []):
+                required = Requirement(text)
+                if required.marker and not any(required.marker.evaluate({**env, 'extra': extra}) for extra in {''} | extras.get(key, set())):
+                    continue
+                name = canonicalize_name(required.name)
+                extras.setdefault(name, set()).update(required.extras)
+                if name in installed:
+                    if required.specifier and Version(installed[name]['version']) not in required.specifier:
+                        raise RuntimeError('Windows dependency version conflict: ' + text)
+                else:
+                    required.marker = None
+                    missing.add(str(required))
+        if not missing: break
+        report = CACHE / ('windows-markers-' + str(iteration) + '.json')
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet', '--dry-run', '--ignore-installed', '--no-deps', '--only-binary=:all:', '--platform', 'win_amd64', '--python-version', '3.12', '--implementation', 'cp', '--abi', 'cp312', '--target', str(CACHE / 'unused'), '--report', str(report), *sorted(missing)], check=True)
+        for item in json.loads(report.read_text())['install']:
+            meta, info = item['metadata'], item['download_info']
+            package = {'name': meta['name'], 'version': meta['version'], 'url': info['url'], 'sha256': info['archive_info']['hashes']['sha256'], 'license': meta.get('license_expression') or meta.get('license') or 'See bundled dist-info license files'}
+            lock['packages'].append(package); wheels.append(fetch_wheel(package))
+    else: raise RuntimeError('Windows dependency closure did not converge')
+    lock['packages'] = sorted(lock['packages'], key=lambda p: p['name'].lower())
     for wheel in wheels:
         with zipfile.ZipFile(wheel) as package:
             for entry in package.infolist():

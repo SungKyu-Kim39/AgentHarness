@@ -125,7 +125,8 @@ export class ProjectFiles {
       status: "pending",
     };
   }
-  async apply(proposal: Proposal) {
+  async apply(proposal: Proposal, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     if (proposal.status !== "pending")
       throw new Error("유효한 대기 중 제안이 아닙니다.");
     const fresh = await this.propose(
@@ -140,6 +141,7 @@ export class ProjectFiles {
       throw new Error(proposal.result);
     }
     const target = await this.resolve(proposal.path, true);
+    signal?.throwIfAborted();
     await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
     await this.resolve(proposal.path, true);
     const temp = path.join(
@@ -162,6 +164,7 @@ export class ProjectFiles {
         throw new Error("승인 후 외부 변경으로 적용을 중단했습니다.");
       }
       await this.resolve(proposal.path, true);
+      signal?.throwIfAborted();
       await rename(temp, target);
       const actual = await this.read(proposal.path);
       if (actual !== proposal.after)

@@ -52,7 +52,7 @@ export const configSchema = rawConfigSchema.superRefine((data, ctx) => {
     name: `${provider.name ?? providerID} · ${definition.name ?? modelKey}`.slice(0, 128), providerID, modelKey,
     baseUrl: provider.settings.baseURL, apiKey: (provider.settings.apiKey ?? provider.settings.APIKey)!, id: definition.modelID ?? modelKey,
   })));
-  const models = fromProviders.length ? fromProviders : data.models;
+  const models = fromProviders.length ? fromProviders.map((m, index) => ({ ...m, name: `${m.name.slice(0, 119)} [${index + 1}]` })) : data.models;
   const selection = typeof data.model === 'string' ? { providerID: data.model.split('/')[0], model: data.model.slice(data.model.indexOf('/') + 1) } : data.model && 'providerID' in data.model ? data.model : undefined;
   const model = models?.find(m => selection ? m.providerID === selection.providerID && m.modelKey === selection.model : m.name === data.defaultModel) ?? models?.[0] ?? (data.model as z.infer<typeof modelSchema>);
   return { ...data, ...(models ? { models, defaultModel: models.find(m => m === model)?.name ?? data.defaultModel } : {}), model: { baseUrl: model.baseUrl, apiKey: model.apiKey, id: model.id } };

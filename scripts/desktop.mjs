@@ -7,7 +7,7 @@ const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const cache = path.join(project, '.cache/l-vibe-desktop');
 const preparedSource = path.join(cache, 'source');
 const lock = JSON.parse(await readFile(path.join(project, 'upstream-lock.json'), 'utf8'));
-const overlays = ['distribution/patches.mjs', 'distribution/l-vibe-environment.ts', 'distribution/native-control.ts', 'distribution/host-tools.ts', 'distribution/sidecar-proxy.ts', 'distribution/native-startup.ts', 'distribution/native-background-service.ts', 'src/shared/contracts.ts', 'src/main/config.ts', 'src/main/files.ts', 'src/main/skills.ts', 'src/main/model-gateway.ts', 'src/main/openviking.ts', 'src/main/openviking-gateway.ts', 'distribution/windows-installer.nsh', 'assets/lig-icon.png', 'assets/lig-icon.ico'];
+const overlays = ['distribution/patches.mjs', 'distribution/l-vibe-environment.ts', 'distribution/native-control.ts', 'distribution/host-tools.ts', 'distribution/sidecar-proxy.ts', 'distribution/native-startup.ts', 'distribution/native-background-service.ts', 'distribution/native-pack.ts', 'src/shared/contracts.ts', 'src/main/config.ts', 'src/main/files.ts', 'src/main/skills.ts', 'src/main/model-gateway.ts', 'src/main/openviking.ts', 'src/main/openviking-gateway.ts', 'distribution/windows-installer.nsh', 'distribution/windows-installer.nsi', 'assets/lig-icon.png', 'assets/lig-icon.ico'];
 async function fingerprint() { return digest(Buffer.concat(await Promise.all(overlays.map(f => readFile(path.join(project, f)))))); }
 async function verify() {
   const manifest = JSON.parse(await readFile(path.join(preparedSource, '.l-vibe-patches.json'), 'utf8'));
@@ -67,5 +67,5 @@ else if (mode === 'build' || mode === 'package' || mode === 'dev') {
   if (bun !== lock.bunVersion) throw new Error(`Build requires Bun ${lock.bunVersion}, got ${bun}`);
   const bin = path.join(cache, 'tools/bin'); await mkdir(bin, { recursive: true });
   for (const name of ['bun', 'bunx']) { await rm(path.join(bin, name), { force: true }); await symlink(executable, path.join(bin, name)); }
-  execFileSync(executable, ['run', mode === 'package' ? 'pack' : mode], { cwd: path.join(preparedSource, 'packages/desktop'), stdio: 'inherit', env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH, OPENCODE_CHANNEL: 'prod', OPENCODE_TARGET: process.env.OPENCODE_TARGET ?? 'windows-x64' } });
+  execFileSync(executable, ['run', mode === 'package' ? 'pack' : mode], { cwd: path.join(preparedSource, 'packages/desktop'), stdio: 'inherit', env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH, L_VIBE_RELEASE_DIR: path.join(project, 'release/desktop'), OPENCODE_VERSION: '0.2.0', OPENCODE_CHANNEL: 'prod', OPENCODE_TARGET: process.env.OPENCODE_TARGET ?? 'windows-x64' } });
 } else throw new Error('Usage: node scripts/desktop.mjs prepare|verify|dev|build|package');

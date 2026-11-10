@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "stage": "native-config-and-owned-engine",
+  "stage": "windows-offline-installation-candidate",
   "releaseReady": false,
   "blockers": [
     "Bind the approval broker and stop/replay state to v2 sessions and tool events.",
-    "Wire and validate pinned OpenViking, Serena/clangd, REA, Graphify and skill adapters.",
+    "Bind Serena read-only semantic tools and pinned clangd; text search and Graphify AST do not replace this acceptance test.",
     "Audit external network and arbitrary plugin paths; observe DNS/TCP on isolated Windows VMs.",
     "Pass Win10/Win11 installation, ACL, credential, lifecycle and actual intranet-model acceptance tests."
   ]

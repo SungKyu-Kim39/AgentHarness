@@ -189,6 +189,13 @@
       "license": "BSD-3-Clause"
     },
     {
+      "name": "colorama",
+      "version": "0.4.6",
+      "url": "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl",
+      "sha256": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+      "license": "See bundled dist-info license files"
+    },
+    {
       "name": "constantly",
       "version": "23.10.4",
       "url": "https://files.pythonhosted.org/packages/b8/40/c199d095151addf69efdb4b9ca3a4f20f70e20508d6222bffb9b76f58573/constantly-23.10.4-py3-none-any.whl",
@@ -889,6 +896,13 @@
       "license": "MIT"
     },
     {
+      "name": "pywin32",
+      "version": "312",
+      "url": "https://files.pythonhosted.org/packages/03/d9/77040d3b43df3f3be32ea289433d660d2727f5ba327bc73be835127d9d60/pywin32-312-cp312-cp312-win_amd64.whl",
+      "sha256": "b457f6d628a47e8a7346ce22acb7e1a46a4a78b52e1d17e1af56871bd19a93bc",
+      "license": "PSF"
+    },
+    {
       "name": "PyYAML",
       "version": "6.0.3",
       "url": "https://files.pythonhosted.org/packages/86/bf/899e81e4cce32febab4fb42bb97dcdf66bc135272882d1987881a4b519e9/pyyaml-6.0.3-cp312-cp312-win_amd64.whl",
@@ -1321,6 +1335,13 @@
       "url": "https://files.pythonhosted.org/packages/49/d3/b8441a820a491ddfc024b0b0cf0393375b75ea13866d9c66727e54c2fc80/typing_extensions-4.16.0-py3-none-any.whl",
       "sha256": "481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8",
       "license": "PSF-2.0"
+    },
+    {
+      "name": "tzdata",
+      "version": "2026.6",
+      "url": "https://files.pythonhosted.org/packages/0a/66/9a06c2227fedfd4919f0eaaa8b94377d9730882a7e4f95823c9a331ab5e1/tzdata-2026.6-py2.py3-none-any.whl",
+      "sha256": "0a10eec6e13ef16b627fabed9a5f2ba61a62b1c67f327305f4e7e412a70b4aec",
+      "license": "Apache-2.0"
     },
     {
       "name": "tzlocal",
@@ -2352,6 +2373,13 @@
       "license": "BSD-3-Clause"
     },
     {
+      "name": "win32_setctime",
+      "version": "1.2.1",
+      "url": "https://files.pythonhosted.org/packages/bd/df/5593480bc1e932eeae28e4fa182ab68174edd0d77409ced3b6491d02d1d5/win32_setctime-1.2.1-py3-none-any.whl",
+      "sha256": "a9edc685b35414bec69392c866ed82456ad125ac4a6a4b703ec1d8b462d4f477",
+      "license": "MIT license"
+    },
+    {
       "name": "wrapt",
       "version": "2.5.2",
       "url": "https://files.pythonhosted.org/packages/7d/0a/ab645f8b4c594cac2db49bbc805bff97a9d3f2944061b865f67e0351b6c8/wrapt-2.5.2-cp312-cp312-win_amd64.whl",
@@ -2387,5 +2415,5 @@
       "license": "ZPL-2.1"
     }
   ],
-  "manifestSha256": "5a59f83ef1fbc92054fad3681e219b96afd1d098c8ef0ebcd2ca66cd9ac0f152"
+  "manifestSha256": "8d2fbf5aef25d431433feb5f34f09cbf908c025476cb7ac024f6e3674b473a3d"
 }

@@ -4,7 +4,7 @@ import type { Credentials } from './native-control';
 /** Native API boundary: no global config writes, remote connections or saved approvals. */
 export class SidecarProxy {
   private server?: Server;
-  constructor(private backend: Credentials) {}
+  constructor(private backend: Credentials, private sessions?: { cancelSession(session: string): void; resumeSession(session: string): void }) {}
   async start(): Promise<Credentials> {
     this.server = createServer(async (req, res) => {
       const auth = 'Basic ' + Buffer.from('opencode:' + this.backend.password).toString('base64');
@@ -12,6 +12,11 @@ export class SidecarProxy {
       try {
         const target = new URL(req.url ?? '/', this.backend.url);
         const pathname = decodeURIComponent(target.pathname).replace(/\/{2,}/g, '/');
+        const operation = /^\/api\/session\/([^/]+)\/(interrupt|prompt)$/.exec(pathname);
+        if (req.method === 'POST' && operation) {
+          if (operation[2] === 'interrupt') this.sessions?.cancelSession(operation[1]);
+          else this.sessions?.resumeSession(operation[1]);
+        }
         const modifying = !['GET', 'HEAD', 'OPTIONS'].includes(req.method ?? '');
         if (modifying && (
           /^\/api\/(?:experimental\/config|config|integration|credential|plugin|mcp|pty|shell|schedule|server|permission\/saved)(?:\/|$)/.test(pathname) ||
@@ -27,7 +32,7 @@ export class SidecarProxy {
           if (/^\/api\/session\/[^/]+\/permission\/[^/]+\/reply$/.test(pathname) && document.decision === 'always') document.decision = 'once';
           body = Buffer.from(JSON.stringify(document));
         }
-        const upstream = request(target, { method: req.method, headers: { ...req.headers, host: new URL(this.backend.url).host, authorization: auth, 'content-length': String(body.length) } }, response => {
+        const upstream = request(target, { method: req.method, headers: { ...req.headers, host: new URL(this.backend.url).host, authorization: auth, 'accept-encoding': 'identity', 'content-length': String(body.length) } }, response => {
           const headers = { ...response.headers }; delete headers['transfer-encoding'];
           // Config/model documents may contain ephemeral gateway tokens. Keep them native too.
           if (req.method === 'GET' && /^\/api\/(?:config|provider|model)(?:\/|$)/.test(pathname)) {
