@@ -7,7 +7,10 @@ Name "L-Vibe"
 OutFile "${L_VIBE_OUT_FILE}"
 InstallDir "$LOCALAPPDATA\Programs\L-Vibe"
 RequestExecutionLevel user
-SetCompressor /SOLID zlib
+; The pinned NSIS compiler has a 31-bit data block. Solid compression stores
+; the entire uncompressed payload there first; six MCPs exceed that limit.
+; Compress each file before adding it, retaining one complete offline EXE.
+SetCompressor zlib
 SetDatablockOptimize on
 Icon "${L_VIBE_ICON}"
 UninstallIcon "${L_VIBE_ICON}"
