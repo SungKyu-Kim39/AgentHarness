@@ -53,6 +53,8 @@ python3 scripts/desktop-dependencies.py
 npm run bundle:python
 npm run bundle:rea
 npm run bundle:mcp
+npm run mcp:verify
+npm run desktop:prepare
 npm run skills:verify
 npm run verify
 npm run build
