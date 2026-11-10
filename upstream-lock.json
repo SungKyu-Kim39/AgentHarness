@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/anomalyco/opencode",
+  "tag": "v2.2.6",
+  "commit": "dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06",
+  "archive": {
+    "url": "https://codeload.github.com/anomalyco/opencode/tar.gz/dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06",
+    "sha256": "dfa26f59cc4f20424ada95199e0d50fc9d86fe8eda1f7264cf5962f7366de71f"
+  },
+  "version": "2.2.6",
+  "bunVersion": "1.4.4",
+  "electronVersion": "44.9.1",
+  "license": "MIT",
+  "files": {
+    "package.json": "3a0c7be0a73913e8dbc61c5dd4a8e7f12c17fc06bb09598144fbdda895e18bf0",
+    "bun.lock": "e024e3a49e2171f8dfe595e96a840bbcc17d5ea604716c3f1e1da027efd0ae92",
+    "LICENSE": "625f0f619133f89bbbb2abe37369613dfa1885eba1e50d02170deb62bb42cb6b",
+    "packages/desktop/package.json": "2163ebcd25eb6134670aceeec9079e32c163dfa9e37f34b805f27cc7366b8b8f",
+    "packages/desktop/electron-builder.config.ts": "7290bd25c7df9710dbc69d2d8431d0b9e3c590a64571015f66ae1c6c98d7f47d",
+    "packages/desktop/script/build.ts": "cc8408029e10c8e7361edfed98023d29c3c762fbf897e63938c060affe22ca3d",
+    "packages/desktop/script/pack.ts": "4a56c74b585b0587d527fc29b730a4e1ec1e2ee7c0976e7689ef53c00b532e51",
+    "packages/desktop/script/copy-icons.ts": "7fff29e778c9a9fa7d337b705294e34a571c25c39934bae13ed6834981ab1522",
+    "packages/desktop/src/main/constants.ts": "b1463a7e1f66291e40fffa7e4b8b7e1de0758e31e9339ead2dac9e361b031073",
+    "packages/desktop/src/main/lifecycle/configure.ts": "deaa4a6fc8c365790c5d3bcd8bffefe9e7cb99df25f8a0bc00c765269c2c54cb",
+    "packages/desktop/src/main/lifecycle/environment.ts": "cff863deff04e7b6e7efa1c125fade8e9230d53cd90bdb5efa484fb3971e9b4d",
+    "packages/desktop/src/main/service/sidecar-probe.ts": "1a9777bb9e16c668a015176f042253b112e40397b145c3b1b76781fefbe70f61",
+    "packages/desktop/src/main/service/sidecar-credentials.ts": "1e1b51fea7938d5618e6e16f4ef9084879ff330257c63ecf9c30c6541387ea9b",
+    "packages/desktop/src/renderer/index.html": "520801098bf6a0dc78a2b9b12b4e5f299336ca66c1419bbf6f0fc0113d72020a",
+    "packages/desktop/src/renderer/startup/sentry.ts": "88ba8cd90cbae2edccd7886cbaa2e3deb71931378f8e256cf360a6f5d2c233c9",
+    "packages/desktop/resources/windows/installer.nsh": "f10276dfdd2055118614a72439dc9fd0788697f4bd986afbe56d11fb0d694b28",
+    "packages/gui-plugins/src/updater/main.ts": "6092d97384c56861f03c177358f36b868efccc12015bd6028a6dad69f75349bb",
+    "packages/schema/src/config.ts": "807a70bae2c0d83812fe9722a6e1312ae2974a036d27e3b973c415291ecab1a5",
+    "packages/schema/src/config/provider.ts": "3d792fa642760b7c6d8d4b043ccb2268ed8aae45c61d3d0239258849cb30342b",
+    "packages/schema/src/config/policy.ts": "72586095738f791dc7cef2c3e134c19be9b85130d66fdaa0dbebb74e9530df52",
+    "packages/schema/src/permission.ts": "45b63a6d9f7619d9285663111f26a9a939d64683cac3272881e6dd196409bc1d"
+  }
+}

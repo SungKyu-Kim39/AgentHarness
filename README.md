@@ -4,9 +4,21 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 사내 바이브 코�
 
 **설계 전환 중입니다.** 기준은 [새 아키텍처](docs/architecture.md)와 [구현 계획](docs/implementation-plan.md)입니다. 현재 `src/renderer` 및 아래 기존 Electron 빌드 명령은 독립 UI 원형의 비교·회귀 검증용이며 새 배포판의 완료본이 아닙니다. 공식 Desktop과 서버는 동일 upstream 커밋으로 고정합니다. 기존 PC의 OpenCode·Zed·개인 플러그인·설정은 읽거나 복제하지 않습니다.
 
-여러 사내 LLM 중 선택하고, OpenViking 임베딩은 한 개로 유지합니다. OpenViking·Serena·REA·Graphify·Aegis·Conductor·선별한 개발 스킬은 폐쇄망 고정 번들 대상으로 관리합니다. 실제 연결·Windows·사내 모델 검증 전에는 1.0 완료로 표시하지 않습니다.
+새 설계는 여러 사내 LLM 선택과 한 개의 OpenViking 임베딩을 지원하도록 합니다. OpenViking·Serena·REA·Graphify·Aegis·Conductor·선별한 개발 스킬은 폐쇄망 고정 번들 대상으로 관리합니다. 새 Desktop에서 실제 연결·Windows·사내 모델 검증을 마치기 전에는 이관 또는 1.0 완료로 표시하지 않습니다.
 
-아래는 이관 전 원형의 사용·검증 기록입니다. 새 배포 경로는 구현이 검증되는 순서대로 추가합니다.
+공식 소스 준비와 초기 패치 검증:
+
+```sh
+npm ci
+npm run desktop:prepare
+npm run verify
+```
+
+`upstream-lock.json`의 커밋·archive·경계 파일을 검증한 뒤 `.cache/l-vibe-desktop/source`에 수정 소스를 준비합니다. 원본 전체를 Git에 복제하지 않고 고정 lock과 검토 가능한 overlay를 관리합니다. 이 다운로드는 빌드 PC에서만 수행합니다. 초기 점검과 남은 이관은 [upstream 점검 기록](docs/upstream-audit.md)을 확인하세요.
+
+`dev`, `start`, `build`, `package:win`은 새 Desktop 경로입니다. native 설정·서버 수명·정책 이관과 Windows 검증이 끝나기 전에는 `distribution/readiness.json`의 차단 항목을 표시하고 중단합니다. 아래 원형 기록의 실행 명령은 `dev:prototype`, `build:prototype`, `start:prototype`, `test:ui:prototype`으로 분리했습니다. 원형의 설치본을 새 배포판으로 제공하지 않습니다.
+
+아래는 이관 전 원형의 사용·검증 기록입니다.
 
 ## 직원 PC에서 사용
 
@@ -42,7 +54,7 @@ npm ci
 npm run vendor:fetch
 npm run verify
 npm run vendor:verify
-npm run dev
+npm run dev:prototype
 ```
 
 프록시를 사용하는 Node 24 환경에서는 환경에 맞게 `NODE_USE_ENV_PROXY=1`을 설정합니다. Electron 45는 개발 런타임을 지연 다운로드하므로 필요한 경우 `node node_modules/electron/install.js`를 빌드 PC에서 실행합니다.
@@ -51,7 +63,7 @@ npm run dev
 npm run package:win
 ```
 
-`release/L-Vibe-0.1.0-Setup.exe`를 생성합니다. 설치기는 Electron 45.2.3과 OpenCode 1.19.5 Windows x64를 포함하는 전체 설치본입니다. 현재 후보는 서명되지 않았으며 Windows 실행·업데이트·네트워크 실검증 전입니다. `vendor:verify`는 런타임·지침 원본·라이선스 해시가 맞지 않으면 패키징을 중단합니다. 개인 설정 JSON은 빌드 입력·EXE에 포함하지 않습니다.
+현재 `package:win`은 새 Desktop 경로이며 미완료 이관이 있으면 중단합니다. 과거 원형의 `release/L-Vibe-0.1.0-Setup.exe` 및 Electron 45.2.3 / OpenCode 1.19.5 번들은 새 배포판의 설치본이 아닙니다. 개인 설정 JSON은 빌드 입력·EXE에 포함하지 않습니다.
 
 ## 구조
 
