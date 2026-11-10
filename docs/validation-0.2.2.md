@@ -17,6 +17,8 @@ Windows 10/11 설치·실제 DLL 로딩·6종 도구 호출·ACL·DPAPI·Job Obj
 - `npm run audit:installer`를 추가했다. EXE archive 검사·추출 후 앱 버전/AMD64·OpenViking·REA·MCP·스킬·CLI·설정 예제를 검증하여 audit를 작성한다. TGZ 생성은 해당 EXE 크기/해시, 현재 앱 ASAR/실행 파일·모든 런타임 manifest·CLI와 audit를 다시 대조한다. 변조 파일, 미완성 MCP, 경로 이탈, 다른 EXE/staging/오래된 앱·런타임의 audit를 거부하는 회귀 검사를 통과했다.
 - TGZ의 OpenCode 라이선스를 정식 생성 소스 경로에서 가져오고 고정 upstream 해시를 확인하도록 수정했다.
 
-현재 `storage.googleapis.com`의 고정 Chrome과 `api.github.com`의 고정 Ghostty archive 요청은 CONNECT HTTP 403이다. Desktop workspace의 `bun install --frozen-lockfile`이 완료되지 않아 이 환경에서 새 Desktop 전체 타입 검사/빌드·패키징을 수행하지 못했다. 위 48개 검사는 루트 타입 검사와 overlay 검증이며 새 Desktop 전체 빌드 결과로 계산하지 않는다. 이번에 추가한 audit 자동화도 실제 0.2.2 EXE에는 아직 실행하지 않았다. 새 MCP 6종의 별도 Linux 실호출 기록은 이전 검증 환경의 결과이며 이번 환경에서 재실행했다고 표현하지 않는다.
+`storage.googleapis.com`의 고정 Chrome과 `api.github.com`의 고정 Ghostty archive 요청은 CONNECT HTTP 403이다. 사용자가 두 도메인을 추가했다고 알린 뒤에도 현재 실행 환경의 spec/observed revision은 모두 1, 추가 허용 목록은 빈 배열이고 실제 두 요청도 계속 403이었다. Desktop workspace의 `bun install --frozen-lockfile`은 완료되지 않았지만, 이미 확보한 해시 검증 archive를 `desktop-dependencies.py`로 복원한 뒤 공식 Desktop 전체 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**과 `npm run build`의 main/preload/renderer 빌드 성공을 확인했다. 원본 CSS 최적화·dynamic import·plugin timing 경고가 남는다. Windows용 Electron 44.9.1과 NSIS 3.0.4.1도 정상 확보했다.
+
+위 48개 회귀 검사와 공식 Desktop 전체 타입 검사/빌드는 각각 별도의 결과다. Chrome이 없어 0.2.2 EXE/TGZ 패키징 및 실제 EXE의 새 audit 자동화는 계속 미수행이다. 새 MCP 6종의 별도 Linux 실호출 기록도 이전 검증 환경의 결과이며 이번 환경에서 재실행했다고 표현하지 않는다.
 
 복구/검증 로그와 Linux 테스트 의존성 목록은 `.cache/resume-2026-11-10/`에 보관했다. 환경 허용 설정 후 인계서 §8의 순서로 Desktop 의존성 설치, Chrome 확보, 완성 bundle 검증·빌드·EXE 실검사·TGZ 생성을 진행한다. 공개 설치본은 계속 0.2.1이며 `releaseReady`도 false다.

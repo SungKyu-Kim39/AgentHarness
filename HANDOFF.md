@@ -20,6 +20,8 @@
 
 **새 환경 재개 기록:** 원격 개발 소스, Bun/Node, Windows OpenViking·REA·MCP staging 및 Linux 회귀 검증 환경을 복원했다. 설치 검증 자동화를 보강한 뒤 `npm run verify` **48개 통과, 실패/건너뜀 0**을 재현했다. 현재 환경은 `storage.googleapis.com`과 `api.github.com`의 정책 403 때문에 브라우저 및 Desktop 의존성 설치가 막혀 있다. 두 호스트 허용 후 §8을 재개한다. 0.2.2 EXE/TGZ는 계속 미생성이다.
 
+**후속 진행:** 검증된 기존 Ghostty/CLI 캐시에 `desktop-dependencies.py`를 다시 적용해 공식 Desktop 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**과 main/preload/renderer 빌드를 통과했다. Windows Electron **44.9.1** 및 NSIS **3.0.4.1**도 확보했다. 사용자가 두 도메인 추가를 알린 뒤에도 이 채팅의 실행 환경은 `spec_revision: 1`, `observed_spec_revision: 1`, `allowed_hosts: []`였고 두 URL 모두 CONNECT 403이었다. 설정 수정과 현재 실행 환경에 대한 적용을 구분해 확인해야 한다. 현재 패키징에 남은 다운로드 차단은 고정 Chrome이며, 이 파일은 캐시에 없다.
+
 ### 이어받는 AI에게 붙여 넣을 요청
 
 > 이 저장소의 HANDOFF.md를 먼저 읽고 L-Vibe 작업을 이어가라. work 브랜치를 사용한다. 마지막 구현 기준은 a5dd07a이며 소스는 0.2.2, 공개 설치본은 0.2.1이다. MCP 6종 소스의 Linux 실호출과 45개 회귀 검사는 통과했지만 0.2.2 EXE/TGZ는 없다. 현재 다음 목표는 Windows 브라우저 번들을 확보해 오프라인 설치 EXE/TGZ를 완성하고 실제 파일·해시를 확인해 게시하는 것이다. 새 PC에 없는 캐시·테스트 런타임부터 확인하고, 기존 잠금 버전을 유지하라. 직원 PC에서 추가 설치나 다운로드하게 만들지 말라. 실제 키·사용자 데이터·캐시는 공개 저장소에 넣지 말고, 단계별 커밋·푸시를 계속하라. 완료된 항목을 처음부터 다시 구현하지 말고, 확인되지 않은 설치·수용·게시 결과를 완료했다고 말하지 말라.
@@ -265,7 +267,7 @@ npm run build
 
 현재 관리형 빌드 실행기의 공식 Chrome 다운로드는 정책 HTTP 403으로 차단되었다. 이 문서 작성 시에도 허용 호스트에 `storage.googleapis.com`가 없었다. **다른 PC까지 차단된다는 뜻은 아니다.** 새 PC에서 정상적인 네트워크 정책과 접근 가능 여부를 먼저 확인한다. 정책 거부가 있으면 해당 환경의 허용 도메인을 변경하고, 우회 프록시나 직원 PC 다운로드로 대체하지 않는다.
 
-새 환경 복구에서도 Chrome의 `storage.googleapis.com`과 Bun이 고정 Ghostty archive를 요청하는 `api.github.com` 모두 CONNECT HTTP 403을 확인했다. 두 호스트의 환경 허용 설정을 요청한 상태다. Desktop workspace의 `bun install --frozen-lockfile`은 후자에서 중단됐으므로 허용 후 다시 설치하고 `desktop-dependencies.py`를 실행한 뒤 타입 검사/빌드를 진행한다. 기존 lock을 바꾸거나 설치 완료로 취급하지 않는다.
+새 환경 복구에서도 Chrome의 `storage.googleapis.com`과 Bun이 고정 Ghostty archive를 요청하는 `api.github.com` 모두 CONNECT HTTP 403을 확인했다. 사용자의 도메인 추가 알림 뒤에도 현재 실행 환경의 revision 1과 빈 추가 허용 목록은 그대로였다. Desktop workspace의 `bun install --frozen-lockfile`은 후자에서 중단됐지만, 이미 검증된 로컬 archive를 `desktop-dependencies.py`로 복원해 공식 Desktop 타입 검사/빌드를 완료했다. 빈 캐시에서 workspace 설치가 성공했다고 취급하거나 기존 lock을 바꾸지 않는다. Chrome 허용 후 아래 순서를 실행하면 MCP lock 변경으로 생성 소스가 갱신되므로 build도 다시 수행한다.
 
 고정 Windows 파일:
 
