@@ -1,6 +1,6 @@
 # L-Vibe 0.2.1 설치 후보 검증 — 2026-11-10 UTC
 
-기본 스킬 34개와 OpenViking 최초 실행 등록을 추가한 후보다. OpenCode Desktop/CLI는 v2.2.6, 고정 upstream `dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`을 유지한다. 새로운 MCP·실행형 플러그인은 설치하지 않았다.
+기본 스킬 34개와 OpenViking 최초 실행 등록을 추가한 후보다. 런타임 코드 체크포인트는 `0e1377d`다. OpenCode Desktop/CLI는 v2.2.6, 고정 upstream `dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`을 유지한다. 새로운 MCP·실행형 플러그인은 설치하지 않았다.
 
 ## 코드와 실제 연동
 
@@ -18,7 +18,15 @@
 
 ## 배포 산출물
 
-EXE·TGZ의 바이트 수·SHA-256과 설치 입력 검사는 패키징 완료 후 아래에 기록한다. `releaseReady`는 Windows 수용 검증 전이므로 false다.
+- `node scripts/desktop.mjs build` 및 `package` 완료. 설치 EXE: `L-Vibe-0.2.1-win-x64.exe`, **647,049,461 bytes**.
+- EXE SHA-256: `5da6867a77147e48ef8e3bdef1ac7cc13522f383e79624e069b808f40f577b37`.
+- `7zz t` 결과: NSIS-3 Unicode / Deflate / Solid, **Everything is Ok**, 73,010개 파일, 해제 크기 1,950,823,061 bytes.
+- EXE에서 `resources/l-vibe/skills`와 `skills-lock.json`을 직접 추출하여 34개 스킬·259개 파일의 해시를 전수 대조했다. 스킬 manifest SHA-256: `2aec810670e3f3999ff63fcb8688fd0bc33c7180fd9e1eac6b33c288a88c4f4c`.
+- 설치 입력 OpenViking/Python 63,060개 파일과 REA 9,019개 파일을 각 manifest SHA-256과 전수 대조했다. Windows CLI SHA-256은 `d55839bfc180fd573341265c750eaee72c3ebb2e57f3e2b3eca9cf3449b93507`로 고정 원본과 같다.
+- NSIS manifest는 `asInvoker`, 실제 앱 PE machine은 AMD64다. 설치 프로그램을 Windows에서 실행해 확인한 결과는 아니다. 배포 서명은 없다.
+- TGZ는 이 EXE·설정 예제·검증 상태·런타임 검사 기록·라이선스·대응 소스·커밋된 앱 소스를 묶는다. TGZ 자체의 SHA-256은 옆의 `.sha256` 파일에 별도로 제공하여 자기 참조를 피한다.
+
+`releaseReady`는 Windows 수용 검증 전이므로 false다.
 
 ## 남은 수용 검증
 
