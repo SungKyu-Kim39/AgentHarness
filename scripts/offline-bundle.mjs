@@ -18,6 +18,8 @@ await mkdir(path.join(root, 'source'), { recursive: true });
 await cp(path.join(output, exe), path.join(root, exe));
 await cp(path.join(project, 'agent-config.example.json'), path.join(root, 'agent-config.json'));
 await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, '시작하기.txt'));
+await cp(path.join(project, 'docs/validation-offline-candidate.md'), path.join(root, '검증보고서.md'));
+await cp(path.join(project, '.cache/packaged-runtime-audit.json'), path.join(root, 'runtime-audit.json'));
 await cp(path.join(project, 'distribution/readiness.json'), path.join(root, '검증상태.json'));
 for (const [from, to] of [
   ['LICENSE', 'L-Vibe-LICENSE'], ['.cache/opencode-desktop/source/LICENSE', 'OpenCode-LICENSE'],
