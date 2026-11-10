@@ -5,6 +5,7 @@
 | 검증 | 관찰 결과 |
 | --- | --- |
 | 설계 원격 반영 | `20b00a9f7470652b0044c23f27d6dce4973c5a4f`, origin/work를 git ls-remote로 확인 |
+| 초기 구현 원격 반영 | `a6c300b93789ea526e7826bcafc04581a47f8269`, origin/work의 동일 SHA 확인 |
 | 공식 소스 | v2.2.6 / dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06 |
 | 소스 archive | 75,208,595 bytes, SHA-256 dfa26f59cc4f20424ada95199e0d50fc9d86fe8eda1f7264cf5962f7366de71f |
 | 준비·무결성 | 실제 고정 원본에 16개 파일 패치·overlay 적용, 재실행 및 경계 파일/overlay 검증 |
