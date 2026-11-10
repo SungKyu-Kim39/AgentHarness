@@ -26,6 +26,22 @@ test('native model bindings hide actual keys and select the configured default',
 });
 
 const cli = path.resolve('.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
+test('an unconfirmed MCP stop still closes HTTP gateways and prevents native restart', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-stop-failure-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const runtime = new NativeRuntime(root, root, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
+  const config = configSchema.parse({ schemaVersion: 2, models: [{ name: 'test', id: 'test', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'synthetic-secret' }] });
+  await runtime.initialize(config);
+  const internals = runtime as unknown as { models: Array<{ gateway: { baseUrl: string } }>; tools: { url: string; extensions: { close(): Promise<void> } } };
+  const model = internals.models[0].gateway.baseUrl;
+  const mcp = internals.tools.url;
+  assert.equal((await fetch(model + '/chat/completions', { method: 'POST' })).status, 401);
+  internals.tools.extensions.close = async () => { throw new Error('injected unconfirmed child stop'); };
+  await assert.rejects(runtime.close(), /종료/);
+  await assert.rejects(fetch(model + '/chat/completions', { method: 'POST' }));
+  await assert.rejects(fetch(mcp, { method: 'POST' }));
+  await assert.rejects(runtime.initialize(config), /새 실행/);
+  await assert.rejects(runtime.connection([cli]), /새 엔진/);
+});
 test('OpenCode provider format accepts APIKey and preserves model aliases, IDs, capabilities and cost', () => {
   const input = { model: { providerID: 'Internal provider', model: 'model-1' }, providers: {
     'Internal provider': { name: 'Internal provider', package: '@opencode/ai/providers/openai-compatible', env: ['VLLM_KEY_1'],

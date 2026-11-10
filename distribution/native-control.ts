@@ -70,11 +70,13 @@ export class NativeRuntime {
   private queue: Promise<unknown> = Promise.resolve();
   private engineConfig = '';
   private config?: AgentConfig;
+  private shutdownUnconfirmed = false;
   constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean> = async () => false) {
     this.vault = new ConfigVault(root, cipher);
   }
   async load() { return this.vault.load(); }
   async initialize(config: AgentConfig) {
+    if (this.shutdownUnconfirmed) throw new Error('이전 서비스 종료가 확인되지 않아 새 실행을 차단합니다.');
     this.config = config;
     const configured = config.models ?? [{ ...config.model, name: config.model.id }];
     try {
@@ -135,6 +137,7 @@ export class NativeRuntime {
   }
   connection(command: readonly string[]) {
     const operation = this.queue.then(async () => {
+      if (this.shutdownUnconfirmed) throw new Error('이전 서비스 종료가 확인되지 않아 새 엔진 실행을 차단합니다.');
       if (this.current && this.child?.exitCode === null) return this.current;
       await this.stopEngine();
       if (!this.config || !this.engineConfig || command.length !== 1 || !path.isAbsolute(command[0]))
@@ -191,10 +194,15 @@ export class NativeRuntime {
     } finally { clearTimeout(timer); }
   }
   async close() {
-    await this.tools?.close(); this.tools = undefined;
-    await this.stopEngine();
-    await this.knowledge?.close();
-    await Promise.all(this.models.map(m => m.gateway.close())); this.models = [];
+    const results = await Promise.allSettled([
+      this.tools?.close(), this.stopEngine(), this.knowledge?.close(),
+      ...this.models.map(m => m.gateway.close()),
+    ]);
+    this.tools = undefined; this.models = [];
+    if (results.some(result => result.status === 'rejected')) {
+      this.shutdownUnconfirmed = true;
+      throw new Error('일부 서비스 종료를 확인하지 못했습니다. 새 실행을 차단합니다.');
+    }
   }
 }
 

@@ -1686,7 +1686,7 @@
       "url": "https://storage.googleapis.com/chrome-for-testing-public/157.0.8103.50/win64/chrome-win64.zip"
     }
   },
-  "manifestSha256": "120a482315050c6d7fcf9280c63af179d3dbdbd047f7e51263222effa75f986d",
+  "manifestSha256": "88ca8f878d662d1f1d0c4b85625c47836e191b710f49116b63ff1da21d154457",
   "nativePackages": {
     "msvc-runtime": {
       "version": "14.51.36231",

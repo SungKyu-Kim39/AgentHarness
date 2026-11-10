@@ -195,11 +195,13 @@ export class HostTools {
   async close() {
     this.accepting = false;
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
-    await this.extensions.close();
-    for (const child of this.children) child.kill('SIGKILL');
-    await Promise.allSettled(this.active);
-    this.server?.closeAllConnections();
-    await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); });
+    try { await this.extensions.close(); }
+    finally {
+      for (const child of this.children) child.kill('SIGKILL');
+      await Promise.allSettled(this.active);
+      this.server?.closeAllConnections();
+      await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); });
+    }
   }
   cancelSession(session: string) {
     this.cancelled.add(session);

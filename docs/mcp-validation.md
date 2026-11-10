@@ -4,7 +4,7 @@
 
 ## 실제 원본 서버 호출
 
-Linux x86_64, Node 24.22.1, CPython 3.12에서 `npx --no-install tsx scripts/test-mcp-live.ts` 전체와 변경 후 해당 단계(`files`, `semantic`, `browser`)를 검증했다. endpoint는 로컬 합성 페이지이며 실제 사내 LLM·임베딩 API로 요청하지 않았다. Python 서비스는 독립 site-packages를 사용한다. Windows 배포본을 Linux 가상환경 복사로 만들지 않는다.
+Debian GNU/Linux 13 (trixie) x86_64, Node 24.22.1, CPython 3.12에서 `npx --no-install tsx scripts/test-mcp-live.ts` 전체와 변경 후 해당 단계(`files`, `semantic`, `browser`)를 검증했다. endpoint는 로컬 합성 페이지이며 실제 사내 LLM·임베딩 API로 요청하지 않았다. Python 서비스는 독립 site-packages를 사용한다. Windows 배포본을 Linux 가상환경 복사로 만들지 않는다.
 
 | 원본 MCP | 고정 버전 | 관찰 결과 |
 |---|---|---|
@@ -15,9 +15,17 @@ Linux x86_64, Node 24.22.1, CPython 3.12에서 `npx --no-install tsx scripts/tes
 | Playwright | MCP 0.0.85 | 접근성 스냅샷·콘솔 오류·PNG 결과 |
 | Chrome DevTools | 1.12.0 | 스냅샷·콘솔·PNG 및 재탐색 후 5초 성능 trace. CrUX·업데이트·사용 통계 비활성화 |
 
-브라우저 테스트에는 실행기에 설치된 `/usr/lib/chromium/chromium`을 검증 전용으로 지정했다. Windows 배포 설정으로 재사용하지 않는다. Linux 컨테이너 테스트의 `--no-sandbox`도 Windows worker에 적용하지 않는다. 다른 localhost 포트의 fetch와 POST가 대상 서버에 도달하지 않았고 승인/예약 포트 거부 시 페이지 요청이 늘지 않았다. 호출·종료 후 테스트 폴더를 사용하는 MCP·브라우저 자식 프로세스가 남지 않았다.
+브라우저 테스트에는 실행기의 Chromium 156.0.8078.79(`/usr/lib/chromium/chromium`)를 검증 전용으로 지정했다. Windows 배포 설정으로 재사용하지 않는다. Linux 컨테이너 테스트의 `--no-sandbox`도 Windows worker에 적용하지 않는다. 다른 localhost 포트의 fetch와 POST가 대상 서버에 도달하지 않았고 승인/예약 포트 거부 시 페이지 요청이 늘지 않았다. 호출·종료 후 테스트 폴더를 사용하는 MCP·브라우저 자식 프로세스가 남지 않았다.
 
 `test:mcp:live`는 빌드 PC 전용 통합 검사다. 일반 `npm test`와 구분하며 Windows 호출 수용 검사로 계산하지 않는다.
+
+## 최종 회귀와 빌드
+
+- `npm run verify`: **45개 테스트 통과, 실패·건너뜀 0**, 기본 스킬 34개 무결성, 타입 검사와 Desktop overlay 검증 통과.
+- 종료 확인 실패를 주입해도 실제 MCP/모델 HTTP 게이트웨이가 닫히고 새 초기화·엔진 실행이 거부되는 추가 검사를 포함한다.
+- 공식 Desktop `bun run typecheck`: 2개 프로젝트·2,549개 파일, 오류 없음.
+- `node scripts/desktop.mjs build`: main/preload/renderer 빌드 성공. 원본의 CSS 최적화·dynamic import 경고가 남으며 설치 EXE 생성 결과는 아니다.
+- MCP 네이티브 제어 번들 `l-vibe-control-DZMe3MXP.js` SHA-256: `be5d56cde135861dfd0da0fc70f340a6ec66a79eba2752bc91b8dabdd599901f`.
 
 ## Windows 번들과 제한
 
@@ -26,5 +34,7 @@ Windows x64 wheel을 Windows 플랫폼 마커·CPython 3.12 ABI로 해결하고 
 Windows PE import table 698개를 정적으로 조사하여 ONNXRuntime의 MSVCP140/140_1 누락을 찾았다. 고정 `msvc-runtime 14.51.36231`의 재배포 DLL을 변경 없이 앱 내부에 넣고 라이선스·출처·해시를 기록했다. pywin32 GUI/MFC 도구는 노출하거나 실행하지 않는다. PE 이름 대조는 Windows의 실제 DLL 로딩 검증을 대신하지 않는다.
 
 staging에는 Python·Git·clangd·Node MCP·worker·라이선스가 있다. 공식 Chrome for Testing 157.0.8103.50의 `storage.googleapis.com`는 빌드 실행기 정책에서 HTTP 403으로 차단되어 확보하지 못했다. 직원 PC 최초 다운로드나 개인 브라우저로 대체하지 않는다. `mcp:verify`, EXE 패키징과 TGZ 생성은 누락 상태를 오류로 처리한다.
+
+확보한 20,726개 파일은 staging manifest와 전수 대조했다. 현재 미완성 manifest SHA-256은 `88ca8f878d662d1f1d0c4b85625c47836e191b710f49116b63ff1da21d154457`이며 누락 목록은 `browser/chrome-win64/chrome.exe`다. 이 값을 완성된 설치본의 검증 값으로 사용하지 않는다. 누락 상태를 패키징 gate가 실제 거부하는 것도 확인했다.
 
 Windows 10/11 일반 사용자 설치·6종 실호출·DLL·경로/ACL·Job Object 자식 종료·DNS/TCP 관찰, 실제 사내 Qwen·임베딩 검증이 남아 있다. `releaseReady`는 false다.

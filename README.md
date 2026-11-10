@@ -36,7 +36,7 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배�
 - morluto/rea 6.8.0의 제한된 정적 분석, Graphify 0.9.105의 네트워크 없는 AST 추출.
 - Aegis·Conductor 순수 지침 어댑터와 오프라인 기본 스킬 34개. 최초 실행에서 OpenViking skills에 참조·라이선스와 함께 자동 등록하며 재실행 중복 색인과 사용자 편집본 덮어쓰기를 방지합니다. [추가 스킬·MCP 조사와 선택 목록](docs/offline-extensions-research.md)을 참고하세요.
 
-Serena/clangd 의미 분석, 승인된 명령 실행, 새 Desktop의 반복 감지·답변 재출력은 아직 연결되지 않았습니다. 텍스트 검색·AST 결과를 Serena 의미 분석 성공으로 표시하지 않습니다. 외부 DNS/TCP 관찰, Windows 설치·업데이트·ACL·자식 프로세스 검증과 실제 사내 Qwen 테스트가 남아 있습니다.
+공개된 0.2.1 설치본에는 Serena/clangd 의미 분석이 없습니다. 0.2.2 소스의 MCP 연동은 위 검증 기록과 구분해서 확인하세요. 일반 명령 실행과 새 Desktop의 반복 감지·답변 재출력, Windows 설치·업데이트·ACL·자식 종료·DNS/TCP 관찰과 실제 사내 Qwen 수용 검증은 남아 있습니다.
 
 ## 빌드 PC
 

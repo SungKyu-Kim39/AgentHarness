@@ -20,6 +20,9 @@ await cp(path.join(output, exe), path.join(root, exe));
 await cp(path.join(project, 'agent-config.example.json'), path.join(root, 'agent-config.json'));
 await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, '시작하기.txt'));
 await cp(path.join(project, `docs/validation-${version}.md`), path.join(root, '검증보고서.md'));
+const audit = JSON.parse(await readFile(path.join(project, '.cache/packaged-runtime-audit.json'), 'utf8'));
+const mcpLock = JSON.parse(await readFile(path.join(project, 'mcp-runtime-lock.json'), 'utf8'));
+if (audit.mcp?.manifestSha256 !== mcpLock.manifestSha256) throw new Error('Actual packaged MCP runtime audit is missing or stale; do not reuse the 0.2.1 audit');
 await cp(path.join(project, '.cache/packaged-runtime-audit.json'), path.join(root, 'runtime-audit.json'));
 await cp(path.join(project, 'distribution/readiness.json'), path.join(root, '검증상태.json'));
 for (const [from, to] of [
