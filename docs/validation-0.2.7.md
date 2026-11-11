@@ -25,3 +25,17 @@
 이후 OpenViking 회귀 검사 6개가 모두 통과했다(실패·건너뜀 0). 기본 스킬 34개 등록/재시작·프로젝트 범위 검사는 약 135.4초, 실제 0.5.0→0.5.4 개인 지식 이관/두 프로젝트 조회는 약 99.8초였다. 최종 공식 Desktop 타입 검사도 2개 프로젝트·2,549개 파일 오류 0(약 37.8초), main/preload/renderer 빌드 성공이다. 원본 CSS/dynamic import/plugin timing 경고는 유지한다.
 
 별도 SDK 검사에서 실제 동기·비동기 OpenAI 클라이언트 내부 HTTPX의 connect/read/write/pool 네 가지 timeout이 모두 None임을 확인했다(약 11.2초). 설정 객체만 검사한 결과가 아니다. 설치 EXE 검사는 ASAR 내부의 timeout/headerTimeout/chunkTimeout=false 기본값도 확인하도록 보완했다.
+
+## 실제 설치 EXE 검사
+
+`npm run package:win`과 `npm run audit:installer`를 완료했다. Windows 실행 수용과 구분한 Linux NSIS 추출 검사다. 자체 배포 서명은 없다.
+
+- 파일: `L-Vibe-0.2.7-win-x64.exe`
+- 크기: 1,056,737,928 bytes
+- SHA-256: `2c86d33cf9a3d0953de51adf7ca61dff97cefa29d5b5e17afa092e9cc12ac7ae`
+- 실제 파일/폴더: 94,210/8,740, ASAR 경로 11,584, 모두 ASCII
+- ASAR SHA-256: `b83ea4bf1c3fe1e1f4b3ddc7c08cca70c81f4539902663e0e7000bc5f9e5b593`
+- 실제 native control chunk에서 모델/승인 수정 marker 6개와 timeout/headerTimeout/chunkTimeout=false를 확인했다.
+- OpenViking 63,069개, REA 9,019개, MCP 21,031개, 스킬 34개/259개 파일과 토크나이저 6종/인코더 7종/vendor 3파일을 전수 확인했다.
+
+TGZ와 공개 다운로드 결과는 생성/업로드 후 기록한다. Windows 10/11·실제 사내 서버 검증은 여전히 별도다.

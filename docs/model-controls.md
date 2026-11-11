@@ -62,7 +62,7 @@
 
 긴 대기 자체는 실패로 판단하지 않는다. 연결이 유지되는 동안 응답을 기다리며, 사용자가 중지하면 진행 중인 모델 HTTP 연결을 닫는다. 사내 서버나 중계기가 실제로 연결을 끊는 경우는 별도 오류로 기록한다. 서버의 대기열 순번은 해당 API가 제공하지 않는 한 추정해 표시하지 않는다.
 
-OpenViking의 모델 중계 및 모델 처리를 기다리는 로컬 API, 고정 OpenAI SDK의 VLM backend, 답변 재작성기에도 고정 응답 대기 제한을 두지 않는다. OpenViking SDK의 JSON은 양수 timeout을 요구하므로 검증 후 backend 구성에서 HTTPX/OpenAI가 지원하는 None으로 변환하는 앱 어댑터를 사용한다. 원본 SDK 파일은 변경하지 않는다. 서비스 준비 확인과 프로세스 종료 확인은 모델 응답 대기와 다른 단계다.
+OpenViking의 모델 중계 및 모델 처리를 기다리는 로컬 API, 고정 OpenAI SDK의 VLM backend, 기존 프로토타입 답변 재작성 코드에도 고정 응답 대기 제한을 두지 않는다. Desktop의 답변 재출력 통합은 후속 구현 범위다. OpenViking SDK의 JSON은 양수 timeout을 요구하므로 검증 후 backend 구성에서 HTTPX/OpenAI가 지원하는 None으로 변환하는 앱 어댑터를 사용한다. 원본 SDK 파일은 변경하지 않는다. 서비스 준비 확인과 프로세스 종료 확인은 모델 응답 대기와 다른 단계다.
 
 중계 실패의 마지막 분류는 `%APPDATA%\L-Vibe\model-gateway-status.json`에 저장한다. 요청/응답 본문, URL, 헤더, API 키는 기록하지 않는다. 이 파일은 실패 기록이며 현재 서비스 상태가 아니다. `LV_MODEL_TOTAL_TIMEOUT`, `LV_MODEL_HEADER_TIMEOUT`, `LV_MODEL_CHUNK_TIMEOUT`, `LV_MODEL_UPSTREAM_RESET`, `LV_MODEL_CONNECTION`, `LV_MODEL_HTTP`와 elapsedMs/바이트 수/HTTP 숫자로 원인을 구분한다. 호스트 중계는 연결이 끊긴 출력을 성공으로 표시하지 않으며 자체 재시도를 추가하지 않는다. 엔진의 기존 재시도 정책은 별도로 적용되어 실패 확정 전 압축 상태가 running으로 남을 수 있다. 반복 오류가 발생하면 중지하고 실패 코드와 서버 상태를 확인한다.
 

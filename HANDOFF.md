@@ -1,5 +1,7 @@
 <!-- Latest work: 2026-11-11 KST -->
 
+0.2.7 실제 EXE 생성/추출 검사를 완료했다. SHA-256 2c86d33cf9a3d0953de51adf7ca61dff97cefa29d5b5e17afa092e9cc12ac7ae, 1,056,737,928 bytes. native ASAR의 무제한 모델 대기 기본값을 확인했으며 TGZ/공개 게시 검사는 이어서 기록한다. Python manifest는 179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85다.
+
 0.2.7 작업: 세션 압축 ECONNRESET의 고정 180초 중계 제한/4 MiB 요청 제한을 보완하고, thinking options/객체 variants 호환 및 네이티브 요청별 자동 수정 승인을 추가했다. [설정 안내](docs/model-controls.md), [검증 기록](docs/validation-0.2.7.md)을 먼저 읽는다. 사용자는 오래 작업한 뒤 압축 실패한다고 답했고, 사내 모델 대기열이 길어 경과 시간으로 중단하지 말라고 명확히 지시했다. 호스트·엔진의 기본 응답 제한을 해제하고 OpenViking VLM/모델 처리 대기에도 적용한다. 실제 사내 연결 종료의 원인은 확정하지 않는다. 아래 0.2.6은 이전 배포 기록이다.
 
 # L-Vibe 작업 인계 — 다른 PC에서 이어가기
