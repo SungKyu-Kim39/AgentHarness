@@ -31,6 +31,6 @@ TGZ는 이 실제 EXE/audit를 다시 대조한 후 생성한다. TGZ 자체 해
 
 최종 `L-Vibe-0.2.4-windows-x64.tgz`는 **1,121,480,970 bytes**, SHA-256 `b5bac4ed0735c8e1fce8453fc441a36c731964dbd735c8089529b063a1c6b84d`다. 33개 항목/30개 파일 및 포함된 소스 archive의 496개 항목 경로 모두 ASCII다. 체크섬 목록을 제외한 **29개 파일**을 전수 SHA-256 대조했고 EXE/audit·설정 예제·0.2.4 안내·추가 진단 스크립트·CMD CRLF와 문서도 원본에 대조했다. sourceCommit은 `0976c3eba95c4d21015b97856e9d415d1c4dbbe2`다. 이 TGZ 자체 수치는 생성 후 저장소에 추가한 기록이며 TGZ 안의 보고서는 생성 직전 EXE 검사까지의 기록이다.
 
-公開 게시 커밋 `170512c3f4c2a7e14dcac1beba220092baced506`과 원격 work를 대조했다. TGZ는 공개 주소에서 전체 다운로드하여 HTTP 200·바이트 수·SHA-256이 일치함을 확인했다. EXE 공개 주소는 HEAD HTTP 200·크기, range HTTP 206·첫 65,536 bytes의 PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 수행하지 않았으며 실제 EXE의 전체 해시는 로컬 archive 검사·Git LFS content ID에 대응한다. [공개 다운로드 기록](../downloads/L-Vibe-0.2.4-public-audit.json)을 보존한다. 이것을 Windows 설치/실행 수용으로 계산하지 않는다.
+공개 게시 커밋 `170512c3f4c2a7e14dcac1beba220092baced506`과 원격 work를 대조했다. TGZ는 공개 주소에서 전체 다운로드하여 HTTP 200·바이트 수·SHA-256이 일치함을 확인했다. EXE 공개 주소는 HEAD HTTP 200·크기, range HTTP 206·첫 65,536 bytes의 PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 수행하지 않았으며 실제 EXE의 전체 해시는 로컬 archive 검사·Git LFS content ID에 대응한다. [공개 다운로드 기록](../downloads/L-Vibe-0.2.4-public-audit.json)을 보존한다. 이것을 Windows 설치/실행 수용으로 계산하지 않는다.
 
 모델 설정 예제·기존 저장 설정 보존 안내와 [라이선스 재검토](license-policy.md)를 유지한다. 구성 요소/의존성 버전은 0.2.3과 동일하며 `releaseReady: false`다. Windows 10/11 전체 수용·사내 모델/SDK·DNS/TCP·자식 종료와 새 Desktop의 반복/재출력·세션 diff·일반 명령 구현/검증은 별도로 남는다.

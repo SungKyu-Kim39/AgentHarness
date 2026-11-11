@@ -25,7 +25,7 @@ Windows CPython 3.12의 `socket.socketpair()`는 내부 loopback TCP 연결을 �
 
 앱을 종료한 뒤 패치 폴더의 **CHECK_IMPORT.cmd**를 실행한다. 설치된 수정 launcher의 정책을 사용하며, 실제 모델 설정/키를 읽지 않고 임시 HOME에서 모듈만 가져온다. `OPENVIKING_IMPORT_OK`는 모듈 검사 성공이며 모델 인증·전체 서비스 준비 성공까지 뜻하지 않는다. 실패하면 마지막 오류와 `EXIT_CODE`로 다음 원인을 구분한다.
 
-새 소스에는 시작 실패 단계(번들·설정 준비·프로세스 실행/종료·health 시간 초과)와 안전한 코드/숫자만 기록하는 `startup-status.json`도 추가했다. 이 작은 패치는 launcher만 고치므로 **기존 Desktop에 새 오류 진단 UI를 추가하지 않는다.** 해당 진단 기능은 새 전체 EXE 빌드가 필요하다.
+0.2.4 전체 EXE에는 시작 실패 단계(번들·설정 준비·프로세스 실행/종료·health 시간 초과)와 안전한 코드/숫자만 기록하는 `startup-status.json`도 추가했다. 이 작은 패치는 launcher만 고치므로 **기존 Desktop에 새 오류 진단 UI를 추가하지 않는다.** 새 진단 기능과 수정이 함께 포함된 전체 설치본은 [다운로드 안내](../downloads/README.md)를 따른다.
 
 ## 검증 범위
 
