@@ -1,0 +1,23 @@
+{
+  "version": "0.2.3",
+  "verifiedAt": "2026-11-11T01:26:18.029267+00:00",
+  "method": "full public HTTP GET and streaming SHA-256",
+  "files": [
+    {
+      "name": "L-Vibe-0.2.3-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.3-win-x64.exe",
+      "responseUrl": "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/refs/heads/work/downloads/L-Vibe-0.2.3-win-x64.exe",
+      "status": 200,
+      "bytes": 1055821027,
+      "sha256": "a3229dc9342a68628eb5e4eaa4f8b5173a6dd010490380f62e3bd0dff34decb2"
+    },
+    {
+      "name": "L-Vibe-0.2.3-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.3-windows-x64.tgz",
+      "responseUrl": "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/refs/heads/work/downloads/L-Vibe-0.2.3-windows-x64.tgz",
+      "status": 200,
+      "bytes": 1121442442,
+      "sha256": "c5ed612dc7f7fe9ad6f5c7c7899eaf83693aa9b7bb0b77d508e58256b5d144e9"
+    }
+  ]
+}

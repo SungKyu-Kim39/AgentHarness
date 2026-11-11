@@ -17,6 +17,12 @@
 
 [설치 안내](../docs/offline-setup.md) · [0.2.3 검증 보고서](../docs/validation-0.2.3.md) · [실제 EXE 검사 기록](L-Vibe-0.2.3-runtime-audit.json) · [TGZ 검사 기록](L-Vibe-0.2.3-bundle-audit.json)
 
+게시 커밋 `b6315e6da768755d55ca2c16215c623a8b2a0c1d`의 공개 EXE/TGZ 주소에서 **HTTP 200**을 확인하고 두 파일 전체를 스트리밍하여 크기·SHA-256을 다시 계산했습니다. 로컬 산출물 및 Git LFS object ID와 일치합니다. [공개 다운로드 검사 기록](L-Vibe-0.2.3-public-audit.json)을 참고하세요.
+
+설치 후 `settings.enc.json`만 있다면 기존 설정을 보존했거나 최초 가져오기가 끝난 상태입니다. `config-import.json`은 임시 파일이며 자동 삭제합니다. [설정 복구·교체 안내](../docs/configuration-recovery.md)에 재설치 없는 변경 방법을 정리했습니다.
+
+자체 코드는 MIT이며 전체 묶음의 라이선스는 복수입니다. [라이선스 정책 재검토](../docs/license-policy.md)에 GPL/AGPL/LGPL·스킬·Chrome/MSVC의 조건과 미확인 항목을 기록했습니다. 이 두 안내는 0.2.3 게시 후 추가한 저장소 문서이며 기존 EXE/TGZ 바이트는 변경하지 않았습니다.
+
 Serena/clangd·Git·Playwright·MarkItDown·Chrome DevTools·DuckDB를 통제된 로컬 도구로 제공합니다. 기본 스킬은 임베딩 JSON 설정 후 최초 실행에서 OpenViking skills에 자동 등록하며, 변경 없는 재실행의 중복 색인과 사용자 편집본 덮어쓰기를 방지합니다.
 
 파일은 Git LFS로 저장합니다. 위 링크로 다운로드할 때 Git LFS 설치는 필요하지 않습니다. 소스를 clone하여 실제 바이너리도 받으려면 Git LFS가 필요하며 작은 pointer 파일을 설치본으로 사용하지 마세요.

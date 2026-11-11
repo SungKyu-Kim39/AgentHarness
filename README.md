@@ -12,12 +12,14 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배�
 
 1. 반입한 `L-Vibe-0.2.3-windows-x64.tgz`를 압축 해제합니다.
 2. `L-Vibe-0.2.3-win-x64.exe`로 일반 사용자에게 설치합니다.
-3. 자동으로 열린 설정 JSON을 편집하고 저장합니다.
+3. 저장 설정이 없는 첫 설치에서는 자동으로 열린 설정 JSON을 편집하고 저장합니다. 기존 설정이 있으면 보존하며 메모장을 열지 않습니다.
 4. L-Vibe를 실행하고 프로젝트 폴더와 모델을 선택합니다.
 
 자세한 내용은 [설치 안내](docs/offline-setup.md)를 확인하세요. 직원 PC에서 npm·pip·uvx·Bun·Git clone이나 런타임 설치를 실행하지 않습니다. 모델 가중치는 포함하지 않으며, 설정한 사내 모델 API가 필요합니다. 설치·업데이트·기본 제거는 사용자 데이터 폴더를 유지합니다.
 
 압축 안의 안내 파일은 `GETTING_STARTED.txt`, 검증 보고서는 `VALIDATION_REPORT.md`, 출시 상태는 `READINESS.json`입니다. 파일·경로 이름만 영문으로 통일하며 한국어 UI와 문서 내용은 유지합니다.
+
+`settings.enc.json`이 있고 `config-import.json`이 없는 것은 예상된 상태입니다. 임시 JSON은 암호화 저장 후 삭제합니다. 기존 설정을 바꾸는 절차는 [설정 복구·교체 안내](docs/configuration-recovery.md)를 따르세요.
 
 ## 모델 설정
 
@@ -71,3 +73,5 @@ npm run bundle:offline
 원형 `src/renderer`, `src/preload`와 `dev:prototype`, `build:prototype`, `start:prototype`는 이관 전 비교·회귀 검증용입니다. 원형 테스트를 새 Desktop 검증으로 계산하지 않습니다. 새 소스는 `distribution/` overlay, `upstream-lock.json`, `scripts/desktop.mjs`로 관리합니다.
 
 설계는 [아키텍처](docs/architecture.md), [요구사항](docs/requirements.md), [구현 계획](docs/implementation-plan.md), [Windows 수용 절차](docs/windows-acceptance.md)를 참고하세요. OpenViking의 AGPL-3.0 대응 소스와 각 구성 요소의 라이선스를 배포 묶음에 포함합니다.
+
+자체 코드는 MIT이며 번들은 GPL/AGPL/LGPL·CC-BY-SA 및 브라우저/DLL의 별도 조건을 포함합니다. [라이선스 정책 재검토](docs/license-policy.md)와 [제3자 고지](THIRD_PARTY_NOTICES.md)에 확인한 조건 및 남은 재배포 검토를 기록합니다. 전체 설치 묶음의 라이선스 검토 완료를 의미하지 않습니다.

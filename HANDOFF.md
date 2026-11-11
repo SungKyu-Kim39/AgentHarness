@@ -14,12 +14,15 @@
 | 최신 설치 파일 | **0.2.3 검증 후보 EXE/TGZ**. 영문 ASCII 배포 경로, MCP 6종과 고정 브라우저를 포함한다 |
 | 0.2.3 EXE/TGZ | 생성·실제 EXE 경로/해시·TGZ 23개 파일 체크섬·대응 소스 검사 완료. 게시 결과는 다운로드 안내 참조 |
 | TGZ 소스 체크포인트 | `93c3df35e9c6a1000ff972148de6aac99d29c9c9` |
-| 바로 다음 작업 | Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
+| 공개 다운로드 | 0.2.3 EXE/TGZ 업로드 완료. 두 공개 주소의 HTTP 200·전체 크기·SHA-256 대조 통과 |
+| 바로 다음 작업 | 라이선스 재배포 미확인 항목, Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.3 검증 상태](docs/validation-0.2.3.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
 
 **2026-11-11 파일명 수정:** 한글 파일명 깨짐 제보에 따라 0.2.3에서 영문 ASCII 경로 검사와 문서 이름 변경을 구현했다(`ffde16f`). 회귀 검사 **51개 통과, 실패·건너뜀 0**, 공식 Desktop 타입 검사 2개 프로젝트·2,549개 파일 오류 0 및 빌드 성공. 실제 0.2.3 EXE를 추출한 94,201개 파일·8,739개 폴더와 ASAR 11,584개 경로 모두 ASCII이며 각 런타임 해시도 일치한다. 최신 TGZ/게시 정보는 다운로드 안내와 현재 브랜치 로그를 따른다.
+
+**설정/라이선스 후속 확인:** 사용자가 설치 PC에 `settings.enc.json`은 있고 `config-import.json`은 없다고 확인했다. 기존 설정 보존 또는 최초 가져오기 후 임시 파일 삭제에 부합한다. 메모장 실행은 저장 설정이 없는 경우다. 기존 설정은 알림 영역 메뉴 또는 시작 설정 오류 창에서 JSON을 명시적으로 가져와 교체한다. [복구 안내](docs/configuration-recovery.md)와 [라이선스 재검토](docs/license-policy.md)를 추가했으며 기존 EXE/TGZ는 변경하지 않았다. 자체 코드 MIT를 전체 번들에 적용하지 말고 Chrome/MSVC 재배포 조건·copyleft 대응 소스의 남은 검토를 이어간다.
 
 **새 환경 재개 기록:** 실행 환경 정책 revision 2에서 고정 Chrome 다운로드와 GitHub API 접근을 확인했다. Bun workspace 설치를 완료했고 Windows Chrome 157.0.8103.50을 포함한 MCP **21,031개 파일, complete=true, 누락 0개**를 검증했다. `npm run verify` **48개 통과, 실패/건너뜀 0**, 공식 Desktop 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**, main/preload/renderer 빌드를 통과했다. Windows Electron **44.9.1** 및 NSIS **3.0.4.1**도 확보했다. 약 3.17 GB의 전체 앱 묶음은 기존 NSIS solid 모드의 31비트 data block 한도를 넘으므로 파일별 zlib 압축으로 수정했다. 설치 EXE 1,055,821,574 bytes를 생성하고 실제 추출한 모든 런타임·스킬·앱/CLI의 해시 검증을 통과했다. TGZ 내부 23개 파일의 체크섬·0.2.2 설치 안내·대응 소스 검사도 통과했다. 공개 EXE/TGZ 주소의 HTTP 200·전체 바이트 수·SHA-256도 로컬 산출물과 일치했다. TGZ의 소스 체크포인트는 `b8722666e20e0525d320e636f5b41e689e2879b3`이며 최신 후보와 해시는 [다운로드 안내](downloads/README.md)를 따른다.
 
