@@ -39,7 +39,7 @@ test('offline bundling rejects an audit from another EXE, staging, or runtime ve
   const installer = path.join(root, 'L-Vibe-0.2.2-win-x64.exe');
   await writeFile(installer, 'original installer');
   await save(root, 'package.json', { version: '0.2.2' });
-  const audit = { schemaVersion: 1, verifiedFrom: 'installer-archive', version: '0.2.2', installer: { name: path.basename(installer), bytes: 18, sha256: await fileHash(installer) } };
+  const audit = { schemaVersion: 1, verifiedFrom: 'installer-archive', version: '0.2.2', paths: { encoding: 'ascii' }, installer: { name: path.basename(installer), bytes: 18, sha256: await fileHash(installer) } };
   for (const [name, file] of [['openviking', 'python-runtime-lock.json'], ['mcp', 'mcp-runtime-lock.json'], ['skills', 'skills-lock.json']]) {
     audit[name] = { manifestSha256: name.padEnd(64, '0') };
     await save(root, file, audit[name]);
@@ -56,6 +56,7 @@ test('offline bundling rejects an audit from another EXE, staging, or runtime ve
   audit.cliSha256 = await fileHash(cli);
   await verifyInstallerAudit(audit, installer, root);
   await assert.rejects(verifyInstallerAudit({ ...audit, verifiedFrom: 'staging' }, installer, root), /missing or stale/);
+  await assert.rejects(verifyInstallerAudit({ ...audit, paths: undefined }, installer, root), /ASCII path/);
   await writeFile(installer, 'modified installer');
   await assert.rejects(verifyInstallerAudit(audit, installer, root), /missing or stale/);
   await writeFile(installer, 'original installer');

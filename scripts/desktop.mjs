@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applyPatches, digest } from '../distribution/patches.mjs';
+import { verifyAsciiTree, verifyAsciiGitTree } from './package-paths.mjs';
 const project = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cache = path.join(project, '.cache/l-vibe-desktop');
 const preparedSource = path.join(cache, 'source');
@@ -61,7 +62,12 @@ const mode = process.argv[2];
 if (mode === 'prepare') await prepare();
 else if (mode === 'verify') await verify();
 else if (mode === 'build' || mode === 'package' || mode === 'dev') {
-  if (mode === 'package') execFileSync('python3', [path.join(project, 'scripts/bundle-mcp.py'), 'verify'], { cwd: project, stdio: 'inherit' });
+  if (mode === 'package') {
+    execFileSync('python3', [path.join(project, 'scripts/bundle-mcp.py'), 'verify'], { cwd: project, stdio: 'inherit' });
+    verifyAsciiGitTree(project, 'HEAD');
+    await verifyAsciiTree(path.join(project, 'vendor/runtime/windows-x64'));
+    await verifyAsciiTree(path.join(project, 'vendor/skills'));
+  }
   await verify();
   const readiness = JSON.parse(await readFile(path.join(project, 'distribution/readiness.json'), 'utf8'));
   if (readiness.releaseReady !== true) console.warn('Building a validation candidate; Windows release acceptance is pending.');

@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileHash, verifyInstallerAudit } from './installer-audit.mjs';
+import { verifyAsciiTree, verifyAsciiGitTree, verifyAsciiTar } from './package-paths.mjs';
 const project = path.resolve(import.meta.dirname, '..');
 const output = path.join(project, 'release/desktop');
 const version = JSON.parse(await readFile(path.join(project, 'package.json'), 'utf8')).version;
@@ -14,19 +15,20 @@ execFileSync('python3', [path.join(project, 'scripts/bundle-mcp.py'), 'verify'],
 execFileSync('git', ['diff', '--quiet'], { cwd: project });
 execFileSync('git', ['diff', '--cached', '--quiet'], { cwd: project });
 const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: project, encoding: 'utf8' }).trim();
+verifyAsciiGitTree(project, commit);
 await rm(root, { recursive: true, force: true });
 await mkdir(path.join(root, 'licenses'), { recursive: true });
 await mkdir(path.join(root, 'source'), { recursive: true });
 await cp(path.join(output, exe), path.join(root, exe));
 await cp(path.join(project, 'agent-config.example.json'), path.join(root, 'agent-config.json'));
-await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, '시작하기.txt'));
-await cp(path.join(project, `docs/validation-${version}.md`), path.join(root, '검증보고서.md'));
+await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, 'GETTING_STARTED.txt'));
+await cp(path.join(project, `docs/validation-${version}.md`), path.join(root, 'VALIDATION_REPORT.md'));
 const audit = JSON.parse(await readFile(path.join(project, '.cache/packaged-runtime-audit.json'), 'utf8'));
 await verifyInstallerAudit(audit, path.join(output, exe));
 const upstream = JSON.parse(await readFile(path.join(project, 'upstream-lock.json'), 'utf8'));
 if (await fileHash(path.join(project, '.cache/l-vibe-desktop/source/LICENSE')) !== upstream.files.LICENSE) throw new Error('OpenCode license differs from the locked upstream source');
 await cp(path.join(project, '.cache/packaged-runtime-audit.json'), path.join(root, 'runtime-audit.json'));
-await cp(path.join(project, 'distribution/readiness.json'), path.join(root, '검증상태.json'));
+await cp(path.join(project, 'distribution/readiness.json'), path.join(root, 'READINESS.json'));
 for (const [from, to] of [
   ['LICENSE', 'L-Vibe-LICENSE'], ['.cache/l-vibe-desktop/source/LICENSE', 'OpenCode-LICENSE'],
   ['vendor/runtime/windows-x64/openviking/licenses/openviking-0.5.4-source.tar.gz', 'OpenViking-0.5.4-corresponding-source.tar.gz'],
@@ -36,16 +38,21 @@ for (const [from, to] of [
 ]) await cp(path.join(project, from), path.join(root, 'licenses', to));
 for (const file of ['upstream-lock.json', 'desktop-runtime-lock.json', 'python-runtime-lock.json', 'rea-runtime-lock.json', 'skills-lock.json', 'mcp-runtime-lock.json', 'mcp-node-lock.json'])
   await cp(path.join(project, file), path.join(root, 'licenses', file));
-execFileSync('git', ['archive', '--format=tar.gz', '--output', path.join(root, 'source', 'L-Vibe-' + commit.slice(0, 12) + '-source.tgz'), commit], { cwd: project });
+const sourceArchive = path.join(root, 'source', 'L-Vibe-' + commit.slice(0, 12) + '-source.tgz');
+execFileSync('git', ['archive', '--format=tar.gz', '--output', sourceArchive, commit], { cwd: project });
+verifyAsciiTar(sourceArchive);
 const readiness = JSON.parse(await readFile(path.join(project, 'distribution/readiness.json'), 'utf8'));
 await writeFile(path.join(root, 'bundle-manifest.json'), JSON.stringify({
   name: 'L-Vibe', version, architecture: 'windows-x64', sourceCommit: commit,
   createdAt: new Date().toISOString(), releaseReady: readiness.releaseReady,
   setup: ['extract TGZ', 'run installer EXE', 'edit and save the JSON opened by the installer', 'launch L-Vibe'],
   requiresEmployeePackageInstall: false, includesModelWeights: false, includesRealCredentials: false,
+  pathEncoding: 'ascii',
+  documents: { gettingStarted: 'GETTING_STARTED.txt', validation: 'VALIDATION_REPORT.md', readiness: 'READINESS.json' },
   components: { desktop: 'OpenCode 2.2.6', electron: '44.9.1', python: '3.12.16', openViking: '0.5.4', graphify: '0.9.105', rea: '6.8.0', mcp: JSON.parse(await readFile(path.join(project, 'vendor/runtime/windows-x64/mcp/manifest.json'), 'utf8')).versions },
 }, null, 2) + '\n');
 const checksums = [];
+await verifyAsciiTree(root);
 async function files(relative = '') {
   for (const item of await readdir(path.join(root, relative), { withFileTypes: true })) {
     const name = path.posix.join(relative, item.name);
@@ -56,6 +63,8 @@ async function files(relative = '') {
 await files(); await writeFile(path.join(root, 'SHA256SUMS.txt'), checksums.sort().join('\n') + '\n');
 const archive = path.join(output, folder + '.tgz');
 execFileSync('tar', ['-I', 'gzip -1', '-cf', archive, '-C', output, folder], { stdio: 'inherit' });
+try { verifyAsciiTar(archive); }
+catch (error) { await rm(archive, { force: true }); await rm(archive + '.sha256', { force: true }); throw error; }
 const digest = createHash('sha256').update(await readFile(archive)).digest('hex');
 await writeFile(archive + '.sha256', digest + '  ' + path.basename(archive) + '\n');
 console.log(JSON.stringify({ archive, bytes: (await stat(archive)).size, sha256: digest, commit, releaseReady: readiness.releaseReady }, null, 2));

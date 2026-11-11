@@ -4,8 +4,9 @@ import { readFile, writeFile, mkdir, mkdtemp, rm, stat, open } from 'node:fs/pro
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
-import { extractFile } from '@electron/asar';
+import { extractFile, listPackage } from '@electron/asar';
 import { getPath7za } from 'app-builder-lib/out/toolsets/7zip.js';
+import { assertAsciiPath, verifyAsciiTree } from './package-paths.mjs';
 
 const project = path.resolve(import.meta.dirname, '..');
 const json = async file => JSON.parse(await readFile(file, 'utf8'));
@@ -52,6 +53,7 @@ async function expectedComponents(root) {
 export async function verifyInstallerAudit(audit, installer, root = project) {
   const version = (await json(path.join(root, 'package.json'))).version;
   if (audit.schemaVersion !== 1 || audit.verifiedFrom !== 'installer-archive' || audit.version !== version || audit.installer?.name !== path.basename(installer) || audit.installer?.bytes !== (await stat(installer)).size || audit.installer?.sha256 !== await fileHash(installer)) throw new Error('Installer audit is missing or stale for this EXE');
+  if (audit.paths?.encoding !== 'ascii') throw new Error('Installer audit has no verified ASCII path policy');
   for (const [name, expected] of Object.entries(await expectedComponents(root))) if (audit[name]?.manifestSha256 !== expected) throw new Error('Installer audit is stale for ' + name);
   const staged = path.join(root, '.cache/l-vibe-desktop/source/packages/desktop/dist/win-unpacked');
   for (const [key, file] of [['appAsarSha256', 'resources/app.asar'], ['appExeSha256', 'L-Vibe.exe']]) if (audit[key] !== await fileHash(path.join(staged, file))) throw new Error('Installer audit is stale for ' + file);
@@ -71,11 +73,15 @@ async function auditInstaller(installer) {
       finally { await log.close(); }
     }
     const resources = path.join(extracted, 'resources');
+    const paths = await verifyAsciiTree(extracted);
+    const asarPaths = listPackage(path.join(resources, 'app.asar'));
+    for (const name of asarPaths) assertAsciiPath(name);
     const version = (await json(path.join(project, 'package.json'))).version;
     const app = JSON.parse(extractFile(path.join(resources, 'app.asar'), 'package.json').toString());
     if (app.name !== 'l-vibe' || app.version !== version) throw new Error('Installer contains a different app or version');
     await windowsX64(path.join(extracted, 'L-Vibe.exe'));
     const audit = { schemaVersion: 1, verifiedFrom: 'installer-archive', version, createdAt: new Date().toISOString(), platform: process.platform + '-' + process.arch, installer: { name: path.basename(installer), bytes: (await stat(installer)).size, sha256: await fileHash(installer) } };
+    audit.paths = { ...paths, asarEntries: asarPaths.length };
     audit.appAsarSha256 = await fileHash(path.join(resources, 'app.asar'));
     audit.appExeSha256 = await fileHash(path.join(extracted, 'L-Vibe.exe'));
     for (const [name, expected] of Object.entries(await expectedComponents(project))) {

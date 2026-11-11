@@ -1,13 +1,15 @@
-# L-Vibe 0.2.2 Windows x64 설치
+# L-Vibe 0.2.3 Windows x64 설치
 
-이 묶음은 OpenCode Desktop 기반 L-Vibe의 검증 후보입니다. Windows 10·11 및 실제 사내 모델 서버의 수용 검증은 아직 완료되지 않았습니다. 상세 미완료 항목은 함께 제공한 검증상태.json을 확인하세요.
+이 묶음은 OpenCode Desktop 기반 L-Vibe의 검증 후보입니다. Windows 10·11 및 실제 사내 모델 서버의 수용 검증은 아직 완료되지 않았습니다. 상세 미완료 항목은 함께 제공한 READINESS.json을 확인하세요.
 
-1. 반입한 L-Vibe-0.2.2-windows-x64.tgz를 압축 해제합니다. Windows의 tar 또는 TGZ를 지원하는 압축 도구를 사용할 수 있습니다.
-2. 폴더 안의 L-Vibe-0.2.2-win-x64.exe를 실행합니다. 일반 사용자에게 설치하며 관리자 권한을 요구하지 않습니다.
+1. 반입한 L-Vibe-0.2.3-windows-x64.tgz를 압축 해제합니다. Windows의 tar 또는 TGZ를 지원하는 압축 도구를 사용할 수 있습니다.
+2. 폴더 안의 L-Vibe-0.2.3-win-x64.exe를 실행합니다. 일반 사용자에게 설치하며 관리자 권한을 요구하지 않습니다.
 3. 설치가 끝나면 메모장이 설정 JSON을 엽니다. 사내 주소·키·서버 모델 ID를 입력하고 저장한 뒤 메모장을 닫습니다. 사용하지 않을 보조 provider는 삭제하세요.
 4. 바탕화면 또는 시작 메뉴의 L-Vibe를 실행합니다. 프로젝트 폴더를 선택하고 작업을 요청합니다. 모델 선택창에서 등록한 LLM을 바꿀 수 있습니다.
 
 설치 EXE, Electron, 앱 전용 OpenCode 엔진, Python, OpenViking, REA, Graphify와 MCP 6종의 실행 구성 요소가 함께 제공됩니다. 직원 PC에서 npm·pip·uvx·Git clone·추가 런타임 설치를 실행할 필요가 없습니다. 모델 가중치는 포함하지 않으며, 구성한 사내 모델 API에 연결되어야 합니다.
+
+0.2.3부터 배포 파일·폴더 이름과 설치 리소스 경로는 ASCII 영문 이름을 사용합니다. 시작 안내는 GETTING_STARTED.txt, 검증 보고서는 VALIDATION_REPORT.md, 출시 상태는 READINESS.json입니다. 압축 내부와 포함된 앱 소스 경로도 검사합니다. 안내 내용과 앱의 한국어 표시는 유지됩니다.
 
 ## JSON 설정
 
