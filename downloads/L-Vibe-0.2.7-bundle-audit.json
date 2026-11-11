@@ -1,0 +1,29 @@
+{
+  "version": "0.2.7",
+  "archive": "L-Vibe-0.2.7-windows-x64.tgz",
+  "bytes": 1122449144,
+  "sha256": "15590f5baacbdcec1058b978e7c0fdcd6879dd5fc2668e93f25cf417bc0923af",
+  "sourceCommit": "924833e321173fe20a237ab0123702a135d6fae4",
+  "pathEncoding": "ascii",
+  "entries": 38,
+  "files": 35,
+  "verifiedChecksums": 34,
+  "sourceEntries": 548,
+  "documents": {
+    "gettingStarted": "GETTING_STARTED.txt",
+    "validation": "VALIDATION_REPORT.md",
+    "readiness": "READINESS.json",
+    "configuration": "CONFIGURATION_RECOVERY.txt",
+    "licensePolicy": "LICENSE_POLICY.txt",
+    "diagnostics": "WINDOWS_DIAGNOSTICS.txt",
+    "modelControls": "MODEL_CONTROLS.txt",
+    "personalMigration": "PERSONAL_KNOWLEDGE_MIGRATION.txt"
+  },
+  "installer": {
+    "name": "L-Vibe-0.2.7-win-x64.exe",
+    "bytes": 1056737928,
+    "sha256": "2c86d33cf9a3d0953de51adf7ca61dff97cefa29d5b5e17afa092e9cc12ac7ae"
+  },
+  "configMatchesPlaceholderExample": true,
+  "releaseReady": false
+}

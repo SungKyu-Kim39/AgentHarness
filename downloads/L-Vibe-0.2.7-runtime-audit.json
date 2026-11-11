@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "verifiedFrom": "installer-archive",
+  "version": "0.2.7",
+  "createdAt": "2026-11-11T11:47:19.878Z",
+  "platform": "linux-x64",
+  "installer": {
+    "name": "L-Vibe-0.2.7-win-x64.exe",
+    "bytes": 1056737928,
+    "sha256": "2c86d33cf9a3d0953de51adf7ca61dff97cefa29d5b5e17afa092e9cc12ac7ae"
+  },
+  "paths": {
+    "encoding": "ascii",
+    "files": 94210,
+    "directories": 8740,
+    "asarEntries": 11584
+  },
+  "modelControls": {
+    "controlChunk": "/out/main/l-vibe-control-IQ-oyPXd.js",
+    "sha256": "8e55433d07bfde02f0b1448259a4ad080c4c69bd0916dc0f1d4b63b2725d5e0f",
+    "verifiedTokens": [
+      "LV_MODEL_UPSTREAM_RESET",
+      "LV_MODEL_HEADER_TIMEOUT",
+      "LV_MODEL_CHUNK_TIMEOUT",
+      "autoApproveRequest",
+      "sessionRequest",
+      "chat_template_kwargs"
+    ],
+    "defaultModelDeadlines": false
+  },
+  "appAsarSha256": "b83ea4bf1c3fe1e1f4b3ddc7c08cca70c81f4539902663e0e7000bc5f9e5b593",
+  "appExeSha256": "65e1910fc50d0e37b9578e9730a73ed2f400f9a2be733821e1c0ef5ca1262577",
+  "openviking": {
+    "manifestSha256": "179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85",
+    "files": 63069
+  },
+  "mcp": {
+    "manifestSha256": "002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1",
+    "files": 21031
+  },
+  "skills": {
+    "manifestSha256": "2aec810670e3f3999ff63fcb8688fd0bc33c7180fd9e1eac6b33c288a88c4f4c",
+    "files": 259,
+    "count": 34
+  },
+  "rea": {
+    "manifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+    "files": 9019
+  },
+  "tokenizers": {
+    "lockSha256": "75d2ce8112c9f1e4ccc9654f9243a77c29a95d66f7087ad71e9b50ebdcb8cc02",
+    "assets": 6,
+    "encodings": 7,
+    "canonicalVendorFiles": 3
+  },
+  "cliSha256": "d55839bfc180fd573341265c750eaee72c3ebb2e57f3e2b3eca9cf3449b93507"
+}

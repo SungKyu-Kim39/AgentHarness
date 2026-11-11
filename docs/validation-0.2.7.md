@@ -39,3 +39,7 @@
 - OpenViking 63,069개, REA 9,019개, MCP 21,031개, 스킬 34개/259개 파일과 토크나이저 6종/인코더 7종/vendor 3파일을 전수 확인했다.
 
 TGZ와 공개 다운로드 결과는 생성/업로드 후 기록한다. Windows 10/11·실제 사내 서버 검증은 여전히 별도다.
+
+## 반입 TGZ 검사
+
+`npm run bundle:offline` 및 `python3 scripts/verify-offline-bundle.py`를 완료했다. `L-Vibe-0.2.7-windows-x64.tgz`, 1,122,449,144 bytes, SHA-256 `15590f5baacbdcec1058b978e7c0fdcd6879dd5fc2668e93f25cf417bc0923af`다. 38개 항목/35개 파일 및 34개 체크섬을 대조했고, 소스 archive 548개 항목과 모든 경로가 ASCII다. 원본 소스 commit의 git archive와 포함 소스가 일치하며 설정은 실제 키 없는 배포 템플릿과 일치한다. 소스 체크포인트: `924833e321173fe20a237ab0123702a135d6fae4`. 공개 업로드/다운로드 검사는 다음 기록을 따른다.
