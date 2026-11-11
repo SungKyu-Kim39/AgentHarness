@@ -6,20 +6,22 @@
 
 Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배포판**입니다. 공식 Desktop/엔진 v2.2.6을 고정하고, 사내 모델 설정·승인 중계·로컬 서비스를 결합합니다. 기존 PC의 OpenCode·Zed·개인 설정·플러그인을 읽거나 복제하지 않습니다.
 
-0.2.3은 설치·모델·로컬 도구의 **검증 후보**입니다. TGZ를 해제할 때 한글 파일명이 깨지는 문제를 수정하고 배포 파일·폴더, 설치 리소스, 포함된 앱 소스 경로를 ASCII로 제한합니다. 고정 브라우저를 포함한 MCP 6종과 기본 스킬 34개를 제공합니다. [0.2.3 검증 상태](docs/validation-0.2.3.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
+0.2.4는 설치·모델·로컬 도구의 **검증 후보**입니다. Windows OpenViking 시작 시 asyncio 내부 loopback 연결이 차단되는 실행 경로를 수정하고 시작 실패 단계별 진단을 추가했습니다. 배포 파일·폴더, 설치 리소스와 포함된 앱 소스 경로는 ASCII를 사용합니다. 고정 브라우저를 포함한 MCP 6종과 기본 스킬 34개를 제공합니다. [0.2.4 검증 상태](docs/validation-0.2.4.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
 
-Windows 0.2.2/0.2.3의 OpenViking 시작 실패는 [asyncio loopback 수정 패치](docs/openviking-windows-loopback-fix.md)를 적용하세요. 기존 EXE/TGZ에는 후속 수정이 포함되어 있지 않습니다. 패치는 설정·대화·지식 데이터를 유지합니다.
+0.2.4 전체 설치본에는 loopback 수정이 기본 포함됩니다. 기존 0.2.2/0.2.3 설치본에는 별도의 [작은 오프라인 패치](docs/openviking-windows-loopback-fix.md)를 사용할 수 있습니다. 설정·대화·지식 데이터는 유지합니다.
 
 ## 폐쇄망에서 설치
 
-1. 반입한 `L-Vibe-0.2.3-windows-x64.tgz`를 압축 해제합니다.
-2. `L-Vibe-0.2.3-win-x64.exe`로 일반 사용자에게 설치합니다.
+1. 반입한 `L-Vibe-0.2.4-windows-x64.tgz`를 압축 해제합니다.
+2. 기존 앱이 실행 중이면 완전히 종료하고 `L-Vibe-0.2.4-win-x64.exe`로 일반 사용자에게 설치합니다.
 3. 저장 설정이 없는 첫 설치에서는 자동으로 열린 설정 JSON을 편집하고 저장합니다. 기존 설정이 있으면 보존하며 메모장을 열지 않습니다.
 4. L-Vibe를 실행하고 프로젝트 폴더와 모델을 선택합니다.
 
 자세한 내용은 [설치 안내](docs/offline-setup.md)를 확인하세요. 직원 PC에서 npm·pip·uvx·Bun·Git clone이나 런타임 설치를 실행하지 않습니다. 모델 가중치는 포함하지 않으며, 설정한 사내 모델 API가 필요합니다. 설치·업데이트·기본 제거는 사용자 데이터 폴더를 유지합니다.
 
 압축 안의 안내 파일은 `GETTING_STARTED.txt`, 검증 보고서는 `VALIDATION_REPORT.md`, 출시 상태는 `READINESS.json`입니다. 파일·경로 이름만 영문으로 통일하며 한국어 UI와 문서 내용은 유지합니다.
+
+설정 복구·라이선스·Windows 진단 안내와 `CHECK_OPENVIKING.cmd`/검사 스크립트도 함께 제공합니다. 시작 실패 시 `%APPDATA%\L-Vibe\openviking\startup-status.json`의 단계/코드와 [진단 절차](docs/windows-diagnostics.md)를 확인하세요.
 
 `settings.enc.json`이 있고 `config-import.json`이 없는 것은 예상된 상태입니다. 임시 JSON은 암호화 저장 후 삭제합니다. 기존 설정을 바꾸는 절차는 [설정 복구·교체 안내](docs/configuration-recovery.md)를 따르세요.
 
