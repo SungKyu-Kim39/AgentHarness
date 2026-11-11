@@ -41,11 +41,12 @@ export class HostTools {
   private cancelled = new Set<string>();
   private runs = new Map<string, symbol>();
   private editQueue: Promise<void> = Promise.resolve();
-  private editGrant?: { session: string; project: string; run: symbol };
+  private editGrant?: { session: string; project: string; run: symbol; request?: string };
   readonly skills: OfflineSkills;
   readonly extensions: McpExtensions;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
+    request?: (session: string) => Promise<string>;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
     knowledge: () => KnowledgeService | undefined;
@@ -120,14 +121,16 @@ export class HostTools {
       await previous;
       try {
         if (!this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('중지되었거나 다른 요청으로 전환되었습니다.');
+        const request = await this.options.request?.(session);
         const proposal = await files.propose(randomUUID(), a.path, a.content);
         const detail = `프로젝트: ${project}\n대상: ${a.path}\n\n변경 전\n${proposal.before}\n\n변경 후\n${proposal.after}`;
-        const granted = this.editGrant?.session === session && this.editGrant.project === project && this.editGrant.run === run;
+        const granted = this.editGrant?.session === session && this.editGrant.project === project && this.editGrant.run === run && this.editGrant.request === request;
         const decision = granted ? { approved: true, autoApproveRequest: true } : this.options.approveEdit
           ? await this.options.approveEdit(`파일 수정 승인: ${a.path}`, detail, signal)
           : { approved: await this.options.approve(`파일 수정 승인: ${a.path}`, detail, signal), autoApproveRequest: false };
-        if (!decision.approved || !this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
-        if (decision.autoApproveRequest) this.editGrant = { session, project, run };
+        const unchanged = !this.options.request || await this.options.request(session) === request;
+        if (!unchanged || !decision.approved || !this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
+        if (decision.autoApproveRequest) this.editGrant = { session, project, run, request };
         await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
         try { await files.apply(proposal, signal); }
         catch (error) { this.editGrant = undefined; throw error; }

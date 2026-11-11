@@ -70,3 +70,16 @@ test('a new request invalidates a pending edit decision and cannot inherit its a
   host.resumeSession('s'); decide({ approved: true, autoApproveRequest: true }); await assert.rejects(old, /중지/);
   await assert.rejects(host.call('propose_edit', { path: 'new.c', content: 'new' }, 's'), /거절/); assert.equal(prompts, 2);
 });
+
+
+test('queued input delivery changes the edit grant even without another prompt HTTP request', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-queued-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
+  let request = 'user-one', prompts = 0;
+  const host = new HostTools(root, root, { project: async () => root, request: async () => request, approve: async () => false,
+    approveEdit: async () => { prompts++; return { approved: true, autoApproveRequest: true }; }, knowledge: () => undefined, redactor: new Redactor() });
+  t.after(() => host.close()); host.resumeSession('s');
+  await host.call('propose_edit', { path: 'one.c', content: 'first' }, 's');
+  request = 'user-two';
+  await host.call('propose_edit', { path: 'two.c', content: 'second' }, 's');
+  assert.equal(prompts, 2);
+});

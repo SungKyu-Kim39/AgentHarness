@@ -94,7 +94,7 @@ export class NativeRuntime {
       const redactor = new Redactor();
       for (const model of configured) redactor.add(model.apiKey);
       if (config.openViking) { redactor.add(config.openViking.embedding.apiKey); if (config.openViking.vlm) redactor.add(config.openViking.vlm.apiKey); }
-      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), approve: (message, detail, signal) => this.approve(redactor.text(message), redactor.text(detail), signal), approveEdit: this.approveEdit ? (message, detail, signal) => this.approveEdit!(redactor.text(message), redactor.text(detail), signal) : undefined, knowledge: () => this.knowledge, redactor,
+      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), request: id => this.sessionRequest(id), approve: (message, detail, signal) => this.approve(redactor.text(message), redactor.text(detail), signal), approveEdit: this.approveEdit ? (message, detail, signal) => this.approveEdit!(redactor.text(message), redactor.text(detail), signal) : undefined, knowledge: () => this.knowledge, redactor,
         reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
       });
       await this.tools.start();
@@ -120,6 +120,21 @@ export class NativeRuntime {
     const selected = await realpath(directory);
     if (selected === path.parse(selected).root || selected === this.root || selected.startsWith(this.root + path.sep) || selected.startsWith(this.resources + path.sep)) throw new Error('프로젝트로 사용할 수 없는 앱 관리 경로입니다.');
     this.projects.add(selected); await atomicJSON(path.join(this.root, 'approved-projects.json'), [...this.projects]);
+  }
+  private async sessionRequest(id: string) {
+    if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('엔진 요청을 확인할 수 없습니다.');
+    let cursor: string | undefined;
+    for (let page = 0; page < 10; page++) {
+      const url = new URL('/api/session/' + id + '/message', this.backend.url);
+      url.searchParams.set('limit', '100'); if (cursor) url.searchParams.set('cursor', cursor);
+      const response = await fetch(url, { headers: { Authorization: 'Basic ' + Buffer.from('opencode:' + this.backend.password).toString('base64') }, signal: AbortSignal.timeout(10000) });
+      if (!response.ok) throw new Error('엔진 요청을 확인할 수 없습니다.');
+      const result = await response.json() as { data?: Array<{ id?: string; type?: string }>; cursor?: { next?: string } };
+      const user = result.data?.find(m => m.type === 'user');
+      if (user?.id && /^[a-zA-Z0-9_-]{1,128}$/.test(user.id)) return user.id;
+      cursor = result.cursor?.next; if (!cursor) break;
+    }
+    throw new Error('현재 사용자 요청을 확인하지 못해 파일 수정을 보류합니다.');
   }
   private async sessionProject(id: string) {
     if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('엔진 세션을 확인할 수 없습니다.');

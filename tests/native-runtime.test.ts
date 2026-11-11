@@ -161,13 +161,18 @@ test('legacy model options and variant maps normalize to current settings/body a
   assert.equal(configSchema.parse(JSON.parse(JSON.stringify(config))).defaultVariant, 'off');
 });
 
-test('real pinned engine forwards legacy thinking variants as wire fields, not options metadata', { skip: !existsSync(cli), timeout: 120000 }, async t => {
+test('real pinned engine forwards legacy thinking variants as wire fields, not options metadata', { skip: !existsSync(cli), timeout: 180000 }, async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-thinking-')); t.after(() => rm(root, { recursive: true, force: true }));
   const project = path.join(root, 'project'); await mkdir(project);
-  const calls: any[] = [];
+  const calls: any[] = []; let resetCompaction = false, sessionID = "";
   const mock = createServer(async (req, res) => {
     let text = ''; for await (const chunk of req) text += chunk;
     const body = JSON.parse(text); calls.push(body);
+    if (resetCompaction) {
+      res.writeHead(200, { 'Content-Type': 'text/event-stream' });
+      res.write('data: {"id":"partial","object":"chat.completion.chunk","created":1,"model":"wire","choices":[{"index":0,"delta":{"content":"Incomplete summary"},"finish_reason":null}]}\n\n');
+      setTimeout(() => res.destroy(), 30); return;
+    }
     const content = 'Variant verified.';
     if (!body.stream) { res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ id: 'aux', object: 'chat.completion', model: body.model, choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: 'stop' }], usage: { prompt_tokens: 10, completion_tokens: 3, total_tokens: 13 } })); return; }
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
@@ -187,6 +192,7 @@ test('real pinned engine forwards legacy thinking variants as wire fields, not o
   const catalog = JSON.stringify(await api('/api/model')); for (const id of Object.keys(variants)) assert.ok(catalog.includes('"' + id + '"'), catalog);
   for (const variant of Object.keys(variants)) {
     const created = await api('/api/session', { title: 'Verify ' + variant, location: { directory: project }, model: { providerID: 'p', id: 'm', variant } });
+    sessionID = created.data.id;
     const previous = calls.length;
     await api('/api/session/' + created.data.id + '/prompt', { text: 'Reply briefly.' });
     const deadline = Date.now() + 20000;
@@ -200,4 +206,22 @@ test('real pinned engine forwards legacy thinking variants as wire fields, not o
     assert.deepEqual(body.chat_template_kwargs, { enable_thinking: variant !== 'off' });
     assert.equal(body.options, undefined); assert.equal(body.variants, undefined);
   }
+  // Exercise the user's actual compact endpoint, including the engine SSE parser.
+  await new Promise(r => setTimeout(r, 150)); resetCompaction = true;
+  const compact = await fetch(connection.url + '/api/session/' + sessionID + '/compact', { method: 'POST', headers, body: '{}' });
+  const compactText = await compact.text();
+  let transcript = compactText;
+  const deadline = Date.now() + 120000;
+  while (Date.now() < deadline && !transcript.includes('LV_MODEL_UPSTREAM_RESET')) {
+    transcript = JSON.stringify(await api('/api/session/' + sessionID + '/message?limit=100'));
+    await new Promise(r => setTimeout(r, 100));
+  }
+  assert.ok(transcript.includes('LV_MODEL_UPSTREAM_RESET'), compact.status + ': ' + transcript);
+  assert.ok(!transcript.includes('ECONNRESET'), transcript);
+  const compaction = JSON.parse(transcript).data.find((m: any) => m.type === 'compaction');
+  assert.equal(compaction.status, 'failed');
+  assert.ok(!compaction.summary, 'Incomplete output must not become a successful summary');
+  const failure = JSON.parse(await readFile(path.join(root, 'data/model-gateway-status.json'), 'utf8'));
+  assert.equal(failure.code, 'LV_MODEL_UPSTREAM_RESET'); assert.equal(failure.phase, 'body');
+
 });
