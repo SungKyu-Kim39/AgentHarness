@@ -1,3 +1,7 @@
+<!-- Latest work: 2026-11-11 KST -->
+
+0.2.7 작업: 세션 압축 ECONNRESET의 고정 180초 중계 제한/4 MiB 요청 제한을 보완하고, thinking options/객체 variants 호환 및 네이티브 요청별 자동 수정 승인을 추가했다. [설정 안내](docs/model-controls.md), [검증 기록](docs/validation-0.2.7.md)을 먼저 읽는다. 사용자에게 오류까지 걸린 시간과 전체 허용을 선택한 화면을 질문했으나 아직 답변이 없으며, 실제 사내 네트워크 원인을 확정하지 않는다. 아래 0.2.6은 이전 배포 기록이다.
+
 # L-Vibe 작업 인계 — 다른 PC에서 이어가기
 
 작성 기준: 2026-11-11 KST. 이 문서는 **개발 작업 인계서**다. 직원용 설치 안내는 [docs/offline-setup.md](docs/offline-setup.md)를 따른다.

@@ -28,3 +28,7 @@
 ## 개인 지식 가져오기
 
 0.2.6의 개인 지식 가져오기는 알림 영역 메뉴에서 별도로 실행합니다. 시작 health와 기본 스킬 등록 상태와 구분합니다. OV_PERSONAL_UPLOAD는 파일 전달, OV_PERSONAL_IMPORT는 SDK 가져오기, OV_PERSONAL_VERIFY는 가져온 영역 존재 확인 단계입니다. HTTP 숫자가 있으면 함께 확인합니다. 등록 기록과 원본 사본은 사용자 데이터의 openviking/personal-imports.json 및 personal-<sha256>.ovpack에 보존합니다. 실패/충돌 영역은 자동 덮어쓰지 않습니다. PERSONAL_KNOWLEDGE_MIGRATION.txt의 절차를 따르며 실제 개인 OVPack과 API 키를 지원 채팅/공개 저장소에 보내지 않습니다.
+
+## 모델 응답·압축 실패 (0.2.7)
+
+모델 중계의 마지막 실패는 `%APPDATA%\L-Vibe\model-gateway-status.json`에서 확인한다. code, phase, elapsedMs, requestBytes/responseBytes, upstreamStatus/osError만 기록하며 요청·응답 본문이나 API 키는 저장하지 않는다. LV_MODEL_UPSTREAM_RESET은 사내 서버가 응답 도중 연결을 끊은 경우다. 대기 시간과 thinking 설정 및 네이티브 수정 자동 승인은 MODEL_CONTROLS.txt를 따른다. 이 실패 기록이 없는 ECONNRESET은 다른 계층의 연결 문제일 수 있다.

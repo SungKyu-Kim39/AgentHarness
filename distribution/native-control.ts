@@ -6,7 +6,7 @@ import { ConfigVault, Redactor, atomicJSON, type Cipher } from '../src/main/conf
 import { ModelGateway } from '../src/main/model-gateway';
 import { OpenVikingService } from '../src/main/openviking';
 import type { AgentConfig } from '../src/shared/contracts';
-import { HostTools, hostTools } from './host-tools';
+import { HostTools, hostTools, type EditDecision } from './host-tools';
 import { SidecarProxy } from './sidecar-proxy';
 
 export interface Credentials { url: string; password: string }
@@ -26,7 +26,7 @@ export function engineConfiguration(config: AgentConfig, models: ModelBinding[],
   for (const id of skills) policies.push({ action: 'skill.use', resource: id, effect: 'allow' });
   if (tools) policies.push({ action: 'mcp.use', resource: 'l_vibe_host', effect: 'allow' });
   return {
-    model: { providerID: selected.provider, model: selected.id },
+    model: { providerID: selected.provider, model: selected.id, ...(config.defaultVariant ? { variant: config.defaultVariant } : {}) },
     providers: Object.fromEntries([...new Set(models.map(m => m.provider))].map(id => {
       const registered = models.filter(m => m.provider === id);
       const provider = config.providers?.[id];
@@ -71,7 +71,7 @@ export class NativeRuntime {
   private engineConfig = '';
   private config?: AgentConfig;
   private shutdownUnconfirmed = false;
-  constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean> = async () => false) {
+  constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean> = async () => false, private approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>) {
     this.vault = new ConfigVault(root, cipher);
   }
   async load() { return this.vault.load(); }
@@ -81,7 +81,12 @@ export class NativeRuntime {
     const configured = config.models ?? [{ ...config.model, name: config.model.id }];
     try {
       for (const m of configured) {
-        const gateway = new ModelGateway({ ...config, model: m }); await gateway.start();
+        const provider = m.providerID ? config.providers?.[m.providerID] : undefined;
+        const definition = m.modelKey ? provider?.models[m.modelKey] : undefined;
+        const transport = { ...provider?.settings, ...definition?.settings };
+        const gateway = new ModelGateway({ ...config, model: m }, { timeout: transport.timeout, headerTimeout: transport.headerTimeout, chunkTimeout: transport.chunkTimeout },
+          event => { void atomicJSON(path.join(this.root, 'model-gateway-status.json'), event).catch(() => {}); });
+        await gateway.start();
         this.models.push({ provider: m.providerID ?? providerID(m.name), name: m.name, id: m.modelKey ?? m.id, gateway });
       }
       const saved = await readFile(path.join(this.root, 'approved-projects.json'), 'utf8').then(text => JSON.parse(text)).catch(() => []);
@@ -89,7 +94,7 @@ export class NativeRuntime {
       const redactor = new Redactor();
       for (const model of configured) redactor.add(model.apiKey);
       if (config.openViking) { redactor.add(config.openViking.embedding.apiKey); if (config.openViking.vlm) redactor.add(config.openViking.vlm.apiKey); }
-      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), approve: (message, detail, signal) => this.approve(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor,
+      this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), approve: (message, detail, signal) => this.approve(redactor.text(message), redactor.text(detail), signal), approveEdit: this.approveEdit ? (message, detail, signal) => this.approveEdit!(redactor.text(message), redactor.text(detail), signal) : undefined, knowledge: () => this.knowledge, redactor,
         reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
       });
       await this.tools.start();
@@ -223,9 +228,10 @@ export async function prepareNative(options: {
   decide: (message: string, hasStored: boolean) => Promise<'retry' | 'edit' | 'import' | 'cancel'>;
   select: () => Promise<string | undefined>; edit: (file: string) => void;
   approve?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
+  approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
 }) {
   await mkdir(options.root, { recursive: true, mode: 0o700 });
-  runtime = new NativeRuntime(options.root, options.resources, options.cipher, options.approve);
+  runtime = new NativeRuntime(options.root, options.resources, options.cipher, options.approve, options.approveEdit);
   while (true) {
     try {
       const config = await runtime.load();

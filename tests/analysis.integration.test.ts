@@ -41,3 +41,32 @@ test('guarded REA runs its actual static Python bytecode inspector on a copied a
   assert.equal(result.source, 'morluto/rea'); assert.equal(result.mode, 'static-only'); assert.equal(result.tool, 'inspect_python_pyc');
   assert.ok(JSON.stringify(result).includes('value'));
 });
+
+test('native edit auto approval is scoped to one request and project; cancellation and new requests revoke it', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-edit-grant-')); t.after(() => rm(root, { recursive: true, force: true }));
+  let project = path.join(root, 'a'); await mkdir(project); await mkdir(path.join(root, 'b'));
+  let prompts = 0;
+  const host = new HostTools(path.join(root, 'host'), root, { project: async () => project, approve: async () => false,
+    approveEdit: async () => { prompts++; return { approved: true, autoApproveRequest: true }; }, knowledge: () => undefined, redactor: new Redactor() });
+  t.after(() => host.close()); host.resumeSession('s');
+  const edit = (name: string, session = 's') => host.call('propose_edit', { path: name, content: 'new\n' }, session);
+  await Promise.all([edit('one.c'), edit('two.c')]); assert.equal(prompts, 1);
+  project = path.join(root, 'b'); await edit('three.c'); assert.equal(prompts, 2);
+  await edit('other.c', 'other'); assert.equal(prompts, 3);
+  host.resumeSession('s'); await edit('next.c'); assert.equal(prompts, 4);
+  host.cancelSession('s'); await assert.rejects(edit('blocked.c'), /중지/);
+  host.resumeSession('s'); await edit('after-stop.c'); assert.equal(prompts, 5);
+});
+
+test('a new request invalidates a pending edit decision and cannot inherit its automatic grant', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-stale-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
+  let entered!: () => void, decide!: (value: { approved: boolean; autoApproveRequest: boolean }) => void;
+  const ready = new Promise<void>(r => { entered = r; }); let prompts = 0;
+  const host = new HostTools(root, root, { project: async () => root, approve: async () => false,
+    approveEdit: async () => { prompts++; if (prompts === 1) { entered(); return new Promise(r => { decide = r; }); } return { approved: false, autoApproveRequest: false }; },
+    knowledge: () => undefined, redactor: new Redactor() });
+  t.after(() => host.close()); host.resumeSession('s');
+  const old = host.call('propose_edit', { path: 'old.c', content: 'old' }, 's'); await ready;
+  host.resumeSession('s'); decide({ approved: true, autoApproveRequest: true }); await assert.rejects(old, /중지/);
+  await assert.rejects(host.call('propose_edit', { path: 'new.c', content: 'new' }, 's'), /거절/); assert.equal(prompts, 2);
+});

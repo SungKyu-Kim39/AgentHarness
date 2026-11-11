@@ -31,6 +31,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'rea_inspect', description: 'Run pinned Reverse Engineer Anything static analysis on a copied project artifact. Never executes the target. No debugger, device, browser, shell or arbitrary REA tool.', inputSchema: object({ path: string, kind: { type: 'string', enum: ['go', 'rust', 'python-pyc', 'electron-fuses', 'model'] } }, ['path', 'kind']) },
   ...extensionTools,
 ];
+export type EditDecision = { approved: boolean; autoApproveRequest: boolean };
 const pathArg = z.string().min(1).max(4096);
 export class HostTools {
   readonly token = randomBytes(32).toString('hex');
@@ -38,11 +39,15 @@ export class HostTools {
   private children = new Set<ChildProcess>();
   private operations = new Map<string, Set<AbortController>>();
   private cancelled = new Set<string>();
+  private runs = new Map<string, symbol>();
+  private editQueue: Promise<void> = Promise.resolve();
+  private editGrant?: { session: string; project: string; run: symbol };
   readonly skills: OfflineSkills;
   readonly extensions: McpExtensions;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
+    approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
     knowledge: () => KnowledgeService | undefined;
     redactor: Redactor;
     reservedPorts?: () => number[];
@@ -93,6 +98,7 @@ export class HostTools {
     if (this.cancelled.has(session)) throw new Error('중지된 작업입니다.');
     signal?.throwIfAborted();
     if (!hostTools.some(t => t.name === name)) throw new Error('등록되지 않은 도구입니다.');
+    const run = this.runs.get(session) ?? Symbol(); this.runs.set(session, run);
     const project = await this.options.project(session), files = new ProjectFiles(project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
@@ -109,12 +115,24 @@ export class HostTools {
     }
     if (name === 'propose_edit') {
       const a = z.object({ path: pathArg, content: z.string().max(2 * 1024 * 1024) }).strict().parse(args);
-      const proposal = await files.propose(randomUUID(), a.path, a.content);
-      const approved = await this.options.approve(`파일 수정 승인: ${a.path}`, `변경 전\n${proposal.before}\n\n변경 후\n${proposal.after}`, signal);
-      if (!approved || !this.accepting || signal?.aborted || this.cancelled.has(session)) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
-      await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
-      await files.apply(proposal, signal);
-      return JSON.stringify({ status: 'applied', path: proposal.path, before: proposal.before, after: proposal.after, snapshot: proposal.id });
+      const previous = this.editQueue; let release!: () => void;
+      this.editQueue = new Promise<void>(resolve => { release = resolve; });
+      await previous;
+      try {
+        if (!this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('중지되었거나 다른 요청으로 전환되었습니다.');
+        const proposal = await files.propose(randomUUID(), a.path, a.content);
+        const detail = `프로젝트: ${project}\n대상: ${a.path}\n\n변경 전\n${proposal.before}\n\n변경 후\n${proposal.after}`;
+        const granted = this.editGrant?.session === session && this.editGrant.project === project && this.editGrant.run === run;
+        const decision = granted ? { approved: true, autoApproveRequest: true } : this.options.approveEdit
+          ? await this.options.approveEdit(`파일 수정 승인: ${a.path}`, detail, signal)
+          : { approved: await this.options.approve(`파일 수정 승인: ${a.path}`, detail, signal), autoApproveRequest: false };
+        if (!decision.approved || !this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
+        if (decision.autoApproveRequest) this.editGrant = { session, project, run };
+        await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
+        try { await files.apply(proposal, signal); }
+        catch (error) { this.editGrant = undefined; throw error; }
+        return JSON.stringify({ status: 'applied', path: proposal.path, before: proposal.before, after: proposal.after, snapshot: proposal.id });
+      } finally { release(); }
     }
     if (name === 'read_methodology') {
       const a = z.object({ name: z.enum(['aegis', 'conductor']) }).strict().parse(args);
@@ -205,7 +223,7 @@ export class HostTools {
     } finally { clearTimeout(timer); child.stdin.end(); child.kill(); }
   }
   async close() {
-    this.accepting = false;
+    this.accepting = false; this.editGrant = undefined; this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
     try { await this.extensions.close(); }
     finally {
@@ -216,9 +234,9 @@ export class HostTools {
     }
   }
   cancelSession(session: string) {
-    this.cancelled.add(session);
+    this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
     for (const child of this.children) child.kill('SIGKILL');
   }
-  resumeSession(session: string) { this.cancelled.delete(session); }
+  resumeSession(session: string) { this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
 }

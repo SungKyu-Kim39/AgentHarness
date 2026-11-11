@@ -31,6 +31,11 @@ export async function planPatches(root, project) {
       return text.split('\n').filter(line => !disabled.some(id => line.startsWith(`import ${id} `) || line.startsWith(`import ${id}Renderer `) || new RegExp(`^  ${id}:|^  ${id},`).test(line)) && !line.startsWith('  "microsoft-office":')).join('\n');
     });
   }
+  // OpenCode's preference only answers engine permission requests; host writes have a separate decision.
+  edit('packages/app/src/settings/general/general.tsx', text => {
+    text = once(text, 'title={language.t("command.permissions.autoaccept.enable")}', 'title={language.t("command.permissions.autoaccept.enable") + " (파일 수정 별도)"}');
+    return once(text, 'description={language.t("settings.permissions.autoAccept.default.description")}', 'description="파일 수정은 L-Vibe 승인 창에서 이번 요청의 자동 승인을 선택하세요. 새 요청·중지·재시작 시 해제됩니다."');
+  });
   const logo = 'data:image/png;base64,' + (await readFile(path.join(project, 'assets/lig-icon.png'))).toString('base64');
   changes.set('packages/ui/src/components/logo.tsx', Buffer.from(`import type { ComponentProps } from "solid-js"
 const icon = ${JSON.stringify(logo)}
@@ -100,6 +105,7 @@ export function prepareNative(options: {
   decide: (message: string, hasStored: boolean) => Promise<'retry' | 'edit' | 'import' | 'cancel'>;
   select: () => Promise<string | undefined>; edit: (file: string) => void;
   approve?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
+  approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<{ approved: boolean; autoApproveRequest: boolean }>;
 }): Promise<boolean>;
 export function getRuntime(): {
   connection(command: readonly string[]): Promise<Credentials>;

@@ -25,7 +25,7 @@ await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, 'GETTING_S
 await cp(path.join(project, `docs/validation-${version}.md`), path.join(root, 'VALIDATION_REPORT.md'));
 for (const [from, to] of [
   ['docs/configuration-recovery.md', 'CONFIGURATION_RECOVERY.txt'], ['docs/license-policy.md', 'LICENSE_POLICY.txt'],
-  ['docs/windows-diagnostics.md', 'WINDOWS_DIAGNOSTICS.txt'], ['THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.md'],
+  ['docs/windows-diagnostics.md', 'WINDOWS_DIAGNOSTICS.txt'], ['docs/model-controls.md', 'MODEL_CONTROLS.txt'], ['THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.md'],
   ['distribution/openviking-import-check.py', 'openviking-import-check.py'], ['distribution/check-openviking.cmd', 'CHECK_OPENVIKING.cmd'],
   ['distribution/export-openviking-personal.py', 'export-openviking-personal.py'], ['distribution/export-openviking-personal.cmd', 'EXPORT_PERSONAL.cmd'],
   ['docs/openviking-personal-migration.md', 'PERSONAL_KNOWLEDGE_MIGRATION.txt'],
@@ -60,7 +60,7 @@ await writeFile(path.join(root, 'bundle-manifest.json'), JSON.stringify({
   requiresEmployeePackageInstall: false, includesModelWeights: false, includesRealCredentials: false,
   pathEncoding: 'ascii',
   documents: { gettingStarted: 'GETTING_STARTED.txt', validation: 'VALIDATION_REPORT.md', readiness: 'READINESS.json',
-    configuration: 'CONFIGURATION_RECOVERY.txt', licensePolicy: 'LICENSE_POLICY.txt', diagnostics: 'WINDOWS_DIAGNOSTICS.txt', personalMigration: 'PERSONAL_KNOWLEDGE_MIGRATION.txt' },
+    configuration: 'CONFIGURATION_RECOVERY.txt', licensePolicy: 'LICENSE_POLICY.txt', diagnostics: 'WINDOWS_DIAGNOSTICS.txt', modelControls: 'MODEL_CONTROLS.txt', personalMigration: 'PERSONAL_KNOWLEDGE_MIGRATION.txt' },
   components: { desktop: 'OpenCode 2.2.6', electron: '44.9.1', python: '3.12.16', openViking: '0.5.4', graphify: '0.9.105', rea: '6.8.0', mcp: JSON.parse(await readFile(path.join(project, 'vendor/runtime/windows-x64/mcp/manifest.json'), 'utf8')).versions },
 }, null, 2) + '\n');
 const checksums = [];

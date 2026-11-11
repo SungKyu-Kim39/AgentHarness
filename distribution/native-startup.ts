@@ -17,6 +17,17 @@ export async function prepareLVibe() {
         return !combined.aborted && result.response === 1;
       } finally { app.off('before-quit', cancel); }
     },
+    approveEdit: async (message, detail, signal) => {
+      if (detail.length > 60000) return { approved: false, autoApproveRequest: false };
+      const abort = new AbortController(); const cancel = () => abort.abort(); app.once('before-quit', cancel);
+      try {
+        const combined = signal ? AbortSignal.any([signal, abort.signal]) : abort.signal;
+        const result = await dialog.showMessageBox({ type: 'question', title: 'L-Vibe 파일 수정 승인', message, detail,
+          buttons: ['거절', '승인'], defaultId: 0, cancelId: 0, noLink: true, signal: combined,
+          checkboxLabel: '이번 요청의 프로젝트 파일 수정 자동 승인 (새 요청·중지·재시작 시 해제)', checkboxChecked: false });
+        return { approved: !combined.aborted && result.response === 1, autoApproveRequest: !combined.aborted && result.response === 1 && result.checkboxChecked };
+      } finally { app.off('before-quit', cancel); }
+    },
     decide: async (message, stored) => {
       const buttons = stored ? ['다시 확인', '설정 JSON 가져와 교체', '종료'] : ['JSON 편집', '다시 확인', '설정 JSON 가져오기', '종료'];
       const result = await dialog.showMessageBox({ type: 'warning', title: 'L-Vibe 설정', message, buttons, cancelId: buttons.length - 1, noLink: true });

@@ -1,4 +1,4 @@
-# L-Vibe 0.2.6 Windows x64 설치
+# L-Vibe 0.2.7 Windows x64 설치
 
 이 묶음은 OpenCode Desktop 기반 L-Vibe의 검증 후보입니다. Windows 10·11 및 실제 사내 모델 서버의 수용 검증은 아직 완료되지 않았습니다. 상세 미완료 항목은 함께 제공한 READINESS.json을 확인하세요.
 
@@ -70,3 +70,5 @@ L-Vibe 자체 코드는 MIT이며 설치 묶음에는 GPL/AGPL/LGPL·CC-BY-SA와
 ## 기존 OpenViking 개인 지식 가져오기
 
 0.2.6은 알림 영역의 '개인 공통 지식 가져오기 (.ovpack)'와 가져오기 상태 메뉴를 제공합니다. 기존 서버에서 EXPORT_PERSONAL.cmd로 사용자 영역을 내보내고, 생성한 OVPack을 선택해 내용 범위를 확인한 뒤 승인합니다. 모든 프로젝트에서 읽기 전용 personal_knowledge_search/personal_knowledge_read로 조회할 수 있습니다. 일반 프로젝트 지식 도구의 범위는 유지하며 새 대화를 자동 저장하지 않습니다. 자세한 절차는 PERSONAL_KNOWLEDGE_MIGRATION.txt를 참고하세요. 기존 서버의 사용자 자료와 API 키는 지원 채팅/공개 저장소로 보내지 않습니다.
+
+모델의 thinking 강도·variants·전송 대기 시간 및 파일 수정의 요청 단위 자동 승인은 MODEL_CONTROLS.txt를 참고하세요. 0.2.7은 이전 options/객체형 variants를 현재 엔진 형식으로 변환합니다.
