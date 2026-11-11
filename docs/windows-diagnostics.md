@@ -1,6 +1,6 @@
 # L-Vibe Windows diagnostics
 
-0.2.5는 Windows asyncio 내부 TCP socketpair 수정과 토크나이저 오프라인 자료/캐시 수정을 포함합니다. 이 전체 설치본에 이전 작은 패치를 추가 적용할 필요는 없습니다.
+0.2.5/0.2.6은 Windows asyncio 내부 TCP socketpair 수정과 토크나이저 오프라인 자료/캐시 수정을 포함합니다. 이 전체 설치본에 이전 작은 패치를 추가 적용할 필요는 없습니다.
 
 ## OpenViking 시작 실패
 
@@ -23,3 +23,8 @@
 실패 시 경고 코드, startup-status.json, CHECK_OPENVIKING의 마지막 오류와 EXIT_CODE로 원인을 구분하세요. 전체 설정 JSON이나 API 키를 지원 채팅·공개 저장소에 보내지 마세요. 앱의 암호화 설정·DB·지식을 삭제하거나 무결성 검사를 끄지 않습니다.
 
 업무를 먼저 진행해야 한다면 관리하는 JSON에서 `openViking.enabled`만 false로 바꾸고 기존 embedding 설정은 보존한 채 명시적으로 가져올 수 있습니다. 이 동안 OpenViking 색인/검색·기본 스킬 자동 등록은 꺼집니다. 저장 설정은 직접 편집하지 않으며 CONFIGURATION_RECOVERY.txt를 참고하세요.
+
+
+## 개인 지식 가져오기
+
+0.2.6의 개인 지식 가져오기는 알림 영역 메뉴에서 별도로 실행합니다. 시작 health와 기본 스킬 등록 상태와 구분합니다. OV_PERSONAL_UPLOAD는 파일 전달, OV_PERSONAL_IMPORT는 SDK 가져오기, OV_PERSONAL_VERIFY는 가져온 영역 존재 확인 단계입니다. HTTP 숫자가 있으면 함께 확인합니다. 등록 기록과 원본 사본은 사용자 데이터의 openviking/personal-imports.json 및 personal-<sha256>.ovpack에 보존합니다. 실패/충돌 영역은 자동 덮어쓰지 않습니다. PERSONAL_KNOWLEDGE_MIGRATION.txt의 절차를 따르며 실제 개인 OVPack과 API 키를 지원 채팅/공개 저장소에 보내지 않습니다.

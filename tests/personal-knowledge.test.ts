@@ -13,7 +13,7 @@ const rootURI = 'viking://user/default';
 async function fixture(t: { after(fn: () => Promise<unknown>): void }, user = 'default', unsafe = false) {
   const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-personal-')); t.after(() => rm(root, { recursive: true, force: true }));
   const archive = path.join(root, 'legacy.ovpack');
-  const paths = ['memories/preference.md', 'resources/design.md', 'skills/example/SKILL.md', 'sessions/past.json', 'privacy/current.json', 'peers/codex/memories/entity.md'];
+  const paths = ['memories/preference.md', 'resources/design.md', 'skills/example/SKILL.md', 'sessions/past.json', 'privacy/current.json', 'peers/codex.tool@local/memories/entity.md'];
   await execute('python3', ['-I', '-B', '-c', `import json,sys,zipfile
 user=sys.argv[2]; paths=json.loads(sys.argv[3])
 m={'kind':'openviking.ovpack','format_version':3,'root':{'name':user,'uri':'viking://user/'+user},'entries':[{'path':'','kind':'directory'}]+[{'path':p,'kind':'file'} for p in paths]}

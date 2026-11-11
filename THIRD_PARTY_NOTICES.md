@@ -4,7 +4,7 @@ The root MIT license covers L-Vibe-authored code. Bundled software, skills,
 libraries, browser/runtime binaries, trademarks and logos retain their own terms.
 The complete distribution is not relicensed under MIT.
 
-For the pinned Windows x64 0.2.3/0.2.4/0.2.5 candidates, see
+For the pinned Windows x64 0.2.3/0.2.4/0.2.5/0.2.6 candidates, see
 [the license policy review](docs/license-policy.md). It identifies the actual
 packaged notices, corresponding-source archives and unresolved redistribution
 checks. OpenViking is AGPL-3.0; Serena is GPL-3.0-or-later; MinGit is GPL-2.0;

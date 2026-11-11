@@ -1,9 +1,9 @@
-# L-Vibe 0.2.5 Windows x64 설치
+# L-Vibe 0.2.6 Windows x64 설치
 
 이 묶음은 OpenCode Desktop 기반 L-Vibe의 검증 후보입니다. Windows 10·11 및 실제 사내 모델 서버의 수용 검증은 아직 완료되지 않았습니다. 상세 미완료 항목은 함께 제공한 READINESS.json을 확인하세요.
 
-1. 반입한 L-Vibe-0.2.5-windows-x64.tgz를 압축 해제합니다. Windows의 tar 또는 TGZ를 지원하는 압축 도구를 사용할 수 있습니다.
-2. 기존 L-Vibe가 실행 중이면 완전히 종료한 뒤 폴더 안의 L-Vibe-0.2.5-win-x64.exe를 실행합니다. 일반 사용자에게 설치하며 관리자 권한을 요구하지 않습니다.
+1. 반입한 L-Vibe-0.2.6-windows-x64.tgz를 압축 해제합니다. Windows의 tar 또는 TGZ를 지원하는 압축 도구를 사용할 수 있습니다.
+2. 기존 L-Vibe가 실행 중이면 완전히 종료한 뒤 폴더 안의 L-Vibe-0.2.6-win-x64.exe를 실행합니다. 일반 사용자에게 설치하며 관리자 권한을 요구하지 않습니다.
 3. 저장 설정이 없는 첫 설치에서는 메모장이 설정 JSON을 엽니다. 사내 주소·키·서버 모델 ID를 입력하고 저장한 뒤 메모장을 닫습니다. 사용하지 않을 보조 provider는 삭제하세요. 기존 settings.enc.json이 있으면 보존하며 JSON 준비와 메모장 실행을 건너뜁니다.
 4. 바탕화면 또는 시작 메뉴의 L-Vibe를 실행합니다. 프로젝트 폴더를 선택하고 작업을 요청합니다. 모델 선택창에서 등록한 LLM을 바꿀 수 있습니다.
 
@@ -65,3 +65,8 @@ TGZ 옆의 .sha256은 반입 파일 해시이고, SHA256SUMS.txt는 압축 내�
 licenses 폴더에 버전·다운로드 해시·라이선스 기록과 OpenViking 대응 소스를 제공합니다. OpenViking은 AGPL-3.0 구성 요소로 별도 프로세스로 포함합니다. source 폴더에는 해당 L-Vibe 소스 체크포인트를 포함합니다.
 
 L-Vibe 자체 코드는 MIT이며 설치 묶음에는 GPL/AGPL/LGPL·CC-BY-SA와 브라우저/DLL의 별도 조건이 함께 적용됩니다. 현재 라이선스 확인 범위와 남은 재배포 검토는 함께 제공한 LICENSE_POLICY.txt와 THIRD_PARTY_NOTICES.md에 기록합니다.
+
+
+## 기존 OpenViking 개인 지식 가져오기
+
+0.2.6은 알림 영역의 '개인 공통 지식 가져오기 (.ovpack)'와 가져오기 상태 메뉴를 제공합니다. 기존 서버에서 EXPORT_PERSONAL.cmd로 사용자 영역을 내보내고, 생성한 OVPack을 선택해 내용 범위를 확인한 뒤 승인합니다. 모든 프로젝트에서 읽기 전용 personal_knowledge_search/personal_knowledge_read로 조회할 수 있습니다. 일반 프로젝트 지식 도구의 범위는 유지하며 새 대화를 자동 저장하지 않습니다. 자세한 절차는 PERSONAL_KNOWLEDGE_MIGRATION.txt를 참고하세요. 기존 서버의 사용자 자료와 API 키는 지원 채팅/공개 저장소로 보내지 않습니다.

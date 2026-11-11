@@ -52,15 +52,18 @@ with zipfile.ZipFile(sys.argv[1]) as z:
         if not isinstance(rel, str) or chr(92) in rel or rel.startswith('/') or any(x in ('.','..') for x in rel.split('/')): raise ValueError('OVPACK_MANIFEST_PATH')
         parts = rel.split('/')
         if parts[0] in ('memories','resources','skills'): roots.add(root + '/' + parts[0])
-        if len(parts) >= 3 and parts[0] == 'peers' and parts[2] == 'memories' and re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{0,127}', parts[1]): roots.add(root + '/peers/' + parts[1] + '/memories')
+        if len(parts) >= 3 and parts[0] == 'peers' and parts[2] == 'memories' and re.fullmatch(r'[A-Za-z0-9_.@-]{1,255}', parts[1]) and parts[1] not in ('.','..') and parts[1].count('@') <= 1: roots.add(root + '/peers/' + parts[1] + '/memories')
         if e.get('kind') == 'file': files += 1
     if not roots or len(roots) > 64: raise ValueError('OVPACK_SEARCH_ROOTS')
     print(json.dumps(dict(root=root, roots=sorted(roots), files=files, bytes=total)))
 `;
 
 function validRoot(root: string, base: string) {
-  return root === base + '/memories' || root === base + '/resources' || root === base + '/skills' ||
-    new RegExp('^' + base + '/peers/[A-Za-z0-9][A-Za-z0-9_-]{0,127}/memories$').test(root);
+  if (root === base + '/memories' || root === base + '/resources' || root === base + '/skills') return true;
+  if (!root.startsWith(base + '/peers/')) return false;
+  const parts = root.slice((base + '/peers/').length).split('/');
+  return parts.length === 2 && parts[1] === 'memories' && /^[A-Za-z0-9_.@-]{1,255}$/.test(parts[0]) &&
+    !['.', '..'].includes(parts[0]) && (parts[0].match(/@/g)?.length ?? 0) <= 1;
 }
 function uriAllowed(uri: string, roots: string[]) {
   return !/[%\\\x00-\x1f?#]/.test(uri) && !/(?:^|\/)\.{1,2}(?:\/|$)/.test(uri) &&

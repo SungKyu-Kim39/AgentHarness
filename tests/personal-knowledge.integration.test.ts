@@ -36,6 +36,15 @@ test('real OpenViking 0.5.0 user export imports into 0.5.4 and personal knowledg
   const launcher=await readFile('scripts/openviking-launch.py','utf8');
   const legacyLauncher=path.join(root,'launch-050.py');
   await writeFile(legacyLauncher,launcher.replace('    from openviking.server.app import create_app',`    sys.path.insert(0, ${JSON.stringify(legacyPackage)})\n    from openviking.server.app import create_app`));
+  const currentLauncher=path.join(root,'launch-current-test.py');
+  await writeFile(currentLauncher,launcher.replace('    configure_user_pack_import()',`    configure_user_pack_import()
+    from openviking.storage.ovpack import operations as test_pack_operations
+    original_vector_action = test_pack_operations.choose_vector_restore_action
+    async def trace_vector_action(*args, **kwargs):
+        action = await original_vector_action(*args, **kwargs)
+        print('L_VIBE_TEST_VECTOR_ACTION=' + action, file=sys.stderr, flush=True)
+        return action
+    test_pack_operations.choose_vector_restore_action = trace_vector_action`));
   const make=async(name:string,script:string)=>{
     const data=path.join(root,name);await mkdir(data,{recursive:true});
     await cp('vendor/runtime/windows-x64/openviking/tokenizers',path.join(data,'tokenizers'),{recursive:true});
@@ -51,6 +60,7 @@ test('real OpenViking 0.5.0 user export imports into 0.5.4 and personal knowledg
   };
   await api('/api/v1/content/write',{uri:'viking://user/default/resources/legacy-note.md',content:'The preferred compiler for Project Amber is clang. Preserve VxWorks support.',mode:'create',wait:true,processing_mode:'vectors_only'});
   await api('/api/v1/content/write',{uri:'viking://user/default/memories/preferences/compiler.md',content:'Prefer clang for Project Amber.',mode:'create',wait:true,processing_mode:'vectors_only'});
+  await api('/api/v1/content/write',{uri:'viking://user/default/peers/codex.tool@local/memories/preferences/errors.md',content:'Prefer explicit error codes in legacy modules.',mode:'create',wait:true,processing_mode:'vectors_only'});
   const archive=path.join(root,'legacy-personal.ovpack');
   const exportCode=`import sys,importlib.util,json
 spec=importlib.util.spec_from_file_location('exporter',sys.argv[1]);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
@@ -58,19 +68,19 @@ print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.a
 `;
   await execute(executable,['-I','-B','-c',exportCode,path.resolve('distribution/export-openviking-personal.py'),internals.baseUrl,internals.token,archive],{timeout:120000});
   await legacy.close();
-  let current=await make('current',path.resolve('scripts/openviking-launch.py'));
-  const embeddingBefore=calls.filter(p=>p==='/v1/embeddings').length;
+  let current=await make('current',currentLauncher);
   let approvals=0;
   let imported;
   try { imported=await current.importPersonal(archive,async()=>{approvals++;return true;}); }
   catch(error) { assert.fail(String(error)+'\n'+diagnostics.slice(-15000)); }
   assert.equal(imported.status,'imported');assert.equal(approvals,1);
-  assert.equal(calls.filter(p=>p==='/v1/embeddings').length,embeddingBefore,'compatible vector snapshot must not re-embed');
+  assert.ok(diagnostics.includes('L_VIBE_TEST_VECTOR_ACTION=restore'), 'SDK must restore the compatible vector snapshot\n'+diagnostics.slice(-15000));
   assert.equal((await current.personalStatus())[0].root,'viking://user/default');
   const currentInternals=current as unknown as {baseUrl:string;token:string};
   const forbidden=await fetch(currentInternals.baseUrl+'/api/v1/content/write',{method:'POST',headers:{Authorization:'Bearer '+currentInternals.token,'X-API-Key':currentInternals.token,'X-OpenViking-Account':'l-vibe','X-OpenViking-User':'local-user','Content-Type':'application/json'},body:JSON.stringify({uri:'viking://user/default/resources/legacy-note.md',content:'must not replace private knowledge',mode:'replace',wait:true,processing_mode:'vectors_only'})});
   assert.equal(forbidden.status,403,'the container fix must not bypass original-user ownership');
   assert.ok((await current.personalRead('viking://user/default/resources/legacy-note.md')).includes('Preserve VxWorks'));
+  assert.ok((await current.personalRead('viking://user/default/peers/codex.tool@local/memories/preferences/errors.md')).includes('explicit error codes'));
   await assert.rejects(current.personalRead('viking://user/default/privacy/current.json'),/범위/);
   const projects=[path.join(root,'project-a'),path.join(root,'project-b')];
   for(const p of projects)await mkdir(p);

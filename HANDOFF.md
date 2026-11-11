@@ -4,19 +4,25 @@
 
 ## 1. 먼저 알아야 할 현재 상태
 
+**현재 진행 중인 개인 지식 이관:** 사용자는 기존 OpenViking 0.5.0의 memories/peers/privacy/resources/sessions/skills를 L-Vibe의 모든 프로젝트에서 개인 공통 기억으로 활용하도록 선택했다. 모델은 BGE-m3-ko/1024이며 동일하다. 기존 로컬 서버의 기본 포트는 1935로 내보내기 도구에 반영했다. 사용자 자료와 키는 저장소에 포함하지 않는다. 현재 구현은 원본 사용자 ID를 L-Vibe account 안에서 유지하고, 승인한 OVPack 사본과 SHA를 보존한 뒤 해당 사용자로만 읽기 전용 조회한다. sessions/privacy는 검색 범위에서 제외한다. SDK의 가상 user 컨테이너 mkdir 문제를 source hash로 제한한 런처 어댑터로 보완했다. 새 Python manifest는 1dee469d101abd55b8c350640c1d86098aded233cbd1fcbf21a0af4d83d147d9/63,069파일이다.
+
+소스 중간 커밋 02ebf12, 내보내기 ZIP 게시 6382fa2다. 작은 ZIP은 공개 HTTP 200·4,350bytes·SHA-256 992fdb47a2a8f35a4ef593fd2a7a48bae203d97a4924928982a4e40dc421584a를 확인했다. 사용자에게 PC에서 exported/EXIT_CODE=0 여부만 요청했으며 개인 OVPack을 보내라고 하지 않았다. 실제 SDK 0.5.0 → 0.5.4의 내보내기/가져오기/검색/두 프로젝트/재시작을 통과했다. 초기 전체 검사는 비동기 계정 초기화의 임베딩까지 합산한 검사 때문에 63/64였고, 이를 SDK의 실제 restore 결정 추적으로 바꾼 집중 검사가 통과했다. 최종 peer 기억/식별자까지 포함한 전체 64개/실패0/skip0 검사는 .cache/personal-full-verify-release.log, 빌드/패키지는 .cache/personal-desktop-build.log, .cache/personal-package.log와 .cache/personal-installer-audit.log를 확인한다. 공식 타입 2,549파일/2프로젝트 오류0(최종22.5초), Desktop main/preload/renderer 빌드 완료. 아직 실제 0.2.6 EXE/TGZ 게시 성공으로 바꾸지 말라.
+
+사용자는 JSON 수정 후 실제 LLM 대화를 확인했다. 이전 모델 미설정 제보는 해결됐다. OpenViking 기본 스킬의 마지막 사용자 확인은 0/34·registering이며 최종 완료 여부는 미확인이다. 개인 이관 검사 성공을 직원 PC의 임베딩/스킬 등록 완료로 확대하지 않는다.
+
 | 항목 | 상태 |
 |---|---|
 | 최종 제품명 | **L-Vibe**. 이전 명칭 LIG Agent/L-Harness로 되돌리지 않는다 |
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.5**. 콜드 토크나이저·cache 덮어쓰기/CRLF 수정, Windows loopback 및 ASCII 정책 유지 |
+| 소스 버전 | **0.2.6 빌드 중**. 개인 OVPack 가져오기·프로젝트 간 개인 검색. Windows loopback·토크나이저·ASCII 정책 유지 |
 | 최신 전체 설치 파일 | **0.2.5 검증 후보** EXE/TGZ 생성·검사 완료. 게시 상태·해시는 다운로드 안내 참조 |
 | 0.2.5 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
 | TGZ 소스 체크포인트 | `e031bb8ce8acccf291d5f9f6404b6e29e713d012` |
 | 공개 다운로드 | 0.2.5 업로드 완료. 공개 TGZ 전체 크기/SHA-256·EXE HEAD/크기/PE range 검증 통과. 게시 212f9e9, 34개 항목/31개 파일·30개 체크섬·소스 515개 항목 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
-| 바로 다음 작업 | 사용자 Windows 모델 목록 표시 문제 확인, 라이선스 재배포 미확인 항목, Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
+| 바로 다음 작업 | 0.2.6 전체 검사/EXE/TGZ 게시 완료, 사용자 PC의 개인 지식 내보내기·가져오기 검증, 라이선스/Windows 수용 및 남은 Desktop 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.5 검증 상태](docs/validation-0.2.5.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.

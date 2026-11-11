@@ -1,6 +1,6 @@
 # L-Vibe license policy review
 
-검토일: 2026-11-11 KST. 대상은 **0.2.3/0.2.4 및 같은 실행 구성 요소 버전을 사용하는 0.2.5 후보**의 고정 런타임·스킬과 저장소 소스다. 패키지 메타데이터뿐 아니라 설치에 포함된 라이선스 원문·소스 고지·빌드 스크립트를 대조했다. 0.2.5는 정적 토크나이저 어휘 자료와 그 고지, L-Vibe launcher/호스트·진단·배포 안내를 추가/수정한다. 이 문서는 전체 의존성의 법적 적합성 인증이 아니며 현재 미확인 항목을 함께 기록한다.
+검토일: 2026-11-11 KST. 대상은 **0.2.3/0.2.4 및 같은 실행 구성 요소 버전을 사용하는 0.2.5/0.2.6 후보**의 고정 런타임·스킬과 저장소 소스다. 패키지 메타데이터뿐 아니라 설치에 포함된 라이선스 원문·소스 고지·빌드 스크립트를 대조했다. 0.2.5는 정적 토크나이저 어휘 자료와 그 고지, L-Vibe launcher/호스트·진단·배포 안내를 추가/수정한다. 이 문서는 전체 의존성의 법적 적합성 인증이 아니며 현재 미확인 항목을 함께 기록한다.
 
 ## 적용 정책
 
@@ -56,3 +56,5 @@ AGPL 5조의 aggregate 규정은 별개 저작물의 단순 집합과 결합 저
 ## 검토 근거
 
 원본 [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html), [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html), [GPL-2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html), [LGPL-3.0](https://www.gnu.org/licenses/lgpl-3.0.html), [CC-BY-SA-4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode), [Microsoft redistribution](https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution)을 식별자로 제공한다. 판정 근거는 위 표의 **실제 고정 배포본 원문**이며 온라인 최신 버전이나 프로젝트의 대표 라이선스만으로 하위 구성을 덮어쓰지 않는다. 잠금 자료는 [python-runtime-lock.json](../python-runtime-lock.json), [mcp-runtime-lock.json](../mcp-runtime-lock.json), [rea-runtime-lock.json](../rea-runtime-lock.json), [skills-lock.json](../skills-lock.json)이다.
+
+0.2.6은 개인 OVPack 가져오기·읽기 전용 개인 검색과 로컬 내보내기 도구를 추가한다. OpenViking 가상 사용자 컨테이너의 부모 처리 어댑터는 고정 원본 helper hash를 검사하며 SDK archive/소유권/충돌 검사를 유지한다. 원본 SDK 파일은 변경하지 않고 런처에서 보완한다. 어댑터를 포함한 L-Vibe 소스와 기존 AGPL 대응 소스는 반입 묶음에 제공한다. 0.5.0 SDK는 빌드 PC의 이관 검사에만 사용하며 직원 배포 런타임은 0.5.4를 유지한다. 기존 Chrome/MSVC·copyleft 관련 미확인 항목은 그대로 남는다.
