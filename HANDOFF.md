@@ -1,6 +1,6 @@
 # L-Vibe 작업 인계 — 다른 PC에서 이어가기
 
-작성 기준: 2026-11-10 UTC. 이 문서는 **개발 작업 인계서**다. 직원용 설치 안내는 [docs/offline-setup.md](docs/offline-setup.md)를 따른다.
+작성 기준: 2026-11-11 KST. 이 문서는 **개발 작업 인계서**다. 직원용 설치 안내는 [docs/offline-setup.md](docs/offline-setup.md)를 따른다.
 
 ## 1. 먼저 알아야 할 현재 상태
 
@@ -10,24 +10,28 @@
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.2** |
+| 소스 버전 | **0.2.3**. 영문 ASCII 배포 경로 정책 추가 |
 | 실제 공개된 설치 파일 | **0.2.2 검증 후보 EXE/TGZ**. MCP 6종과 고정 브라우저를 포함한다 |
 | 0.2.2 EXE/TGZ | **생성·실제 EXE 해시·TGZ 23개 파일 체크섬·대응 소스 검사 완료** |
-| 바로 다음 작업 | Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
+| 0.2.3 EXE | 생성·실제 추출 ASCII 경로·런타임 전수 해시 검사 통과. TGZ/게시 상태는 다운로드 안내 참조 |
+| 바로 다음 작업 | 0.2.3 TGZ 생성·게시 검증 후 Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
-다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.2 검증 상태](docs/validation-0.2.2.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.3 검증 상태](docs/validation-0.2.3.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+
+**2026-11-11 파일명 수정:** 한글 파일명 깨짐 제보에 따라 0.2.3에서 영문 ASCII 경로 검사와 문서 이름 변경을 구현했다(`ffde16f`). 회귀 검사 **51개 통과, 실패·건너뜀 0**, 공식 Desktop 타입 검사 2개 프로젝트·2,549개 파일 오류 0 및 빌드 성공. 실제 0.2.3 EXE를 추출한 94,201개 파일·8,739개 폴더와 ASAR 11,584개 경로 모두 ASCII이며 각 런타임 해시도 일치한다. 최신 TGZ/게시 정보는 다운로드 안내와 현재 브랜치 로그를 따른다.
 
 **새 환경 재개 기록:** 실행 환경 정책 revision 2에서 고정 Chrome 다운로드와 GitHub API 접근을 확인했다. Bun workspace 설치를 완료했고 Windows Chrome 157.0.8103.50을 포함한 MCP **21,031개 파일, complete=true, 누락 0개**를 검증했다. `npm run verify` **48개 통과, 실패/건너뜀 0**, 공식 Desktop 타입 검사 **2개 프로젝트·2,549개 파일 오류 0**, main/preload/renderer 빌드를 통과했다. Windows Electron **44.9.1** 및 NSIS **3.0.4.1**도 확보했다. 약 3.17 GB의 전체 앱 묶음은 기존 NSIS solid 모드의 31비트 data block 한도를 넘으므로 파일별 zlib 압축으로 수정했다. 설치 EXE 1,055,821,574 bytes를 생성하고 실제 추출한 모든 런타임·스킬·앱/CLI의 해시 검증을 통과했다. TGZ 내부 23개 파일의 체크섬·0.2.2 설치 안내·대응 소스 검사도 통과했다. 공개 EXE/TGZ 주소의 HTTP 200·전체 바이트 수·SHA-256도 로컬 산출물과 일치했다. TGZ의 소스 체크포인트는 `b8722666e20e0525d320e636f5b41e689e2879b3`이며 최신 후보와 해시는 [다운로드 안내](downloads/README.md)를 따른다.
 
 ### 이어받는 AI에게 붙여 넣을 요청
 
-> 이 저장소의 HANDOFF.md를 먼저 읽고 L-Vibe 작업을 이어가라. work 브랜치를 사용한다. 마지막 구현 기준은 a5dd07a이며 소스와 공개 검증 후보 설치본은 0.2.2다. MCP 6종의 Linux 실호출 기록이 있으며 새 환경의 48개 회귀 검사도 통과했다. Windows 브라우저를 포함한 MCP 21,031개 파일 번들이 완성됐다. 파일별 zlib EXE 생성과 실제 리소스 검증은 완료했다. EXE/TGZ 생성·무결성 검사 및 게시까지 완료했다. 다음 목표는 Windows 10/11 일반 사용자·실제 사내 모델/SDK 수용 검사와 새 Desktop의 남은 반복/재출력·세션 diff·명령 승인 기능이다. 새 PC에 없는 캐시·테스트 런타임부터 확인하고, 기존 잠금 버전을 유지하라. 직원 PC에서 추가 설치나 다운로드하게 만들지 말라. 실제 키·사용자 데이터·캐시는 공개 저장소에 넣지 말고, 단계별 커밋·푸시를 계속하라. 완료된 항목을 처음부터 다시 구현하지 말고, 확인되지 않은 설치·수용·게시 결과를 완료했다고 말하지 말라.
+> 이 저장소의 HANDOFF.md를 먼저 읽고 L-Vibe 작업을 이어가라. work 브랜치를 사용한다. MCP 구현 기준은 a5dd07a이며 소스는 ASCII 경로 검사를 추가한 0.2.3이다. 공개 파일과 TGZ 검증 상태는 downloads/README.md 및 최신 로그를 확인하라. 51개 회귀 검사, 공식 Desktop 타입 검사/빌드, 실제 0.2.3 EXE의 ASCII 경로·구성 요소 해시 검사를 통과했다. MCP 6종의 이전 Linux 실호출 기록이 있으며 Windows 브라우저 포함 MCP 21,031개 파일 번들이 완성됐다. Windows 10/11 일반 사용자·실제 사내 모델/SDK 수용 검사와 새 Desktop의 남은 반복/재출력·세션 diff·명령 승인 기능을 이어가라. 새 PC의 캐시·테스트 런타임부터 확인하고 잠금 버전을 유지하라. 배포 파일·폴더 이름은 영문 ASCII로 유지하고 직원 PC에서 추가 설치나 다운로드하게 만들지 말라. 실제 키·사용자 데이터·캐시는 공개 저장소에 넣지 말고, 단계별 커밋·푸시를 계속하라. 완료된 항목을 처음부터 다시 구현하지 말고, 확인되지 않은 설치·수용·게시 결과를 완료했다고 말하지 말라.
 
 ## 2. 사용자가 확정한 요구사항과 작업 방식
 
 - Windows 10/11 x64, 일반 사용자 설치, 폐쇄망 사용, 지정한 사내 OpenAI 호환 API에 연결한다. 앱은 바이브 코딩에 특화한다.
 - 직원 설치 흐름은 **TGZ 반입 → 압축 해제 → EXE 설치 → 설정 JSON 편집 → 실행**이다. 직원 PC에서 npm/pip/uvx/Bun 설치·git clone·브라우저/LSP 최초 다운로드를 요구하지 않는다.
+- 배포 파일·폴더 이름은 영문 ASCII로 한다. 0.2.2 TGZ의 한글 파일명 깨짐 제보에 따라 0.2.3부터 `GETTING_STARTED.txt`, `VALIDATION_REPORT.md`, `READINESS.json`을 사용한다. Git 소스 트리·배포 트리·실제 TGZ 헤더·EXE 추출 파일과 ASAR 경로를 검사하며 한국어 UI/문서 내용은 유지한다. 사용자의 프로젝트나 Windows 프로필 경로를 임의로 변경하지 않는다.
 - 기존 PC의 OpenCode·Zed·개인 플러그인·개인 설정을 읽거나 복제하지 않는다. 앱 전용 엔진·설정·데이터를 사용한다.
 - LIG 로고는 `assets/lig-icon.png`, `assets/lig-icon.ico`에 반영했다. 화면 조작용 Agent Desktop과 임의 서드파티 실행형 플러그인은 기본 범위가 아니다.
 - 모델 설정은 OpenCode의 `providers → settings / models` 형식을 따른다. 여러 API 주소·키·LLM을 등록하고 선택한다. `APIKey` 표기도 인식하며 임베딩 모델은 `openViking.embedding` **한 개**다. 예제는 [agent-config.example.json](agent-config.example.json)에 있다. 실제 키를 이 파일에 커밋하지 않는다.
@@ -198,7 +202,7 @@ npm run skills:verify
 npm run verify
 ```
 
-**건너뜀 수를 반드시 확인한다.** 새 PC에서 아래 경로가 없으면 실제 연동 검사가 skip될 수 있다. exit 0만으로 이전의 45개 전체 통과를 재현했다고 말하지 않는다.
+**건너뜀 수를 반드시 확인한다.** 새 PC에서 아래 경로가 없으면 실제 연동 검사가 skip될 수 있다. exit 0만으로 0.2.3의 51개 전체 통과를 재현했다고 말하지 않는다.
 
 - `.cache/openviking/env-linux/bin/python3`: OpenViking/Graphify Linux 검증 환경. Python 3.12 venv에 OpenViking 0.5.4와 `graphifyy[mcp]==0.9.105`를 준비한다.
 - `.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode`: 고정 v2 CLI. desktop-dependencies helper가 준비한다.
@@ -261,7 +265,7 @@ npm run build
 
 라이브 테스트는 합성 로컬 endpoint를 사용한다. 실제 사내 키나 실제 프로젝트 비밀을 fixture에 넣지 않는다. 이전 기준 로그는 `.cache/mcp-final-verify.log`, `.cache/mcp-final-desktop-types.log`, `.cache/mcp-final-desktop-build.log`에 있지만 Git으로 이동하지 않는다. 결과 요약은 위 검증 문서에 커밋되어 있다.
 
-## 8. 현재 차단 사항과 0.2.2 패키징 재개
+## 8. 패키징 환경과 재생성
 
 현재 실행 환경 정책 revision 2에서 `storage.googleapis.com`과 `api.github.com` 접근이 정상이다. 이전 revision 1의 정책 403은 해소됐고 Bun workspace 설치도 완료했다. 고정 Chrome은 확보·해시 검증을 마쳤다. 새 환경에서는 실제 접근 상태와 캐시를 확인하고 아래 재생성 순서를 따른다.
 
@@ -290,7 +294,7 @@ npm run audit:installer
 EXE 예상 위치:
 
 ```text
-release/desktop/L-Vibe-0.2.2-win-x64.exe
+release/desktop/L-Vibe-0.2.3-win-x64.exe
 .cache/l-vibe-desktop/source/packages/desktop/dist/win-unpacked/
 ```
 
@@ -299,16 +303,16 @@ NSIS/7-Zip 의존성은 빌드 PC에서 확보한다. 현재 커스텀 NSIS 패�
 ### EXE 검사를 끝낸 뒤 TGZ 생성
 
 1. `7zz t` 또는 동등한 도구로 EXE archive를 검사한다. 실제 EXE에서 리소스를 추출해 OpenViking/Python·REA·스킬·**새 MCP 전체**를 각 고정 manifest와 대조한다. staging 검사만으로 EXE 내부 검사라고 기록하지 않는다.
-2. `npm run audit:installer`가 EXE를 실행하지 않고 archive 검사·추출 후 앱 버전/AMD64, OpenViking·REA·MCP·34개 스킬의 manifest/파일 해시, 고정 Windows CLI, 설정 예제를 검사하고 `.cache/packaged-runtime-audit.json`을 만든다. 검사 로그는 `.cache/installer-test.log`, `.cache/installer-extract.log`다. TGZ 생성은 이 audit의 실제 EXE 크기/SHA-256, 앱 ASAR/실행 파일, 모든 런타임 manifest와 CLI를 현재 파일에 다시 대조한다. 다른 EXE나 staging 검증 기록을 재사용하지 않는다. 자동화의 회귀 검사 및 **0.2.2 실제 EXE에 대한 실행을 모두 통과했다.** 새 설치본마다 새로 실행한다.
+2. `npm run audit:installer`가 EXE를 실행하지 않고 archive 검사·추출 후 앱 버전/AMD64, OpenViking·REA·MCP·34개 스킬의 manifest/파일 해시, 고정 Windows CLI, 설정 예제를 검사하고 `.cache/packaged-runtime-audit.json`을 만든다. 0.2.3부터 실제 추출 파일·폴더와 ASAR 내부 이름의 ASCII 검사도 기록한다. 검사 로그는 `.cache/installer-test.log`, `.cache/installer-extract.log`다. TGZ 생성은 이 audit의 실제 EXE 크기/SHA-256, 앱 ASAR/실행 파일, 모든 런타임 manifest와 CLI를 현재 파일에 다시 대조한다. 다른 EXE나 staging 검증 기록을 재사용하지 않는다. 새 설치본마다 새로 실행한다.
 3. `scripts/offline-bundle.mjs`는 정식 생성 소스인 `.cache/l-vibe-desktop/source/LICENSE`를 사용하며 `upstream-lock.json`의 원본 해시와 일치할 때만 복사한다. 예전 `.cache/opencode-desktop/source`는 설치 번들 생성에 필요하지 않다. 일반 회귀 검사의 원본 fixture로는 계속 사용한다.
-4. [docs/validation-0.2.2.md](docs/validation-0.2.2.md)에 실제 OS·명령·EXE 크기/SHA·리소스 검사 결과를 갱신하고 커밋한다. 기존 source/lock 변경도 모두 커밋되어 있어야 한다. bundle 스크립트는 tracked 파일 변경이 남으면 거부한다.
+4. [docs/validation-0.2.3.md](docs/validation-0.2.3.md)에 실제 OS·명령·EXE 크기/SHA·리소스 검사 결과를 갱신하고 커밋한다. 기존 source/lock 변경도 모두 커밋되어 있어야 한다. bundle 스크립트는 tracked 파일 변경이 남으면 거부한다.
 5. 다음을 실행하고 archive 내용·해시·설정 예제·라이선스·대응 소스를 확인한다.
 
 ```sh
 npm run bundle:offline
 ```
 
-출력은 `release/desktop/L-Vibe-0.2.2-windows-x64.tgz`와 `.sha256`이다. 설치 EXE를 생성했다는 사실만으로 TGZ 생성·GitHub 게시·Windows 실행까지 완료했다고 말하지 않는다. Windows 수용 전 배포한다면 검증 후보임을 명시하고 `releaseReady: false`를 유지한다.
+출력은 `release/desktop/L-Vibe-0.2.3-windows-x64.tgz`와 `.sha256`이다. 실제 TGZ 헤더와 포함된 앱 소스 archive에도 ASCII 검사를 적용한다. 설치 EXE를 생성했다는 사실만으로 TGZ 생성·GitHub 게시·Windows 실행까지 완료했다고 말하지 않는다. Windows 수용 전 배포한다면 검증 후보임을 명시하고 `releaseReady: false`를 유지한다.
 
 ## 9. 게시·커밋·인증
 
@@ -317,7 +321,7 @@ npm run bundle:offline
 EXE/TGZ는 검증 후 `downloads/`에 넣고 Git LFS로 올린다. 로컬 Git LFS filter가 준비되지 않았던 환경에서는 다음 형태를 사용했다.
 
 ```sh
-git -c 'filter.lfs.clean=git-lfs clean -- %f' -c filter.lfs.required=true add downloads/L-Vibe-0.2.2-win-x64.exe downloads/L-Vibe-0.2.2-windows-x64.tgz
+git -c 'filter.lfs.clean=git-lfs clean -- %f' -c filter.lfs.required=true add downloads/L-Vibe-0.2.3-win-x64.exe downloads/L-Vibe-0.2.3-windows-x64.tgz
 # .sha256·다운로드 안내·검증 보고서도 실제 값으로 갱신해 추가한다.
 ```
 
@@ -343,6 +347,7 @@ LFS object 업로드가 성공한 뒤 source ref를 push한다. 보통 `git lfs 
 | 키·모델 설정 | [src/main/config.ts](src/main/config.ts), [src/shared/contracts.ts](src/shared/contracts.ts), [src/main/model-gateway.ts](src/main/model-gateway.ts) |
 | Windows 런타임 확보 | [scripts/bundle-python.py](scripts/bundle-python.py), [scripts/bundle-rea.py](scripts/bundle-rea.py), [scripts/bundle-mcp.py](scripts/bundle-mcp.py) |
 | 설치·TGZ | [distribution/native-pack.ts](distribution/native-pack.ts), [distribution/windows-installer.nsi](distribution/windows-installer.nsi), [scripts/offline-bundle.mjs](scripts/offline-bundle.mjs) |
+| ASCII 파일명·실제 EXE 검증 | [scripts/package-paths.mjs](scripts/package-paths.mjs), [scripts/installer-audit.mjs](scripts/installer-audit.mjs), [tests/package-paths.test.mjs](tests/package-paths.test.mjs) |
 | Windows 수용 | [docs/windows-acceptance.md](docs/windows-acceptance.md), [docs/upstream-audit.md](docs/upstream-audit.md) |
 
 주요 이력: `419197c` = 0.2.1 설치본 게시, `588bcf4` = MCP 잠금/stdio 기반, `9809159` = 6종 연동, `a5dd07a` = 종료 실패 보완 및 최종 0.2.2 소스 검증. 최초 독립 UI 원형과 1.19.5 실행기를 제품의 현재 기반으로 되돌리지 않는다.

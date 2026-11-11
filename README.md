@@ -6,16 +6,18 @@
 
 Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배포판**입니다. 공식 Desktop/엔진 v2.2.6을 고정하고, 사내 모델 설정·승인 중계·로컬 서비스를 결합합니다. 기존 PC의 OpenCode·Zed·개인 설정·플러그인을 읽거나 복제하지 않습니다.
 
-0.2.2는 설치·모델·로컬 도구의 **검증 후보**입니다. 고정 브라우저를 포함한 MCP 6종을 완성하고 실제 설치 EXE의 런타임·스킬·CLI 무결성을 확인했습니다. [0.2.2 검증 상태](docs/validation-0.2.2.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
+0.2.3은 설치·모델·로컬 도구의 **검증 후보**입니다. TGZ를 해제할 때 한글 파일명이 깨지는 문제를 수정하고 배포 파일·폴더, 설치 리소스, 포함된 앱 소스 경로를 ASCII로 제한합니다. 고정 브라우저를 포함한 MCP 6종과 기본 스킬 34개를 제공합니다. [0.2.3 검증 상태](docs/validation-0.2.3.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
 
 ## 폐쇄망에서 설치
 
-1. 반입한 `L-Vibe-0.2.2-windows-x64.tgz`를 압축 해제합니다.
-2. `L-Vibe-0.2.2-win-x64.exe`로 일반 사용자에게 설치합니다.
+1. 반입한 `L-Vibe-0.2.3-windows-x64.tgz`를 압축 해제합니다.
+2. `L-Vibe-0.2.3-win-x64.exe`로 일반 사용자에게 설치합니다.
 3. 자동으로 열린 설정 JSON을 편집하고 저장합니다.
 4. L-Vibe를 실행하고 프로젝트 폴더와 모델을 선택합니다.
 
 자세한 내용은 [설치 안내](docs/offline-setup.md)를 확인하세요. 직원 PC에서 npm·pip·uvx·Bun·Git clone이나 런타임 설치를 실행하지 않습니다. 모델 가중치는 포함하지 않으며, 설정한 사내 모델 API가 필요합니다. 설치·업데이트·기본 제거는 사용자 데이터 폴더를 유지합니다.
+
+압축 안의 안내 파일은 `GETTING_STARTED.txt`, 검증 보고서는 `VALIDATION_REPORT.md`, 출시 상태는 `READINESS.json`입니다. 파일·경로 이름만 영문으로 통일하며 한국어 UI와 문서 내용은 유지합니다.
 
 ## 모델 설정
 
@@ -38,7 +40,7 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배�
 - morluto/rea 6.8.0의 제한된 정적 분석, Graphify 0.9.105의 네트워크 없는 AST 추출.
 - Aegis·Conductor 순수 지침 어댑터와 오프라인 기본 스킬 34개. 최초 실행에서 OpenViking skills에 참조·라이선스와 함께 자동 등록하며 재실행 중복 색인과 사용자 편집본 덮어쓰기를 방지합니다. [추가 스킬·MCP 조사와 선택 목록](docs/offline-extensions-research.md)을 참고하세요.
 
-0.2.2에는 Serena/clangd·Git·Playwright·MarkItDown·Chrome DevTools·DuckDB의 통제된 MCP가 포함됩니다. 실제 Linux 호출과 Windows 설치 리소스 검사를 구분해 검증 기록을 확인하세요. 일반 명령 실행과 새 Desktop의 반복 감지·답변 재출력, Windows 설치·업데이트·ACL·자식 종료·DNS/TCP 관찰과 실제 사내 Qwen 수용 검증은 남아 있습니다.
+Serena/clangd·Git·Playwright·MarkItDown·Chrome DevTools·DuckDB의 통제된 MCP가 포함됩니다. 실제 Linux 호출과 Windows 설치 리소스 검사를 구분해 검증 기록을 확인하세요. 일반 명령 실행과 새 Desktop의 반복 감지·답변 재출력, Windows 설치·업데이트·ACL·자식 종료·DNS/TCP 관찰과 실제 사내 Qwen 수용 검증은 남아 있습니다.
 
 ## 빌드 PC
 
@@ -64,7 +66,7 @@ npm run audit:installer
 npm run bundle:offline
 ```
 
-`desktop-dependencies.py`는 CLI·Windows native prebuild·Ghostty의 고정 버전/해시를 검증합니다. Python은 Windows wheel 의존성과 Windows 전용 markers를 모두 해석해 완성된 배포본을 구성하며 가상환경을 복사하지 않습니다. REA는 별도 npm lock으로 고정합니다. `bundle:offline`은 커밋된 소스·EXE·설정 예제·안내·해시·라이선스·대응 소스를 TGZ로 묶습니다. 빌드 성공과 출시 수용 검증은 구분합니다.
+`desktop-dependencies.py`는 CLI·Windows native prebuild·Ghostty의 고정 버전/해시를 검증합니다. Python은 Windows wheel 의존성과 Windows 전용 markers를 모두 해석해 완성된 배포본을 구성하며 가상환경을 복사하지 않습니다. REA는 별도 npm lock으로 고정합니다. `bundle:offline`은 커밋된 소스·EXE·설정 예제·안내·해시·라이선스·대응 소스를 TGZ로 묶습니다. 배포 경로가 ASCII가 아니거나 실제 EXE의 ASCII 검사 기록이 없으면 생성을 중단합니다. 빌드 성공과 출시 수용 검증은 구분합니다.
 
 원형 `src/renderer`, `src/preload`와 `dev:prototype`, `build:prototype`, `start:prototype`는 이관 전 비교·회귀 검증용입니다. 원형 테스트를 새 Desktop 검증으로 계산하지 않습니다. 새 소스는 `distribution/` overlay, `upstream-lock.json`, `scripts/desktop.mjs`로 관리합니다.
 
