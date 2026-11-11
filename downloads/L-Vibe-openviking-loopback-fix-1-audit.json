@@ -1,0 +1,18 @@
+{
+  "archive": "L-Vibe-openviking-loopback-fix-1.tgz",
+  "bytes": 3202655,
+  "sha256": "d7ddde57981f87f1a6f0d33eff809122544194c6984746f9ee28086914eca284",
+  "sourceCommit": "c8ab5acadf852a614fa9e3065dc79f4d539dd77c",
+  "pathEncoding": "ascii",
+  "files": 10,
+  "entries": 11,
+  "changedRuntimeEntries": [
+    "launch.py"
+  ],
+  "pythonFiles": 63060,
+  "newManifestSha256": "42f101caef4f976cc20bc3df5f1b3a25356f1a75d3f0297b79af77379733c901",
+  "tests": 56,
+  "testsFailed": 0,
+  "testsSkipped": 0,
+  "verification": "Linux filesystem and Windows TCP socketpair simulation; actual Windows patch application pending"
+}

@@ -1,5 +1,7 @@
 # L-Vibe 다운로드
 
+**Windows OpenViking 시작 오류 수정:** 0.2.2/0.2.3에서는 내부 asyncio loopback 연결이 차단될 수 있습니다. 기존 설치본은 [오프라인 수정 패치 (약 3.2 MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-openviking-loopback-fix-1.tgz)를 적용하세요. 압축 해제 후 앱을 종료하고 `APPLY_FIX.cmd`를 실행합니다. [적용 안내](../docs/openviking-windows-loopback-fix.md) · [체크섬](L-Vibe-openviking-loopback-fix-1.tgz.sha256) · [검사 기록](L-Vibe-openviking-loopback-fix-1-audit.json). 기존 EXE/TGZ에는 이 후속 패치가 포함되어 있지 않습니다.
+
 **0.2.3 Windows x64 검증 후보**입니다. 한글 파일명 깨짐을 수정하여 배포 파일·폴더 이름을 영문 ASCII로 통일했습니다. MCP 6종·고정 브라우저·기본 스킬 34개를 포함합니다. Windows 10/11 및 실제 사내 모델 수용 검증은 남아 있습니다.
 
 [0.2.3 설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.3-win-x64.exe)

@@ -8,6 +8,8 @@ Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배�
 
 0.2.3은 설치·모델·로컬 도구의 **검증 후보**입니다. TGZ를 해제할 때 한글 파일명이 깨지는 문제를 수정하고 배포 파일·폴더, 설치 리소스, 포함된 앱 소스 경로를 ASCII로 제한합니다. 고정 브라우저를 포함한 MCP 6종과 기본 스킬 34개를 제공합니다. [0.2.3 검증 상태](docs/validation-0.2.3.md)를 확인하세요. Windows·실제 사내 모델 수용을 완료한 1.0 배포판은 아닙니다.
 
+Windows 0.2.2/0.2.3의 OpenViking 시작 실패는 [asyncio loopback 수정 패치](docs/openviking-windows-loopback-fix.md)를 적용하세요. 기존 EXE/TGZ에는 후속 수정이 포함되어 있지 않습니다. 패치는 설정·대화·지식 데이터를 유지합니다.
+
 ## 폐쇄망에서 설치
 
 1. 반입한 `L-Vibe-0.2.3-windows-x64.tgz`를 압축 해제합니다.
