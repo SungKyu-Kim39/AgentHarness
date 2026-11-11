@@ -23,6 +23,7 @@ test('native model bindings hide actual keys and select the configured default',
   assert.equal(document.model.model, 'model-b');
   assert.ok(!JSON.stringify(document).includes('actual-secret'));
   assert.equal(document.providers[providerID('A')].package, '@opencode/ai/providers/openai-compatible');
+  for (const key of ['timeout', 'headerTimeout', 'chunkTimeout']) assert.equal(document.providers[providerID('A')].settings[key as 'timeout'], false);
 });
 
 const cli = path.resolve('.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');

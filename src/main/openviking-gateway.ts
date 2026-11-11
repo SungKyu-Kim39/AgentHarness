@@ -1,4 +1,5 @@
 import { createServer, type Server } from 'node:http';
+import { requestJSON } from './http-request';
 import { randomBytes } from 'node:crypto';
 import type { AgentConfig } from '../shared/contracts';
 /** Keeps real embedding/VLM keys out of OpenViking's config, environment and diagnostics. */
@@ -22,8 +23,8 @@ export class OpenVikingGateway {
         if (body.model !== target.id) { res.writeHead(403).end(); return; }
         // This service only performs text indexing. No fetch, image URLs or tool execution.
         if (completion && (body.tools?.length || body.messages?.some((m: any) => typeof m.content !== 'string' && m.content?.some((p: any) => p.type !== 'text')))) { res.writeHead(403).end(); return; }
-        const upstream = await fetch(target.baseUrl.replace(/\/$/, '') + (embedding ? '/embeddings' : '/chat/completions'), {
-          method: 'POST', redirect: 'error', signal: AbortSignal.any([controller.signal, AbortSignal.timeout(120000)]),
+        const upstream = await requestJSON(target.baseUrl.replace(/\/$/, '') + (embedding ? '/embeddings' : '/chat/completions'), {
+          method: 'POST', signal: controller.signal,
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${target.apiKey}` }, body: JSON.stringify(body),
         });
         if (!upstream.ok) { res.writeHead(502).end(JSON.stringify({ error: { message: `사내 ${embedding ? '임베딩' : '모델'} HTTP ${upstream.status}` } })); return; }

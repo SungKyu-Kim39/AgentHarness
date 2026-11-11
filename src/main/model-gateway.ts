@@ -13,7 +13,7 @@ export interface ModelFailure {
   elapsedMs: number; requestBytes: number; responseBytes: number; streaming: boolean;
   upstreamStatus?: number; osError?: string;
 }
-const duration = (value: unknown, fallback: number): number | false =>
+const duration = (value: unknown, fallback: number | false): number | false =>
   value === false ? false : typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= 86400000 ? value : fallback;
 
 /** Exact-endpoint transport. Neither response bodies nor credentials enter diagnostics. */
@@ -63,9 +63,9 @@ export class ModelGateway {
         if (body?.model !== this.config.model.id) { finished = true; cleanup(); res.writeHead(403).end(); return; }
         const bytes = Buffer.from(JSON.stringify(body));
         const target = new URL(this.config.model.baseUrl.replace(/\/$/, '') + '/chat/completions');
-        const totalMs = duration(this.transport.timeout, 900000);
-        const headerMs = duration(this.transport.headerTimeout, 300000);
-        const chunkMs = duration(this.transport.chunkTimeout, 900000);
+        const totalMs = duration(this.transport.timeout, false);
+        const headerMs = duration(this.transport.headerTimeout, false);
+        const chunkMs = duration(this.transport.chunkTimeout, false);
         phase = 'headers';
         timer('total', totalMs, 'LV_MODEL_TOTAL_TIMEOUT'); timer('headers', headerMs, 'LV_MODEL_HEADER_TIMEOUT');
         upstream = (target.protocol === 'https:' ? httpsRequest : httpRequest)(target, {
@@ -101,6 +101,7 @@ export class ModelGateway {
           });
           if (streaming) response.pipe(res, { end: false });
         });
+        upstream.on('socket', socket => socket.setKeepAlive(true, 60000));
         upstream.once('error', error => fail('LV_MODEL_CONNECTION', '사내 모델에 연결하지 못했습니다.', 502, error));
         upstream.end(bytes);
       } catch (error) { if (!res.destroyed) fail('LV_MODEL_CONNECTION', '사내 모델 요청을 완료하지 못했습니다.', 502, error); else { finished = true; cleanup(); } }

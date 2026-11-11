@@ -1,3 +1,4 @@
+import { requestJSON } from './http-request';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
 import { randomBytes, createHash } from 'node:crypto';
@@ -77,7 +78,7 @@ export class OpenVikingService implements KnowledgeService {
           const abort = new AbortController(); this.registrationAbort = abort;
           this.value.skills = { status: 'pending', registered: 0, total: 0, conflicts: [], failed: [] }; this.changed();
           this.registration = registerBundledSkills({ bundle: this.skillBundle, stateFile: path.join(this.data, 'openviking/bundled-skills.json'), signal: abort.signal,
-            transport: (route, options) => this.request(route, options?.body, 120000, options?.method, options?.signal),
+            transport: (route, options) => this.request(route, options?.body, false, options?.method, options?.signal),
             progress: state => { if (!abort.signal.aborted) { this.value.skills = state; this.changed(); } },
           }).then(() => {}, () => {
             if (!abort.signal.aborted) { this.value.skills = { ...this.value.skills!, status: 'error', message: '기본 스킬 등록을 완료하지 못했습니다. 번들·등록 기록·사내 임베딩 설정을 확인하세요. 다음 실행에서 재시도합니다.' }; this.changed(); }
@@ -126,7 +127,7 @@ export class OpenVikingService implements KnowledgeService {
     this.startupStage = 'bundle';
     const launch = await this.resolveLaunch();
     this.personal = new PersonalKnowledge(path.join(this.data, 'openviking'), launch.executable,
-      (user, route, options) => this.request(route, options?.body, route === '/api/v1/pack/import' ? 300000 : 120000, options?.method, options?.signal, user));
+      (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user));
     this.startupStage = 'configuration';
     const folder = path.join(this.data, 'openviking'); await mkdir(folder, { recursive: true, mode: 0o700 });
     this.gateway = new OpenVikingGateway(config); await this.gateway.start();
@@ -176,9 +177,12 @@ export class OpenVikingService implements KnowledgeService {
     }
     throw new StartupFailure('OV_HEALTH_TIMEOUT', { healthStatus: lastHealthStatus, hint: startupHint(stderr) });
   }
-  private async request(route: string, body?: unknown, timeout = 120000, method?: 'GET' | 'POST' | 'PUT', signal?: AbortSignal, user = 'local-user'): Promise<any> {
+  private async request(route: string, body?: unknown, timeout: number | false = false, method?: 'GET' | 'POST' | 'PUT', signal?: AbortSignal, user = 'local-user'): Promise<any> {
     const form = body instanceof FormData;
-    const response = await fetch(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': user, ...(form ? {} : { 'Content-Type': 'application/json' }) }, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
+    const headers = { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': user, ...(form ? {} : { 'Content-Type': 'application/json' }) };
+    const response = timeout === false && !form
+      ? await requestJSON(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), headers, body: body === undefined ? undefined : JSON.stringify(body), signal })
+      : await fetch(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), redirect: 'error', headers, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: timeout === false ? signal : signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
     if (!response.ok) {
       if (this.testLaunch?.diagnostic) this.testLaunch.diagnostic(`HTTP ${response.status} ${route}: ${await response.text()}`);
       throw Object.assign(new Error(`OpenViking HTTP ${response.status}`), { status: response.status });

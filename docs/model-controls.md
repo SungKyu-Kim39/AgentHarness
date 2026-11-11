@@ -48,19 +48,21 @@
 
 ## 세션 압축과 대기 시간
 
-0.2.6의 호스트 모델 중계는 180초에 요청을 중단했다. 0.2.7은 전체 요청 기본 900초, 첫 응답 헤더 300초, 응답 조각 사이 대기 900초로 구분한다. Node HTTP 전송을 사용해 숨은 fetch 응답 타이머와 고정 3분 제한을 제거했다. 모델 요청 크기 제한은 4 MiB에서 32 MiB로 늘렸다.
+사내 모델 서버에 사용자가 많으면 응답 헤더나 첫 토큰이 오기 전 대기열에 오래 머물 수 있다. 0.2.7은 경과 시간만으로 이 요청을 중단하지 않는다. 호스트와 OpenCode 엔진의 전체 요청·첫 헤더·응답 조각 대기 제한은 기본적으로 모두 해제한다. Node HTTP 전송과 TCP keepalive를 사용하며 사용자 중지·앱 종료·실제 연결 오류를 처리한다. 모델 요청 한도는 32 MiB다.
 
-확인된 서버 운영 기준이 있다면 `providers.<provider ID>.settings` 안에 다음을 추가한다. 단위는 밀리초다.
+기본 설정에는 응답 대기 시간 항목을 추가할 필요가 없다. 이전에 유한한 값을 직접 지정했다면 `providers.<provider ID>.settings`와 해당 모델 settings에서 다음과 같이 바꾼다. 실제 baseURL/apiKey는 유지한다.
 
 ```json
 {
-  "timeout": 900000,
-  "headerTimeout": 600000,
-  "chunkTimeout": 900000
+  "timeout": false,
+  "headerTimeout": false,
+  "chunkTimeout": false
 }
 ```
 
-이 값은 이미 존재하는 baseURL/apiKey와 함께 둔다. L-Vibe 호스트는 같은 이름의 모델 settings가 있으면 그 값을 우선한다. 엔진 자체의 타임아웃도 적용되므로 공통 전송 설정은 provider settings에 두는 것을 권장한다. 사내 프록시가 먼저 연결을 끊는 경우에는 클라이언트 대기 시간 증가만으로 해결되지 않는다.
+긴 대기 자체는 실패로 판단하지 않는다. 연결이 유지되는 동안 응답을 기다리며, 사용자가 중지하면 진행 중인 모델 HTTP 연결을 닫는다. 사내 서버나 중계기가 실제로 연결을 끊는 경우는 별도 오류로 기록한다. 서버의 대기열 순번은 해당 API가 제공하지 않는 한 추정해 표시하지 않는다.
+
+OpenViking의 모델 중계 및 모델 처리를 기다리는 로컬 API, 고정 OpenAI SDK의 VLM backend, 답변 재작성기에도 고정 응답 대기 제한을 두지 않는다. OpenViking SDK의 JSON은 양수 timeout을 요구하므로 검증 후 backend 구성에서 HTTPX/OpenAI가 지원하는 None으로 변환하는 앱 어댑터를 사용한다. 원본 SDK 파일은 변경하지 않는다. 서비스 준비 확인과 프로세스 종료 확인은 모델 응답 대기와 다른 단계다.
 
 중계 실패의 마지막 분류는 `%APPDATA%\L-Vibe\model-gateway-status.json`에 저장한다. 요청/응답 본문, URL, 헤더, API 키는 기록하지 않는다. 이 파일은 실패 기록이며 현재 서비스 상태가 아니다. `LV_MODEL_TOTAL_TIMEOUT`, `LV_MODEL_HEADER_TIMEOUT`, `LV_MODEL_CHUNK_TIMEOUT`, `LV_MODEL_UPSTREAM_RESET`, `LV_MODEL_CONNECTION`, `LV_MODEL_HTTP`와 elapsedMs/바이트 수/HTTP 숫자로 원인을 구분한다. 호스트 중계는 연결이 끊긴 출력을 성공으로 표시하지 않으며 자체 재시도를 추가하지 않는다. 엔진의 기존 재시도 정책은 별도로 적용되어 실패 확정 전 압축 상태가 running으로 남을 수 있다. 반복 오류가 발생하면 중지하고 실패 코드와 서버 상태를 확인한다.
 

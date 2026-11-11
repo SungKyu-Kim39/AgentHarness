@@ -1,3 +1,4 @@
+import { requestJSON } from './http-request';
 import type { AgentConfig, Session } from "../shared/contracts";
 export function replayMessages(session: Session) {
   const timeline = [
@@ -33,12 +34,12 @@ export async function replayAnswer(
   session: Session,
   signal: AbortSignal,
 ): Promise<string> {
-  const response = await fetch(
+  const response = await requestJSON(
     config.model.baseUrl.replace(/\/$/, "") + "/chat/completions",
     {
       method: "POST",
-      redirect: "error",
-      signal: AbortSignal.any([signal, AbortSignal.timeout(120000)]),
+      signal,
+      maxBytes: 2 * 1024 * 1024,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${config.model.apiKey}`,

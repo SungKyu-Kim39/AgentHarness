@@ -33,7 +33,7 @@ export function engineConfiguration(config: AgentConfig, models: ModelBinding[],
       const first = registered[0];
       return [id, {
         name: provider?.name ?? first.name, env: [], package: '@opencode/ai/providers/openai-compatible',
-        settings: { ...provider?.settings, APIKey: undefined, baseURL: first.gateway.baseUrl, apiKey: first.gateway.token },
+        settings: { timeout: false, headerTimeout: false, chunkTimeout: false, ...provider?.settings, APIKey: undefined, baseURL: first.gateway.baseUrl, apiKey: first.gateway.token },
         models: Object.fromEntries(registered.map(m => {
           const definition = provider?.models[m.id];
           return [m.id, { ...definition, modelID: definition?.modelID ?? m.id, name: definition?.name ?? m.name,

@@ -18,6 +18,23 @@ import threading
 from urllib.parse import urlsplit
 
 
+def configure_model_queue_wait():
+    """Wait for the configured intranet VLM queue; the parent owns cancellation.
+
+    The pinned SDK validates a positive numeric timeout in its JSON schema.
+    Its OpenAI backend and HTTPX support None, so adapt the backend config
+    after schema validation. Installed third-party package files are untouched.
+    """
+    from openviking.models.vlm.backends.openai_vlm import OpenAIVLM
+    original = OpenAIVLM.__init__
+    if getattr(original, "_l_vibe_queue_wait", False):
+        return
+    def initialize(self, config):
+        original(self, {**config, "timeout": None})
+    initialize._l_vibe_queue_wait = True
+    OpenAIVLM.__init__ = initialize
+
+
 def configure_user_pack_import():
     """Do not mkdir the virtual user container when importing a user root.
 
@@ -187,6 +204,7 @@ def main():
     restrict_python_network(config)
     configure_tokenizers(os.environ.get("TIKTOKEN_CACHE_DIR"))
     from openviking.server.app import create_app
+    configure_model_queue_wait()
     configure_user_pack_import()
     from openviking.server.config import load_server_config
     import uvicorn
