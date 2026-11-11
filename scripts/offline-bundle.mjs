@@ -27,9 +27,13 @@ for (const [from, to] of [
   ['docs/configuration-recovery.md', 'CONFIGURATION_RECOVERY.txt'], ['docs/license-policy.md', 'LICENSE_POLICY.txt'],
   ['docs/windows-diagnostics.md', 'WINDOWS_DIAGNOSTICS.txt'], ['THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.md'],
   ['distribution/openviking-import-check.py', 'openviking-import-check.py'], ['distribution/check-openviking.cmd', 'CHECK_OPENVIKING.cmd'],
+  ['distribution/export-openviking-personal.py', 'export-openviking-personal.py'], ['distribution/export-openviking-personal.cmd', 'EXPORT_PERSONAL.cmd'],
+  ['docs/openviking-personal-migration.md', 'PERSONAL_KNOWLEDGE_MIGRATION.txt'],
 ]) await cp(path.join(project, from), path.join(root, to));
 const checkCommand = path.join(root, 'CHECK_OPENVIKING.cmd');
 await writeFile(checkCommand, (await readFile(checkCommand, 'utf8')).replace(/\r?\n/g, '\r\n'));
+const exportCommand = path.join(root, 'EXPORT_PERSONAL.cmd');
+await writeFile(exportCommand, (await readFile(exportCommand, 'utf8')).replace(/\r?\n/g, '\r\n'));
 const audit = JSON.parse(await readFile(path.join(project, '.cache/packaged-runtime-audit.json'), 'utf8'));
 await verifyInstallerAudit(audit, path.join(output, exe));
 const upstream = JSON.parse(await readFile(path.join(project, 'upstream-lock.json'), 'utf8'));

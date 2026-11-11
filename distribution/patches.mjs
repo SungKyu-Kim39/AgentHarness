@@ -106,6 +106,8 @@ export function getRuntime(): {
   authorizeProject(directory: string): Promise<void>;
   status(): { knowledge?: { status: string; skills?: { status: string; registered: number; total: number; conflicts: string[]; failed: string[]; message?: string } } };
   close(): Promise<void>;
+  importPersonalKnowledge(file: string): Promise<{ status: string; root: string; sha256: string; files?: number }>;
+  personalKnowledgeStatus(): Promise<Array<{ root: string; status: string; files: number }>>;
 };
 export function replaceConfiguration(text: string): Promise<void>;
 `));

@@ -48,6 +48,22 @@ export async function prepareLVibe() {
           app.relaunch(); app.quit();
         } catch (error) { await dialog.showMessageBox({ type: 'error', title: 'L-Vibe 설정', message: error instanceof Error ? error.message : '설정을 가져오지 못했습니다.' }); }
       } },
+      { label: '개인 공통 지식 가져오기 (.ovpack)', click: async () => {
+        const result = await dialog.showOpenDialog({ title: '기존 OpenViking 사용자 영역의 OVPack 선택', properties: ['openFile'], filters: [{ name: 'OpenViking personal knowledge', extensions: ['ovpack'] }] });
+        if (result.canceled) return;
+        try {
+          const imported = await getRuntime().importPersonalKnowledge(result.filePaths[0]);
+          await dialog.showMessageBox({ type: 'info', title: 'L-Vibe 개인 지식', message: imported.status === 'already-imported' ? '이미 가져온 개인 지식입니다.' : '개인 지식을 가져왔습니다.',
+            detail: `${imported.root}\n모든 프로젝트에서 개인 지식 검색 도구로 조회할 수 있습니다. 실제 검색 결과를 확인하세요.` });
+        } catch (error) { await dialog.showMessageBox({ type: 'error', title: 'L-Vibe 개인 지식', message: error instanceof Error ? error.message : '개인 지식을 가져오지 못했습니다.' }); }
+      } },
+      { label: '개인 공통 지식 가져오기 상태', click: async () => {
+        try {
+          const entries = await getRuntime().personalKnowledgeStatus();
+          await dialog.showMessageBox({ type: 'info', title: 'L-Vibe 개인 지식', message: `가져오기 완료 ${entries.filter(e => e.status === 'ready').length}개 영역`,
+            detail: entries.map(e => `${e.root} · ${e.status} · ${e.files} files`).join('\n') || '가져온 개인 지식이 없습니다.' });
+        } catch { await dialog.showMessageBox({ type: 'warning', title: 'L-Vibe 개인 지식', message: 'OpenViking 실행 상태와 개인 지식 등록 기록을 확인하세요.' }); }
+      } },
       { type: 'separator' },
       { label: 'L-Vibe 종료', click: () => app.quit() },
     ]));

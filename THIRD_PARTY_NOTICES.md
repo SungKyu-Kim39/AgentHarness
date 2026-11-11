@@ -22,3 +22,5 @@ are not a certification of complete license compliance.
 
 The old `vendor/THIRD_PARTY_NOTICES.md` describes the historical 0.1 prototype;
 use the current policy, pinned locks and packaged originals for Desktop.
+
+0.2.6의 앱 런처는 고정 OpenViking OVPack helper의 소스를 해시로 확인하고 가상 사용자 컨테이너 부모 생성만 어댑터로 보완한다. SDK의 소유자·대상·충돌·archive 검사는 유지하며 원본 SDK 파일은 변경하지 않는다. 어댑터 소스는 L-Vibe 소스 archive, 원본 SDK의 AGPL 대응 소스는 기존 배포 묶음에 포함한다. [이관 검증](docs/validation-0.2.6.md)을 참고한다.

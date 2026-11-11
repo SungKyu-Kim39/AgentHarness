@@ -6,6 +6,7 @@ import path from 'node:path';
 import { atomicJSON } from './config';
 import { OpenVikingGateway } from './openviking-gateway';
 import { registerBundledSkills } from './openviking-skills';
+import { PersonalKnowledge } from './personal-knowledge';
 import type { AgentConfig, AppState } from '../shared/contracts';
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
@@ -14,6 +15,8 @@ export interface KnowledgeService {
   read(project: string, uri: string): Promise<string>;
   index(project: string, filename: string, content: string): Promise<string>;
   close(): Promise<void>;
+  personalSearch?(query: string, limit: number): Promise<string>;
+  personalRead?(uri: string): Promise<string>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
 type StartupStage = 'bundle' | 'configuration' | 'process' | 'health';
@@ -53,6 +56,7 @@ export class OpenVikingService implements KnowledgeService {
   private baseUrl = ''; private token = ''; private exited = true; private expectedExit = false;
   private operation = Promise.resolve(); private stopped?: Promise<void>;
   private registration?: Promise<void>; private registrationAbort?: AbortController;
+  private personal?: PersonalKnowledge;
   private startupStage: StartupStage = 'bundle';
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
   state() { return structuredClone(this.value); }
@@ -121,6 +125,8 @@ export class OpenVikingService implements KnowledgeService {
   private async start(config: AgentConfig) {
     this.startupStage = 'bundle';
     const launch = await this.resolveLaunch();
+    this.personal = new PersonalKnowledge(path.join(this.data, 'openviking'), launch.executable,
+      (user, route, options) => this.request(route, options?.body, route === '/api/v1/pack/import' ? 300000 : 120000, options?.method, options?.signal, user));
     this.startupStage = 'configuration';
     const folder = path.join(this.data, 'openviking'); await mkdir(folder, { recursive: true, mode: 0o700 });
     this.gateway = new OpenVikingGateway(config); await this.gateway.start();
@@ -170,14 +176,23 @@ export class OpenVikingService implements KnowledgeService {
     }
     throw new StartupFailure('OV_HEALTH_TIMEOUT', { healthStatus: lastHealthStatus, hint: startupHint(stderr) });
   }
-  private async request(route: string, body?: unknown, timeout = 120000, method?: 'GET' | 'POST' | 'PUT', signal?: AbortSignal): Promise<any> {
+  private async request(route: string, body?: unknown, timeout = 120000, method?: 'GET' | 'POST' | 'PUT', signal?: AbortSignal, user = 'local-user'): Promise<any> {
     const form = body instanceof FormData;
-    const response = await fetch(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': 'local-user', ...(form ? {} : { 'Content-Type': 'application/json' }) }, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
-    if (!response.ok) throw Object.assign(new Error(`OpenViking HTTP ${response.status}`), { status: response.status });
+    const response = await fetch(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': user, ...(form ? {} : { 'Content-Type': 'application/json' }) }, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
+    if (!response.ok) {
+      if (this.testLaunch?.diagnostic) this.testLaunch.diagnostic(`HTTP ${response.status} ${route}: ${await response.text()}`);
+      throw Object.assign(new Error(`OpenViking HTTP ${response.status}`), { status: response.status });
+    }
     const text = await response.text(); if (text.length > 8 * 1024 * 1024) throw new Error('지식 응답 크기 초과');
     const json = JSON.parse(text); if (json.status === 'error') throw new Error('OpenViking 요청 실패'); return json;
   }
   private ready() { if (this.value.status !== 'ready' || this.exited) throw new Error('OpenViking이 준비되지 않았습니다. 모델·번들 설정을 확인하세요.'); }
+  async importPersonal(file: string, approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>) {
+    this.ready(); return this.personal!.import(file, approve);
+  }
+  async personalStatus() { this.ready(); return this.personal!.status(); }
+  async personalSearch(query: string, limit: number) { this.ready(); return this.personal!.search(query, limit); }
+  async personalRead(uri: string) { this.ready(); return this.personal!.read(uri); }
   async search(project: string, query: string, limit: number) {
     this.ready(); const root = knowledgeRoot(project);
     const result = await this.request('/api/v1/search/find', { query, target_uri: root, limit, read_content: false });
@@ -202,6 +217,7 @@ export class OpenVikingService implements KnowledgeService {
   }
   private async stop() {
     this.expectedExit = true;
+    await this.personal?.close(); this.personal = undefined;
     this.registrationAbort?.abort(); await this.registration?.catch(() => {});
     this.registration = undefined; this.registrationAbort = undefined;
     const child = this.process;

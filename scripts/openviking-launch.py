@@ -1,4 +1,4 @@
-"""L-Vibe-owned supervisor for the unmodified, pinned OpenViking distribution.
+"""L-Vibe-owned supervisor for the pinned OpenViking distribution.
 
 One worker, no bot, no activation commands, no inherited user configuration.
 The parent owns stdin; EOF requests shutdown. Windows Job Objects terminate
@@ -16,6 +16,26 @@ import socket
 import sys
 import threading
 from urllib.parse import urlsplit
+
+
+def configure_user_pack_import():
+    """Do not mkdir the virtual user container when importing a user root.
+
+    OVPack still validates the archive, scope, owner, destination write access
+    and conflict policy before reaching this parent helper. No ACL bypass or
+    general mkdir change is introduced. Installed SDK source stays unchanged.
+    """
+    import inspect
+    from openviking.storage.ovpack import operations
+    original = operations._ensure_parent_exists
+    source = inspect.getsource(original).replace("\r\n", "\n")
+    if hashlib.sha256(source.encode()).hexdigest() != "91a8134aabc54256c30963c1d565295eaf8b11e9ded02dca53854c0349af27a7":
+        raise RuntimeError("L-Vibe: unsupported OVPack parent helper")
+    async def ensure_parent(viking_fs, parent, ctx):
+        if parent == "viking://user":
+            return
+        return await original(viking_fs, parent, ctx)
+    operations._ensure_parent_exists = ensure_parent
 
 
 def configure_tokenizers(directory=None):
@@ -167,6 +187,7 @@ def main():
     restrict_python_network(config)
     configure_tokenizers(os.environ.get("TIKTOKEN_CACHE_DIR"))
     from openviking.server.app import create_app
+    configure_user_pack_import()
     from openviking.server.config import load_server_config
     import uvicorn
     server_config = load_server_config()
