@@ -21,6 +21,8 @@
 
 [설치 안내](../docs/offline-setup.md) · [0.2.4 검증 보고서](../docs/validation-0.2.4.md) · [실제 EXE 검사 기록](L-Vibe-0.2.4-runtime-audit.json) · [TGZ 검사 기록](L-Vibe-0.2.4-bundle-audit.json)
 
+게시 커밋 `170512c3f4c2a7e14dcac1beba220092baced506`과 원격 `work`를 대조했습니다. 공개 TGZ는 **HTTP 200·전체 1,121,480,970 bytes·SHA-256**이 로컬 산출물과 일치합니다. 공개 EXE는 HEAD의 크기와 206 range 응답의 PE 헤더를 확인했으며 실제 SHA-256은 검증한 로컬 EXE 및 업로드한 Git LFS object ID에 대응합니다. [공개 다운로드 검사 기록](L-Vibe-0.2.4-public-audit.json)을 참고하세요.
+
 설치 후 `settings.enc.json`만 있다면 기존 설정을 보존했거나 최초 가져오기가 끝난 상태입니다. `config-import.json`은 임시 파일이며 자동 삭제합니다. [설정 복구·교체 안내](../docs/configuration-recovery.md)에 재설치 없는 변경 방법을 정리했습니다.
 
 자체 코드는 MIT이며 전체 묶음의 라이선스는 복수입니다. [라이선스 정책 재검토](../docs/license-policy.md)에 GPL/AGPL/LGPL·스킬·Chrome/MSVC의 조건과 미확인 항목을 기록했습니다. 0.2.4에는 복구·라이선스·진단 안내도 TGZ 안에 포함합니다.

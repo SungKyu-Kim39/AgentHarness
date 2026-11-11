@@ -14,7 +14,7 @@
 | 최신 전체 설치 파일 | **0.2.4 검증 후보**. 최종 TGZ/게시·해시는 다운로드 안내 참조 |
 | 0.2.4 EXE/TGZ | 생성·실제 EXE 경로/전수 해시·TGZ 29개 체크섬/33개 ASCII 항목 검사 통과. OpenViking은 작은 패치와 동일한 새 manifest |
 | TGZ 소스 체크포인트 | `0976c3eba95c4d21015b97856e9d415d1c4dbbe2` |
-| 공개 다운로드 | 최신 게시/원격 검사 결과는 downloads/README.md와 실제 브랜치 로그 확인 |
+| 공개 다운로드 | 0.2.4 업로드 완료. 공개 TGZ 전체 크기/SHA-256, EXE HEAD/크기/PE 헤더 range 검사 통과. 실제 Windows 적용 후 결과는 미확인 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
 | 바로 다음 작업 | 라이선스 재배포 미확인 항목, Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |

@@ -14,5 +14,11 @@
   "tests": 56,
   "testsFailed": 0,
   "testsSkipped": 0,
-  "verification": "Linux filesystem and Windows TCP socketpair simulation; actual Windows patch application pending"
+  "verification": "Linux filesystem and Windows TCP socketpair simulation; actual Windows patch application pending",
+  "publicDownload": {
+    "status": 200,
+    "bytes": 3202655,
+    "sha256": "d7ddde57981f87f1a6f0d33eff809122544194c6984746f9ee28086914eca284",
+    "verifiedOn": "2026-11-11"
+  }
 }
