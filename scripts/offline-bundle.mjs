@@ -43,7 +43,7 @@ for (const [from, to] of [
   ['vendor/runtime/windows-x64/rea/LICENSE', 'REA-LICENSE'], ['vendor/runtime/windows-x64/rea/THIRD_PARTY_NOTICES.md', 'REA-THIRD_PARTY-NOTICES.md'],
   ['distribution/methodology/aegis-LICENSE', 'Aegis-LICENSE'], ['distribution/methodology/conductor-LICENSE', 'Conductor-LICENSE'],
 ]) await cp(path.join(project, from), path.join(root, 'licenses', to));
-for (const file of ['upstream-lock.json', 'desktop-runtime-lock.json', 'python-runtime-lock.json', 'rea-runtime-lock.json', 'skills-lock.json', 'mcp-runtime-lock.json', 'mcp-node-lock.json'])
+for (const file of ['upstream-lock.json', 'desktop-runtime-lock.json', 'python-runtime-lock.json', 'tokenizer-runtime-lock.json', 'rea-runtime-lock.json', 'skills-lock.json', 'mcp-runtime-lock.json', 'mcp-node-lock.json'])
   await cp(path.join(project, file), path.join(root, 'licenses', file));
 const sourceArchive = path.join(root, 'source', 'L-Vibe-' + commit.slice(0, 12) + '-source.tgz');
 execFileSync('git', ['archive', '--format=tar.gz', '--output', sourceArchive, commit], { cwd: project });

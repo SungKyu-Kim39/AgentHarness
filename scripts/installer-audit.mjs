@@ -50,10 +50,32 @@ async function expectedComponents(root) {
     rea: await fileHash(path.join(root, 'vendor/runtime/windows-x64/rea/manifest.json')),
   };
 }
+async function verifyTokenizers(runtime) {
+  const lockFile = path.join(project, 'tokenizer-runtime-lock.json');
+  const lock = await json(lockFile);
+  const metadata = await json(path.join(runtime, 'tokenizers/assets.json'));
+  if (metadata.lockSha256 !== await fileHash(lockFile) || lock.assets.length !== 6 || metadata.assets.length !== 6 || JSON.stringify(metadata.encodings) !== JSON.stringify(lock.encodings)) throw new Error('Packaged tokenizer catalog differs from the pinned lock');
+  const seen = new Set();
+  for (const item of lock.assets) {
+    const entry = metadata.assets.find(asset => asset.url === item.url);
+    if (!entry || entry.sha256 !== item.sha256 || !/^[0-9a-f]{40}$/.test(entry.path) || seen.has(entry.path)) throw new Error('Invalid packaged tokenizer data entry');
+    seen.add(entry.path);
+    await checkHash(path.join(runtime, 'tokenizers', entry.path), item.sha256);
+  }
+  if (metadata.canonicalVendorFiles.length !== 3) throw new Error('Missing canonical LiteLLM tokenizer files');
+  for (const relative of metadata.canonicalVendorFiles) {
+    const name = path.posix.basename(relative);
+    const entry = metadata.assets.find(asset => asset.path === name);
+    if (!entry || relative !== 'python/Lib/site-packages/litellm/litellm_core_utils/tokenizers/' + name) throw new Error('Invalid tokenizer vendor path');
+    await checkHash(path.join(runtime, relative), entry.sha256);
+  }
+  return { lockSha256: metadata.lockSha256, assets: 6, encodings: lock.encodings.length, canonicalVendorFiles: 3 };
+}
 export async function verifyInstallerAudit(audit, installer, root = project) {
   const version = (await json(path.join(root, 'package.json'))).version;
   if (audit.schemaVersion !== 1 || audit.verifiedFrom !== 'installer-archive' || audit.version !== version || audit.installer?.name !== path.basename(installer) || audit.installer?.bytes !== (await stat(installer)).size || audit.installer?.sha256 !== await fileHash(installer)) throw new Error('Installer audit is missing or stale for this EXE');
   if (audit.paths?.encoding !== 'ascii') throw new Error('Installer audit has no verified ASCII path policy');
+  if (audit.tokenizers?.lockSha256 !== await fileHash(path.join(root, 'tokenizer-runtime-lock.json')) || audit.tokenizers.assets !== 6 || audit.tokenizers.encodings !== 7) throw new Error('Installer audit has no verified offline tokenizer data');
   for (const [name, expected] of Object.entries(await expectedComponents(root))) if (audit[name]?.manifestSha256 !== expected) throw new Error('Installer audit is stale for ' + name);
   const staged = path.join(root, '.cache/l-vibe-desktop/source/packages/desktop/dist/win-unpacked');
   for (const [key, file] of [['appAsarSha256', 'resources/app.asar'], ['appExeSha256', 'L-Vibe.exe']]) if (audit[key] !== await fileHash(path.join(staged, file))) throw new Error('Installer audit is stale for ' + file);
@@ -89,6 +111,7 @@ async function auditInstaller(installer) {
       audit[name] = await verifyManifest(folder, expected, name === 'mcp');
     }
     if (audit.skills.count !== (await json(path.join(project, 'skills-lock.json'))).count) throw new Error('Installer skill count mismatch');
+    audit.tokenizers = await verifyTokenizers(path.join(resources, 'runtime/windows-x64/openviking'));
     for (const name of ['agent-config.example.json', 'skills-lock.json']) await checkHash(path.join(resources, 'l-vibe', name), await fileHash(path.join(project, name)));
     const cli = path.join(resources, 'opencode-cli.exe');
     await windowsX64(cli);

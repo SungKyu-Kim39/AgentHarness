@@ -6,13 +6,57 @@ descendants if this process is terminated or the parent disappears.
 """
 import argparse
 import ctypes
+import hashlib
 import json
 import os
+from pathlib import Path
+import re
 import signal
 import socket
 import sys
 import threading
 from urllib.parse import urlsplit
+
+
+def configure_tokenizers(directory=None):
+    """Use authenticated bundled data; never repair a cache by downloading."""
+    root = Path(directory or Path(__file__).resolve().parent / "tokenizers").resolve()
+    try:
+        metadata = json.loads((root / "assets.json").read_text(encoding="utf-8"))
+        if not isinstance(metadata, dict) or metadata.get("schemaVersion") != 1 or metadata.get("version") != "0.14.0" or len(metadata.get("assets", [])) != 6:
+            raise ValueError("unsupported catalog")
+        assets = {}
+        for item in metadata["assets"]:
+            url, filename, expected = item["url"], item["path"], item["sha256"]
+            if not isinstance(url, str) or not re.fullmatch(r"[0-9a-f]{40}", filename) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+                raise ValueError("invalid catalog entry")
+            if filename != hashlib.sha1(url.encode("utf-8"), usedforsecurity=False).hexdigest() or url in assets:
+                raise ValueError("invalid cache key")
+            file = root / filename
+            if hashlib.sha256(file.read_bytes()).hexdigest() != expected:
+                raise ValueError("data hash mismatch")
+            assets[url] = (file, expected)
+    except (OSError, ValueError, KeyError, TypeError):
+        raise RuntimeError("L-Vibe tokenizer cache is missing or corrupt. Apply the offline tokenizer repair or reinstall the complete bundle.") from None
+    os.environ["TIKTOKEN_CACHE_DIR"] = str(root)
+    # LiteLLM otherwise replaces TIKTOKEN_CACHE_DIR during its own import.
+    os.environ["CUSTOM_TIKTOKEN_CACHE_DIR"] = str(root)
+    import tiktoken.load
+
+    def read_bundled(blobpath, expected_hash=None):
+        entry = assets.get(blobpath)
+        if entry is None or (expected_hash is not None and expected_hash != entry[1]):
+            raise RuntimeError("L-Vibe tokenizer data is not in the offline catalog; downloading is disabled.")
+        try:
+            content = entry[0].read_bytes()
+        except OSError:
+            raise RuntimeError("L-Vibe tokenizer cache is missing; downloading is disabled.") from None
+        if hashlib.sha256(content).hexdigest() != entry[1]:
+            raise RuntimeError("L-Vibe tokenizer cache is corrupt; downloading is disabled.")
+        return content
+
+    tiktoken.load.read_file_cached = read_bundled
+    return metadata["encodings"]
 
 
 def windows_job():
@@ -121,6 +165,7 @@ def main():
     os.environ["OPENVIKING_CONFIG_FILE"] = args.config
     job_handle = windows_job()  # Keep the handle alive until process exit.
     restrict_python_network(config)
+    configure_tokenizers(os.environ.get("TIKTOKEN_CACHE_DIR"))
     from openviking.server.app import create_app
     from openviking.server.config import load_server_config
     import uvicorn

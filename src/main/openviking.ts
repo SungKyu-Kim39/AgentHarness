@@ -25,6 +25,7 @@ class StartupFailure extends Error {
 // Persist only categories and numeric status. Raw Python output can contain
 // request data and is deliberately excluded from production diagnostics.
 function startupHint(stderr: string) {
+  if (/L-Vibe tokenizer (?:cache|data)/.test(stderr)) return 'tokenizer_cache';
   if (/DLL load failed|WinError (?:126|127|193)|cannot load library/i.test(stderr)) return 'native_library';
   if (/ModuleNotFoundError|No module named/.test(stderr)) return 'python_module';
   if (/ValidationError|validation error/i.test(stderr)) return 'configuration';

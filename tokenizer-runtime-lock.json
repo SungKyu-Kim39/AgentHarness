@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "package": "tiktoken",
+  "version": "0.14.0",
+  "encodings": ["gpt2", "r50k_base", "p50k_base", "p50k_edit", "cl100k_base", "o200k_base", "o200k_harmony"],
+  "assets": [
+    {"url": "https://openaipublic.blob.core.windows.net/gpt-2/encodings/main/vocab.bpe", "sha256": "1ce1664773c50f3e0cc8842619a93edc4624525b728b188a9e0be33b7726adc5"},
+    {"url": "https://openaipublic.blob.core.windows.net/gpt-2/encodings/main/encoder.json", "sha256": "196139668be63f3b5d6574427317ae82f612a97c5d1cdaf36ed2256dbf636783"},
+    {"url": "https://openaipublic.blob.core.windows.net/encodings/r50k_base.tiktoken", "sha256": "306cd27f03c1a714eca7108e03d66b7dc042abe8c258b44c199a7ed9838dd930"},
+    {"url": "https://openaipublic.blob.core.windows.net/encodings/p50k_base.tiktoken", "sha256": "94b5ca7dff4d00767bc256fdd1b27e5b17361d7b8a5f968547f9f23eb70d2069"},
+    {"url": "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken", "sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"},
+    {"url": "https://openaipublic.blob.core.windows.net/encodings/o200k_base.tiktoken", "sha256": "446a9538cb6c348e3516120d7c08b09f57c36495e2acfffe59a5bf8b0cfb1a2d"}
+  ],
+  "archives": [
+    {"url": "https://registry.npmjs.org/gpt-3-encoder/-/gpt-3-encoder-1.1.4.tgz", "sha256": "099b008c7f88f4a61ca1743c2348a8228f20179c8915609b6ea82a5c3a04421c", "members": {"vocab.bpe": "package/vocab.bpe", "encoder.json": "package/encoder.json"}},
+    {"url": "https://static.crates.io/crates/tiktoken-rs/tiktoken-rs-0.6.0.crate", "sha256": "44075987ee2486402f0808505dd65692163d243a337fc54363d49afac41087f6", "members": {"r50k_base.tiktoken": "tiktoken-rs-0.6.0/assets/r50k_base.tiktoken", "p50k_base.tiktoken": "tiktoken-rs-0.6.0/assets/p50k_base.tiktoken", "cl100k_base.tiktoken": "tiktoken-rs-0.6.0/assets/cl100k_base.tiktoken", "o200k_base.tiktoken": "tiktoken-rs-0.6.0/assets/o200k_base.tiktoken"}}
+  ],
+  "license": "MIT (tiktoken) and upstream Modified MIT (GPT-2); originals preserved"
+}

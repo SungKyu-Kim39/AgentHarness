@@ -15,6 +15,7 @@ from packaging.markers import default_environment
 from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 from packaging.version import Version
+from tokenizer_assets import stage as stage_tokenizers
 
 ROOT = Path('vendor/runtime/windows-x64/openviking')
 CACHE = Path('.cache/python-bundle')
@@ -136,6 +137,7 @@ def main():
     for script in ['openviking-launch.py', 'analysis-worker.py', 'rea-supervisor.py', 'sidecar-supervisor.py']:
         file = Path('scripts') / script
         if file.exists(): shutil.copyfile(file, ROOT / script.replace('openviking-launch.py', 'launch.py'))
+    stage_tokenizers(ROOT)
     source_url = 'https://files.pythonhosted.org/packages/63/78/24eed6038a59b14d8856019c31c50b880fdc11391e61d5fe081fc17a14f9/openviking-0.5.4.tar.gz'
     source = CACHE / 'openviking-0.5.4.tar.gz'
     if not source.exists(): source.write_bytes(download(source_url))

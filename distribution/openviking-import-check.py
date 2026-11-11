@@ -21,9 +21,17 @@ def main():
         launch = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(launch)
         launch.restrict_python_network({"embedding": {"dense": {"api_base": "http://127.0.0.1:9/v1"}}})
+        encodings = launch.configure_tokenizers(runtime / "tokenizers")
         try:
             from openviking.server.app import create_app
             print("OPENVIKING_IMPORT_OK", flush=True)
+            import tiktoken
+            for name in encodings:
+                codec = tiktoken.get_encoding(name)
+                sample = "L-Vibe offline tokenizer check."
+                if codec.decode(codec.encode(sample)) != sample:
+                    raise RuntimeError("Tokenizer round-trip failed")
+            print("TOKENIZERS_OK", len(encodings), flush=True)
         finally:
             try:
                 loop = asyncio.get_event_loop()

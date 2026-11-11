@@ -29,6 +29,7 @@ test('real pinned OpenViking registers default skill packages, restarts without 
   const config = configSchema.parse({ schemaVersion: 2, model: { baseUrl, apiKey: 'viking-test-key', id: 'llm-test' }, openViking: { enabled: true, embedding: { baseUrl, apiKey: 'embedding-test-key', id: 'embed-test', dimension: 4 } } });
   let diagnostics = '';
   const skills = path.join(root, 'resources/l-vibe/skills');
+  await cp('vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
   await cp('vendor/skills', skills, { recursive: true }); await cp('skills-lock.json', path.join(skills, '..', 'skills-lock.json'));
   const viking = new OpenVikingService(root, root, () => {}, { executable, launcher: path.resolve('scripts/openviking-launch.py'), cwd: root, diagnostic: text => { diagnostics += text; } }, skills);
   t.after(() => viking.close()); await viking.configure(config);
