@@ -10,16 +10,16 @@
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.4**. Windows OpenViking 수정·안전한 시작 진단、ASCII 경로 정책 유지 |
+| 소스 버전 | **0.2.4**. Windows OpenViking 수정·안전한 시작 진단·ASCII 경로 정책 유지 |
 | 최신 전체 설치 파일 | **0.2.4 검증 후보**. 최종 TGZ/게시·해시는 다운로드 안내 참조 |
-| 0.2.4 EXE | 생성·실제 추출 경로/전수 해시 검사 통과. OpenViking은 작은 패치와 동일한 새 manifest |
-| TGZ 소스 체크포인트 | 해당 묶음 `bundle-manifest.json`의 sourceCommit 확인. 이전 0.2.3은 `93c3df35e9c6a1000ff972148de6aac99d29c9c9` |
+| 0.2.4 EXE/TGZ | 생성·실제 EXE 경로/전수 해시·TGZ 29개 체크섬/33개 ASCII 항목 검사 통과. OpenViking은 작은 패치와 동일한 새 manifest |
+| TGZ 소스 체크포인트 | `0976c3eba95c4d21015b97856e9d415d1c4dbbe2` |
 | 공개 다운로드 | 최신 게시/원격 검사 결과는 downloads/README.md와 실제 브랜치 로그 확인 |
-| Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정과 기존 0.2.2/0.2.3용 별도 오프라인 패치. 기존 EXE/TGZ는 미수정이므로 적용 안내를 확인 |
+| Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
 | 바로 다음 작업 | 라이선스 재배포 미확인 항목, Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
-다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.3 검증 상태](docs/validation-0.2.3.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.4 검증 상태](docs/validation-0.2.4.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
 
 **2026-11-11 파일명 수정:** 한글 파일명 깨짐 제보에 따라 0.2.3에서 영문 ASCII 경로 검사와 문서 이름 변경을 구현했다(`ffde16f`). 회귀 검사 **51개 통과, 실패·건너뜀 0**, 공식 Desktop 타입 검사 2개 프로젝트·2,549개 파일 오류 0 및 빌드 성공. 실제 0.2.3 EXE를 추출한 94,201개 파일·8,739개 폴더와 ASAR 11,584개 경로 모두 ASCII이며 각 런타임 해시도 일치한다. 최신 TGZ/게시 정보는 다운로드 안내와 현재 브랜치 로그를 따른다.
 

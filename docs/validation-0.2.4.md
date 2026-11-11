@@ -29,4 +29,6 @@
 
 TGZ는 이 실제 EXE/audit를 다시 대조한 후 생성한다. TGZ 자체 해시는 옆 `.sha256`, 최종 파일/소스 체크포인트/게시 결과는 [다운로드 안내](../downloads/README.md)를 따른다. 영문 배포 트리와 실제 TGZ 헤더·포함된 L-Vibe 소스 archive의 ASCII 경로를 검사한다.
 
+최종 `L-Vibe-0.2.4-windows-x64.tgz`는 **1,121,480,970 bytes**, SHA-256 `b5bac4ed0735c8e1fce8453fc441a36c731964dbd735c8089529b063a1c6b84d`다. 33개 항목/30개 파일 및 포함된 소스 archive의 496개 항목 경로 모두 ASCII다. 체크섬 목록을 제외한 **29개 파일**을 전수 SHA-256 대조했고 EXE/audit·설정 예제·0.2.4 안내·추가 진단 스크립트·CMD CRLF와 문서도 원본에 대조했다. sourceCommit은 `0976c3eba95c4d21015b97856e9d415d1c4dbbe2`다. 이 TGZ 자체 수치는 생성 후 저장소에 추가한 기록이며 TGZ 안의 보고서는 생성 직전 EXE 검사까지의 기록이다.
+
 모델 설정 예제·기존 저장 설정 보존 안내와 [라이선스 재검토](license-policy.md)를 유지한다. 구성 요소/의존성 버전은 0.2.3과 동일하며 `releaseReady: false`다. Windows 10/11 전체 수용·사내 모델/SDK·DNS/TCP·자식 종료와 새 Desktop의 반복/재출력·세션 diff·일반 명령 구현/검증은 별도로 남는다.
