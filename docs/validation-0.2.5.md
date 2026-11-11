@@ -6,7 +6,7 @@
 
 빌드 환경은 Debian 13.6 x86_64, Node 24.22.1, Bun 1.4.4, Python 3.12.14다. Windows Python 3.12.16, Electron 44.9.1, OpenCode Desktop/CLI 2.2.6 및 기존 구성 요소 버전은 유지한다. 새 Python 번들은 **63,069개 파일**, manifest SHA-256 `17b94d19b5cd9efe52c68d0c339682e1fb144fb6e2d7900a607221ad9847d70b`다. 토크나이저 어휘 자료는 모델 가중치가 아니며 tiktoken MIT/GPT-2 Modified MIT 원문을 보존한다.
 
-사용자는 누적 패치가 정상 적용됐고 L-Vibe가 실행됐다고 확인했다. 다만 모델 설정이 표시되지 않는다는 후속 문제가 있어 모델 목록/선택/연결 상태를 별도로 확인 중이다. CHECK_IMPORT 각 성공 줄과 실제 사내 모델 응답까지 확인한 것으로 확대 해석하지 않는다. Win10/11 전체 수용·DNS/TCP·Job Object와 남은 Desktop 기능은 별도이며 `releaseReady: false`를 유지한다.
+사용자는 누적 패치가 정상 적용됐고 L-Vibe가 실행됐다고 확인했다. 후속 모델 제보는 빈 목록이 아니라 `사내 코딩 모델`이라는 예제 표시명이 보이는 상태였다. 이름만으로 API 설정 여부를 판단하지 않으며 JSON 가져오기, JSON 문법과 provider/model 별칭 참조를 안내했다. CHECK_IMPORT 각 성공 줄과 실제 사내 모델 응답까지 확인한 것으로 확대 해석하지 않는다. Win10/11 전체 수용·DNS/TCP·Job Object와 남은 Desktop 기능은 별도이며 `releaseReady: false`를 유지한다.
 
 공식 Desktop 타입 검사는 2개 프로젝트·2,549개 파일 오류 0이며 main/preload/renderer 빌드도 성공했다. 원본 CSS·dynamic import·plugin timing 경고는 남는다. EXE audit는 실제 압축 안의 6종 데이터와 LiteLLM vendor 3파일을 공식 해시에 별도로 대조하고 7종 encoder/lock 확인을 기록하도록 보강했다. 이 기록이 없는 audit로 새 TGZ를 만들 수 없다.
 
@@ -30,3 +30,5 @@
 TGZ는 위 실제 EXE/audit와 커밋된 소스를 대조해 생성한다. 최종 TGZ 해시·소스 체크포인트·게시 결과는 [다운로드 안내](../downloads/README.md)에 기록하며, 묶음 안 보고서는 생성 직전까지의 검사 기록이다.
 
 최종 TGZ는 **1,122,400,157 bytes**, SHA-256 `7b467ca899a89db3d63457022ad0e8b551fe46166b576a946d0e59cd7578c819`다. 전체 **34개 항목/31개 파일**과 포함 소스 archive **515개 항목**의 경로가 ASCII다. 체크섬 목록을 제외한 **30개 파일**을 전수 대조했고 EXE/audit·설정 예제·진단 스크립트·CMD CRLF·tokenizer lock이 원본과 일치했다. 소스 체크포인트는 `e031bb8ce8acccf291d5f9f6404b6e29e713d012`다. 이 TGZ 수치는 생성 후 추가한 기록이며 TGZ 안 보고서는 생성 직전까지의 검사 기록이다.
+
+공개 게시 커밋 `212f9e93269fc81ff6a26c2168f36544692c5004`과 원격 work를 대조했다. TGZ 공개 주소의 **HTTP 200·전체 1,122,400,157 bytes·SHA-256**이 로컬 산출물과 일치했다. 공개 EXE는 HEAD HTTP 200·전체 크기와 range HTTP 206·첫 65,536 bytes PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 수행하지 않았으며 전체 해시는 실제 로컬 EXE 검사와 업로드한 Git LFS object ID에 대응한다. [공개 다운로드 검사 기록](../downloads/L-Vibe-0.2.5-public-audit.json)을 보존한다. 이 결과를 Windows 설치/모델 수용으로 계산하지 않는다.

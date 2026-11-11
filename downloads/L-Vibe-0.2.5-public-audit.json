@@ -1,0 +1,26 @@
+{
+  "version": "0.2.5",
+  "verifiedAt": "2026-11-11T05:47:23.838955+00:00",
+  "files": [
+    {
+      "name": "L-Vibe-0.2.5-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.5-win-x64.exe",
+      "responseUrl": "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/refs/heads/work/downloads/L-Vibe-0.2.5-win-x64.exe",
+      "status": 200,
+      "bytes": 1056735627,
+      "method": "HEAD size and PE header range; SHA-256 is the verified Git LFS object ID",
+      "rangeStatus": 206,
+      "sampledBytes": 65536,
+      "gitLfsOid": "241703e39356417d497dd324864049d72cb298ae7a37a545d700d9f5fa9d5337"
+    },
+    {
+      "name": "L-Vibe-0.2.5-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.5-windows-x64.tgz",
+      "responseUrl": "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/refs/heads/work/downloads/L-Vibe-0.2.5-windows-x64.tgz",
+      "status": 200,
+      "bytes": 1122400157,
+      "sha256": "7b467ca899a89db3d63457022ad0e8b551fe46166b576a946d0e59cd7578c819",
+      "method": "full GET and streaming SHA-256"
+    }
+  ]
+}

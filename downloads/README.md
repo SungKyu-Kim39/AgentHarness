@@ -13,7 +13,7 @@
 
 기존 0.2.2/0.2.3/0.2.4 설치본은 [누적 토크나이저 패치 — 약 10.5MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-openviking-tokenizer-fix-1.tgz)로 재설치 없이 복구할 수 있습니다. 앱 종료 → 새 폴더에 압축 해제 → APPLY_FIX.cmd → CHECK_IMPORT.cmd 순서입니다. 이전 loopback 수정과 삭제된 cache 복구를 포함하므로 첫 패치를 따로 반복하지 않습니다. **0.2.5에는 두 수정이 기본 포함됩니다.** [적용 안내](../docs/openviking-tokenizer-fix.md) · [패치 해시](L-Vibe-openviking-tokenizer-fix-1.tgz.sha256) · [패치 검사 기록](L-Vibe-openviking-tokenizer-fix-1-audit.json).
 
-사용자는 누적 패치 적용과 L-Vibe 실행 성공을 확인했습니다. 후속 모델 설정 표시 문제는 별도 확인 중이며, 실제 사내 모델 응답·Windows 10/11 전체 수용을 완료한 1.0으로 표시하지 않습니다. `releaseReady: false`입니다.
+사용자는 누적 패치 적용과 L-Vibe 실행 성공을 확인했습니다. 후속 모델 제보는 빈 목록이 아니라 예제 표시명이 보이는 상태였고 JSON 가져오기·문법·provider 별칭을 확인하고 있습니다. 실제 사내 모델 응답·Windows 10/11 전체 수용을 완료한 1.0으로 표시하지 않습니다. `releaseReady: false`입니다.
 
 압축을 해제하면 `GETTING_STARTED.txt`, `VALIDATION_REPORT.md`, `READINESS.json`을 확인할 수 있습니다. `CONFIGURATION_RECOVERY.txt`, `LICENSE_POLICY.txt`, `WINDOWS_DIAGNOSTICS.txt`와 `CHECK_OPENVIKING.cmd`/모듈 검사 스크립트도 제공합니다. 한국어 UI와 안내 내용은 유지하며 직원 PC 추가 설치·다운로드는 요구하지 않습니다.
 
@@ -30,3 +30,5 @@
 파일은 **work/downloads의 Git LFS**로 보존합니다. GitHub Releases 게시와 구분합니다. 위 링크로 다운로드할 때 Git LFS 설치는 필요하지 않습니다. 소스를 clone하여 실제 바이너리도 받으려면 Git LFS가 필요하며 작은 pointer 파일을 설치본으로 사용하지 마세요.
 
 이전 0.2.4에는 loopback 수정만 있어 새 토크나이저 패치가 필요합니다. 0.2.2/0.2.3에도 새 누적 패치를 사용하세요. 0.2.2는 일부 한글 TGZ 파일명이 있어 압축 해제 문제가 보고됐으며 0.2.3부터 ASCII를 사용합니다. 0.2.1은 MCP 6종이 없고 0.2.0은 기본 스킬 자동 등록도 없습니다. 이전 파일과 검사 기록은 같은 폴더에 보존합니다.
+
+공개 게시 커밋 `212f9e93269fc81ff6a26c2168f36544692c5004`과 원격 work를 대조했다. TGZ 공개 주소의 **HTTP 200·전체 1,122,400,157 bytes·SHA-256**이 로컬 산출물과 일치했다. 공개 EXE는 HEAD HTTP 200·전체 크기와 range HTTP 206·첫 65,536 bytes PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 수행하지 않았으며 전체 해시는 실제 로컬 EXE 검사와 업로드한 Git LFS object ID에 대응한다. [공개 다운로드 검사 기록](L-Vibe-0.2.5-public-audit.json)을 보존한다. 이 결과를 Windows 설치/모델 수용으로 계산하지 않는다.

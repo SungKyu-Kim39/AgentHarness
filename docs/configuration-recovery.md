@@ -30,6 +30,10 @@ OpenViking 시작 패치는 런타임만 고치며 LLM 설정을 초기화하거
 
 기본 `model.providerID`는 `providers`의 키, `model.model`은 해당 provider의 `models` 키와 같아야 한다. 예를 들어 provider 키가 `Qwen think_off`이고 모델 별칭이 `model-1`이면 `"model": { "providerID": "Qwen think_off", "model": "model-1" }`로 지정한다. 서버 전송 ID는 그 안의 `modelID`에 둔다. `providers` 블록 뒤에 다른 최상위 항목이 이어지면 쉼표도 필요하다.
 
+`사내 코딩 모델`은 예제의 표시 이름이다. `providers.<key>.name`과 `models.<key>.name`을 바꿔 표시할 수 있으며 이름만으로 주소·키·서버 ID의 적용 여부를 판정하지 않는다. 다른 JSON을 가져왔다면 해당 파일의 표시 이름과 실제 연결 결과를 함께 확인한다.
+
+JSON은 마지막 항목 뒤에 쉼표를 쓰지 않고 열린 객체를 모두 닫아야 한다. provider 한 개 뒤의 `},`에서 파일을 끝내면 문법 오류다. 반면 `providerID: intranet`인데 provider 키는 `Qwen think_off`인 경우는 JSON 문법과 별개인 참조 오류다. 실제 파일에는 Markdown의 코드 블록 표시도 넣지 않는다.
+
 ## 구현 근거
 
 설치기의 저장 설정 보존 분기는 [windows-installer.nsi](../distribution/windows-installer.nsi)에 있다. 임시 파일 삭제와 암호화 교체는 [ConfigVault](../src/main/config.ts), 시작 오류 창과 알림 영역 메뉴는 [native-startup.ts](../distribution/native-startup.ts)에 있다. 이 문서는 코드 경로 확인이며 사용자 Windows PC의 설치 로그나 복호화 결과를 대신하지 않는다.

@@ -14,7 +14,7 @@
 | 최신 전체 설치 파일 | **0.2.5 검증 후보** EXE/TGZ 생성·검사 완료. 게시 상태·해시는 다운로드 안내 참조 |
 | 0.2.5 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
 | TGZ 소스 체크포인트 | `e031bb8ce8acccf291d5f9f6404b6e29e713d012` |
-| 공개 다운로드 | 누적 토크나이저 패치 공개 검증 완료. 전체 0.2.5 TGZ는 34개 항목/31개 파일·30개 체크섬·소스 515개 항목 검사 통과. 게시 상태는 다운로드 안내 참조 |
+| 공개 다운로드 | 0.2.5 업로드 완료. 공개 TGZ 전체 크기/SHA-256·EXE HEAD/크기/PE range 검증 통과. 게시 212f9e9, 34개 항목/31개 파일·30개 체크섬·소스 515개 항목 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
 | 바로 다음 작업 | 사용자 Windows 모델 목록 표시 문제 확인, 라이선스 재배포 미확인 항목, Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
@@ -22,6 +22,8 @@
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.5 검증 상태](docs/validation-0.2.5.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
 
 **최신 사용자 확인:** 누적 토크나이저 패치가 정상 적용됐고 L-Vibe가 실행됐다고 답했다. 모델 설정이 안 되어 있다는 후속 제보는 모델 목록이 빈 것인지 선택/요청 오류인지 확인 중이다. 설정은 runtime 패치로 변경되지 않는다. 저장 설정을 삭제하지 말고 알림 영역의 명시적 JSON 가져오기 및 Desktop/엔진 모델 목록 연동을 확인한다. 이 답변만으로 실제 모델 응답·CHECK_IMPORT 각 성공 줄·Windows 10/11 전체 수용을 완료 처리하지 않는다.
+
+**모델 후속 답변:** 목록이 비었다는 뜻이 아니라 `사내 코딩 모델`이라는 예제 표시명이 보인다고 확인했다. 표시명만으로 API 미설정 여부를 판정하지 않는다. 편집한 JSON을 알림 영역 메뉴에서 명시적으로 가져오는 절차를 안내했다. 이어 제시한 JSON 조각은 provider 뒤 `},`에서 끝나므로 전체 파일이라면 쉼표/닫는 객체 누락으로 파싱되지 않는다. 기본 providerID도 `intranet`과 실제 `Qwen think_off`가 달랐다. JSON 문법과 provider/model 별칭 참조를 구분해 수정하고 기존 OpenViking 블록을 유지한다. 실제 키나 운영 JSON은 저장소에 기록하지 않는다.
 
 **토크나이저 후속 수정:** 사용자 CHECK_IMPORT에서 cl100k 외부 다운로드/DNS 차단이 남았다. 고정 LiteLLM wheel의 rank 3파일이 CRLF로 공식 hash와 달랐고, SDK가 TIKTOKEN_CACHE_DIR를 덮어썼다. 기존 Linux cache는 이미 canonical bytes라 이전 검사가 놓쳤다. 공식 SHA의 데이터 6개/인코더 7종과 MIT/GPT-2 Modified MIT 원문을 확보하고, 3 vendor 파일을 canonical bytes로 바꾸며 양쪽 cache env 및 local-only loader를 적용했다. 빈 HOME/TEMP/잘못된 상속 cache에서 SDK를 먼저 import한 검사와 전체 58개/skip0, 별도 installer audit 3개를 통과했다. 새 Python manifest는 17b94d19b5cd9efe52c68d0c339682e1fb144fb6e2d7900a607221ad9847d70b (63,069파일)이다. 기존 base 8d2fbf/42f101을 지원하는 약 10.5MB 누적 패치를 게시하며, full 0.2.5도 준비한다. [원인·적용·검증](docs/openviking-tokenizer-fix.md)을 먼저 읽고 실제 Windows 적용 후 결과를 추정하지 말라.
 
@@ -361,3 +363,5 @@ LFS object 업로드가 성공한 뒤 source ref를 push한다. 보통 `git lfs 
 | Windows 수용 | [docs/windows-acceptance.md](docs/windows-acceptance.md), [docs/upstream-audit.md](docs/upstream-audit.md) |
 
 주요 이력: `419197c` = 0.2.1 설치본 게시, `588bcf4` = MCP 잠금/stdio 기반, `9809159` = 6종 연동, `a5dd07a` = 종료 실패 보완 및 최종 0.2.2 소스 검증. 최초 독립 UI 원형과 1.19.5 실행기를 제품의 현재 기반으로 되돌리지 않는다.
+
+**추가 JSON 전문 확인:** 사용자가 마지막으로 보낸 전문은 기본 providerID=`Qwen think_off`, model=`off` 참조가 맞고 `providers`의 마지막 provider 객체 뒤 trailing comma 한 개가 남아 있다. 그 쉼표만 제거하고 `openViking` 앞의 providers 블록 쉼표는 유지하도록 안내했다. 원문 설정/키는 이 저장소에 저장하지 않는다.
