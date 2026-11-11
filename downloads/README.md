@@ -43,3 +43,5 @@ GETTING_STARTED.txt, VALIDATION_REPORT.md, READINESS.json, PERSONAL_KNOWLEDGE_MI
 파일은 **work/downloads의 Git LFS**로 보존합니다. GitHub Releases 게시와 구분합니다. 위 링크로 받는 경우 Git LFS 설치는 필요하지 않습니다. 소스 clone의 작은 LFS pointer 파일을 설치본으로 사용하지 마세요.
 
 이전 버전과 검사 기록은 보존합니다. 0.2.5에는 토크나이저·loopback 수정이 있지만 개인 지식 가져오기는 없습니다. 0.2.4 및 이전 시작 오류에는 [이전 누적 토크나이저 패치](../docs/openviking-tokenizer-fix.md)가 제공되며 새 0.2.6에는 별도 패치가 필요하지 않습니다.
+
+공개 게시 커밋 `5e575a9aaec4d10882aa671a5a78641b4dd844cc`의 다운로드를 확인했다. TGZ는 공개 주소에서 전체 스트리밍 다운로드하여 **HTTP 200·1,122,446,227 bytes·SHA-256**이 로컬 산출물과 일치했다. EXE는 HEAD HTTP 200·전체 크기와 range HTTP 206·첫 65,536 bytes의 PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 수행하지 않았으며 전체 해시는 검증한 로컬 EXE와 업로드한 Git LFS object ID에 대응한다. [공개 다운로드 검사 기록](L-Vibe-0.2.6-public-audit.json)을 보존한다. 실제 직원 PC 자료의 이관·Windows 수용 결과는 별도다.

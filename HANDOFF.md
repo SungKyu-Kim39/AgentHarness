@@ -20,9 +20,9 @@
 | 최신 전체 설치 파일 | **0.2.6 검증 후보** EXE/TGZ 생성·검사 완료. 게시 상태·해시는 다운로드 안내 참조 |
 | 0.2.6 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
 | TGZ 소스 체크포인트 | `8ffa36ea3baec751af55b3f4ab02dfe3274132ef` |
-| 공개 다운로드 | 0.2.5 업로드 완료. 공개 TGZ 전체 크기/SHA-256·EXE HEAD/크기/PE range 검증 통과. 게시 212f9e9, 34개 항목/31개 파일·30개 체크섬·소스 515개 항목 |
+| 공개 다운로드 | **0.2.6 업로드/검사 완료**. 게시 5e575a9. TGZ 전체 GET·크기·SHA 일치, EXE HEAD·크기·PE range 확인. 37개 항목/34개 파일·33개 체크섬·소스 535개 항목 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
-| 바로 다음 작업 | 0.2.6 전체 검사/EXE/TGZ 게시 완료, 사용자 PC의 개인 지식 내보내기·가져오기 검증, 라이선스/Windows 수용 및 남은 Desktop 기능 |
+| 바로 다음 작업 | 사용자 PC의 개인 지식 내보내기·가져오기·실검색 검증, 라이선스/Windows 수용 및 남은 Desktop 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.6 검증 상태](docs/validation-0.2.6.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
@@ -375,3 +375,5 @@ LFS object 업로드가 성공한 뒤 source ref를 push한다. 보통 `git lfs 
 **0.2.6 패키지 진행:** 최종 peer 지원을 포함한 64개/실패0/skip0 검사, 공식 타입/빌드와 실제 0.2.6 EXE archive 감사 완료. EXE 1,056,739,808 bytes / SHA-256 8a37d20f1607c4b21854abec4474ae7a1aabb578848ca58b077261b0a57f7cdd. 94,210파일/8,740폴더/ASAR11,584 경로 ASCII. TGZ는 이 후 문서와 소스를 커밋한 체크포인트로 생성하고 게시한다. 소스 코드/런타임을 추가 변경하지 않고 산출물 게시를 완료한다.
 
 **0.2.6 반입 TGZ 검사:** 1,122,446,227 bytes / SHA-256 a3942de63c78b0e89d9149f07f7f6c4ddf6d31b30f9020878fcc8191ba3359c6. 소스 8ffa36ea3baec751af55b3f4ab02dfe3274132ef. 37개 항목/34개 파일·33개 체크섬·소스 535개 항목 ASCII. 공개 EXE/TGZ 업로드 후 실제 주소 검사를 완료해야 한다.
+
+**0.2.6 게시 완료:** EXE/TGZ를 5e575a9로 공개 work/downloads에 게시했다. TGZ 전체 공개 GET의 bytes/SHA-256과 EXE HEAD/range 검사를 통과했다. downloads/L-Vibe-0.2.6-public-audit.json 참조. 최종 구현은 64개 통과/실패0/skip0, 공식 타입 2,549파일/2프로젝트 오류0, 실제 EXE 감사와 TGZ 전수 검사 완료 상태다. 이후 사용자 continue는 이 작업의 계속 지시로 처리했다. 직원 PC의 exported/EXIT_CODE=0 및 실제 가져오기 결과는 아직 확인되지 않았다. 원본 OVPack/API 키를 채팅이나 공개 저장소로 보내라고 하지 말고, 배포한 내보내기 도구와 0.2.6 알림 영역의 가져오기 메뉴를 사용한다.

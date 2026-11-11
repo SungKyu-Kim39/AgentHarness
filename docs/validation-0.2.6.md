@@ -45,3 +45,5 @@ OpenViking 63,069개·REA 9,019개·MCP 21,031개·스킬 34개/259개 파일을
 최종 TGZ와 소스 체크포인트·게시 검사는 생성 후 [다운로드 안내](../downloads/README.md)와 검사 기록에 추가한다. TGZ 안 보고서는 생성 직전까지의 검사 기록이다.
 
 최종 반입 TGZ: **1,122,446,227 bytes**, SHA-256 `a3942de63c78b0e89d9149f07f7f6c4ddf6d31b30f9020878fcc8191ba3359c6`. 전체 **37개 항목/34개 파일**과 소스 archive **535개 항목**의 경로가 ASCII이며 체크섬 목록을 제외한 **33개 파일**을 전수 대조했다. EXE/audit·설정 예제·CMD CRLF·검사/내보내기 스크립트·이관 문서·tokenizer lock도 원본에 대조했다. sourceCommit은 `8ffa36ea3baec751af55b3f4ab02dfe3274132ef`다. 이 TGZ 자체 수치는 생성 후 추가했으며 내부 보고서는 생성 직전까지의 기록이다.
+
+공개 게시 커밋 `5e575a9aaec4d10882aa671a5a78641b4dd844cc`의 다운로드를 확인했다. TGZ는 공개 주소에서 전체 스트리밍 다운로드하여 **HTTP 200·1,122,446,227 bytes·SHA-256**이 로컬 산출물과 일치했다. EXE는 HEAD HTTP 200·전체 크기와 range HTTP 206·첫 65,536 bytes의 PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 수행하지 않았으며 전체 해시는 검증한 로컬 EXE와 업로드한 Git LFS object ID에 대응한다. [공개 다운로드 검사 기록](../downloads/L-Vibe-0.2.6-public-audit.json)을 보존한다. 실제 직원 PC 자료의 이관·Windows 수용 결과는 별도다.
