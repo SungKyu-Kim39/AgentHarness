@@ -16,6 +16,26 @@ export interface KnowledgeService {
   close(): Promise<void>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
+type StartupStage = 'bundle' | 'configuration' | 'process' | 'health';
+type StartupCode = 'OV_BUNDLE' | 'OV_CONFIGURATION' | 'OV_PROCESS_START' | 'OV_PROCESS_EXIT' | 'OV_HEALTH_TIMEOUT';
+type StartupDetail = { osError?: string; exitCode?: number; exitHex?: string; signal?: string; hint?: string; healthStatus?: number };
+class StartupFailure extends Error {
+  constructor(readonly code: StartupCode, readonly detail: StartupDetail = {}) { super(code); }
+}
+// Persist only categories and numeric status. Raw Python output can contain
+// request data and is deliberately excluded from production diagnostics.
+function startupHint(stderr: string) {
+  if (/DLL load failed|WinError (?:126|127|193)|cannot load library/i.test(stderr)) return 'native_library';
+  if (/ModuleNotFoundError|No module named/.test(stderr)) return 'python_module';
+  if (/ValidationError|validation error/i.test(stderr)) return 'configuration';
+  if (/PermissionError|WinError 5|Access is denied/i.test(stderr)) return 'permission';
+  if (/outbound connection is not an approved|external DNS is disabled/.test(stderr)) return 'network_policy';
+  return undefined;
+}
+function osError(error: unknown) {
+  const code = (error as NodeJS.ErrnoException | undefined)?.code;
+  return typeof code === 'string' && /^[A-Z][A-Z0-9_]{0,31}$/.test(code) ? code : undefined;
+}
 const pause = (ms: number) => new Promise(r => setTimeout(r, ms));
 export function knowledgeRoot(project: string) {
   if (!/^[a-zA-Z0-9-]{1,128}$/.test(project)) throw new Error('프로젝트 지식 범위가 올바르지 않습니다.');
@@ -32,6 +52,7 @@ export class OpenVikingService implements KnowledgeService {
   private baseUrl = ''; private token = ''; private exited = true; private expectedExit = false;
   private operation = Promise.resolve(); private stopped?: Promise<void>;
   private registration?: Promise<void>; private registrationAbort?: AbortController;
+  private startupStage: StartupStage = 'bundle';
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
   state() { return structuredClone(this.value); }
   localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
@@ -46,6 +67,7 @@ export class OpenVikingService implements KnowledgeService {
       this.update('starting');
       try {
         await this.start(config); this.update('ready');
+        await this.writeStartupStatus({ status: 'ready', stage: 'health' });
         if (this.skillBundle) {
           const abort = new AbortController(); this.registrationAbort = abort;
           this.value.skills = { status: 'pending', registered: 0, total: 0, conflicts: [], failed: [] }; this.changed();
@@ -57,9 +79,32 @@ export class OpenVikingService implements KnowledgeService {
           });
         }
       }
-      catch { await this.stop().catch(() => {}); this.update('error', 'OpenViking 시작에 실패했습니다. 번들 무결성·모델 설정과 실행 환경을 확인하세요.'); }
+      catch (error) {
+        const failure = error instanceof StartupFailure ? error : new StartupFailure(
+          this.startupStage === 'bundle' ? 'OV_BUNDLE' : this.startupStage === 'configuration' ? 'OV_CONFIGURATION' : 'OV_PROCESS_START',
+          { osError: osError(error) },
+        );
+        let stopConfirmed = true;
+        await this.stop().catch(() => { stopConfirmed = false; });
+        const recorded = await this.writeStartupStatus({ status: 'error', stage: this.startupStage, code: failure.code, ...failure.detail, stopConfirmed });
+        const labels: Record<StartupCode, string> = {
+          OV_BUNDLE: 'OpenViking 번들 파일을 읽거나 검증하지 못했습니다.',
+          OV_CONFIGURATION: 'OpenViking 실행 설정을 준비하지 못했습니다.',
+          OV_PROCESS_START: 'OpenViking Python 프로세스를 실행하지 못했습니다.',
+          OV_PROCESS_EXIT: 'OpenViking이 준비되기 전에 Python 프로세스가 종료되었습니다.',
+          OV_HEALTH_TIMEOUT: 'OpenViking의 로컬 준비 확인 시간이 초과되었습니다.',
+        };
+        const detail = [failure.code, failure.detail.osError, failure.detail.exitHex, failure.detail.hint].filter(Boolean).join(', ');
+        this.update('error', labels[failure.code] + ' [' + detail + ']' +
+          (recorded ? ' 진단 파일: %APPDATA%\\L-Vibe\\openviking\\startup-status.json' : ' 진단 파일도 저장하지 못했습니다.') +
+          (stopConfirmed ? '' : ' 프로세스 종료를 확인하지 못했습니다. 앱을 종료하고 확인하세요.'));
+      }
     });
     return this.operation;
+  }
+  private async writeStartupStatus(detail: Record<string, unknown>) {
+    try { await atomicJSON(path.join(this.data, 'openviking', 'startup-status.json'), { schemaVersion: 1, recordedAt: new Date().toISOString(), ...detail }); return true; }
+    catch { return false; }
   }
   private async resolveLaunch(): Promise<VikingLaunch> {
     if (this.testLaunch) return this.testLaunch;
@@ -73,7 +118,9 @@ export class OpenVikingService implements KnowledgeService {
     return { executable: path.join(root, 'python', process.platform === 'win32' ? 'python.exe' : 'bin/python3'), launcher: path.join(root, 'launch.py'), cwd: root };
   }
   private async start(config: AgentConfig) {
+    this.startupStage = 'bundle';
     const launch = await this.resolveLaunch();
+    this.startupStage = 'configuration';
     const folder = path.join(this.data, 'openviking'); await mkdir(folder, { recursive: true, mode: 0o700 });
     this.gateway = new OpenVikingGateway(config); await this.gateway.start();
     const reserve = createServer(); await new Promise<void>((resolve, reject) => { reserve.once('error', reject); reserve.listen(0, '127.0.0.1', resolve); });
@@ -90,6 +137,8 @@ export class OpenVikingService implements KnowledgeService {
       telemetry: { tracer: { enabled: false } },
     });
     this.expectedExit = false; this.exited = false;
+    this.startupStage = 'process';
+    let launchError: string | undefined; let stderr = ''; let lastHealthStatus: number | undefined;
     this.process = spawn(launch.executable, ['-I', '-B', launch.launcher, '--config', this.configFile, '--port', String(port)], {
       cwd: launch.cwd, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
       env: { SYSTEMROOT: process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP,
@@ -99,15 +148,26 @@ export class OpenVikingService implements KnowledgeService {
         TIKTOKEN_CACHE_DIR: path.join(launch.cwd, 'tokenizers'),
       },
     });
-    this.process.stdout!.on('data', () => {}); this.process.stderr!.on('data', bytes => launch.diagnostic?.(bytes.toString()));
-    this.process.once('error', () => { this.exited = true; if (!this.expectedExit) this.update('error', 'OpenViking 프로세스를 실행할 수 없습니다.'); });
+    this.process.stdout!.on('data', () => {}); this.process.stderr!.on('data', bytes => {
+      const text = bytes.toString(); stderr = (stderr + text).slice(-32768); launch.diagnostic?.(text);
+    });
+    this.process.once('error', error => { launchError = osError(error) ?? 'UNKNOWN'; this.exited = true; if (!this.expectedExit) this.update('error', 'OpenViking 프로세스를 실행할 수 없습니다.'); });
     this.process.once('exit', () => { this.exited = true; if (!this.expectedExit) this.update('error', 'OpenViking이 종료되었습니다. 설정에서 다시 시작할 수 있습니다.'); });
     const deadline = Date.now() + 45000;
+    this.startupStage = 'health';
     while (Date.now() < deadline && !this.exited) {
-      try { const response = await this.request('/health', undefined, 1000); if (response) return; } catch {}
+      try { const response = await this.request('/health', undefined, 1000); if (response) return; }
+      catch (error) { const status = (error as { status?: number })?.status; if (typeof status === 'number' && Number.isInteger(status)) lastHealthStatus = status; }
       await pause(200);
     }
-    throw new Error('OpenViking 준비 시간 초과');
+    if (launchError) { this.startupStage = 'process'; throw new StartupFailure('OV_PROCESS_START', { osError: launchError }); }
+    if (this.exited) {
+      this.startupStage = 'process';
+      const code = this.process.exitCode;
+      throw new StartupFailure('OV_PROCESS_EXIT', { ...(code === null ? {} : { exitCode: code, exitHex: '0x' + (code >>> 0).toString(16).padStart(8, '0') }),
+        ...(this.process.signalCode ? { signal: this.process.signalCode } : {}), hint: startupHint(stderr) });
+    }
+    throw new StartupFailure('OV_HEALTH_TIMEOUT', { healthStatus: lastHealthStatus, hint: startupHint(stderr) });
   }
   private async request(route: string, body?: unknown, timeout = 120000, method?: 'GET' | 'POST' | 'PUT', signal?: AbortSignal): Promise<any> {
     const form = body instanceof FormData;

@@ -45,6 +45,44 @@ def windows_job():
     return handle
 
 
+def windows_socketpair(original_connect, family=None, type=socket.SOCK_STREAM, proto=0):
+    """Create a private Windows loopback pair without relaxing the connect guard.
+
+    Windows CPython implements socketpair using a short-lived TCP listener.
+    asyncio needs this pair for its self-pipe. Only this function's newly
+    created client may bypass the guard, to this function's listener address.
+    Other threads and ordinary loopback connects remain under the policy.
+    """
+    family = socket.AF_INET if family is None else family
+    if family not in (socket.AF_INET, socket.AF_INET6) or type != socket.SOCK_STREAM or proto not in (0, socket.IPPROTO_TCP):
+        raise ValueError("L-Vibe: unsupported Windows socketpair parameters")
+    host = "127.0.0.1" if family == socket.AF_INET else "::1"
+    listener = socket.socket(family, type, proto)
+    client = server = None
+    try:
+        listener.settimeout(5)
+        listener.bind((host, 0))
+        listener.listen(1)
+        client = socket.socket(family, type, proto)
+        client.settimeout(5)
+        address = listener.getsockname()
+        original_connect(client, address)
+        server, peer = listener.accept()
+        if peer != client.getsockname() or client.getpeername() != server.getsockname():
+            raise ConnectionError("L-Vibe: Windows socketpair peer verification failed")
+        client.settimeout(socket.getdefaulttimeout())
+        server.settimeout(socket.getdefaulttimeout())
+        return server, client
+    except BaseException:
+        if server is not None:
+            server.close()
+        if client is not None:
+            client.close()
+        raise
+    finally:
+        listener.close()
+
+
 def restrict_python_network(config):
     # Defense in depth for Python HTTP/DNS. Native socket behavior still requires
     # the Windows network acceptance test; this is not an OS firewall.
@@ -67,6 +105,10 @@ def restrict_python_network(config):
     socket.socket.connect = connect
     socket.socket.connect_ex = connect_ex
     socket.getaddrinfo = getaddrinfo
+    if os.name == "nt":
+        # Do not allow arbitrary localhost ports or temporarily restore the
+        # global connect function: both would bypass the host's port boundary.
+        socket.socketpair = lambda family=None, type=socket.SOCK_STREAM, proto=0: windows_socketpair(original_connect, family, type, proto)
 
 
 def main():
