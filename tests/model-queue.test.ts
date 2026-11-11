@@ -40,7 +40,12 @@ v=OpenAIVLM({'model':'test','api_base':'http://127.0.0.1:9/v1','api_key':'synthe
 assert v.timeout is None
 assert v.get_client().timeout is None
 assert v._http_client_kwargs()['timeout'] is None
-assert v._build_async_client().timeout is None
+a=v._build_async_client()
+assert a.timeout is None
+for c in (v.get_client(), a):
+    assert all(getattr(c._client.timeout, k) is None for k in ('connect','read','write','pool'))
+import asyncio
+asyncio.run(a.close())
 v.get_client().close()
 print('VLM_QUEUE_WAIT_OK')
 `;

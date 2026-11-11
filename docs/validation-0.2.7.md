@@ -21,3 +21,7 @@
 대기열 대응 런처를 포함한 Python manifest: `179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85`. 이전 SDK 패키지 파일과 토크나이저 구성은 유지한다.
 
 대기열 정책 변경 전 전체 회귀 73개가 실패·건너뜀 없이 통과했다. 정책 변경 후 집중 검사 13개도 실패·건너뜀 없이 통과했다. 실제 고정 엔진에서 응답 헤더 없이 185초 기다린 뒤 정상 답변을 받았고, 두 번째 무응답 모델 요청은 사용자 interrupt로 외부 HTTP 연결이 닫혔다(해당 검사 약 191.3초). OpenViking OpenAI/HTTPX 동기·비동기 클라이언트의 timeout=None, 중복 어댑터 초기화, 무응답 JSON 연결 취소 및 리다이렉트 비추적을 확인했다.
+
+이후 OpenViking 회귀 검사 6개가 모두 통과했다(실패·건너뜀 0). 기본 스킬 34개 등록/재시작·프로젝트 범위 검사는 약 135.4초, 실제 0.5.0→0.5.4 개인 지식 이관/두 프로젝트 조회는 약 99.8초였다. 최종 공식 Desktop 타입 검사도 2개 프로젝트·2,549개 파일 오류 0(약 37.8초), main/preload/renderer 빌드 성공이다. 원본 CSS/dynamic import/plugin timing 경고는 유지한다.
+
+별도 SDK 검사에서 실제 동기·비동기 OpenAI 클라이언트 내부 HTTPX의 connect/read/write/pool 네 가지 timeout이 모두 None임을 확인했다(약 11.2초). 설정 객체만 검사한 결과가 아니다. 설치 EXE 검사는 ASAR 내부의 timeout/headerTimeout/chunkTimeout=false 기본값도 확인하도록 보완했다.

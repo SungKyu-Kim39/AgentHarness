@@ -109,7 +109,8 @@ async function auditInstaller(installer) {
     const control = extractFile(path.join(resources, 'app.asar'), controlChunk.replace(/^[/\\]/, ''));
     const tokens = ['LV_MODEL_UPSTREAM_RESET', 'LV_MODEL_HEADER_TIMEOUT', 'LV_MODEL_CHUNK_TIMEOUT', 'autoApproveRequest', 'sessionRequest', 'chat_template_kwargs'];
     for (const token of tokens) if (!control.toString().includes(token)) throw new Error('Installer lacks model/approval fix: ' + token);
-    audit.modelControls = { controlChunk, sha256: createHash('sha256').update(control).digest('hex'), verifiedTokens: tokens };
+    if (!/timeout\s*:\s*(?:false|!1)\s*,\s*headerTimeout\s*:\s*(?:false|!1)\s*,\s*chunkTimeout\s*:\s*(?:false|!1)/.test(control.toString())) throw new Error('Installer lacks deadline-free model defaults');
+    audit.modelControls = { controlChunk, sha256: createHash('sha256').update(control).digest('hex'), verifiedTokens: tokens, defaultModelDeadlines: false };
     audit.appAsarSha256 = await fileHash(path.join(resources, 'app.asar'));
     audit.appExeSha256 = await fileHash(path.join(extracted, 'L-Vibe.exe'));
     for (const [name, expected] of Object.entries(await expectedComponents(project))) {
