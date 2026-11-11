@@ -7,3 +7,5 @@
 빌드 환경은 Debian 13.6 x86_64, Node 24.22.1, Bun 1.4.4, Python 3.12.14다. Windows Python 3.12.16, Electron 44.9.1, OpenCode Desktop/CLI 2.2.6 및 기존 구성 요소 버전은 유지한다. 새 Python 번들은 **63,069개 파일**, manifest SHA-256 `17b94d19b5cd9efe52c68d0c339682e1fb144fb6e2d7900a607221ad9847d70b`다. 토크나이저 어휘 자료는 모델 가중치가 아니며 tiktoken MIT/GPT-2 Modified MIT 원문을 보존한다.
 
 EXE/TGZ와 공식 Desktop 빌드 검증 수치는 실제 생성·검사 후 갱신한다. 사용자 Windows 적용 후 재시작·실제 사내 모델/SDK·Win10/11 전체 수용·DNS/TCP·Job Object와 남은 Desktop 기능은 별도다. `releaseReady: false`를 유지한다.
+
+공식 Desktop 타입 검사는 2개 프로젝트·2,549개 파일 오류 0이며 main/preload/renderer 빌드도 성공했다. 원본 CSS·dynamic import·plugin timing 경고는 남는다. EXE audit는 실제 압축 안의 6종 데이터와 LiteLLM vendor 3파일을 공식 해시에 별도로 대조하고 7종 encoder/lock 확인을 기록하도록 보강했다. 이 기록이 없는 audit로 새 TGZ를 만들 수 없다.
