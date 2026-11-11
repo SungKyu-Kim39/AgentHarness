@@ -28,3 +28,5 @@
 실제 EXE의 OpenViking **63,069개**, REA **9,019개**, MCP **21,031개**, 기본 스킬 **34개/259개 파일**을 manifest와 전수 SHA-256 대조했다. 토크나이저 데이터 **6종/인코더 7종**, LiteLLM vendor **3파일**은 공식 해시에 별도 대조했다. tokenizer lock SHA-256은 `75d2ce8112c9f1e4ccc9654f9243a77c29a95d66f7087ad71e9b50ebdcb8cc02`다. 실제 ASAR 제품/버전은 L-Vibe 0.2.5이며 앱/CLI는 AMD64다.
 
 TGZ는 위 실제 EXE/audit와 커밋된 소스를 대조해 생성한다. 최종 TGZ 해시·소스 체크포인트·게시 결과는 [다운로드 안내](../downloads/README.md)에 기록하며, 묶음 안 보고서는 생성 직전까지의 검사 기록이다.
+
+최종 TGZ는 **1,122,400,157 bytes**, SHA-256 `7b467ca899a89db3d63457022ad0e8b551fe46166b576a946d0e59cd7578c819`다. 전체 **34개 항목/31개 파일**과 포함 소스 archive **515개 항목**의 경로가 ASCII다. 체크섬 목록을 제외한 **30개 파일**을 전수 대조했고 EXE/audit·설정 예제·진단 스크립트·CMD CRLF·tokenizer lock이 원본과 일치했다. 소스 체크포인트는 `e031bb8ce8acccf291d5f9f6404b6e29e713d012`다. 이 TGZ 수치는 생성 후 추가한 기록이며 TGZ 안 보고서는 생성 직전까지의 검사 기록이다.
