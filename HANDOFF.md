@@ -16,16 +16,16 @@
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.6 빌드 중**. 개인 OVPack 가져오기·프로젝트 간 개인 검색. Windows loopback·토크나이저·ASCII 정책 유지 |
-| 최신 전체 설치 파일 | **0.2.5 검증 후보** EXE/TGZ 생성·검사 완료. 게시 상태·해시는 다운로드 안내 참조 |
-| 0.2.5 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
+| 소스 버전 | **0.2.6**. 개인 OVPack 가져오기·프로젝트 간 개인 검색. Windows loopback·토크나이저·ASCII 정책 유지 |
+| 최신 전체 설치 파일 | **0.2.6 EXE 생성·검사 완료**, TGZ/게시 상태·해시는 다운로드 안내 참조 |
+| 0.2.6 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
 | TGZ 소스 체크포인트 | `e031bb8ce8acccf291d5f9f6404b6e29e713d012` |
 | 공개 다운로드 | 0.2.5 업로드 완료. 공개 TGZ 전체 크기/SHA-256·EXE HEAD/크기/PE range 검증 통과. 게시 212f9e9, 34개 항목/31개 파일·30개 체크섬·소스 515개 항목 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
 | 바로 다음 작업 | 0.2.6 전체 검사/EXE/TGZ 게시 완료, 사용자 PC의 개인 지식 내보내기·가져오기 검증, 라이선스/Windows 수용 및 남은 Desktop 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
-다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.5 검증 상태](docs/validation-0.2.5.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.6 검증 상태](docs/validation-0.2.6.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
 
 **최신 사용자 확인:** 누적 토크나이저 패치가 정상 적용됐고 L-Vibe가 실행됐다고 답했다. 모델 설정이 안 되어 있다는 후속 제보는 모델 목록이 빈 것인지 선택/요청 오류인지 확인 중이다. 설정은 runtime 패치로 변경되지 않는다. 저장 설정을 삭제하지 말고 알림 영역의 명시적 JSON 가져오기 및 Desktop/엔진 모델 목록 연동을 확인한다. 이 답변만으로 실제 모델 응답·CHECK_IMPORT 각 성공 줄·Windows 10/11 전체 수용을 완료 처리하지 않는다.
 
@@ -371,3 +371,5 @@ LFS object 업로드가 성공한 뒤 source ref를 push한다. 보통 `git lfs 
 주요 이력: `419197c` = 0.2.1 설치본 게시, `588bcf4` = MCP 잠금/stdio 기반, `9809159` = 6종 연동, `a5dd07a` = 종료 실패 보완 및 최종 0.2.2 소스 검증. 최초 독립 UI 원형과 1.19.5 실행기를 제품의 현재 기반으로 되돌리지 않는다.
 
 **추가 JSON 전문 확인:** 사용자가 마지막으로 보낸 전문은 기본 providerID=`Qwen think_off`, model=`off` 참조가 맞고 `providers`의 마지막 provider 객체 뒤 trailing comma 한 개가 남아 있다. 그 쉼표만 제거하고 `openViking` 앞의 providers 블록 쉼표는 유지하도록 안내했다. 원문 설정/키는 이 저장소에 저장하지 않는다.
+
+**0.2.6 패키지 진행:** 최종 peer 지원을 포함한 64개/실패0/skip0 검사, 공식 타입/빌드와 실제 0.2.6 EXE archive 감사 완료. EXE 1,056,739,808 bytes / SHA-256 8a37d20f1607c4b21854abec4474ae7a1aabb578848ca58b077261b0a57f7cdd. 94,210파일/8,740폴더/ASAR11,584 경로 ASCII. TGZ는 이 후 문서와 소스를 커밋한 체크포인트로 생성하고 게시한다. 소스 코드/런타임을 추가 변경하지 않고 산출물 게시를 완료한다.

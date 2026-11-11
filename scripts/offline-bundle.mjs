@@ -60,7 +60,7 @@ await writeFile(path.join(root, 'bundle-manifest.json'), JSON.stringify({
   requiresEmployeePackageInstall: false, includesModelWeights: false, includesRealCredentials: false,
   pathEncoding: 'ascii',
   documents: { gettingStarted: 'GETTING_STARTED.txt', validation: 'VALIDATION_REPORT.md', readiness: 'READINESS.json',
-    configuration: 'CONFIGURATION_RECOVERY.txt', licensePolicy: 'LICENSE_POLICY.txt', diagnostics: 'WINDOWS_DIAGNOSTICS.txt' },
+    configuration: 'CONFIGURATION_RECOVERY.txt', licensePolicy: 'LICENSE_POLICY.txt', diagnostics: 'WINDOWS_DIAGNOSTICS.txt', personalMigration: 'PERSONAL_KNOWLEDGE_MIGRATION.txt' },
   components: { desktop: 'OpenCode 2.2.6', electron: '44.9.1', python: '3.12.16', openViking: '0.5.4', graphify: '0.9.105', rea: '6.8.0', mcp: JSON.parse(await readFile(path.join(project, 'vendor/runtime/windows-x64/mcp/manifest.json'), 'utf8')).versions },
 }, null, 2) + '\n');
 const checksums = [];

@@ -24,3 +24,22 @@ Python 3.12.16/344개 Windows wheel과 토크나이저 6종/인코더 7종은 �
 Windows EXE/TGZ·공식 Desktop 빌드와 공개 다운로드 검사는 실제 완료 후 기록한다. Linux 합성 자료의 성공을 실제 직원 PC 자료 이관·Windows 10/11 전체 수용으로 계산하지 않는다. `releaseReady: false`를 유지한다.
 
 최종 `npm run verify`: **64개 통과, 실패·건너뜀 0**. 타입 검사·기본 스킬 34개·Desktop overlay 검증도 통과했다. 공식 Desktop 타입 검사는 **2개 프로젝트·2,549개 파일 오류 0**(약 22.5초), main/preload/renderer 빌드도 성공했다. 원본 CSS·dynamic import·plugin timing 경고는 남는다. 검사 환경은 Debian 13.6 x86_64, Node 24.22.1, Bun 1.4.4, Python 3.12.14이며 Windows 런타임은 Python 3.12.16/Electron 44.9.1이다.
+
+## 실제 설치 EXE 검사
+
+`npm run package:win` 및 `npm run audit:installer`를 완료했다. Linux에서 실제 NSIS archive를 추출한 검사이며 Windows 설치/실행 수용과 구분한다. 자체 배포 서명은 없다.
+
+| 항목 | 결과 |
+|---|---|
+| 설치 파일 | `L-Vibe-0.2.6-win-x64.exe` |
+| 크기 | **1,056,739,808 bytes** |
+| SHA-256 | `8a37d20f1607c4b21854abec4474ae7a1aabb578848ca58b077261b0a57f7cdd` |
+| 실제 추출 파일/폴더 | **94,210개/8,740개, 모두 ASCII** |
+| ASAR 내부 경로 | **11,584개, 모두 ASCII** |
+| ASAR SHA-256 | `bb9a4cd7fde56f84f4ad3c1770356c10c51a44fbcb4201ae15c3ad7e4f14c10e` |
+| 앱 EXE SHA-256 | `0e2b1abd67c853a6b051f0d366790281328f2fcc8b3e5a5323911f1b5d710712` |
+| CLI SHA-256 | `d55839bfc180fd573341265c750eaee72c3ebb2e57f3e2b3eca9cf3449b93507` |
+
+OpenViking 63,069개·REA 9,019개·MCP 21,031개·스킬 34개/259개 파일을 각 manifest와 전수 해시 대조했다. 토크나이저 데이터 6종/인코더 7종 및 LiteLLM vendor 3파일도 공식 해시에 별도 대조했다. 실제 ASAR 제품/버전은 L-Vibe 0.2.6이며 앱/CLI는 AMD64다.
+
+최종 TGZ와 소스 체크포인트·게시 검사는 생성 후 [다운로드 안내](../downloads/README.md)와 검사 기록에 추가한다. TGZ 안 보고서는 생성 직전까지의 검사 기록이다.
