@@ -10,16 +10,18 @@
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.5 빌드 중**. 콜드 토크나이저·cache 덮어쓰기/CRLF 수정, Windows loopback 및 ASCII 정책 유지 |
-| 최신 전체 설치 파일 | **0.2.4 검증 후보**. 최종 TGZ/게시·해시는 다운로드 안내 참조 |
-| 0.2.4 EXE/TGZ | 생성·실제 EXE 경로/전수 해시·TGZ 29개 체크섬/33개 ASCII 항목 검사 통과. OpenViking은 작은 패치와 동일한 새 manifest |
-| TGZ 소스 체크포인트 | `0976c3eba95c4d21015b97856e9d415d1c4dbbe2` |
-| 공개 다운로드 | 0.2.4 업로드 완료. 공개 TGZ 전체 크기/SHA-256, EXE HEAD/크기/PE 헤더 range 검사 통과. 실제 Windows 적용 후 결과는 미확인 |
+| 소스 버전 | **0.2.5**. 콜드 토크나이저·cache 덮어쓰기/CRLF 수정, Windows loopback 및 ASCII 정책 유지 |
+| 최신 전체 설치 파일 | **0.2.5 EXE 생성·검사 완료**, TGZ/게시 상태·해시는 다운로드 안내 참조 |
+| 0.2.5 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
+| TGZ 소스 체크포인트 | 새 bundle-manifest.json 및 다운로드 안내 참조 |
+| 공개 다운로드 | 누적 토크나이저 패치 공개 HTTP 200·전체 크기/SHA-256 검증 완료. 전체 0.2.5 게시 상태는 다운로드 안내 참조 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
-| 바로 다음 작업 | 라이선스 재배포 미확인 항목, Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
+| 바로 다음 작업 | 사용자 Windows 모델 목록 표시 문제 확인, 라이선스 재배포 미확인 항목, Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
-다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.4 검증 상태](docs/validation-0.2.4.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.5 검증 상태](docs/validation-0.2.5.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+
+**최신 사용자 확인:** 누적 토크나이저 패치가 정상 적용됐고 L-Vibe가 실행됐다고 답했다. 모델 설정이 안 되어 있다는 후속 제보는 모델 목록이 빈 것인지 선택/요청 오류인지 확인 중이다. 설정은 runtime 패치로 변경되지 않는다. 저장 설정을 삭제하지 말고 알림 영역의 명시적 JSON 가져오기 및 Desktop/엔진 모델 목록 연동을 확인한다. 이 답변만으로 실제 모델 응답·CHECK_IMPORT 각 성공 줄·Windows 10/11 전체 수용을 완료 처리하지 않는다.
 
 **토크나이저 후속 수정:** 사용자 CHECK_IMPORT에서 cl100k 외부 다운로드/DNS 차단이 남았다. 고정 LiteLLM wheel의 rank 3파일이 CRLF로 공식 hash와 달랐고, SDK가 TIKTOKEN_CACHE_DIR를 덮어썼다. 기존 Linux cache는 이미 canonical bytes라 이전 검사가 놓쳤다. 공식 SHA의 데이터 6개/인코더 7종과 MIT/GPT-2 Modified MIT 원문을 확보하고, 3 vendor 파일을 canonical bytes로 바꾸며 양쪽 cache env 및 local-only loader를 적용했다. 빈 HOME/TEMP/잘못된 상속 cache에서 SDK를 먼저 import한 검사와 전체 58개/skip0, 별도 installer audit 3개를 통과했다. 새 Python manifest는 17b94d19b5cd9efe52c68d0c339682e1fb144fb6e2d7900a607221ad9847d70b (63,069파일)이다. 기존 base 8d2fbf/42f101을 지원하는 약 10.5MB 누적 패치를 게시하며, full 0.2.5도 준비한다. [원인·적용·검증](docs/openviking-tokenizer-fix.md)을 먼저 읽고 실제 Windows 적용 후 결과를 추정하지 말라.
 
@@ -33,7 +35,7 @@
 
 ### 이어받는 AI에게 붙여 넣을 요청
 
-> 이 저장소의 HANDOFF.md를 먼저 읽고 L-Vibe 작업을 이어가라. work 브랜치를 사용한다. 소스는 Windows OpenViking asyncio loopback 수정과 안전한 시작 진단을 추가한 0.2.4다. 공개 파일과 TGZ 검증 상태는 downloads/README.md 및 최신 로그를 확인하라. 56개 회귀 검사, 공식 Desktop 타입 검사/빌드, 실제 0.2.4 EXE의 ASCII 경로·구성 요소 해시 검사를 통과했다. OpenViking 새 manifest는 42f101caef4f976cc20bc3df5f1b3a25356f1a75d3f0297b79af77379733c901이며 기존 0.2.2/0.2.3용 별도 작은 패치도 있다. 사용자 Windows의 패치 적용 후 결과는 기록을 확인하고 미확인을 성공으로 바꾸지 말라. MCP 6종의 이전 Linux 실호출 기록과 완성 Windows 번들은 이미 있다. 라이선스 재배포 미확인 항목, Windows 10/11 일반 사용자·실제 사내 모델/SDK 수용 검사와 새 Desktop 반복/재출력·세션 diff·명령 승인 기능을 이어가라. 새 PC의 캐시·테스트 런타임부터 확인하고 잠금 버전을 유지하라. 배포 파일·폴더 이름은 영문 ASCII로 유지하고 직원 PC에서 추가 설치나 다운로드하게 만들지 말라. 실제 키·사용자 데이터·캐시는 공개 저장소에 넣지 말고 단계별 커밋·푸시를 계속하라. 완료된 항목을 처음부터 다시 구현하지 말고 확인되지 않은 설치·수용·게시 결과를 완료했다고 말하지 말라.
+> 이 저장소의 HANDOFF.md를 먼저 읽고 L-Vibe 작업을 이어가라. work 브랜치의 0.2.5 소스를 사용한다. OpenViking Windows loopback과 토크나이저 CRLF/cache 덮어쓰기·외부 다운로드를 수정했고 데이터 6종/인코더 7종을 고정했다. 전체 58개 회귀 검사와 별도 installer audit 3개, 공식 Desktop 타입/빌드, 실제 0.2.5 EXE의 ASCII 경로·전수 런타임 해시 검사를 통과했다. 새 Python manifest는 17b94d19b5cd9efe52c68d0c339682e1fb144fb6e2d7900a607221ad9847d70b/63,069파일이다. 사용자 Windows에서 누적 패치 적용과 앱 실행은 확인했지만 모델 설정 표시 문제가 남아 있다. 알림 영역의 설정 JSON 교체와 모델 목록/선택/요청 오류를 구분하고 기존 암호화 설정을 삭제하지 말라. 공개 EXE/TGZ·소스 체크포인트는 downloads/README.md와 audit를 확인하라. MCP 6종 실호출 기록과 완성 Windows 번들·기본 스킬 34개가 있다. 라이선스와 Windows 10/11·사내 모델/SDK 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능은 남는다. 배포 경로는 ASCII로 유지하고 직원 PC 추가 설치·다운로드를 요구하지 말라. 실제 키·사용자 데이터·캐시는 공개 저장소에서 제외하고 커밋·푸시를 계속하라. 미확인 검증이나 게시 결과를 완료했다고 말하지 말라.
 
 ## 2. 사용자가 확정한 요구사항과 작업 방식
 

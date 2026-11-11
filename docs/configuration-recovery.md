@@ -22,6 +22,14 @@ L-Vibe 0.2.3/0.2.4/0.2.5의 설정 파일 수명과 기존 설치본에서 설�
 
 선택하여 가져온 원본 JSON은 사용자가 관리하는 평문 파일이다. 앱은 자신의 `config-import.json` 준비 사본만 삭제한다. 실제 키를 넣은 원본의 보관·폐기는 사용자가 관리하며 키나 파일 내용을 지원 채팅/공개 저장소로 보내지 않는다.
 
+## 앱은 열리지만 모델이 표시되지 않는 경우
+
+OpenViking 시작 패치는 런타임만 고치며 LLM 설정을 초기화하거나 새 모델을 등록하지 않는다. 설치 폴더에 `agent-config.json`을 놓거나 수정하는 것만으로 이미 저장된 설정이 바뀌지 않는다. 위 알림 영역 메뉴로 명시적으로 가져온다.
+
+입력창의 모델 선택 목록이 비어 있는 경우와 모델은 있지만 요청이 실패하는 경우를 구분한다. 전체 목록이 비어 있으면 Desktop/엔진 모델 목록 연동도 확인해야 하며 API 키 오류로 단정하지 않는다. 모델이 보인다면 선택 후 실제 요청의 오류 문구를 확인한다. 설정 파일·암호화 파일을 삭제하여 재설정하는 절차는 필요하지 않다.
+
+기본 `model.providerID`는 `providers`의 키, `model.model`은 해당 provider의 `models` 키와 같아야 한다. 예를 들어 provider 키가 `Qwen think_off`이고 모델 별칭이 `model-1`이면 `"model": { "providerID": "Qwen think_off", "model": "model-1" }`로 지정한다. 서버 전송 ID는 그 안의 `modelID`에 둔다. `providers` 블록 뒤에 다른 최상위 항목이 이어지면 쉼표도 필요하다.
+
 ## 구현 근거
 
 설치기의 저장 설정 보존 분기는 [windows-installer.nsi](../distribution/windows-installer.nsi)에 있다. 임시 파일 삭제와 암호화 교체는 [ConfigVault](../src/main/config.ts), 시작 오류 창과 알림 영역 메뉴는 [native-startup.ts](../distribution/native-startup.ts)에 있다. 이 문서는 코드 경로 확인이며 사용자 Windows PC의 설치 로그나 복호화 결과를 대신하지 않는다.
