@@ -1,8 +1,8 @@
 <!-- Latest work: 2026-11-11 KST -->
 
-0.2.7 실제 EXE 생성/추출 검사를 완료했다. SHA-256 2c86d33cf9a3d0953de51adf7ca61dff97cefa29d5b5e17afa092e9cc12ac7ae, 1,056,737,928 bytes. native ASAR의 무제한 모델 대기 기본값을 확인했으며 TGZ 생성/검사도 완료했다. TGZ SHA-256 15590f5baacbdcec1058b978e7c0fdcd6879dd5fc2668e93f25cf417bc0923af, 1,122,449,144 bytes, 소스 924833e321173fe20a237ab0123702a135d6fae4. 공개 게시 검사는 이어서 기록한다. Python manifest는 179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85다.
+0.2.7 실제 EXE 생성/추출 검사를 완료했다. SHA-256 2c86d33cf9a3d0953de51adf7ca61dff97cefa29d5b5e17afa092e9cc12ac7ae, 1,056,737,928 bytes. native ASAR의 무제한 모델 대기 기본값을 확인했으며 TGZ 생성/검사도 완료했다. TGZ SHA-256 15590f5baacbdcec1058b978e7c0fdcd6879dd5fc2668e93f25cf417bc0923af, 1,122,449,144 bytes, 소스 924833e321173fe20a237ab0123702a135d6fae4. 공개 게시 b953301 및 다운로드 검사를 완료했다. TGZ 전체 GET/크기/SHA 일치, EXE HEAD/크기/PE range 확인. 자세한 기록은 downloads/L-Vibe-0.2.7-public-audit.json을 따른다. Python manifest는 179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85다.
 
-0.2.7 작업: 세션 압축 ECONNRESET의 고정 180초 중계 제한/4 MiB 요청 제한을 보완하고, thinking options/객체 variants 호환 및 네이티브 요청별 자동 수정 승인을 추가했다. [설정 안내](docs/model-controls.md), [검증 기록](docs/validation-0.2.7.md)을 먼저 읽는다. 사용자는 오래 작업한 뒤 압축 실패한다고 답했고, 사내 모델 대기열이 길어 경과 시간으로 중단하지 말라고 명확히 지시했다. 호스트·엔진의 기본 응답 제한을 해제하고 OpenViking VLM/모델 처리 대기에도 적용한다. 실제 사내 연결 종료의 원인은 확정하지 않는다. 아래 0.2.6은 이전 배포 기록이다.
+0.2.7 작업: 세션 압축 ECONNRESET의 고정 180초 중계 제한/4 MiB 요청 제한을 보완하고, thinking options/객체 variants 호환 및 네이티브 요청별 자동 수정 승인을 추가했다. [설정 안내](docs/model-controls.md), [검증 기록](docs/validation-0.2.7.md)을 먼저 읽는다. 사용자는 오래 작업한 뒤 압축 실패한다고 답했고, 사내 모델 대기열이 길어 경과 시간으로 중단하지 말라고 명확히 지시했다. 호스트·엔진의 기본 응답 제한을 해제하고 OpenViking VLM/모델 처리 대기에도 적용한다. 실제 사내 연결 종료의 원인은 확정하지 않는다. 이전 0.2.6 이관/시작 오류 기록도 아래 보존한다.
 
 # L-Vibe 작업 인계 — 다른 PC에서 이어가기
 
@@ -10,9 +10,9 @@
 
 ## 1. 먼저 알아야 할 현재 상태
 
-**현재 진행 중인 개인 지식 이관:** 사용자는 기존 OpenViking 0.5.0의 memories/peers/privacy/resources/sessions/skills를 L-Vibe의 모든 프로젝트에서 개인 공통 기억으로 활용하도록 선택했다. 모델은 BGE-m3-ko/1024이며 동일하다. 기존 로컬 서버의 기본 포트는 1935로 내보내기 도구에 반영했다. 사용자 자료와 키는 저장소에 포함하지 않는다. 현재 구현은 원본 사용자 ID를 L-Vibe account 안에서 유지하고, 승인한 OVPack 사본과 SHA를 보존한 뒤 해당 사용자로만 읽기 전용 조회한다. sessions/privacy는 검색 범위에서 제외한다. SDK의 가상 user 컨테이너 mkdir 문제를 source hash로 제한한 런처 어댑터로 보완했다. 새 Python manifest는 1dee469d101abd55b8c350640c1d86098aded233cbd1fcbf21a0af4d83d147d9/63,069파일이다.
+**현재 진행 중인 개인 지식 이관:** 사용자는 기존 OpenViking 0.5.0의 memories/peers/privacy/resources/sessions/skills를 L-Vibe의 모든 프로젝트에서 개인 공통 기억으로 활용하도록 선택했다. 모델은 BGE-m3-ko/1024이며 동일하다. 기존 로컬 서버의 기본 포트는 1935로 내보내기 도구에 반영했다. 사용자 자료와 키는 저장소에 포함하지 않는다. 현재 구현은 원본 사용자 ID를 L-Vibe account 안에서 유지하고, 승인한 OVPack 사본과 SHA를 보존한 뒤 해당 사용자로만 읽기 전용 조회한다. sessions/privacy는 검색 범위에서 제외한다. SDK의 가상 user 컨테이너 mkdir 문제를 source hash로 제한한 런처 어댑터로 보완했다. 현재 Python manifest는 179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85/63,069파일이며 VLM 큐 대기 어댑터도 포함한다.
 
-소스 중간 커밋 02ebf12, 내보내기 ZIP 게시 6382fa2다. 작은 ZIP은 공개 HTTP 200·4,350bytes·SHA-256 992fdb47a2a8f35a4ef593fd2a7a48bae203d97a4924928982a4e40dc421584a를 확인했다. 사용자에게 PC에서 exported/EXIT_CODE=0 여부만 요청했으며 개인 OVPack을 보내라고 하지 않았다. 실제 SDK 0.5.0 → 0.5.4의 내보내기/가져오기/검색/두 프로젝트/재시작을 통과했다. 초기 전체 검사는 비동기 계정 초기화의 임베딩까지 합산한 검사 때문에 63/64였고, 이를 SDK의 실제 restore 결정 추적으로 바꾼 집중 검사가 통과했다. 최종 peer 기억/식별자까지 포함한 전체 64개/실패0/skip0 검사는 .cache/personal-full-verify-release.log, 빌드/패키지는 .cache/personal-desktop-build.log, .cache/personal-package.log와 .cache/personal-installer-audit.log를 확인한다. 공식 타입 2,549파일/2프로젝트 오류0(최종22.5초), Desktop main/preload/renderer 빌드 완료. 아직 실제 0.2.6 EXE/TGZ 게시 성공으로 바꾸지 말라.
+소스 중간 커밋 02ebf12, 내보내기 ZIP 게시 6382fa2다. 작은 ZIP은 공개 HTTP 200·4,350bytes·SHA-256 992fdb47a2a8f35a4ef593fd2a7a48bae203d97a4924928982a4e40dc421584a를 확인했다. 사용자에게 PC에서 exported/EXIT_CODE=0 여부만 요청했으며 개인 OVPack을 보내라고 하지 않았다. 실제 SDK 0.5.0 → 0.5.4의 내보내기/가져오기/검색/두 프로젝트/재시작을 통과했다. 초기 전체 검사는 비동기 계정 초기화의 임베딩까지 합산한 검사 때문에 63/64였고, 이를 SDK의 실제 restore 결정 추적으로 바꾼 집중 검사가 통과했다. 최종 peer 기억/식별자까지 포함한 전체 64개/실패0/skip0 검사는 .cache/personal-full-verify-release.log, 빌드/패키지는 .cache/personal-desktop-build.log, .cache/personal-package.log와 .cache/personal-installer-audit.log를 확인한다. 공식 타입 2,549파일/2프로젝트 오류0(최종22.5초), Desktop main/preload/renderer 빌드 완료. 이 문단은 이전 0.2.6 이관 검사 기록이다. 최신 0.2.7 게시/검증 상태는 상단과 아래 표를 따른다.
 
 사용자는 JSON 수정 후 실제 LLM 대화를 확인했다. 이전 모델 미설정 제보는 해결됐다. OpenViking 기본 스킬의 마지막 사용자 확인은 0/34·registering이며 최종 완료 여부는 미확인이다. 개인 이관 검사 성공을 직원 PC의 임베딩/스킬 등록 완료로 확대하지 않는다.
 
@@ -22,18 +22,18 @@
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.6**. 개인 OVPack 가져오기·프로젝트 간 개인 검색. Windows loopback·토크나이저·ASCII 정책 유지 |
-| 최신 전체 설치 파일 | **0.2.6 검증 후보** EXE/TGZ 생성·검사 완료. 게시 상태·해시는 다운로드 안내 참조 |
-| 0.2.6 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
-| TGZ 소스 체크포인트 | `8ffa36ea3baec751af55b3f4ab02dfe3274132ef` |
-| 공개 다운로드 | **0.2.6 업로드/검사 완료**. 게시 5e575a9. TGZ 전체 GET·크기·SHA 일치, EXE HEAD·크기·PE range 확인. 37개 항목/34개 파일·33개 체크섬·소스 535개 항목 |
+| 소스 버전 | **0.2.7**. 무제한 기본 모델 대기, thinking variants 호환, 요청별 네이티브 수정 자동 승인. 기존 개인 지식/ASCII/오프라인 런타임 유지 |
+| 최신 전체 설치 파일 | **0.2.7 검증 후보** EXE/TGZ 생성·검사·공개 업로드 완료. 다운로드 안내와 해시를 따른다 |
+| 0.2.7 EXE | 실제 0.2.7 추출 94,210개 파일/8,740개 폴더와 ASAR 11,584개 경로 ASCII. 무제한 기본값/수정 코드와 모든 런타임 해시 검사 통과 |
+| TGZ 소스 체크포인트 | `924833e321173fe20a237ab0123702a135d6fae4` |
+| 공개 다운로드 | **0.2.7 완료**, 게시 b953301. TGZ 전체 GET·크기·SHA 일치, EXE HEAD·크기·PE range. 38개 항목/35개 파일·34개 체크섬·소스 548개 항목 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
-| 바로 다음 작업 | 사용자 PC의 개인 지식 내보내기·가져오기·실검색 검증, 라이선스/Windows 수용 및 남은 Desktop 기능 |
+| 바로 다음 작업 | 사용자 Windows/사내 서버에서 긴 큐 대기·중지·압축/variants/승인 검증, 실제 개인 지식 이관, 라이선스/Windows 수용 및 남은 Desktop 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
-다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.6 검증 상태](docs/validation-0.2.6.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.7 검증 상태](docs/validation-0.2.7.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
 
-**최신 사용자 확인:** 누적 토크나이저 패치가 정상 적용됐고 L-Vibe가 실행됐다고 답했다. 모델 설정이 안 되어 있다는 후속 제보는 모델 목록이 빈 것인지 선택/요청 오류인지 확인 중이다. 설정은 runtime 패치로 변경되지 않는다. 저장 설정을 삭제하지 말고 알림 영역의 명시적 JSON 가져오기 및 Desktop/엔진 모델 목록 연동을 확인한다. 이 답변만으로 실제 모델 응답·CHECK_IMPORT 각 성공 줄·Windows 10/11 전체 수용을 완료 처리하지 않는다.
+**이전 시작/설정 제보:** 누적 토크나이저 패치가 정상 적용됐고 L-Vibe가 실행됐다고 답했다. 모델 설정이 안 되어 있다는 후속 제보는 모델 목록이 빈 것인지 선택/요청 오류인지 확인 중이다. 설정은 runtime 패치로 변경되지 않는다. 저장 설정을 삭제하지 말고 알림 영역의 명시적 JSON 가져오기 및 Desktop/엔진 모델 목록 연동을 확인한다. 이 답변만으로 실제 모델 응답·CHECK_IMPORT 각 성공 줄·Windows 10/11 전체 수용을 완료 처리하지 않는다.
 
 **모델 후속 답변:** 목록이 비었다는 뜻이 아니라 `사내 코딩 모델`이라는 예제 표시명이 보인다고 확인했다. 표시명만으로 API 미설정 여부를 판정하지 않는다. 편집한 JSON을 알림 영역 메뉴에서 명시적으로 가져오는 절차를 안내했다. 이어 제시한 JSON 조각은 provider 뒤 `},`에서 끝나므로 전체 파일이라면 쉼표/닫는 객체 누락으로 파싱되지 않는다. 기본 providerID도 `intranet`과 실제 `Qwen think_off`가 달랐다. JSON 문법과 provider/model 별칭 참조를 구분해 수정하고 기존 OpenViking 블록을 유지한다. 실제 키나 운영 JSON은 저장소에 기록하지 않는다.
 

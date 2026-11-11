@@ -37,4 +37,4 @@ MCP 6종·고정 브라우저·기본 스킬 34개와 기존 개인 지식 가�
 
 자체 코드의 MIT와 전체 번들의 복수 라이선스를 구분한다. [라이선스 정책](../docs/license-policy.md)을 확인한다. 실제 Windows 10/11과 사내 모델의 전체 수용은 미완료이며 releaseReady: false를 유지한다.
 
-공개 다운로드 검사는 업로드 후 결과를 추가한다.
+공개 게시 커밋 `b953301`의 파일을 검사했다. TGZ는 공개 주소에서 전체 GET하여 HTTP 200·1,122,449,144 bytes·SHA-256 일치를 확인했다. EXE는 HEAD HTTP 200·크기와 range HTTP 206·첫 65,536 bytes의 PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 하지 않았으며 전체 해시는 검증한 로컬 EXE와 업로드한 Git LFS object ID에 대응한다. [공개 다운로드 검사 기록](L-Vibe-0.2.7-public-audit.json).

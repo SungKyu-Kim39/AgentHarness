@@ -43,3 +43,7 @@ TGZ와 공개 다운로드 결과는 생성/업로드 후 기록한다. Windows 
 ## 반입 TGZ 검사
 
 `npm run bundle:offline` 및 `python3 scripts/verify-offline-bundle.py`를 완료했다. `L-Vibe-0.2.7-windows-x64.tgz`, 1,122,449,144 bytes, SHA-256 `15590f5baacbdcec1058b978e7c0fdcd6879dd5fc2668e93f25cf417bc0923af`다. 38개 항목/35개 파일 및 34개 체크섬을 대조했고, 소스 archive 548개 항목과 모든 경로가 ASCII다. 원본 소스 commit의 git archive와 포함 소스가 일치하며 설정은 실제 키 없는 배포 템플릿과 일치한다. 소스 체크포인트: `924833e321173fe20a237ab0123702a135d6fae4`. 공개 업로드/다운로드 검사는 다음 기록을 따른다.
+
+## 공개 다운로드 검사
+
+`python3 scripts/verify-public-downloads.py`를 완료했다. 공개 게시 커밋 `b953301`의 파일을 검사했다. TGZ는 공개 주소에서 전체 GET하여 HTTP 200·1,122,449,144 bytes·SHA-256 일치를 확인했다. EXE는 HEAD HTTP 200·크기와 range HTTP 206·첫 65,536 bytes의 PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 하지 않았으며 전체 해시는 검증한 로컬 EXE와 업로드한 Git LFS object ID에 대응한다. 검사 기록은 `downloads/L-Vibe-0.2.7-public-audit.json`에 보존한다. 실제 직원 PC/사내 Qwen 서버의 재현 검증은 별도이며 releaseReady: false다.
