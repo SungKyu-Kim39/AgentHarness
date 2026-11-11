@@ -43,3 +43,5 @@ Windows EXE/TGZ·공식 Desktop 빌드와 공개 다운로드 검사는 실제 �
 OpenViking 63,069개·REA 9,019개·MCP 21,031개·스킬 34개/259개 파일을 각 manifest와 전수 해시 대조했다. 토크나이저 데이터 6종/인코더 7종 및 LiteLLM vendor 3파일도 공식 해시에 별도 대조했다. 실제 ASAR 제품/버전은 L-Vibe 0.2.6이며 앱/CLI는 AMD64다.
 
 최종 TGZ와 소스 체크포인트·게시 검사는 생성 후 [다운로드 안내](../downloads/README.md)와 검사 기록에 추가한다. TGZ 안 보고서는 생성 직전까지의 검사 기록이다.
+
+최종 반입 TGZ: **1,122,446,227 bytes**, SHA-256 `a3942de63c78b0e89d9149f07f7f6c4ddf6d31b30f9020878fcc8191ba3359c6`. 전체 **37개 항목/34개 파일**과 소스 archive **535개 항목**의 경로가 ASCII이며 체크섬 목록을 제외한 **33개 파일**을 전수 대조했다. EXE/audit·설정 예제·CMD CRLF·검사/내보내기 스크립트·이관 문서·tokenizer lock도 원본에 대조했다. sourceCommit은 `8ffa36ea3baec751af55b3f4ab02dfe3274132ef`다. 이 TGZ 자체 수치는 생성 후 추가했으며 내부 보고서는 생성 직전까지의 기록이다.

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "verifiedFrom": "installer-archive",
+  "version": "0.2.6",
+  "createdAt": "2026-11-11T08:48:09.396Z",
+  "platform": "linux-x64",
+  "installer": {
+    "name": "L-Vibe-0.2.6-win-x64.exe",
+    "bytes": 1056739808,
+    "sha256": "8a37d20f1607c4b21854abec4474ae7a1aabb578848ca58b077261b0a57f7cdd"
+  },
+  "paths": {
+    "encoding": "ascii",
+    "files": 94210,
+    "directories": 8740,
+    "asarEntries": 11584
+  },
+  "appAsarSha256": "bb9a4cd7fde56f84f4ad3c1770356c10c51a44fbcb4201ae15c3ad7e4f14c10e",
+  "appExeSha256": "0e2b1abd67c853a6b051f0d366790281328f2fcc8b3e5a5323911f1b5d710712",
+  "openviking": {
+    "manifestSha256": "1dee469d101abd55b8c350640c1d86098aded233cbd1fcbf21a0af4d83d147d9",
+    "files": 63069
+  },
+  "mcp": {
+    "manifestSha256": "002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1",
+    "files": 21031
+  },
+  "skills": {
+    "manifestSha256": "2aec810670e3f3999ff63fcb8688fd0bc33c7180fd9e1eac6b33c288a88c4f4c",
+    "files": 259,
+    "count": 34
+  },
+  "rea": {
+    "manifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+    "files": 9019
+  },
+  "tokenizers": {
+    "lockSha256": "75d2ce8112c9f1e4ccc9654f9243a77c29a95d66f7087ad71e9b50ebdcb8cc02",
+    "assets": 6,
+    "encodings": 7,
+    "canonicalVendorFiles": 3
+  },
+  "cliSha256": "d55839bfc180fd573341265c750eaee72c3ebb2e57f3e2b3eca9cf3449b93507"
+}

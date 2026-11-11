@@ -1,36 +1,45 @@
 # L-Vibe 다운로드
 
-**개인 지식 이관 준비:** [기존 OpenViking 개인 영역 내보내기 도구 — 약 4.4KB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-personal-export-1.zip)를 제공합니다. 기존 서버에서 OVPack을 만드는 도구이며 사용자 데이터는 포함하지 않습니다. 가져오기와 모든 프로젝트의 개인 검색은 구현 중인 0.2.6에 포함됩니다. [절차](../docs/openviking-personal-migration.md) · [해시](L-Vibe-personal-export-1.zip.sha256) · [검사 기록](L-Vibe-personal-export-1-audit.json). 기존 서버 DB는 변경하지 않으며, 생성한 개인 OVPack은 공개 저장소/지원 채팅에 보내지 않습니다.
+**0.2.6 Windows x64 검증 후보**입니다. 기존 OpenViking 0.5.0의 사용자 지식을 가져와 모든 프로젝트에서 개인 공통 기억으로 읽기 전용 검색하는 기능을 추가했습니다. 기존 모델 설정과 사용자 데이터는 유지합니다. MCP 6종·고정 브라우저·기본 스킬 34개 및 이전 Windows loopback/토크나이저 수정을 포함합니다.
 
-**0.2.5 Windows x64 검증 후보**입니다. OpenViking Windows asyncio loopback 수정과 토크나이저 데이터 6종/인코더 7종·외부 다운로드 없는 로더를 포함합니다. MCP 6종·고정 브라우저·기본 스킬 34개를 제공합니다. 배포 파일·폴더와 포함 앱 소스 경로는 ASCII입니다.
+[0.2.6 설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.6-win-x64.exe)
 
-[0.2.5 설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.5-win-x64.exe)
-
-[0.2.5 폐쇄망 반입 TGZ — EXE·설정 예제·진단·복구·소스·라이선스 포함](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.5-windows-x64.tgz)
+[0.2.6 폐쇄망 반입 TGZ — EXE·설정·내보내기·이관 안내·진단·소스·라이선스 포함](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.6-windows-x64.tgz)
 
 | 파일 | bytes | SHA-256 |
 |---|---:|---|
-| EXE | 1,056,735,627 | [해시 파일](L-Vibe-0.2.5-win-x64.exe.sha256) |
-| TGZ | 1,122,400,157 | [해시 파일](L-Vibe-0.2.5-windows-x64.tgz.sha256) |
+| EXE | 1,056,739,808 | [해시 파일](L-Vibe-0.2.6-win-x64.exe.sha256) |
+| TGZ | 1,122,446,227 | [해시 파일](L-Vibe-0.2.6-windows-x64.tgz.sha256) |
 
-기존 0.2.2/0.2.3/0.2.4 설치본은 [누적 토크나이저 패치 — 약 10.5MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-openviking-tokenizer-fix-1.tgz)로 재설치 없이 복구할 수 있습니다. 앱 종료 → 새 폴더에 압축 해제 → APPLY_FIX.cmd → CHECK_IMPORT.cmd 순서입니다. 이전 loopback 수정과 삭제된 cache 복구를 포함하므로 첫 패치를 따로 반복하지 않습니다. **0.2.5에는 두 수정이 기본 포함됩니다.** [적용 안내](../docs/openviking-tokenizer-fix.md) · [패치 해시](L-Vibe-openviking-tokenizer-fix-1.tgz.sha256) · [패치 검사 기록](L-Vibe-openviking-tokenizer-fix-1-audit.json).
+## 기존 개인 지식 이관
 
-사용자는 누적 패치 적용과 L-Vibe 실행 성공을 확인했습니다. 후속 모델 제보는 빈 목록이 아니라 예제 표시명이 보이는 상태였고 JSON 가져오기·문법·provider 별칭을 확인하고 있습니다. 실제 사내 모델 응답·Windows 10/11 전체 수용을 완료한 1.0으로 표시하지 않습니다. `releaseReady: false`입니다.
+1. [작은 내보내기 도구 ZIP — 4,350 bytes](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-personal-export-1.zip)을 쓰기 가능한 폴더에 해제합니다. 현재 L-Vibe 0.2.x의 번들 Python으로도 실행할 수 있습니다.
+2. 기존 OpenViking을 실행한 채 EXPORT_PERSONAL.cmd를 실행합니다. 기본 주소는 http://127.0.0.1:1935, account/user는 default입니다. 인증이 있으면 기존 로컬 OpenViking 서버 키를 PC에서 입력합니다. 사내 LLM/임베딩 키와 구분합니다.
+3. status가 exported/EXIT_CODE=0이면 OVPack과 SHA 파일을 PC에 보관합니다. 사용자 자료와 키는 지원 채팅/공개 GitHub에 보내지 않습니다.
+4. L-Vibe를 완전히 종료하고 0.2.6으로 업데이트합니다. 저장된 모델·임베딩 설정은 유지하며 이관용 JSON 항목을 추가할 필요는 없습니다.
+5. 알림 영역 L-Vibe 우클릭 → **개인 공통 지식 가져오기 (.ovpack)**에서 파일을 선택하고 원본 영역·파일 수·SHA를 확인한 뒤 승인합니다.
+6. **개인 공통 지식 가져오기 상태**와 실제 personal_knowledge_search/personal_knowledge_read 도구 결과를 확인합니다.
 
-압축을 해제하면 `GETTING_STARTED.txt`, `VALIDATION_REPORT.md`, `READINESS.json`을 확인할 수 있습니다. `CONFIGURATION_RECOVERY.txt`, `LICENSE_POLICY.txt`, `WINDOWS_DIAGNOSTICS.txt`와 `CHECK_OPENVIKING.cmd`/모듈 검사 스크립트도 제공합니다. 한국어 UI와 안내 내용은 유지하며 직원 PC 추가 설치·다운로드는 요구하지 않습니다.
+가져온 memories/resources/정적 skills/peer memories만 개인 도구로 조회합니다. 원본 서버는 유지하고 승인한 OVPack 사본과 상태를 보존합니다. 세션 원문·privacy 관리 자료는 개인 검색에서 제외하며 새 대화를 자동 업로드하지 않습니다. 기존 대상은 자동 덮어쓰지 않고, 벡터는 SDK가 호환성을 확인하여 재사용하거나 재계산합니다. [이관 절차·제한·복구 안내](../docs/openviking-personal-migration.md) · [내보내기 ZIP 해시](L-Vibe-personal-export-1.zip.sha256) · [내보내기 도구 검사 기록](L-Vibe-personal-export-1-audit.json).
 
-새 전체 EXE의 안전한 시작 진단은 `%APPDATA%\L-Vibe\openviking\startup-status.json`에 단계·코드만 기록합니다. 실제 키·Python 원래 출력·모델 요청/응답을 넣지 않습니다.
+내보내기 도구는 공개 HTTP 200·전체 4,350 bytes·SHA-256 일치를 확인했습니다. 0.2.5 이하에는 가져오기 메뉴와 개인 공통 검색 도구가 없습니다.
 
-실제 EXE 추출 **94,210개 파일/8,740개 폴더**, ASAR 내부 **11,584개 경로**가 ASCII입니다. OpenViking **63,069개**·REA **9,019개**·MCP **21,031개**·스킬 **34개/259개 파일**의 전수 해시를 검사했습니다. 토크나이저 6종과 LiteLLM vendor 3파일은 공식 해시에 별도 대조했습니다. TGZ **34개 항목/31개 파일**, 소스 archive **515개 항목**도 ASCII이며 체크섬 목록을 제외한 **30개 파일**을 전수 대조했습니다. 소스 체크포인트는 `e031bb8ce8acccf291d5f9f6404b6e29e713d012`입니다.
+## 포함 파일과 검사
 
-[설치 안내](../docs/offline-setup.md) · [0.2.5 검증 보고서](../docs/validation-0.2.5.md) · [EXE 검사 기록](L-Vibe-0.2.5-runtime-audit.json) · [TGZ 검사 기록](L-Vibe-0.2.5-bundle-audit.json)
+GETTING_STARTED.txt, VALIDATION_REPORT.md, READINESS.json, PERSONAL_KNOWLEDGE_MIGRATION.txt, CONFIGURATION_RECOVERY.txt, LICENSE_POLICY.txt, WINDOWS_DIAGNOSTICS.txt와 CHECK_OPENVIKING.cmd/EXPORT_PERSONAL.cmd 및 Python 스크립트를 포함합니다. 직원 PC 추가 설치·다운로드 없이 사용합니다. 실제 모델 가중치는 포함하지 않으며 사내 모델 API가 필요합니다.
 
-설치 후 `settings.enc.json`만 있는 상태는 예상된 상태입니다. `config-import.json`은 암호화 저장 후 삭제하는 임시 파일입니다. 저장 설정은 설치 폴더의 JSON을 편집하는 것만으로 바뀌지 않습니다. 작업표시줄 알림 영역 L-Vibe 우클릭 → **모델 설정 JSON 가져와 교체 후 재시작**에서 실제 JSON을 선택하세요. 전체 설정을 교체하므로 기존 LLM과 OpenViking 임베딩도 함께 넣습니다. 모델 목록이 비어 있는 경우와 선택/요청 실패는 구분하며 암호화 설정을 삭제하지 않습니다. [설정 복구 안내](../docs/configuration-recovery.md).
+최종 회귀 검사 **64개 통과/실패·건너뜀 0**. 실제 OpenViking 0.5.0 → 0.5.4 내보내기·가져오기, SDK 벡터 복원 결정, 두 프로젝트의 개인 검색/원문 읽기·재시작 및 다른 사용자의 쓰기 거부를 Linux의 합성 자료·모델로 확인했습니다. 실제 직원 PC 자료 이관과 Windows 10/11 전체 수용은 별도이며 `releaseReady: false`입니다.
 
-자체 코드는 MIT이며 전체 번들은 복수 라이선스를 따릅니다. tiktoken MIT/GPT-2 Modified MIT 원문도 보존합니다. [라이선스 재검토](../docs/license-policy.md)의 GPL/AGPL/LGPL·스킬·Chrome/MSVC 조건과 미확인 항목을 확인하세요.
+실제 EXE 추출 **94,210개 파일/8,740개 폴더**, ASAR **11,584개 경로**가 ASCII입니다. OpenViking **63,069개**·REA **9,019개**·MCP **21,031개**·스킬 **34개/259개 파일**의 전수 해시를 확인했습니다. 토크나이저 6종/인코더 7종과 LiteLLM vendor 3파일도 공식 해시와 일치합니다. TGZ **37개 항목/34개 파일**, 소스 archive **535개 항목**도 ASCII이며 체크섬 목록을 제외한 **33개 파일**을 전수 대조했습니다. 소스 체크포인트는 `8ffa36ea3baec751af55b3f4ab02dfe3274132ef`입니다.
 
-파일은 **work/downloads의 Git LFS**로 보존합니다. GitHub Releases 게시와 구분합니다. 위 링크로 다운로드할 때 Git LFS 설치는 필요하지 않습니다. 소스를 clone하여 실제 바이너리도 받으려면 Git LFS가 필요하며 작은 pointer 파일을 설치본으로 사용하지 마세요.
+[설치 안내](../docs/offline-setup.md) · [0.2.6 검증 보고서](../docs/validation-0.2.6.md) · [EXE 검사 기록](L-Vibe-0.2.6-runtime-audit.json) · [TGZ 검사 기록](L-Vibe-0.2.6-bundle-audit.json)
 
-이전 0.2.4에는 loopback 수정만 있어 새 토크나이저 패치가 필요합니다. 0.2.2/0.2.3에도 새 누적 패치를 사용하세요. 0.2.2는 일부 한글 TGZ 파일명이 있어 압축 해제 문제가 보고됐으며 0.2.3부터 ASCII를 사용합니다. 0.2.1은 MCP 6종이 없고 0.2.0은 기본 스킬 자동 등록도 없습니다. 이전 파일과 검사 기록은 같은 폴더에 보존합니다.
+## 설정과 이전 버전
 
-공개 게시 커밋 `212f9e93269fc81ff6a26c2168f36544692c5004`과 원격 work를 대조했다. TGZ 공개 주소의 **HTTP 200·전체 1,122,400,157 bytes·SHA-256**이 로컬 산출물과 일치했다. 공개 EXE는 HEAD HTTP 200·전체 크기와 range HTTP 206·첫 65,536 bytes PE 헤더를 확인했다. EXE 원격 전체 재다운로드는 수행하지 않았으며 전체 해시는 실제 로컬 EXE 검사와 업로드한 Git LFS object ID에 대응한다. [공개 다운로드 검사 기록](L-Vibe-0.2.5-public-audit.json)을 보존한다. 이 결과를 Windows 설치/모델 수용으로 계산하지 않는다.
+설치 후 settings.enc.json만 있는 상태는 예상된 상태입니다. config-import.json은 암호화 저장 후 삭제하는 임시 파일입니다. 저장 설정 교체는 알림 영역의 **모델 설정 JSON 가져와 교체 후 재시작**으로 진행합니다. [설정 복구 안내](../docs/configuration-recovery.md).
+
+자체 코드는 MIT이며 전체 번들은 복수 라이선스를 따릅니다. [라이선스 검토](../docs/license-policy.md)의 GPL/AGPL/LGPL·스킬·Chrome/MSVC 조건과 미확인 항목을 확인하세요.
+
+파일은 **work/downloads의 Git LFS**로 보존합니다. GitHub Releases 게시와 구분합니다. 위 링크로 받는 경우 Git LFS 설치는 필요하지 않습니다. 소스 clone의 작은 LFS pointer 파일을 설치본으로 사용하지 마세요.
+
+이전 버전과 검사 기록은 보존합니다. 0.2.5에는 토크나이저·loopback 수정이 있지만 개인 지식 가져오기는 없습니다. 0.2.4 및 이전 시작 오류에는 [이전 누적 토크나이저 패치](../docs/openviking-tokenizer-fix.md)가 제공되며 새 0.2.6에는 별도 패치가 필요하지 않습니다.

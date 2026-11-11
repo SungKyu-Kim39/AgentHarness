@@ -17,9 +17,9 @@
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
 | 소스 버전 | **0.2.6**. 개인 OVPack 가져오기·프로젝트 간 개인 검색. Windows loopback·토크나이저·ASCII 정책 유지 |
-| 최신 전체 설치 파일 | **0.2.6 EXE 생성·검사 완료**, TGZ/게시 상태·해시는 다운로드 안내 참조 |
+| 최신 전체 설치 파일 | **0.2.6 검증 후보** EXE/TGZ 생성·검사 완료. 게시 상태·해시는 다운로드 안내 참조 |
 | 0.2.6 EXE | 실제 추출 94,210개 파일/8,740개 폴더 및 ASAR 11,584개 경로 ASCII. 모든 런타임 해시와 토크나이저 공식 해시 검사 통과 |
-| TGZ 소스 체크포인트 | `e031bb8ce8acccf291d5f9f6404b6e29e713d012` |
+| TGZ 소스 체크포인트 | `8ffa36ea3baec751af55b3f4ab02dfe3274132ef` |
 | 공개 다운로드 | 0.2.5 업로드 완료. 공개 TGZ 전체 크기/SHA-256·EXE HEAD/크기/PE range 검증 통과. 게시 212f9e9, 34개 항목/31개 파일·30개 체크섬·소스 515개 항목 |
 | Windows OpenViking 후속 수정 | `c8ab5ac`: asyncio 내부 TCP socketpair 차단 수정. 0.2.4에는 기본 포함, 기존 0.2.2/0.2.3에는 별도 작은 패치 제공 |
 | 바로 다음 작업 | 0.2.6 전체 검사/EXE/TGZ 게시 완료, 사용자 PC의 개인 지식 내보내기·가져오기 검증, 라이선스/Windows 수용 및 남은 Desktop 기능 |
@@ -373,3 +373,5 @@ LFS object 업로드가 성공한 뒤 source ref를 push한다. 보통 `git lfs 
 **추가 JSON 전문 확인:** 사용자가 마지막으로 보낸 전문은 기본 providerID=`Qwen think_off`, model=`off` 참조가 맞고 `providers`의 마지막 provider 객체 뒤 trailing comma 한 개가 남아 있다. 그 쉼표만 제거하고 `openViking` 앞의 providers 블록 쉼표는 유지하도록 안내했다. 원문 설정/키는 이 저장소에 저장하지 않는다.
 
 **0.2.6 패키지 진행:** 최종 peer 지원을 포함한 64개/실패0/skip0 검사, 공식 타입/빌드와 실제 0.2.6 EXE archive 감사 완료. EXE 1,056,739,808 bytes / SHA-256 8a37d20f1607c4b21854abec4474ae7a1aabb578848ca58b077261b0a57f7cdd. 94,210파일/8,740폴더/ASAR11,584 경로 ASCII. TGZ는 이 후 문서와 소스를 커밋한 체크포인트로 생성하고 게시한다. 소스 코드/런타임을 추가 변경하지 않고 산출물 게시를 완료한다.
+
+**0.2.6 반입 TGZ 검사:** 1,122,446,227 bytes / SHA-256 a3942de63c78b0e89d9149f07f7f6c4ddf6d31b30f9020878fcc8191ba3359c6. 소스 8ffa36ea3baec751af55b3f4ab02dfe3274132ef. 37개 항목/34개 파일·33개 체크섬·소스 535개 항목 ASCII. 공개 EXE/TGZ 업로드 후 실제 주소 검사를 완료해야 한다.
