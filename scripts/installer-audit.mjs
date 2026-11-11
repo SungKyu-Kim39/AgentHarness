@@ -104,6 +104,12 @@ async function auditInstaller(installer) {
     await windowsX64(path.join(extracted, 'L-Vibe.exe'));
     const audit = { schemaVersion: 1, verifiedFrom: 'installer-archive', version, createdAt: new Date().toISOString(), platform: process.platform + '-' + process.arch, installer: { name: path.basename(installer), bytes: (await stat(installer)).size, sha256: await fileHash(installer) } };
     audit.paths = { ...paths, asarEntries: asarPaths.length };
+    const controlChunk = asarPaths.find(name => /[/\\]l-vibe-control-[^/\\]+\.js$/.test(name));
+    if (!controlChunk) throw new Error('Installer native control chunk is missing');
+    const control = extractFile(path.join(resources, 'app.asar'), controlChunk.replace(/^[/\\]/, ''));
+    const tokens = ['LV_MODEL_UPSTREAM_RESET', 'LV_MODEL_HEADER_TIMEOUT', 'LV_MODEL_CHUNK_TIMEOUT', 'autoApproveRequest', 'sessionRequest', 'chat_template_kwargs'];
+    for (const token of tokens) if (!control.toString().includes(token)) throw new Error('Installer lacks model/approval fix: ' + token);
+    audit.modelControls = { controlChunk, sha256: createHash('sha256').update(control).digest('hex'), verifiedTokens: tokens };
     audit.appAsarSha256 = await fileHash(path.join(resources, 'app.asar'));
     audit.appExeSha256 = await fileHash(path.join(extracted, 'L-Vibe.exe'));
     for (const [name, expected] of Object.entries(await expectedComponents(project))) {
