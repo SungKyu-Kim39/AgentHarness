@@ -23,6 +23,13 @@ await cp(path.join(output, exe), path.join(root, exe));
 await cp(path.join(project, 'agent-config.example.json'), path.join(root, 'agent-config.json'));
 await cp(path.join(project, 'docs/offline-setup.md'), path.join(root, 'GETTING_STARTED.txt'));
 await cp(path.join(project, `docs/validation-${version}.md`), path.join(root, 'VALIDATION_REPORT.md'));
+for (const [from, to] of [
+  ['docs/configuration-recovery.md', 'CONFIGURATION_RECOVERY.txt'], ['docs/license-policy.md', 'LICENSE_POLICY.txt'],
+  ['docs/windows-diagnostics.md', 'WINDOWS_DIAGNOSTICS.txt'], ['THIRD_PARTY_NOTICES.md', 'THIRD_PARTY_NOTICES.md'],
+  ['distribution/openviking-import-check.py', 'openviking-import-check.py'], ['distribution/check-openviking.cmd', 'CHECK_OPENVIKING.cmd'],
+]) await cp(path.join(project, from), path.join(root, to));
+const checkCommand = path.join(root, 'CHECK_OPENVIKING.cmd');
+await writeFile(checkCommand, (await readFile(checkCommand, 'utf8')).replace(/\r?\n/g, '\r\n'));
 const audit = JSON.parse(await readFile(path.join(project, '.cache/packaged-runtime-audit.json'), 'utf8'));
 await verifyInstallerAudit(audit, path.join(output, exe));
 const upstream = JSON.parse(await readFile(path.join(project, 'upstream-lock.json'), 'utf8'));
@@ -48,7 +55,8 @@ await writeFile(path.join(root, 'bundle-manifest.json'), JSON.stringify({
   setup: ['extract TGZ', 'run installer EXE', 'edit and save the JSON opened by the installer', 'launch L-Vibe'],
   requiresEmployeePackageInstall: false, includesModelWeights: false, includesRealCredentials: false,
   pathEncoding: 'ascii',
-  documents: { gettingStarted: 'GETTING_STARTED.txt', validation: 'VALIDATION_REPORT.md', readiness: 'READINESS.json' },
+  documents: { gettingStarted: 'GETTING_STARTED.txt', validation: 'VALIDATION_REPORT.md', readiness: 'READINESS.json',
+    configuration: 'CONFIGURATION_RECOVERY.txt', licensePolicy: 'LICENSE_POLICY.txt', diagnostics: 'WINDOWS_DIAGNOSTICS.txt' },
   components: { desktop: 'OpenCode 2.2.6', electron: '44.9.1', python: '3.12.16', openViking: '0.5.4', graphify: '0.9.105', rea: '6.8.0', mcp: JSON.parse(await readFile(path.join(project, 'vendor/runtime/windows-x64/mcp/manifest.json'), 'utf8')).versions },
 }, null, 2) + '\n');
 const checksums = [];

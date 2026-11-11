@@ -1,9 +1,9 @@
-# L-Vibe 0.2.3 Windows x64 설치
+# L-Vibe 0.2.4 Windows x64 설치
 
 이 묶음은 OpenCode Desktop 기반 L-Vibe의 검증 후보입니다. Windows 10·11 및 실제 사내 모델 서버의 수용 검증은 아직 완료되지 않았습니다. 상세 미완료 항목은 함께 제공한 READINESS.json을 확인하세요.
 
-1. 반입한 L-Vibe-0.2.3-windows-x64.tgz를 압축 해제합니다. Windows의 tar 또는 TGZ를 지원하는 압축 도구를 사용할 수 있습니다.
-2. 폴더 안의 L-Vibe-0.2.3-win-x64.exe를 실행합니다. 일반 사용자에게 설치하며 관리자 권한을 요구하지 않습니다.
+1. 반입한 L-Vibe-0.2.4-windows-x64.tgz를 압축 해제합니다. Windows의 tar 또는 TGZ를 지원하는 압축 도구를 사용할 수 있습니다.
+2. 폴더 안의 L-Vibe-0.2.4-win-x64.exe를 실행합니다. 일반 사용자에게 설치하며 관리자 권한을 요구하지 않습니다.
 3. 저장 설정이 없는 첫 설치에서는 메모장이 설정 JSON을 엽니다. 사내 주소·키·서버 모델 ID를 입력하고 저장한 뒤 메모장을 닫습니다. 사용하지 않을 보조 provider는 삭제하세요. 기존 settings.enc.json이 있으면 보존하며 JSON 준비와 메모장 실행을 건너뜁니다.
 4. 바탕화면 또는 시작 메뉴의 L-Vibe를 실행합니다. 프로젝트 폴더를 선택하고 작업을 요청합니다. 모델 선택창에서 등록한 LLM을 바꿀 수 있습니다.
 
@@ -11,11 +11,13 @@
 
 0.2.3부터 배포 파일·폴더 이름과 설치 리소스 경로는 ASCII 영문 이름을 사용합니다. 시작 안내는 GETTING_STARTED.txt, 검증 보고서는 VALIDATION_REPORT.md, 출시 상태는 READINESS.json입니다. 압축 내부와 포함된 앱 소스 경로도 검사합니다. 안내 내용과 앱의 한국어 표시는 유지됩니다.
 
+0.2.4에는 Windows OpenViking 내부 loopback 충돌 수정이 포함되어 있습니다. 별도 패치를 적용하지 않고 설치합니다. 시작 실패 시 경고 코드와 %APPDATA%\L-Vibe\openviking\startup-status.json을 확인하세요. 반입 폴더의 CHECK_OPENVIKING.cmd는 추가 설치 없이 모듈을 검사합니다. WINDOWS_DIAGNOSTICS.txt에 단계별 안내가 있습니다.
+
 ## JSON 설정
 
 저장 설정이 없는 최초 설치에서 편집하는 임시 파일은 %APPDATA%\L-Vibe\config-import.json입니다. TGZ 폴더의 agent-config.json은 배포 원본이며 설치기가 이 파일을 준비 사본으로 복사합니다. 기존 암호화 설정 settings.enc.json이 있으면 준비 파일을 새로 만들지 않고 메모장도 열지 않습니다. 업데이트·재설치에서도 기존 설정을 보존합니다.
 
-앱이 임시 JSON을 검증·암호화 저장하면 config-import.json을 삭제합니다. 따라서 settings.enc.json만 있는 상태는 예상된 상태입니다. 저장 파일을 직접 편집하지 마세요. 설정을 바꾸려면 아래 알림 영역 메뉴 또는 시작 단계 오류 창에서 편집한 JSON을 명시적으로 가져옵니다. 템플릿이 필요하면 설치 폴더의 resources\l-vibe\agent-config.example.json을 별도 파일로 복사할 수 있습니다. 상세 절차는 저장소의 docs/configuration-recovery.md를 참고하세요.
+앱이 임시 JSON을 검증·암호화 저장하면 config-import.json을 삭제합니다. 따라서 settings.enc.json만 있는 상태는 예상된 상태입니다. 저장 파일을 직접 편집하지 마세요. 설정을 바꾸려면 아래 알림 영역 메뉴 또는 시작 단계 오류 창에서 편집한 JSON을 명시적으로 가져옵니다. 템플릿이 필요하면 설치 폴더의 resources\l-vibe\agent-config.example.json을 별도 파일로 복사할 수 있습니다. 상세 절차는 함께 제공한 CONFIGURATION_RECOVERY.txt를 참고하세요.
 
 LLM은 OpenCode v2 형식의 providers 객체로 등록합니다.
 
@@ -60,4 +62,4 @@ TGZ 옆의 .sha256은 반입 파일 해시이고, SHA256SUMS.txt는 압축 내�
 
 licenses 폴더에 버전·다운로드 해시·라이선스 기록과 OpenViking 대응 소스를 제공합니다. OpenViking은 AGPL-3.0 구성 요소로 별도 프로세스로 포함합니다. source 폴더에는 해당 L-Vibe 소스 체크포인트를 포함합니다.
 
-L-Vibe 자체 코드는 MIT이며 설치 묶음에는 GPL/AGPL/LGPL·CC-BY-SA와 브라우저/DLL의 별도 조건이 함께 적용됩니다. 현재 라이선스 확인 범위와 남은 재배포 검토는 저장소의 docs/license-policy.md에 기록합니다.
+L-Vibe 자체 코드는 MIT이며 설치 묶음에는 GPL/AGPL/LGPL·CC-BY-SA와 브라우저/DLL의 별도 조건이 함께 적용됩니다. 현재 라이선스 확인 범위와 남은 재배포 검토는 함께 제공한 LICENSE_POLICY.txt와 THIRD_PARTY_NOTICES.md에 기록합니다.

@@ -10,7 +10,7 @@
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.3**. 영문 ASCII 배포 경로 정책 추가 |
+| 소스 버전 | **0.2.4 전체 설치본 빌드 중**. Windows OpenViking 수정·안전한 시작 진단, ASCII 경로 정책 유지 |
 | 최신 설치 파일 | **0.2.3 검증 후보 EXE/TGZ**. 영문 ASCII 배포 경로, MCP 6종과 고정 브라우저를 포함한다 |
 | 0.2.3 EXE/TGZ | 생성·실제 EXE 경로/해시·TGZ 23개 파일 체크섬·대응 소스 검사 완료. 게시 결과는 다운로드 안내 참조 |
 | TGZ 소스 체크포인트 | `93c3df35e9c6a1000ff972148de6aac99d29c9c9` |
@@ -208,7 +208,7 @@ npm run skills:verify
 npm run verify
 ```
 
-**건너뜀 수를 반드시 확인한다.** 새 PC에서 아래 경로가 없으면 실제 연동 검사가 skip될 수 있다. exit 0만으로 0.2.3의 51개 전체 통과를 재현했다고 말하지 않는다.
+**건너뜀 수를 반드시 확인한다.** 새 PC에서 아래 경로가 없으면 실제 연동 검사가 skip될 수 있다. exit 0만으로 Windows OpenViking 수정 소스의 56개 전체 통과를 재현했다고 말하지 않는다.
 
 - `.cache/openviking/env-linux/bin/python3`: OpenViking/Graphify Linux 검증 환경. Python 3.12 venv에 OpenViking 0.5.4와 `graphifyy[mcp]==0.9.105`를 준비한다.
 - `.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode`: 고정 v2 CLI. desktop-dependencies helper가 준비한다.
@@ -300,7 +300,7 @@ npm run audit:installer
 EXE 예상 위치:
 
 ```text
-release/desktop/L-Vibe-0.2.3-win-x64.exe
+release/desktop/L-Vibe-0.2.4-win-x64.exe
 .cache/l-vibe-desktop/source/packages/desktop/dist/win-unpacked/
 ```
 
@@ -311,14 +311,14 @@ NSIS/7-Zip 의존성은 빌드 PC에서 확보한다. 현재 커스텀 NSIS 패�
 1. `7zz t` 또는 동등한 도구로 EXE archive를 검사한다. 실제 EXE에서 리소스를 추출해 OpenViking/Python·REA·스킬·**새 MCP 전체**를 각 고정 manifest와 대조한다. staging 검사만으로 EXE 내부 검사라고 기록하지 않는다.
 2. `npm run audit:installer`가 EXE를 실행하지 않고 archive 검사·추출 후 앱 버전/AMD64, OpenViking·REA·MCP·34개 스킬의 manifest/파일 해시, 고정 Windows CLI, 설정 예제를 검사하고 `.cache/packaged-runtime-audit.json`을 만든다. 0.2.3부터 실제 추출 파일·폴더와 ASAR 내부 이름의 ASCII 검사도 기록한다. 검사 로그는 `.cache/installer-test.log`, `.cache/installer-extract.log`다. TGZ 생성은 이 audit의 실제 EXE 크기/SHA-256, 앱 ASAR/실행 파일, 모든 런타임 manifest와 CLI를 현재 파일에 다시 대조한다. 다른 EXE나 staging 검증 기록을 재사용하지 않는다. 새 설치본마다 새로 실행한다.
 3. `scripts/offline-bundle.mjs`는 정식 생성 소스인 `.cache/l-vibe-desktop/source/LICENSE`를 사용하며 `upstream-lock.json`의 원본 해시와 일치할 때만 복사한다. 예전 `.cache/opencode-desktop/source`는 설치 번들 생성에 필요하지 않다. 일반 회귀 검사의 원본 fixture로는 계속 사용한다.
-4. [docs/validation-0.2.3.md](docs/validation-0.2.3.md)에 실제 OS·명령·EXE 크기/SHA·리소스 검사 결과를 갱신하고 커밋한다. 기존 source/lock 변경도 모두 커밋되어 있어야 한다. bundle 스크립트는 tracked 파일 변경이 남으면 거부한다.
+4. [docs/validation-0.2.4.md](docs/validation-0.2.4.md)에 실제 OS·명령·EXE 크기/SHA·리소스 검사 결과를 갱신하고 커밋한다. 기존 source/lock 변경도 모두 커밋되어 있어야 한다. bundle 스크립트는 tracked 파일 변경이 남으면 거부한다.
 5. 다음을 실행하고 archive 내용·해시·설정 예제·라이선스·대응 소스를 확인한다.
 
 ```sh
 npm run bundle:offline
 ```
 
-출력은 `release/desktop/L-Vibe-0.2.3-windows-x64.tgz`와 `.sha256`이다. 실제 TGZ 헤더와 포함된 앱 소스 archive에도 ASCII 검사를 적용한다. 설치 EXE를 생성했다는 사실만으로 TGZ 생성·GitHub 게시·Windows 실행까지 완료했다고 말하지 않는다. Windows 수용 전 배포한다면 검증 후보임을 명시하고 `releaseReady: false`를 유지한다.
+출력은 `release/desktop/L-Vibe-0.2.4-windows-x64.tgz`와 `.sha256`이다. 실제 TGZ 헤더와 포함된 앱 소스 archive에도 ASCII 검사를 적용한다. 설치 EXE를 생성했다는 사실만으로 TGZ 생성·GitHub 게시·Windows 실행까지 완료했다고 말하지 않는다. Windows 수용 전 배포한다면 검증 후보임을 명시하고 `releaseReady: false`를 유지한다.
 
 ## 9. 게시·커밋·인증
 
@@ -327,7 +327,7 @@ npm run bundle:offline
 EXE/TGZ는 검증 후 `downloads/`에 넣고 Git LFS로 올린다. 로컬 Git LFS filter가 준비되지 않았던 환경에서는 다음 형태를 사용했다.
 
 ```sh
-git -c 'filter.lfs.clean=git-lfs clean -- %f' -c filter.lfs.required=true add downloads/L-Vibe-0.2.3-win-x64.exe downloads/L-Vibe-0.2.3-windows-x64.tgz
+git -c 'filter.lfs.clean=git-lfs clean -- %f' -c filter.lfs.required=true add downloads/L-Vibe-0.2.4-win-x64.exe downloads/L-Vibe-0.2.4-windows-x64.tgz
 # .sha256·다운로드 안내·검증 보고서도 실제 값으로 갱신해 추가한다.
 ```
 

@@ -38,3 +38,5 @@ Windows CPython 3.12의 `socket.socketpair()`는 내부 loopback TCP 연결을 �
 전체 `npm run verify`는 **56개 통과, 실패·건너뜀 0**, 루트 타입 검사·스킬 34개·Desktop overlay 검증을 통과했다. 패치의 실제 생성 파일을 임시 설치본에 적용하고 원본 설정 보존·반복 적용 및 TGZ 10개 파일의 내용/ASCII 이름을 대조했다. 이는 Windows에서 패치를 실행한 검사는 아니다.
 
 생성 소스: `c8ab5acadf852a614fa9e3065dc79f4d539dd77c`. TGZ 크기: **3,202,655 bytes**. SHA-256: `d7ddde57981f87f1a6f0d33eff809122544194c6984746f9ee28086914eca284`. 새 Python manifest: `42f101caef4f976cc20bc3df5f1b3a25356f1a75d3f0297b79af77379733c901`이며 63,060개 파일 중 `launch.py`의 해시만 변경한다.
+
+빌드 PC에서 패치를 다시 만들려면 원본 0.2.2/0.2.3의 manifest.json과 launch.py가 들어 있는 baseline 디렉터리를 사용한다. 현재 Windows runtime을 이미 갱신했다면 `node scripts/openviking-hotfix.mjs <baseline-directory>`로 지정한다. 새 manifest를 원본 기준으로 사용하거나 원래 해시를 임의로 바꾸지 않는다. 개발 캐시는 다른 PC에 자동 전달되지 않는다.

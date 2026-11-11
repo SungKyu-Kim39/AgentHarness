@@ -5,7 +5,7 @@ import path from 'node:path';
 import { verifyAsciiTree, verifyAsciiTar } from './package-paths.mjs';
 
 const project = path.resolve(import.meta.dirname, '..');
-const runtime = path.join(project, 'vendor/runtime/windows-x64/openviking');
+const runtime = path.resolve(process.argv[2] ?? path.join(project, 'vendor/runtime/windows-x64/openviking'));
 const output = path.join(project, 'release/desktop');
 const name = 'L-Vibe-openviking-loopback-fix-1';
 const root = path.join(output, name);

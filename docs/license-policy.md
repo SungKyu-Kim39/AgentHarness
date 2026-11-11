@@ -1,6 +1,6 @@
 # L-Vibe license policy review
 
-검토일: 2026-11-11 KST. 대상은 공개된 **0.2.3 Windows x64 검증 후보**의 고정 런타임·스킬과 저장소 소스다. 패키지 메타데이터뿐 아니라 설치에 포함된 라이선스 원문·소스 고지·빌드 스크립트를 대조했다. 이 문서는 전체 의존성의 법적 적합성 인증이 아니며 현재 미확인 항목을 함께 기록한다.
+검토일: 2026-11-11 KST. 대상은 **0.2.3 Windows x64 검증 후보와 동일한 구성 요소 버전을 사용하는 0.2.4 후보**의 고정 런타임·스킬과 저장소 소스다. 패키지 메타데이터뿐 아니라 설치에 포함된 라이선스 원문·소스 고지·빌드 스크립트를 대조했다. 0.2.4의 변경은 L-Vibe가 작성한 launcher/호스트·진단·배포 안내다. 이 문서는 전체 의존성의 법적 적합성 인증이 아니며 현재 미확인 항목을 함께 기록한다.
 
 ## 적용 정책
 
@@ -37,7 +37,7 @@ MIT/GPL/AGPL 등 위 오픈소스 라이선스는 조건을 지키는 기업·�
 
 - OpenViking 원본 대응 소스: TGZ `licenses/OpenViking-0.5.4-corresponding-source.tar.gz`와 앱 리소스 `runtime/windows-x64/openviking/licenses/openviking-0.5.4-source.tar.gz`.
 - Serena/Git 원본 소스: 앱 리소스 `runtime/windows-x64/mcp/licenses/serena-agent-2.1.0-source.tar.gz`, `git-for-windows-2.56.0.windows.4-source.tar.gz`. 사용한 proxy-tools 소스도 같은 위치에 포함한다.
-- L-Vibe 수정·준비/빌드 스크립트: TGZ `source/L-Vibe-93c3df35e9c6-source.tgz`. 실제 소스와 잠금 해시를 대응시킨다. REA의 별도 고지 및 각 wheel의 dist-info 라이선스도 앱 리소스에 유지한다.
+- L-Vibe 수정·준비/빌드 스크립트: TGZ `source/L-Vibe-<sourceCommit 첫 12자리>-source.tgz`. 해당 묶음의 `bundle-manifest.json`에서 sourceCommit을 확인하고 실제 소스와 잠금 해시를 대응시킨다. REA의 별도 고지 및 각 wheel의 dist-info 라이선스도 앱 리소스에 유지한다.
 - 고정 원본 소스 archive와 라이선스 바이트는 ASCII 파일명 수정 과정에서 변경하지 않았다. 이들의 포함·해시 검사는 전체 대응 소스 의무 충족 판정과 구분한다.
 
 AGPL 5조의 aggregate 규정은 별개 저작물의 단순 집합과 결합 저작물을 구분한다. 프로세스 분리는 검토 근거 중 하나이며 모든 결합 방식의 라이선스 범위를 자동 확정하지 않는다. 배포 시 수정분·필요한 빌드/설치 자료·적용 라이선스·소스 접근 방법을 수령인이 실제 이용할 수 있게 해야 한다. 폐쇄망 수령인에게 인터넷 저장소 링크만 주는 방법에 의존하지 않는다.
