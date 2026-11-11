@@ -1,5 +1,7 @@
 # L-Vibe 다운로드
 
+**개인 지식 이관 준비:** [기존 OpenViking 개인 영역 내보내기 도구 — 약 4.4KB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-personal-export-1.zip)를 제공합니다. 기존 서버에서 OVPack을 만드는 도구이며 사용자 데이터는 포함하지 않습니다. 가져오기와 모든 프로젝트의 개인 검색은 구현 중인 0.2.6에 포함됩니다. [절차](../docs/openviking-personal-migration.md) · [해시](L-Vibe-personal-export-1.zip.sha256) · [검사 기록](L-Vibe-personal-export-1-audit.json). 기존 서버 DB는 변경하지 않으며, 생성한 개인 OVPack은 공개 저장소/지원 채팅에 보내지 않습니다.
+
 **0.2.5 Windows x64 검증 후보**입니다. OpenViking Windows asyncio loopback 수정과 토크나이저 데이터 6종/인코더 7종·외부 다운로드 없는 로더를 포함합니다. MCP 6종·고정 브라우저·기본 스킬 34개를 제공합니다. 배포 파일·폴더와 포함 앱 소스 경로는 ASCII입니다.
 
 [0.2.5 설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.5-win-x64.exe)

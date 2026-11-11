@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "02ebf12f22a35843f103cff0979dc7188dc10f53",
+  "requiresEmployeePackageInstall": false,
+  "includesUserData": false,
+  "files": {
+    "EXPORT_PERSONAL.cmd": "5c0fff648d1decb7f788ebf219671e7eb8c55ce2ba41c37b4a027775b5fdc44f",
+    "export-openviking-personal.py": "3e21d99dc271acab7f06a6197cf083a4a0398265268ad6f7659e01af7693cdac",
+    "README.txt": "dd34d1b5d912cb9db0f41803ac7729d20927d4cb1b1b404a5b65fbe8e2fb07f8"
+  },
+  "archive": "L-Vibe-personal-export-1.zip",
+  "bytes": 4350,
+  "sha256": "992fdb47a2a8f35a4ef593fd2a7a48bae203d97a4924928982a4e40dc421584a",
+  "asciiPaths": true,
+  "verifiedArchiveFiles": 4
+}
