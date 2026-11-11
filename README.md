@@ -2,6 +2,8 @@
 
 [설치 EXE · 폐쇄망 반입 TGZ 다운로드](downloads/README.md)
 
+[L-Vibe 소개 · 목적과 활용 방법](docs/l-vibe-introduction.md)
+
 [다른 PC에서 개발 이어가기 · 작업 인계서](HANDOFF.md)
 
 Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배포판**입니다. 공식 Desktop/엔진 v2.2.6을 고정하고, 사내 모델 설정·승인 중계·로컬 서비스를 결합합니다. 기존 PC의 OpenCode·Zed·개인 설정·플러그인을 읽거나 복제하지 않습니다.
