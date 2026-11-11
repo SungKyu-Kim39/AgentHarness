@@ -1,22 +1,24 @@
 # L-Vibe 다운로드
 
-**0.2.2 Windows x64 검증 후보**입니다. MCP 6종·고정 브라우저·기본 스킬 34개를 포함합니다. Windows 10/11 및 실제 사내 모델 수용 검증은 남아 있습니다.
+**0.2.3 Windows x64 검증 후보**입니다. 한글 파일명 깨짐을 수정하여 배포 파일·폴더 이름을 영문 ASCII로 통일했습니다. MCP 6종·고정 브라우저·기본 스킬 34개를 포함합니다. Windows 10/11 및 실제 사내 모델 수용 검증은 남아 있습니다.
 
-[0.2.2 설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.2-win-x64.exe)
+[0.2.3 설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.3-win-x64.exe)
 
-[0.2.2 폐쇄망 반입 TGZ — EXE·설정 예제·소스·라이선스 포함](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.2-windows-x64.tgz)
+[0.2.3 폐쇄망 반입 TGZ — EXE·설정 예제·소스·라이선스 포함](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-0.2.3-windows-x64.tgz)
 
 | 파일 | bytes | SHA-256 |
 |---|---:|---|
-| EXE | 1,055,821,574 | [해시 파일](L-Vibe-0.2.2-win-x64.exe.sha256) |
-| TGZ | 1,121,427,289 | [해시 파일](L-Vibe-0.2.2-windows-x64.tgz.sha256) |
+| EXE | 1,055,821,027 | [해시 파일](L-Vibe-0.2.3-win-x64.exe.sha256) |
+| TGZ | 1,121,442,442 | [해시 파일](L-Vibe-0.2.3-windows-x64.tgz.sha256) |
 
-EXE를 직접 추출해 OpenViking 63,060개·REA 9,019개·MCP 21,031개·스킬 34개/259개 파일의 해시를 검사했습니다. TGZ 내부 23개 파일의 체크섬과 대응 소스도 대조했습니다. 소스 체크포인트는 `b8722666e20e0525d320e636f5b41e689e2879b3`입니다. 공개 다운로드 두 주소 모두 HTTP 200, 전체 바이트 수와 SHA-256이 로컬 산출물과 일치함을 확인했습니다.
+압축을 해제하면 `GETTING_STARTED.txt`, `VALIDATION_REPORT.md`, `READINESS.json`을 확인할 수 있습니다. 한국어 UI와 안내 내용은 유지합니다. 비 ASCII 배포 경로가 들어오면 다음 빌드와 패키징이 실패하도록 검사합니다.
 
-[설치 안내](../docs/offline-setup.md) · [0.2.2 검증 보고서](../docs/validation-0.2.2.md) · [실제 EXE 검사 기록](L-Vibe-0.2.2-runtime-audit.json)
+실제 EXE에서 추출한 **94,201개 파일·8,739개 폴더**, ASAR 내부 **11,584개 경로**가 모두 ASCII입니다. OpenViking 63,060개·REA 9,019개·MCP 21,031개·스킬 34개/259개 파일의 해시도 검사했습니다. TGZ의 전체 27개 항목/24개 파일은 모두 ASCII이며 체크섬 목록 자체를 제외한 23개 파일을 전수 대조했습니다. 포함된 L-Vibe 소스 archive의 473개 항목도 ASCII입니다. 소스 체크포인트는 `93c3df35e9c6a1000ff972148de6aac99d29c9c9`입니다.
+
+[설치 안내](../docs/offline-setup.md) · [0.2.3 검증 보고서](../docs/validation-0.2.3.md) · [실제 EXE 검사 기록](L-Vibe-0.2.3-runtime-audit.json) · [TGZ 검사 기록](L-Vibe-0.2.3-bundle-audit.json)
 
 Serena/clangd·Git·Playwright·MarkItDown·Chrome DevTools·DuckDB를 통제된 로컬 도구로 제공합니다. 기본 스킬은 임베딩 JSON 설정 후 최초 실행에서 OpenViking skills에 자동 등록하며, 변경 없는 재실행의 중복 색인과 사용자 편집본 덮어쓰기를 방지합니다.
 
 파일은 Git LFS로 저장합니다. 위 링크로 다운로드할 때 Git LFS 설치는 필요하지 않습니다. 소스를 clone하여 실제 바이너리도 받으려면 Git LFS가 필요하며 작은 pointer 파일을 설치본으로 사용하지 마세요.
 
-이전 0.2.1 EXE/TGZ는 같은 폴더에 유지합니다. 스킬 34개와 자동 등록이 있지만 새 MCP 6종은 없습니다. 이전 0.2.0은 스킬 18개이며 자동 등록 기능이 없습니다.
+이전 0.2.2는 같은 기능이지만 TGZ 안내 파일에 한글 이름을 사용합니다. 파일명 깨짐을 피하려면 0.2.3을 사용하세요. 0.2.1은 스킬 34개/자동 등록이 있지만 새 MCP 6종은 없습니다. 0.2.0은 스킬 18개이며 자동 등록 기능이 없습니다. 이전 파일은 같은 폴더에 보존합니다.

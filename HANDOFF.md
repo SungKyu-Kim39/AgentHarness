@@ -11,10 +11,10 @@
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
 | 소스 버전 | **0.2.3**. 영문 ASCII 배포 경로 정책 추가 |
-| 실제 공개된 설치 파일 | **0.2.2 검증 후보 EXE/TGZ**. MCP 6종과 고정 브라우저를 포함한다 |
-| 0.2.2 EXE/TGZ | **생성·실제 EXE 해시·TGZ 23개 파일 체크섬·대응 소스 검사 완료** |
-| 0.2.3 EXE | 생성·실제 추출 ASCII 경로·런타임 전수 해시 검사 통과. TGZ/게시 상태는 다운로드 안내 참조 |
-| 바로 다음 작업 | 0.2.3 TGZ 생성·게시 검증 후 Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
+| 최신 설치 파일 | **0.2.3 검증 후보 EXE/TGZ**. 영문 ASCII 배포 경로, MCP 6종과 고정 브라우저를 포함한다 |
+| 0.2.3 EXE/TGZ | 생성·실제 EXE 경로/해시·TGZ 23개 파일 체크섬·대응 소스 검사 완료. 게시 결과는 다운로드 안내 참조 |
+| TGZ 소스 체크포인트 | `93c3df35e9c6a1000ff972148de6aac99d29c9c9` |
+| 바로 다음 작업 | Windows 10/11·사내 모델 수용, 새 Desktop 반복/재출력·diff·명령 승인 기능 |
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.3 검증 상태](docs/validation-0.2.3.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
