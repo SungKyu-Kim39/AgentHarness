@@ -1,6 +1,6 @@
 # L-Vibe license policy review
 
-검토일: 2026-11-11 KST. 대상은 **0.2.3 Windows x64 검증 후보와 동일한 구성 요소 버전을 사용하는 0.2.4 후보**의 고정 런타임·스킬과 저장소 소스다. 패키지 메타데이터뿐 아니라 설치에 포함된 라이선스 원문·소스 고지·빌드 스크립트를 대조했다. 0.2.4의 변경은 L-Vibe가 작성한 launcher/호스트·진단·배포 안내다. 이 문서는 전체 의존성의 법적 적합성 인증이 아니며 현재 미확인 항목을 함께 기록한다.
+검토일: 2026-11-11 KST. 대상은 **0.2.3/0.2.4 및 같은 실행 구성 요소 버전을 사용하는 0.2.5 후보**의 고정 런타임·스킬과 저장소 소스다. 패키지 메타데이터뿐 아니라 설치에 포함된 라이선스 원문·소스 고지·빌드 스크립트를 대조했다. 0.2.5는 정적 토크나이저 어휘 자료와 그 고지, L-Vibe launcher/호스트·진단·배포 안내를 추가/수정한다. 이 문서는 전체 의존성의 법적 적합성 인증이 아니며 현재 미확인 항목을 함께 기록한다.
 
 ## 적용 정책
 
@@ -19,6 +19,7 @@ MIT/GPL/AGPL 등 위 오픈소스 라이선스는 조건을 지키는 기업·�
 | L-Vibe 자체 코드, OpenCode Desktop/CLI 2.2.6 | MIT | 저작권·허가문 유지. OpenCode 원문은 TGZ `licenses/OpenCode-LICENSE`, 버전/커밋은 `upstream-lock.json` |
 | Electron 44.9.1, Node/Python 및 포함 라이브러리 | MIT/PSF 및 구성 요소별 고지 | Electron의 Chromium 등 하위 구성은 별도 고지. 포함된 라이선스/credits를 보존 |
 | OpenViking 0.5.4 | **AGPL-3.0** | 해당 프로그램의 배포·수정·대응 소스 조건. 수정 버전을 네트워크로 제공하면 13조의 소스 접근 제안도 검토 |
+| tiktoken 0.14.0 및 고정 토크나이저 데이터 | MIT, GPT-2 원본 어휘는 **Modified MIT** | `tokenizers/LICENSE.tiktoken.txt`와 `LICENSE.gpt2.txt` 원문·공식 데이터 SHA-256/미러 출처 유지. 정적 토큰 계산 자료이며 GPT-2 생성 모델 가중치를 탑재하지 않음 |
 | Serena 2.1.0 | **GPL-3.0-or-later** | 해당 프로그램·수정분의 대응 소스/빌드·설치 자료와 GPL 고지 |
 | MinGit 2.56.0.windows.4 | **GPL-2.0** 및 하위 구성별 조건 | Git 원문 `runtime/windows-x64/mcp/git/LICENSE.txt`, 대응 소스 보존. 하위 DLL/도구도 각각 검토 |
 | Graphify 0.9.105 | Apache-2.0 | 저작권·라이선스·관련 NOTICE 및 수정 고지 |

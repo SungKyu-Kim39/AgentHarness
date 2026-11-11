@@ -1,0 +1,21 @@
+{
+  "archive": "L-Vibe-openviking-tokenizer-fix-1.tgz",
+  "bytes": 10535142,
+  "sha256": "f651f2e9282e53ceb587637a1f41f5cefba5ac5e62cc00cb473bb0903e4b9e86",
+  "sourceCommit": "32fb2bc52bff994cfb99fba3647138a3c9e56a0d",
+  "pathEncoding": "ascii",
+  "files": 21,
+  "entries": 23,
+  "managedRuntimeFiles": 13,
+  "pythonFiles": 63069,
+  "restoresMissingWheelCache": [
+    "python/Lib/site-packages/litellm/litellm_core_utils/tokenizers/9b5ad71b2ce5302211f9c61530b329a4922fc6a4"
+  ],
+  "encodings": 7,
+  "assets": 6,
+  "newManifestSha256": "17b94d19b5cd9efe52c68d0c339682e1fb144fb6e2d7900a607221ad9847d70b",
+  "tests": 58,
+  "failed": 0,
+  "skipped": 0,
+  "actualWindowsApply": "pending"
+}

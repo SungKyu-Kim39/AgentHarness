@@ -1,6 +1,6 @@
 # L-Vibe 다운로드
 
-**추가 확인:** 0.2.4 및 이전 번들의 LiteLLM 토크나이저 cache가 공식 데이터 해시와 달라 외부 다운로드를 시도하는 문제가 확인됐습니다. [원인과 누적 복구 절차](../docs/openviking-tokenizer-fix.md)를 따르세요. 이전 작은 loopback 패치만으로 이 cache 문제까지 해결되지는 않습니다. 수정은 0.2.5 전체 설치본에도 포함하여 검증 중입니다.
+**토크나이저 누적 수정:** 0.2.4 및 이전 번들의 LiteLLM cache가 공식 데이터 해시와 달라 외부 다운로드를 시도하는 문제가 확인됐습니다. 기존 설치본에는 [새 누적 패치 — 약 10.5MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-openviking-tokenizer-fix-1.tgz)를 사용하세요. 앱 종료 → 압축 해제 → APPLY_FIX.cmd → CHECK_IMPORT.cmd 순서입니다. 이전 loopback 수정과 삭제된 cache 복구도 포함합니다. [원인·절차](../docs/openviking-tokenizer-fix.md) · [해시](L-Vibe-openviking-tokenizer-fix-1.tgz.sha256) · [검사 기록](L-Vibe-openviking-tokenizer-fix-1-audit.json). 0.2.5 전체 설치본도 검증 중입니다.
 
 **Windows OpenViking 시작 오류 수정:** 0.2.4 전체 설치본에 asyncio 내부 loopback 충돌 수정을 포함했습니다. 기존 0.2.2/0.2.3 설치본에는 [오프라인 수정 패치 (약 3.2 MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/L-Vibe-openviking-loopback-fix-1.tgz)를 사용할 수 있습니다. 압축 해제 후 앱을 종료하고 `APPLY_FIX.cmd`를 실행합니다. [적용 안내](../docs/openviking-windows-loopback-fix.md) · [체크섬](L-Vibe-openviking-loopback-fix-1.tgz.sha256) · [검사 기록](L-Vibe-openviking-loopback-fix-1-audit.json). 0.2.4에는 별도 패치가 필요하지 않습니다.
 

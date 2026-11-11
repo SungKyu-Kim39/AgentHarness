@@ -10,7 +10,7 @@
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
-| 소스 버전 | **0.2.4**. Windows OpenViking 수정·안전한 시작 진단·ASCII 경로 정책 유지 |
+| 소스 버전 | **0.2.5 빌드 중**. 콜드 토크나이저·cache 덮어쓰기/CRLF 수정, Windows loopback 및 ASCII 정책 유지 |
 | 최신 전체 설치 파일 | **0.2.4 검증 후보**. 최종 TGZ/게시·해시는 다운로드 안내 참조 |
 | 0.2.4 EXE/TGZ | 생성·실제 EXE 경로/전수 해시·TGZ 29개 체크섬/33개 ASCII 항목 검사 통과. OpenViking은 작은 패치와 동일한 새 manifest |
 | TGZ 소스 체크포인트 | `0976c3eba95c4d21015b97856e9d415d1c4dbbe2` |
@@ -20,6 +20,8 @@
 | 출시 수용 | `releaseReady: false`. Windows/사내 모델 수용 및 일부 기능이 남아 있다 |
 
 다음 작업자는 [MCP 검증 기록](docs/mcp-validation.md), [0.2.4 검증 상태](docs/validation-0.2.4.md), [출시 차단 항목](distribution/readiness.json)을 먼저 읽는다. 이 문서 이후 추가 커밋이 있을 수 있으므로 현재 `work`의 로그도 확인한다.
+
+**토크나이저 후속 수정:** 사용자 CHECK_IMPORT에서 cl100k 외부 다운로드/DNS 차단이 남았다. 고정 LiteLLM wheel의 rank 3파일이 CRLF로 공식 hash와 달랐고, SDK가 TIKTOKEN_CACHE_DIR를 덮어썼다. 기존 Linux cache는 이미 canonical bytes라 이전 검사가 놓쳤다. 공식 SHA의 데이터 6개/인코더 7종과 MIT/GPT-2 Modified MIT 원문을 확보하고, 3 vendor 파일을 canonical bytes로 바꾸며 양쪽 cache env 및 local-only loader를 적용했다. 빈 HOME/TEMP/잘못된 상속 cache에서 SDK를 먼저 import한 검사와 전체 58개/skip0, 별도 installer audit 3개를 통과했다. 새 Python manifest는 17b94d19b5cd9efe52c68d0c339682e1fb144fb6e2d7900a607221ad9847d70b (63,069파일)이다. 기존 base 8d2fbf/42f101을 지원하는 약 10.5MB 누적 패치를 게시하며, full 0.2.5도 준비한다. [원인·적용·검증](docs/openviking-tokenizer-fix.md)을 먼저 읽고 실제 Windows 적용 후 결과를 추정하지 말라.
 
 **2026-11-11 파일명 수정:** 한글 파일명 깨짐 제보에 따라 0.2.3에서 영문 ASCII 경로 검사와 문서 이름 변경을 구현했다(`ffde16f`). 회귀 검사 **51개 통과, 실패·건너뜀 0**, 공식 Desktop 타입 검사 2개 프로젝트·2,549개 파일 오류 0 및 빌드 성공. 실제 0.2.3 EXE를 추출한 94,201개 파일·8,739개 폴더와 ASAR 11,584개 경로 모두 ASCII이며 각 런타임 해시도 일치한다. 최신 TGZ/게시 정보는 다운로드 안내와 현재 브랜치 로그를 따른다.
 
