@@ -34,6 +34,7 @@ function replace(text, before, after, label) {
 export function adaptDocument(id, document, original, description) {
   if (!policies[id]) return original;
   let text = original;
+  if (id === 'agent-desktop' && document === 'references/commands-system.md') text = replace(text, 'If no client exists, ask the user to run `npm install -g agent-browser`, or stay on the accessibility path.', 'Ned exposes only the reviewed desktop host surface. Browser handoff, online agent-browser installation and raw CDP clients are not available through this adapter; use an approved bundled browser tool when appropriate.', id);
   if (id === 'cpp-pro' && document === 'SKILL.md') {
     text = replace(text, '2. **Design with concepts** — Create type-safe interfaces using C++20 concepts', '2. **Design compatible interfaces** — Use the existing C++ standard; concepts only when supported', id);
     text = replace(text, '- Use concepts for template constraints', '- Use constraints compatible with the existing compiler and standard', id);

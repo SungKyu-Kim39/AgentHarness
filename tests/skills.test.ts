@@ -9,7 +9,7 @@ import { Redactor } from '../src/main/config';
 import { NativeRuntime } from '../distribution/native-control';
 import { configSchema } from '../src/shared/contracts';
 
-const additions = ['cpp-pro', 'cpp-testing', 'legacy-modernizer', 'codebase-onboarding', 'api-design', 'database-migrations', 'error-handling-patterns', 'architecture-decision-records', 'differential-review', 'session-handoff', 'explore-data', 'validate-data', 'data-visualization', 'statistical-analysis', 'ab-testing', 'web-design-guidelines'];
+const additions = ['agent-desktop', 'agent-desktop-windows', 'cpp-pro', 'cpp-testing', 'legacy-modernizer', 'codebase-onboarding', 'api-design', 'database-migrations', 'error-handling-patterns', 'architecture-decision-records', 'differential-review', 'session-handoff', 'explore-data', 'validate-data', 'data-visualization', 'statistical-analysis', 'ab-testing', 'web-design-guidelines'];
 
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
   const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-offline-skills-'));
@@ -30,7 +30,7 @@ test('the native broker reads every new offline skill and reference without invo
   const { tools, resources } = await fixture(t);
   const manifest = JSON.parse(await readFile(path.join(resources, 'l-vibe/skills/manifest.json'), 'utf8'));
   const catalog = JSON.parse(await tools.call('skill_catalog', {}, 'test-session'));
-  assert.equal(catalog.length, 34);
+  assert.equal(catalog.length, 36);
   for (const id of additions) {
     assert.ok(catalog.some((skill: { id: string }) => skill.id === id));
     const entry = manifest.skills.find((skill: { id: string }) => skill.id === id);

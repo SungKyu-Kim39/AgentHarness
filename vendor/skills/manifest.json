@@ -16,12 +16,17 @@
           "path": "SKILL.md",
           "upstreamSha256": "941873a93fca670fc16362de192521f2b5ca27675fb55f18c2112cde86ca9089",
           "bundledSha256": "9238803827fff5ab1ad43c61bdb3684c0b862a870b46340666c91d72e5824649"
+        },
+        {
+          "path": "references/commands-system.md",
+          "upstreamSha256": "164676e9ffddae0895e86ae1a638edbd0823c7e849ae102ff251d9b957ee60df",
+          "bundledSha256": "8e9b3d36836a4937c65de97717e3414cf83f28019942b823081010dddf48b1d3"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "70b62b481470e190d7d9ae4cc5167c8b283116e573c82984c1225a64834371fc"
+          "sha256": "dc081bd96521d5555331baaf44d831c38bde544f634c68bf91ec6eaf5e77def9"
         },
         {
           "path": "LICENSE",
@@ -37,7 +42,7 @@
         },
         {
           "path": "references/commands-system.md",
-          "sha256": "164676e9ffddae0895e86ae1a638edbd0823c7e849ae102ff251d9b957ee60df"
+          "sha256": "8e9b3d36836a4937c65de97717e3414cf83f28019942b823081010dddf48b1d3"
         },
         {
           "path": "references/workflows.md",
