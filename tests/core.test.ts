@@ -163,6 +163,8 @@ test("path traversal, symlinks, Windows aliases and execution config edits are d
   for (const value of [
     ".git/config",
     ".opencode/x.js",
+    ".zed/settings.json",
+    ".ZeD/tasks.json",
     "opencode.json",
     ".mcp.json",
   ])

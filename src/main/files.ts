@@ -14,7 +14,7 @@ import type { Proposal } from "../shared/contracts";
 const MAX_FILE = 2 * 1024 * 1024;
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
-const protectedParts = new Set([".git", ".opencode", "node_modules"]);
+const protectedParts = new Set([".git", ".opencode", ".zed", "node_modules"]);
 export class ProjectFiles {
   constructor(readonly root: string) {}
   async resolve(relative: string, writing = false): Promise<string> {
