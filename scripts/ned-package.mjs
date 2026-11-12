@@ -17,6 +17,7 @@ const cache = path.join(root,'.cache/ned');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${version}-win-x64.exe`);
 const mode = process.argv[2];
+const buildCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const run = (command,args,options={}) => execFileSync(command,args,{cwd:root,stdio:'inherit',...options});
 const exists = p => access(p).then(()=>true,()=>false);
 async function prepareZed() {
@@ -128,7 +129,7 @@ async function audit() {
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }
-    const report={sourceCommit:execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim(),schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,windowsAcceptance:false};
+    const report={sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }
@@ -146,7 +147,7 @@ async function bundle() {
   await mkdir(path.join(stage,'source'),{recursive:true});
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);
-  run('git',['archive','--format=tar.gz','--output='+source,'HEAD',':(exclude)downloads']);
+  run('git',['archive','--format=tar.gz','--output='+source,commit,':(exclude)downloads']);
   const files=await verifyAsciiTree(stage);verifyAsciiTar(source);
   const archive=path.join(output,name+'.tgz');run('tar',['-czf',archive,'-C',output,name]);
   verifyAsciiTar(archive);
