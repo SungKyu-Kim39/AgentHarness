@@ -40,7 +40,7 @@ import type {
   ToolEvent,
 } from "../shared/contracts";
 import "./style.css";
-import ligIcon from '../../assets/lig-icon.png';
+import nedIcon from '../../assets/ned-icon.png';
 const initial: AppState = {
   phase: "idle",
   projects: [],
@@ -163,7 +163,7 @@ function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <img className="lig-logo" src={ligIcon} alt="LIG" />
+          <img className="lig-logo" src={nedIcon} alt="Ned" />
           <div>
             <strong>L-Vibe</strong>
             <span className="brand-sub">VIBE CODING WORKSPACE</span>

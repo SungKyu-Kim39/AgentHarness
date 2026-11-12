@@ -36,7 +36,7 @@ export async function planPatches(root, project) {
     text = once(text, 'title={language.t("command.permissions.autoaccept.enable")}', 'title={language.t("command.permissions.autoaccept.enable") + " (파일 수정 별도)"}');
     return once(text, 'description={language.t("settings.permissions.autoAccept.default.description")}', 'description="파일 수정은 L-Vibe 승인 창에서 이번 요청의 자동 승인을 선택하세요. 새 요청·중지·재시작 시 해제됩니다."');
   });
-  const logo = 'data:image/png;base64,' + (await readFile(path.join(project, 'assets/lig-icon.png'))).toString('base64');
+  const logo = 'data:image/png;base64,' + (await readFile(path.join(project, 'assets/ned-icon.png'))).toString('base64');
   changes.set('packages/ui/src/components/logo.tsx', Buffer.from(`import type { ComponentProps } from "solid-js"
 const icon = ${JSON.stringify(logo)}
 export const Mark = (props: { class?: string }) => <svg data-component="logo-mark" class={props.class} viewBox="0 0 42 42" aria-label="L-Vibe"><image href={icon} width="42" height="42" /></svg>
@@ -140,10 +140,10 @@ await cp("resources/l-vibe/icon.ico", destination + "/icon.ico")
     ['distribution/native-pack.ts', 'packages/desktop/script/pack.ts'],
     ['distribution/windows-installer.nsh', 'packages/desktop/resources/windows/installer.nsh'],
     ['distribution/windows-installer.nsi', 'packages/desktop/resources/windows/l-vibe-installer.nsi'],
-    ['assets/lig-icon.png', 'packages/desktop/resources/l-vibe/icon.png'],
-    ['assets/lig-icon.ico', 'packages/desktop/resources/l-vibe/icon.ico'],
-    ['assets/lig-icon.png', 'packages/app/public/favicon-96x96-v3.png'],
-    ['assets/lig-icon.ico', 'packages/app/public/favicon-v3.ico'],
+    ['assets/ned-icon.png', 'packages/desktop/resources/l-vibe/icon.png'],
+    ['assets/ned-icon.ico', 'packages/desktop/resources/l-vibe/icon.ico'],
+    ['assets/ned-icon.png', 'packages/app/public/favicon-96x96-v3.png'],
+    ['assets/ned-icon.ico', 'packages/app/public/favicon-v3.ico'],
   ]) changes.set(target, await readFile(path.join(project, source)));
   return { lock, changes };
 }

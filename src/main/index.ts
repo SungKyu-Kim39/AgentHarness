@@ -55,7 +55,7 @@ app.whenReady().then(async () => {
     minWidth: 1040,
     minHeight: 680,
     title: "L-Vibe",
-    icon: app.isPackaged ? path.join(process.resourcesPath, 'assets/lig-icon.png') : path.join(app.getAppPath(), 'assets/lig-icon.png'),
+    icon: app.isPackaged ? path.join(process.resourcesPath, 'assets/ned-icon.png') : path.join(app.getAppPath(), 'assets/ned-icon.png'),
     backgroundColor: "#f7f8fa",
     show: false,
     webPreferences: {
