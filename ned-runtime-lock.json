@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "version": "1.28.1",
+  "commit": "e8bc16acee5ae1937600d571d441c4b5d7b0d288",
+  "repository": "https://github.com/zed-industries/zed",
+  "license": "GPL-3.0-or-later AND Apache-2.0 (marked components); see corresponding source",
+  "minimumWindows": {
+    "win10": "1903",
+    "win11": "22H2",
+    "arch": "x64"
+  },
+  "artifacts": [
+    {
+      "file": "Zed-x86_64.exe",
+      "bytes": 65092416,
+      "sha256": "013ba129f675b2bb2a71f5b2fd2918915cf9ad90053eb49e2ba10b56aa2212d4",
+      "url": "https://github.com/zed-industries/zed/releases/download/v1.28.1/Zed-x86_64.exe"
+    },
+    {
+      "file": "zed-linux-x86_64.tar.gz",
+      "bytes": 91236005,
+      "sha256": "9c3fc4cbe533e72c8d0e864a62be2b88d69cc44b9f52cd25d4c21d054dda3742",
+      "url": "https://github.com/zed-industries/zed/releases/download/v1.28.1/zed-linux-x86_64.tar.gz"
+    },
+    {
+      "file": "zed-source-v1.28.1.tar.gz",
+      "bytes": 25645436,
+      "sha256": "2baab0ae5fdbbdd64cf69afbc4fd3f4427dc86b9a8a4dfd2335a949097741226",
+      "url": "https://codeload.github.com/zed-industries/zed/tar.gz/refs/tags/v1.28.1"
+    }
+  ]
+}

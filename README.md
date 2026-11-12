@@ -1,10 +1,16 @@
-# L-Vibe
+# Ned
 
-[설치 EXE · 폐쇄망 반입 TGZ 다운로드](downloads/README.md)
+[기존 L-Vibe 설치 EXE · 폐쇄망 반입 TGZ 다운로드](downloads/README.md)
 
 [L-Vibe 소개 · 목적과 활용 방법](docs/l-vibe-introduction.md)
 
 [다른 PC에서 개발 이어가기 · 작업 인계서](HANDOFF.md)
+
+**Ned**는 Zed 편집기와 앱 전용 OpenCode 엔진, Aegis·Conductor·OpenViking 및 오프라인 도구를 한 번에 설치·설정하는 바이브 코딩 작업 환경입니다. 검은 배경의 흰색 Ned 아이콘을 사용합니다. [Zed 기반 전환 설계](docs/ned-architecture.md)를 확인하세요.
+
+0.3.0 전환 소스는 전용 Zed 프로필, 기존 엔진에 연결하는 ACP, 저장하지 않은 편집기 변경 보호, 기존 데이터 보존 이관과 승인된 VS2017/2019 MSBuild 도구를 추가합니다. Linux의 실제 엔진 연동 검사와 Windows 실사용 수용은 구분합니다. 아래 다운로드와 0.2.7 안내는 이전 공개 배포본을 설명합니다.
+
+## 이전 배포본 (L-Vibe 0.2.7)
 
 Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배포판**입니다. 공식 Desktop/엔진 v2.2.6을 고정하고, 사내 모델 설정·승인 중계·로컬 서비스를 결합합니다. 기존 PC의 OpenCode·Zed 설정·플러그인을 자동으로 읽거나 복제하지 않습니다. 기존 OpenViking 지식은 사용자가 명시적으로 선택하여 가져올 수 있습니다.
 

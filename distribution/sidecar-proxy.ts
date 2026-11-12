@@ -19,7 +19,7 @@ export class SidecarProxy {
         }
         const modifying = !['GET', 'HEAD', 'OPTIONS'].includes(req.method ?? '');
         if (modifying && (
-          /^\/api\/(?:experimental\/config|config|integration|credential|plugin|mcp|pty|shell|schedule|server|permission\/saved)(?:\/|$)/.test(pathname) ||
+          /^\/api\/(?:experimental\/(?:config|mcp)|config|integration|credential|plugin|mcp|pty|shell|schedule|server|permission\/saved)(?:\/|$)/.test(pathname) ||
           /^\/api\/session\/[^/]+\/(?:shell|command|move|background|synthetic)(?:\/|$)/.test(pathname) ||
           pathname === '/api/experimental/session/import'
         )) { res.writeHead(403, { 'Content-Type': 'application/json' }).end('{"message":"L-Vibe 앱 정책으로 이 실행·설정 변경 경로가 차단되었습니다."}'); return; }
@@ -28,7 +28,10 @@ export class SidecarProxy {
         let body = Buffer.concat(chunks);
         if (body.length && /application\/json/i.test(req.headers['content-type'] ?? '')) {
           const document = JSON.parse(body.toString());
-          if (document.permissions !== undefined) { res.writeHead(403).end(); return; }
+          if (document.permissions !== undefined) {
+            if (req.method === 'POST' && pathname === '/api/session' && (document.permissions === null || (Array.isArray(document.permissions) && document.permissions.length === 0))) delete document.permissions;
+            else { res.writeHead(403).end(); return; }
+          }
           if (/^\/api\/session\/[^/]+\/permission\/[^/]+\/reply$/.test(pathname) && document.decision === 'always') document.decision = 'once';
           body = Buffer.from(JSON.stringify(document));
         }

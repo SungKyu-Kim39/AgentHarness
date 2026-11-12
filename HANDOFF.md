@@ -1,3 +1,13 @@
+# Ned transition checkpoint
+
+Current product name: **Ned** (supersedes L-Vibe). Active design: [Ned architecture](docs/ned-architecture.md). Black/white generated icon: `assets/ned-icon.png` and `assets/ned-icon.ico`.
+
+The new native launcher is `distribution/ned/main.ts`; its ACP bridge attaches to the existing managed OpenCode engine, not a separate `opencode acp` child. `scripts/ned-build.mjs` produces both CJS entry points. Actual engine/ACP integration, buffer-conflict protection and migration tests are in `tests/ned.integration.test.ts`. VS2017/2019 discovery and guarded build execution are in `distribution/vs-build.ts`.
+
+The remaining text is the preserved 0.2.7 handover and describes the published historical L-Vibe build, not completion of the new Zed frontend. Model queue waits must remain unbounded by default. Continue committing/pushing to the user-approved public work branch without keys or user data.
+
+---
+
 <!-- Latest work: 2026-11-11 KST -->
 
 0.2.7 실제 EXE 생성/추출 검사를 완료했다. SHA-256 2c86d33cf9a3d0953de51adf7ca61dff97cefa29d5b5e17afa092e9cc12ac7ae, 1,056,737,928 bytes. native ASAR의 무제한 모델 대기 기본값을 확인했으며 TGZ 생성/검사도 완료했다. TGZ SHA-256 15590f5baacbdcec1058b978e7c0fdcd6879dd5fc2668e93f25cf417bc0923af, 1,122,449,144 bytes, 소스 924833e321173fe20a237ab0123702a135d6fae4. 공개 게시 b953301 및 다운로드 검사를 완료했다. TGZ 전체 GET/크기/SHA 일치, EXE HEAD/크기/PE range 확인. 자세한 기록은 downloads/L-Vibe-0.2.7-public-audit.json을 따른다. Python manifest는 179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85다.
@@ -18,7 +28,7 @@
 
 | 항목 | 상태 |
 |---|---|
-| 최종 제품명 | **L-Vibe**. 이전 명칭 LIG Agent/L-Harness로 되돌리지 않는다 |
+| 당시 제품명 | **L-Vibe** (현재 Ned로 변경됨) |
 | 개발 방향 | 공식 **OpenCode Desktop 기반 배포판**. 독립 Electron UI를 새로 만드는 초기 방향은 폐기했다 |
 | 저장소 / 브랜치 | https://github.com/SungKyu-Kim39/AgentHarness / **work** |
 | MCP 통합의 마지막 구현 커밋 | **a5dd07a572845a65940e7c9f592f49f2ce57fcae** |
