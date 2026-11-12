@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.1",
+  "buildSourceCommit": "38f174d12ef91679138a46e29be562b326e6f8d0",
+  "executionOS": "Linux",
+  "checks": [
+    {
+      "scope": "Full development suite before final import readiness change",
+      "tests": 88,
+      "pass": 88,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "Final real vector/no-vector migration and import/export guards",
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "Final desktop, editor and startup view guards",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    },
+    {
+      "scope": "Offline skills, profile and BGE gateway checks",
+      "tests": 7,
+      "pass": 7,
+      "fail": 0,
+      "skipped": 0
+    }
+  ],
+  "silentModelStartupProbe": {
+    "state": "ready",
+    "elapsedMs": 16000,
+    "modelRequestsBeforeReady": []
+  },
+  "startupView": {
+    "text": "Ned 실행 중\n\n설정과 지식 서비스를 준비하고 있습니다.",
+    "iconLoaded": true,
+    "overflow": false
+  },
+  "windowsAcceptance": false,
+  "limitations": [
+    "No actual Windows GUI, UIA action, intranet model or isolated DNS/TCP acceptance is claimed.",
+    "Native desktop MCP version/permissions were tested; the shell has no accessibility D-Bus session."
+  ]
+}

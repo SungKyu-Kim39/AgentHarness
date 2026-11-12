@@ -1,10 +1,30 @@
+# Ned 0.3.1 다운로드
+
+Windows x64 검증 후보이다. 시작 안내창, agent-desktop 승인 도구 18종, 기본 스킬 36개와 OpenViking 등록·이관 개선을 포함한다. 실제 Windows·사내 서버·폐쇄망 수용은 별도 확인 대상이며 1.0 완료를 뜻하지 않는다.
+
+[릴리스 안내](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.1)
+
+| 파일 | 직접 다운로드 | bytes |
+|---|---|---:|
+| 반입 TGZ · EXE/JSON/안내/진단/소스 포함 | [Ned-0.3.1-windows-x64.tgz](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.1-windows-x64.tgz) | 1,173,624,892 |
+| 설치 EXE 단독 | [Ned-0.3.1-win-x64.exe](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.1-win-x64.exe) | 1,176,902,415 |
+| SHA-256 | [TGZ](Ned-0.3.1-windows-x64.tgz.sha256) · [EXE](Ned-0.3.1-win-x64.exe.sha256) | |
+
+기존 L-Vibe와 Zed를 완전히 종료하고 TGZ의 EXE로 설치한 뒤 **Ned 바로가기**를 실행한다. 기존 설정·기록·지식은 원본을 보존하여 이관한다. 첫 실행은 Ned 아이콘과 단계별 문구를 표시한다. 모델·임베딩 대기는 기본 시간 제한을 두지 않는다.
+
+[검증 보고서](../docs/validation-0.3.1.md) · [실제 설치 EXE 추출 감사](Ned-0.3.1-installer-audit.json) · [반입 manifest](Ned-0.3.1-manifest.json) · [검사 결과](Ned-0.3.1-validation.json) · [설치 안내](../docs/offline-setup.md) · [agent-desktop 범위](../docs/agent-desktop.md)
+
+94,237개 설치 파일의 ASCII 경로와 고정 구성 요소를 실제 EXE에서 대조했다. TGZ 안의 EXE 해시도 일치한다. 빌드 소스는 `38f174d12ef91679138a46e29be562b326e6f8d0`이다. 릴리스의 직접 다운로드 링크는 이 저장소의 LFS 파일을 가리킨다. 현재 연결의 releases 첨부 업로드는 401로 거절되어 별도 첨부 파일은 제공하지 못했다.
+
+---
+
 ## OpenViking 내보내기 도구 수정
 
 [Ned-openviking-export-fix-1.tgz](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-openviking-export-fix-1.tgz) · [SHA-256](Ned-openviking-export-fix-1.tgz.sha256)
 
 기존 Ned/L-Vibe에서도 실행할 수 있는 작은 도구 묶음이다. 새 폴더에 압축 해제하고 `EXPORT_PERSONAL.cmd`를 실행한다. **기존 로컬 OpenViking 서버의 키**로 인증한다. `EXPORT_PACK HTTP_500`이 벡터 내보내기에서 발생하면 `EXPORT_PERSONAL_NO_VECTORS.cmd`를 명시적으로 선택할 수 있다. 원본 자료를 변경하거나 자동 재시도하지 않는다. 자세한 내용은 [이관 안내](../docs/openviking-personal-migration.md)를 따른다.
 
-Ned 0.3.1 소스는 작업 중이며, 아래 0.3.0 설치 파일에 새 변경이 포함됐다는 뜻은 아니다.
+이하 0.3.0 및 L-Vibe 파일은 이전 배포 기록이다. 최신 파일은 위의 0.3.1 표에서 받는다.
 
 ---
 
