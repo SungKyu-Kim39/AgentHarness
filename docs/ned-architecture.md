@@ -49,3 +49,5 @@ The handover remains one ASCII-named TGZ, one offline installer EXE, one central
 Pin Zed v1.28.1 and its matching source. Zed is primarily GPL-3.0-or-later with marked Apache-2.0 components; include corresponding source and third-party notices. The Ned-authored host code retains its own license; do not describe the entire distribution as MIT-only. Windows minimum requirements follow the pinned editor: Windows 10 1903+ / Windows 11 22H2+, x64. Actual company Windows, model-server, offline network and lifecycle acceptance remains required before declaring release readiness.
 
 시작 수정 패치 1 이후에는 프로젝트 선택을 강제하지 않고 Zed 시작 화면을 먼저 연다. 폴더 열기·최근 프로젝트 선택 후 AI 프로젝트 범위를 승인한다. 원본 0.3.1 설치본과 수정 패치의 차이 및 확인된 Windows 경로 오류는 [시작 수정 안내](ned-startup-fix-1.md)를 따른다.
+
+설정 가져오기는 검증·암호화 저장 → 소유한 편집기 창에 정상 종료 요청 → 편집기 종료 확인 → 서비스 종료 확인 → 호스트 재실행 순서다. Windows WM_CLOSE는 정확한 소유 프로세스의 일반 창에만 전달하며 저장 확인창이나 다른 Zed에 강제 종료를 보내지 않는다. 저장 취소는 재시작 대기로 남기고, 종료 미확인은 새 호스트 실행을 차단한다.

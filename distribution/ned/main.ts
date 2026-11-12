@@ -5,6 +5,8 @@ import { readFile, mkdir, access } from 'node:fs/promises';
 import path from 'node:path';
 import { prepareNative, getRuntime, replaceConfiguration } from '../native-control';
 import { editorLaunch } from './editor-launch';
+import { requestEditorClose } from './editor-close';
+import { ConfigurationRestart } from './configuration-restart';
 import { StartupWindow } from './startup-window';
 import { recordEditorExit, checkEditorFiles } from './editor-startup';
 import { AgentOwner } from './owner';
@@ -26,6 +28,17 @@ const resources = app.isPackaged ? process.resourcesPath : path.resolve(process.
 let tray: Tray | undefined, editor: ChildProcess | undefined, owner: AgentOwner | undefined;
 const network = new EditorNetwork();
 let quitting = false, closed = false;
+let trayMenu: Menu | undefined;
+const configurationRestart = new ConfigurationRestart(replaceConfiguration, () => requestEditorClose(editor), () => {
+  if (!tray || tray.isDestroyed()) return;
+  const pending = configurationRestart.pending;
+  const importing = trayMenu?.getMenuItemById('config-import');
+  if (importing) importing.enabled = !configurationRestart.busy && !pending;
+  const cancel = trayMenu?.getMenuItemById('config-restart-cancel');
+  if (cancel) { cancel.visible = pending; cancel.enabled = !configurationRestart.busy; }
+  tray.setToolTip(pending ? 'Ned · 설정 적용 대기: 편집기 저장·닫기 확인' : 'Ned');
+  if (trayMenu) tray.setContextMenu(trayMenu);
+});
 const startup = new StartupWindow();
 const messageBox = (options: Electron.MessageBoxOptions) => startup.duringDialog(() => dialog.showMessageBox(options));
 const openDialog = (options: Electron.OpenDialogOptions) => startup.duringDialog(() => dialog.showOpenDialog(options));
@@ -69,7 +82,7 @@ async function start() {
   }
   await checkEditorFiles(root, resources);
   const approve = async (message: string, detail: string, signal?: AbortSignal) => {
-    if (detail.length > 60000) return false;
+    if (configurationRestart.pending || detail.length > 60000) return false;
     const result = await messageBox({ type: 'question', title: 'Ned 승인', message, detail,
       buttons: ['거절', '이번만 승인'], defaultId: 0, cancelId: 0, noLink: true, signal });
     return !signal?.aborted && result.response === 1;
@@ -78,7 +91,7 @@ async function start() {
   const ready = await prepareNative({
     root, resources, cipher: safeStorage, approve,
     approveEdit: async (message, detail, signal) => {
-      if (detail.length > 60000) return { approved: false, autoApproveRequest: false };
+      if (configurationRestart.pending || detail.length > 60000) return { approved: false, autoApproveRequest: false };
       const result = await messageBox({ type: 'question', title: 'Ned 파일 수정 승인', message, detail,
         buttons: ['거절', '승인'], defaultId: 0, cancelId: 0, noLink: true, signal,
         checkboxLabel: '이번 요청의 파일 수정 자동 승인 (새 요청·중지·재시작 시 해제)', checkboxChecked: false });
@@ -116,7 +129,7 @@ async function start() {
   await access(binary);
   const icon = path.join(resources, 'ned', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
   tray = new Tray(nativeImage.createFromPath(icon)); tray.setToolTip('Ned');
-  tray.setContextMenu(Menu.buildFromTemplate([
+  trayMenu = Menu.buildFromTemplate([
     { label: 'Ned ' + NED_VERSION + ' · Zed + OpenCode', enabled: false },
     { label: '사용 안내', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
     { label: 'OpenViking / 기본 스킬 등록 상태', click: async () => {
@@ -125,13 +138,14 @@ async function start() {
         detail: (skills?.current ? skills.current.id + ' · ' + skills.current.stage + '\n' : '') + (skills?.message ?? '개인 대화는 자동 업로드하지 않습니다.') + '\n진단: %APPDATA%\\Ned\\openviking\\skills-status.json / model-status.json' });
     } },
     { label: 'OpenViking 기본 스킬 등록 재확인', click: async () => { try { await runtime.retryKnowledgeSkills(); } catch (error) { await messageBox({ title: 'Ned 스킬', message: errorMessage(error) }); } } },
-    { label: '설정 JSON 가져와 교체 (편집기 종료 후 재실행)', click: async () => {
-      const result = await openDialog({ properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
+    { id: 'config-import', label: '설정 JSON 가져와 적용 (자동 재시작)', click: async () => {
+      if (configurationRestart.busy || configurationRestart.pending) return;
+      const result = await openDialog({ title: '설정 JSON 가져오기 · 적용 후 자동 재시작', properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
       if (result.canceled) return;
-      try { await replaceConfiguration(await readFile(result.filePaths[0], 'utf8'));
-        await messageBox({ title: 'Ned 설정', message: '설정을 암호화 저장했습니다. 편집기에서 파일을 저장하고 Ned를 종료한 뒤 다시 실행하면 적용됩니다.' });
-      } catch (error) { await messageBox({ type: 'error', title: 'Ned 설정', message: errorMessage(error) }); }
+      try { await configurationRestart.import(await readFile(result.filePaths[0], 'utf8')); }
+      catch (error) { await messageBox({ type: 'error', title: 'Ned 설정', message: errorMessage(error) }); }
     } },
+    { id: 'config-restart-cancel', label: '설정 적용 재시작 대기 취소', visible: false, click: () => configurationRestart.cancel() },
     { label: '개인 공통 지식 가져오기 (.ovpack)', click: async () => {
       const result = await openDialog({ properties: ['openFile'], filters: [{ name: 'OpenViking pack', extensions: ['ovpack'] }] });
       if (result.canceled) return;
@@ -141,7 +155,8 @@ async function start() {
     { label: '개인 공통 지식 가져오기 상태', click: async () => { try { const state = await runtime.personalKnowledgeStatus(); await messageBox({ title: 'Ned 개인 지식 상태', message: state.length ? '개인 자료 가져오기 상태' : '가져온 개인 자료가 없습니다.', detail: JSON.stringify(state, null, 2) + '\nimporting은 색인 준비 중입니다. ready는 검색 영역 색인 검증까지 완료한 상태입니다.' }); } catch (error) { await messageBox({ title: 'Ned 개인 지식', message: errorMessage(error) }); } } },
     { type: 'separator' },
     { label: '종료 안내', click: () => { void messageBox({ title: 'Ned 종료', message: 'Zed 편집기에서 파일을 저장하고 모든 창을 닫으면 OpenCode·OpenViking과 함께 종료됩니다.' }); } },
-  ]));
+  ]);
+  tray.setContextMenu(trayMenu);
   startup.setPhase('editor');
   const launch = editorLaunch(profile.data);
   editor = spawn(binary, launch.args, { cwd: launch.cwd, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -155,13 +170,15 @@ async function start() {
   editor.once('close', (code, signal) => {
     const complete = async () => {
       const report = await recordEditorExit(root, binary, profile.data, profile.env, startedAt, code, signal, diagnostic, spawnError).catch(() => undefined);
-      if (spawnError || code !== 0 || signal || Date.now() - startedAt < 3000) {
+      const cleanExit = !spawnError && code === 0 && !signal;
+      if (!cleanExit || (!configurationRestart.pending && !configurationRestart.busy && Date.now() - startedAt < 3000)) {
         await messageBox({ type: 'warning', title: 'Ned 편집기 시작 진단',
           message: code === 101 ? '편집기 초기화 중 오류가 발생했습니다. 진단 코드와 소스 위치를 확인하세요.' : '편집기가 종료되었습니다. 진단 상태를 확인하세요.',
           detail: JSON.stringify(report ?? { code: 'EDITOR_DIAGNOSTIC_WRITE_FAILED' }, null, 2) + '\n진단 파일: ' + path.join(root, 'editor-startup-status.json') + '\n설정·키·사용자 코드·원본 로그는 포함하지 않습니다.' });
       }
       editor = undefined;
-      await shutdown(); app.quit();
+      if (!await configurationRestart.finish(cleanExit, shutdown, () => app.relaunch())) await shutdown();
+      app.quit();
     };
     void complete().catch(() => {});
   });

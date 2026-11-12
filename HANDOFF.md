@@ -68,3 +68,9 @@ GitHub 릴리스 작성·공개는 성공했다. 현재 연결의 `uploads.githu
 시작 수정 패치 소스 커밋은 21e0cea, 게시 커밋은 7545551이다. `downloads/Ned-startup-fix-1.tgz`는 4,219,995 bytes, SHA-256 23354b572fa7eead31df52c1cc72db67658730127ca8eaa2fdab26bd59a9cc87. 기존 app.asar SHA fb10ba3a99479c22a24dbefc40f3b83d156ad1112d0e2ab15c023b5d2660d558, 수정 SHA 43478862038e45935aa805c2f8ffaf26fe2971d2e15202c2f2521f6486c2a753. 기존 exe SHA 208c6c7754a2d95ebc053f91f4354052b3bf12b67df6aa230b1c299b1840d354. 원본 0.3.1 staging에서 실제 적용/중복/복구를 검사했고, 새 아카이브는 main.cjs 외 4,199개 파일/6개 고지 파일 바이트가 동일하다(멤버 순서는 재포장으로 바뀜). 공개 다운로드 전체 SHA도 확인했다.
 
 사용자에게 APPLY_FIX 후 Ned 시작 화면 또는 diagnosticRevision 2 진단을 요청한 상태다. 결과 전에는 GUI 성공을 주장하지 않는다. 정상 시작 확인 후 0.3.2 전체 설치 EXE/TGZ를 만들며 현재 published 0.3.1 EXE/TGZ는 덮어쓰지 않는다. source state는 빈 시작 화면까지 구현돼 있으나 package version은 아직 0.3.1로 유지했다. small patch와 전체 설치 버전을 구분한다.
+
+## 2026-11-12: confirmed startup and configuration auto restart
+
+User confirmed Ned starts after startup-fix-1, then requested that successful JSON import automatically restart/apply. Implementing 0.3.2: validate/encrypt before normal WM_CLOSE to exact owned editor PID; respect save/cancel, serialize imports, wait for service shutdown, schedule one Electron relaunch. Invalid imports leave editor live. Native Windows auto-restart verification remains pending; startup success on the deployment PC is now confirmed. Preserve no-default model deadlines.
+
+ACP follow-up: user can launch Ned but selecting Ned in New Agent Thread exits status 0. Two PowerShell Node-mode probes returned only exit 1, with no version/recognized stderr; first --eval probe may have native-argument quoting ambiguity. Do not claim a root cause yet. Actual Linux Electron (not only Node) ACP integration passed 3/3. New stdlib/bundled-Python agent-probe compares direct node, direct ACP initialize, and PowerShell ACP with bounded sanitized diagnostics, no sessions/prompts/config edits.

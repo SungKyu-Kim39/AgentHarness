@@ -19,3 +19,7 @@ If startup still fails, `editor-startup-status.json` now has `diagnosticRevision
 ## Verification
 
 Focused checks cover the standard private AppData tree, blank argv and launchpad setting, project approval before binding, source-location privacy, source allowlist integrity, patch idempotence, refusal of tampered payload/unknown hosts, backup preservation and rollback. The original missing-directory problem was reproduced by the user's Windows probe. GUI success and any remaining native access violation still require that PC's next result. A full refreshed installer follows confirmed startup behavior.
+
+## Deployment follow-up
+
+The user confirmed that Ned starts after applying this patch. This confirms startup on that deployment PC, not full Windows acceptance or every native probe path. The AppData/launchpad fixes are included in 0.3.2.
