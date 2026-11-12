@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "4c2d55e54bef1bdba577cda3833d1bc402e0299b",
+  "archive": "Ned-0.3.2-windows-x64.tgz",
+  "archiveSha256": "ff4feabaa2d3d6c6c9a317bbe9cde46fc09601a502fdde841c74faed4b3703b2",
+  "regularFiles": 22,
+  "asciiNames": true,
+  "installerStreamSha256": "10b104a14d7e850d2e923e679c23735686b830a582dc7ec81bc224f8de0d0458",
+  "sourceContainsNedToolsAndKoreanDefaults": true,
+  "diagnosticIncluded": true
+}

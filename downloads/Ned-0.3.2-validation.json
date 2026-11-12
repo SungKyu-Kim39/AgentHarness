@@ -1,0 +1,102 @@
+{
+  "sourceCommit": "4c2d55e54bef1bdba577cda3833d1bc402e0299b",
+  "runtime": {
+    "nodeTestRunner": "v24.22.1",
+    "electronTestVersion": "45.2.3",
+    "electronTestNode": "24.22.2",
+    "installerElectronVersion": "44.9.1"
+  },
+  "hostSha256": "82dd93b2228d4e29bbf438f6eefdf9b6dc47d0824565c4e402667a9b6eb733c2",
+  "runAsNodeEnabled": true,
+  "fullSuite": {
+    "passed": 110,
+    "total": 110,
+    "skipped": 0,
+    "durationMs": 644020.636831
+  },
+  "koreanAndNamesFocused": {
+    "passed": 10,
+    "total": 10
+  },
+  "windowsCrlfFocused": {
+    "passed": 2,
+    "total": 2
+  },
+  "liveMcpAllPassed": true,
+  "modelEndpointKind": "local synthetic OpenAI-compatible fixtures",
+  "deploymentUserReport": {
+    "artifact": "Ned-config-restart-fix-1.tgz",
+    "sha256": "6f546f125f3e7b15d023efd2e24f5d367f72c22642cf6e975036a71b7a80ba2f",
+    "modelListAndChat": true,
+    "configImportAutomaticRestartAndApplied": true
+  },
+  "newFullInstallerWindowsAcceptance": false,
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.2",
+  "installer": {
+    "name": "Ned-0.3.2-win-x64.exe",
+    "bytes": 1176920431,
+    "sha256": "10b104a14d7e850d2e923e679c23735686b830a582dc7ec81bc224f8de0d0458"
+  },
+  "installerAudit": {
+    "sourceCommit": "4c2d55e54bef1bdba577cda3833d1bc402e0299b",
+    "verifiedFrom": "installer-archive",
+    "paths": {
+      "encoding": "ascii",
+      "files": 94237,
+      "directories": 8743
+    },
+    "components": {
+      "openviking": {
+        "manifestSha256": "6b62b83f14351ca5450e281410070b0f443e17f0d8a4756706f658ffba339ee7",
+        "files": 63069
+      },
+      "mcp": {
+        "manifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
+        "files": 21031
+      },
+      "rea": {
+        "manifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+        "files": 9019
+      },
+      "agent-desktop": {
+        "manifestSha256": "e5f2ae573ad07e4643ffb712ba2eb65a9d315dedb0c0a40a4a1340fcd01fa6b7",
+        "files": 5
+      },
+      "skills": {
+        "manifestSha256": "f964d4f80fccc57e46c23b067362b7226ec26f58e7ab410fadd56cce72c786c4",
+        "files": 273,
+        "count": 36
+      }
+    }
+  },
+  "runtimeRenameDiff": {
+    "mcp": {
+      "files": 21031,
+      "changed": [
+        "mcp-python-worker.py"
+      ],
+      "packageFilesUnchanged": true
+    },
+    "openviking": {
+      "files": 63069,
+      "changed": [
+        "analysis-worker.py",
+        "launch.py"
+      ],
+      "packageFilesUnchanged": true
+    }
+  },
+  "bundle": {
+    "schemaVersion": 1,
+    "sourceCommit": "4c2d55e54bef1bdba577cda3833d1bc402e0299b",
+    "archive": "Ned-0.3.2-windows-x64.tgz",
+    "archiveSha256": "ff4feabaa2d3d6c6c9a317bbe9cde46fc09601a502fdde841c74faed4b3703b2",
+    "regularFiles": 22,
+    "asciiNames": true,
+    "installerStreamSha256": "10b104a14d7e850d2e923e679c23735686b830a582dc7ec81bc224f8de0d0458",
+    "sourceContainsNedToolsAndKoreanDefaults": true,
+    "diagnosticIncluded": true
+  }
+}

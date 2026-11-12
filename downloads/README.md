@@ -1,3 +1,15 @@
+# Ned 0.3.2 Windows x64
+
+- [폐쇄망 반입 TGZ · 약 1.17GB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.2-windows-x64.tgz)
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.2-win-x64.exe)
+- [TGZ SHA-256](Ned-0.3.2-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.2-win-x64.exe.sha256) · [설치기 추출 감사](Ned-0.3.2-installer-audit.json) · [묶음 검증](Ned-0.3.2-bundle-verification.json) · [검사 기록](Ned-0.3.2-validation.json)
+
+설정 가져오기 후 자동 재시작, Windows ACP 콘솔 감독 프로세스, 빈 시작 화면, `ned_host_*` 도구·MCP 이름, 기본 한국어 AGENTS 지침을 포함한다. Ned/Zed를 완전히 종료한 뒤 새 폴더에 반입 TGZ를 해제하고 EXE로 설치한다. 기존 설정·이력·지식은 유지한다. 새 0.3.2 설치에는 아래의 이전 패치를 별도로 적용하지 않는다.
+
+첫 실행 시 `%APPDATA%\Ned\editor\config\AGENTS.md`에 한국어 기본 지침을 추가하며, 기존 내용과 같은 지침은 보존한다. [설치 안내](../docs/offline-setup.md) · [소개](../docs/ned-introduction.md) · [검증 범위](../docs/validation-0.3.2.md). 전체 검사 110개와 마지막 한국어 집중 검사가 통과했으며 실제 추출본의 ASCII 경로·구성 요소 해시를 확인했다. 전체 Win10/Win11·사내망 수용 완료를 선언한 1.0 릴리스는 아니다.
+
+---
+
 # Ned latest repair patch
 
 [Ned 설정 자동 적용·Windows ACP 수정 패치 1 (약 4.2MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-config-restart-fix-1.tgz)은 원본 0.3.1 또는 시작 수정 패치 1 적용본에 사용한다. Ned/Zed 완전 종료 → 새 폴더에 압축 해제 → `APPLY_FIX.cmd` → `applied`/`already-applied`, `EXIT_CODE=0` 확인 → Ned 실행 순서다. 시작 수정도 포함하며 기존 설정·키·지식은 유지한다. [안내](../docs/ned-config-restart-fix-1.md) · [해시](Ned-config-restart-fix-1.tgz.sha256) · [검증](Ned-config-restart-fix-1-validation.json). 사용자가 Windows ACP 모델 목록·대화와 JSON 가져오기 후 자동 재시작·적용 성공을 확인하였다. 도구 이름 Ned 통일은 후속 전체 0.3.2 설치본에 포함한다.
