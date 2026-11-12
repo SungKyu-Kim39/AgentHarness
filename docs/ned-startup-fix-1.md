@@ -10,7 +10,7 @@ The original 0.3.1 installer forced a project picker before launching Zed; cance
 
 ## Applying the small patch
 
-Use `Ned-startup-fix-1.tgz` only on the exact original Ned 0.3.1 installer. Quit Ned and all Zed instances, unpack in a new writable folder and run `APPLY_FIX.cmd`. Status must be `applied` or `already-applied`, with EXIT_CODE=0. Start the installed Ned shortcut. `ROLLBACK_FIX.cmd` restores only the verified backup for this patch.
+Use [Ned-startup-fix-1.tgz](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-startup-fix-1.tgz) only on the exact original Ned 0.3.1 installer. Quit Ned and all Zed instances, unpack in a new writable folder and run `APPLY_FIX.cmd`. Status must be `applied` or `already-applied`, with EXIT_CODE=0. Start the installed Ned shortcut. `ROLLBACK_FIX.cmd` restores only the verified backup for this patch.
 
 The patch verifies the original Ned.exe and app.asar hashes, preserves the entire original dependency/license archive, and replaces app.asar atomically. The original executable's archive-validation fuse is disabled; this was verified without changing any fuse or executable. Unknown versions and conflicting backups are refused. The installation's Control Panel version remains 0.3.1 for this patch. No vault, model endpoint, key, knowledge storage or project file is changed.
 

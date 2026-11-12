@@ -1,3 +1,11 @@
+## Ned 0.3.1 시작 수정 패치 1
+
+기본 0.3.1에서 Windows AppData 경로 오류가 확인됐다. [시작 수정 패치 1 · 약 4.2MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-startup-fix-1.tgz)을 새 폴더에 해제하고, Ned/Zed 종료 후 `APPLY_FIX.cmd`를 실행한다. `applied`/`already-applied`, EXIT_CODE=0을 확인하고 Ned를 실행한다. [상세 안내](../docs/ned-startup-fix-1.md) · [해시](Ned-startup-fix-1.tgz.sha256) · [검증 기록](Ned-startup-fix-1-validation.json)
+
+이 패치는 표준 private AppData 구성, 시작 화면/최근 프로젝트 진입, 안전한 panic 위치 진단을 제공한다. 원본을 백업하며 `ROLLBACK_FIX.cmd`로 복구할 수 있다. 모델 설정·대화·지식은 바꾸지 않는다. 실제 GUI 성공은 설치 PC에서 확인 중이다. 아래의 기존 전체 설치 파일은 이 별도 패치를 포함하지 않는다.
+
+---
+
 # Ned 0.3.1 다운로드
 
 Windows x64 검증 후보이다. 시작 안내창, agent-desktop 승인 도구 18종, 기본 스킬 36개와 OpenViking 등록·이관 개선을 포함한다. 실제 Windows·사내 서버·폐쇄망 수용은 별도 확인 대상이며 1.0 완료를 뜻하지 않는다.
