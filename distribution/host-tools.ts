@@ -4,6 +4,7 @@ import { readFile, mkdir, mkdtemp, writeFile, copyFile, lstat, rm } from 'node:f
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { z } from 'zod';
+import { DesktopTools, desktopTools, desktopToolNames } from './desktop-tools';
 import { VisualStudioBuild } from './vs-build';
 import { ProjectFiles } from '../src/main/files';
 import { atomicJSON, Redactor } from '../src/main/config';
@@ -33,6 +34,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'inspect_build', description: 'Inspect local VS2017/2019 MSBuild and project solution configurations. Read-only; no installation or retargeting.', inputSchema: object({}) },
   { name: 'build_project', description: 'Run an inspected VS2017/2019 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.', inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: 'integer', minimum: 0 } }, ['target', 'configuration', 'platform', 'toolchain']) },
   ...extensionTools,
+  ...desktopTools,
 ];
 export type EditDecision = { approved: boolean; autoApproveRequest: boolean };
 const pathArg = z.string().min(1).max(4096);
@@ -48,6 +50,7 @@ export class HostTools {
   readonly skills: OfflineSkills;
   readonly extensions: McpExtensions;
   readonly builds: VisualStudioBuild;
+  readonly desktop: DesktopTools;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     request?: (session: string) => Promise<string>;
@@ -58,6 +61,7 @@ export class HostTools {
     redactor: Redactor;
     reservedPorts?: () => number[];
   }) {
+    this.desktop = new DesktopTools(root, resources, options.approve);
     this.builds = new VisualStudioBuild(resources, options.approve);
     this.skills = new OfflineSkills(path.join(resources, 'l-vibe/skills'));
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
@@ -85,7 +89,7 @@ export class HostTools {
           const work = this.call(input.params.name, input.params.arguments ?? {}, session, abort.signal); this.active.add(work);
           try {
             const text = await work;
-            if (extensionTools.some(t => t.name === input.params.name)) {
+            if (extensionTools.some(t => t.name === input.params.name) || desktopToolNames.includes(input.params.name)) {
               const response = JSON.parse(text);
               result = { isError: response.isError, content: response.content.map((item: { type: string; text?: string; data?: string; mimeType?: string }) => item.type === 'text' ? { type: 'text', text: this.options.redactor.text(item.text ?? '') } : { type: 'image', data: item.data, mimeType: item.mimeType }) };
             } else result = { content: [{ type: 'text', text: this.options.redactor.text(text) }] };
@@ -109,6 +113,7 @@ export class HostTools {
     const project = await this.options.project(session), files = new ProjectFiles(project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
+    if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
     if (name === 'inspect_build') { z.object({}).strict().parse(args); return JSON.stringify(await this.builds.inspect(project)); }
     if (name === 'build_project') { const input = z.object({ target: pathArg, configuration: z.string().max(100), platform: z.string().max(100), toolchain: z.number().int().min(0).max(50) }).strict().parse(args); return JSON.stringify(await this.builds.build(project, input, signal)); }
     if (name === 'list_files') { z.object({}).strict().parse(args); return JSON.stringify(await files.list()); }
@@ -239,7 +244,7 @@ export class HostTools {
   async close() {
     this.accepting = false; this.editGrant = undefined; this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
-    try { await Promise.all([this.extensions.close(), this.builds.close()]); }
+    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close()]); }
     finally {
       for (const child of this.children) child.kill('SIGKILL');
       await Promise.allSettled(this.active);
@@ -248,9 +253,10 @@ export class HostTools {
     }
   }
   cancelSession(session: string) {
+    void this.desktop.cancel(session).catch(() => {});
     this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
     for (const child of this.children) child.kill('SIGKILL');
   }
-  resumeSession(session: string) { this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
+  resumeSession(session: string) { this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
 }

@@ -6,6 +6,7 @@ import { adaptDocument, policies, documentLayouts } from './skill-adapters.mjs';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const productVersion = JSON.parse(await readFile('package.json', 'utf8')).version;
 const sources = {
+  agentDesktop: ['vercel-labs/agent-desktop', '2b0a7334fc111730454b726e6800aa41cdafc093', '.cache/agent-desktop/source'],
   local: ['Ned', productVersion, '.'],
   aegis: ['GanyuanRan/Aegis', 'e5f43c548a06c3f302c521a4c23f258296ccc947', 'vendor/sources/aegis'],
   openai: ['openai/skills', '49f948faa9258a0c61caceaf225e179651397431', '.cache/skill-sources/openai-skills'],
@@ -22,6 +23,7 @@ const sources = {
   vercelInterface: ['vercel-labs/web-interface-guidelines', '434b7f91364665f2f733b310ec54809bf8f37937', '.cache/skill-research/vercelInterface'],
 };
 const sourceArchiveHashes = {
+  agentDesktop: 'b8e5c536ba6e66f2e82b6863c198e06f1d11fcdfc100d44de0a871a38a82dc7f',
   jeffallan: 'ec911f76f63e1f4fd4b28925474cbae7c9f7b652a26ddba586b1173af94e2870',
   ecc: 'dc15cf3bfbb7985f203ba643290be61c500b0679f5d02255c9277c6ad6ea4cc9',
   wshobson: 'b5bcfff7fcba3c8ae961a860e03b0900a3c8bdfc1773ca0e2d787bc8c5f2c5f2',
@@ -31,6 +33,8 @@ const sourceArchiveHashes = {
   vercelInterface: 'f0f61f41f0b53522eb065b268e18a617bf2cacb54d9502ed6b7411cb62de8745',
 };
 const definitions = [
+  ['agent-desktop','agentDesktop','skills/agent-desktop','데스크톱 UI 작업','승인한 창의 접근성 트리·qualified ref·의미 기반 동작·결과 확인'],
+  ['agent-desktop-windows','agentDesktop','skills/agent-desktop-windows','Windows UI 자동화','Windows UIA 지원 범위·권한·대화형 세션·안전한 재관찰'],
   ['goal-framing','aegis','skills/goal-framing','요구사항 구체화','자연어 아이디어를 목적·범위·수용 기준으로 정리'],
   ['writing-plans','aegis','skills/writing-plans','구현 계획','여러 파일 변경을 검증 가능한 단계로 나누기'],
   ['test-driven-development','aegis','skills/test-driven-development','테스트 주도 개발','실패 재현·회귀 테스트·최소 구현'],
@@ -113,7 +117,7 @@ if (process.argv[2] === 'fetch') {
     if (!licenses.length) throw new Error(`${id}: explicit redistribution license is required`);
     const adapter = 'Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.' + (sourceId === 'qdrant' ? ' Apply retrieval-quality principles to OpenViking; Qdrant APIs/database are not installed.' : '') + (policies[id] ? ' ' + policies[id] : '');
     if (policies[id]) {
-      const licenseName = sourceId === 'trailofbits' ? 'CC-BY-SA-4.0' : sourceId === 'anthropicWork' ? 'Apache-2.0' : 'MIT';
+      const licenseName = sourceId === 'trailofbits' ? 'CC-BY-SA-4.0' : ['anthropicWork','agentDesktop'].includes(sourceId) ? 'Apache-2.0' : 'MIT';
       const notice = `# Ned offline adaptation\n\nUpstream: ${sourceId === 'local' ? 'Ned original guidance' : `https://github.com/${repo}/tree/${commit}/${directory}`}\n\nOriginal authors: ${sourceId === 'local' ? 'Ned contributors' : `${repo} contributors`}\n\nCommit: ${commit}\n\nLicense: ${licenseName}; see ${licenses.map(l => l.path).join(', ')}. Original author attribution and license are retained. This adapted skill and notice are distributed under ${licenseName}; the application license does not replace the upstream license. Modifications by Ned contributors.\n\nModified for Ned on 2026-11-12: static documents only; agent skill frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.\n\nSpecific policy: ${policies[id]}\n\nChanged documents (hashes are also retained in the manifest):\n\n${modifications.map(m => `- ${m.path}${m.upstreamPath ? ` (upstream ${m.upstreamPath})` : ''}: upstream ${m.upstreamSha256}; bundled ${m.bundledSha256}`).join('\n')}\n`;
       await writeFile(path.join(destination, 'ADAPTATION.md'), notice); files.push({ path: 'ADAPTATION.md', sha256: hash(notice) });
     }

@@ -6,6 +6,7 @@ import { readFile, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { atomicJSON } from './config';
 import { OpenVikingGateway } from './openviking-gateway';
+import { vikingErrorCode } from './openviking-errors';
 import { registerBundledSkills } from './openviking-skills';
 import { PersonalKnowledge } from './personal-knowledge';
 import type { AgentConfig, AppState } from '../shared/contracts';
@@ -56,6 +57,8 @@ export class OpenVikingService implements KnowledgeService {
   private process?: ChildProcess; private gateway?: OpenVikingGateway; private configFile?: string;
   private baseUrl = ''; private token = ''; private exited = true; private expectedExit = false;
   private operation = Promise.resolve(); private stopped?: Promise<void>;
+  private diagnosticWrites = Promise.resolve();
+  private modelEvents: unknown[] = [];
   private registration?: Promise<void>; private registrationAbort?: AbortController;
   private personal?: PersonalKnowledge;
   private startupStage: StartupStage = 'bundle';
@@ -74,16 +77,7 @@ export class OpenVikingService implements KnowledgeService {
       try {
         await this.start(config); this.update('ready');
         await this.writeStartupStatus({ status: 'ready', stage: 'health' });
-        if (this.skillBundle) {
-          const abort = new AbortController(); this.registrationAbort = abort;
-          this.value.skills = { status: 'pending', registered: 0, total: 0, conflicts: [], failed: [] }; this.changed();
-          this.registration = registerBundledSkills({ bundle: this.skillBundle, stateFile: path.join(this.data, 'openviking/bundled-skills.json'), signal: abort.signal,
-            transport: (route, options) => this.request(route, options?.body, false, options?.method, options?.signal),
-            progress: state => { if (!abort.signal.aborted) { this.value.skills = state; this.changed(); } },
-          }).then(() => {}, () => {
-            if (!abort.signal.aborted) { this.value.skills = { ...this.value.skills!, status: 'error', message: '기본 스킬 등록을 완료하지 못했습니다. 번들·등록 기록·사내 임베딩 설정을 확인하세요. 다음 실행에서 재시도합니다.' }; this.changed(); }
-          });
-        }
+        this.beginSkillRegistration();
       }
       catch (error) {
         const failure = error instanceof StartupFailure ? error : new StartupFailure(
@@ -102,11 +96,35 @@ export class OpenVikingService implements KnowledgeService {
         };
         const detail = [failure.code, failure.detail.osError, failure.detail.exitHex, failure.detail.hint].filter(Boolean).join(', ');
         this.update('error', labels[failure.code] + ' [' + detail + ']' +
-          (recorded ? ' 진단 파일: %APPDATA%\\L-Vibe\\openviking\\startup-status.json' : ' 진단 파일도 저장하지 못했습니다.') +
+          (recorded ? ' 진단 파일: 사용자 데이터 폴더의 openviking/startup-status.json' : ' 진단 파일도 저장하지 못했습니다.') +
           (stopConfirmed ? '' : ' 프로세스 종료를 확인하지 못했습니다. 앱을 종료하고 확인하세요.'));
       }
     });
     return this.operation;
+  }
+  async retryBundledSkills() {
+    this.ready();
+    if (['pending', 'registering'].includes(this.value.skills?.status ?? '')) throw new Error('기본 스킬 등록이 진행 중입니다. 현재 단계와 모델 상태를 먼저 확인하세요.');
+    await this.registration;
+    this.ready();
+    this.beginSkillRegistration();
+  }
+  private beginSkillRegistration() {
+    if (!this.skillBundle) return;
+    const abort = new AbortController(); this.registrationAbort = abort;
+    this.value.skills = { status: 'pending', registered: 0, total: 0, conflicts: [], failed: [] }; this.changed();
+    const publish = (state: NonNullable<NonNullable<AppState['knowledge']>['skills']>) => {
+      if (abort.signal.aborted) return;
+      this.value.skills = state; this.changed();
+      const snapshot = structuredClone(state);
+      this.diagnosticWrites = this.diagnosticWrites.catch(() => {}).then(() => atomicJSON(path.join(this.data, 'openviking/skills-status.json'),
+        { schemaVersion: 1, recordedAt: new Date().toISOString(), ...snapshot }));
+    };
+    this.registration = registerBundledSkills({ bundle: this.skillBundle, stateFile: path.join(this.data, 'openviking/bundled-skills.json'), signal: abort.signal,
+      transport: (route, options) => this.request(route, options?.body, false, options?.method, options?.signal), progress: publish,
+    }).then(() => {}, () => {
+      if (!abort.signal.aborted) publish({ ...this.value.skills!, status: 'error', message: 'OV_SKILL_SETUP: 번들 또는 등록 기록을 확인하세요. 기존 기록을 삭제하지 마세요.' });
+    });
   }
   private async writeStartupStatus(detail: Record<string, unknown>) {
     try { await atomicJSON(path.join(this.data, 'openviking', 'startup-status.json'), { schemaVersion: 1, recordedAt: new Date().toISOString(), ...detail }); return true; }
@@ -130,7 +148,11 @@ export class OpenVikingService implements KnowledgeService {
       (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user));
     this.startupStage = 'configuration';
     const folder = path.join(this.data, 'openviking'); await mkdir(folder, { recursive: true, mode: 0o700 });
-    this.gateway = new OpenVikingGateway(config); await this.gateway.start();
+    this.gateway = new OpenVikingGateway(config, event => {
+      this.modelEvents.push(event); this.modelEvents = this.modelEvents.slice(-20);
+      const events = structuredClone(this.modelEvents);
+      this.diagnosticWrites = this.diagnosticWrites.catch(() => {}).then(() => atomicJSON(path.join(folder, 'model-status.json'), { schemaVersion: 1, events }));
+    }); await this.gateway.start();
     const reserve = createServer(); await new Promise<void>((resolve, reject) => { reserve.once('error', reject); reserve.listen(0, '127.0.0.1', resolve); });
     const address = reserve.address(); if (!address || typeof address === 'string') throw new Error('포트 할당 실패');
     const port = address.port; await new Promise<void>(resolve => reserve.close(() => resolve()));
@@ -184,11 +206,12 @@ export class OpenVikingService implements KnowledgeService {
       ? await requestJSON(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), headers, body: body === undefined ? undefined : JSON.stringify(body), signal })
       : await fetch(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), redirect: 'error', headers, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: timeout === false ? signal : signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
     if (!response.ok) {
-      if (this.testLaunch?.diagnostic) this.testLaunch.diagnostic(`HTTP ${response.status} ${route}: ${await response.text()}`);
-      throw Object.assign(new Error(`OpenViking HTTP ${response.status}`), { status: response.status });
+      const detail = await response.text();
+      if (this.testLaunch?.diagnostic) this.testLaunch.diagnostic(`HTTP ${response.status} ${route}: ${detail}`);
+      throw Object.assign(new Error(vikingErrorCode(detail)), { status: response.status });
     }
     const text = await response.text(); if (text.length > 8 * 1024 * 1024) throw new Error('지식 응답 크기 초과');
-    const json = JSON.parse(text); if (json.status === 'error') throw new Error('OpenViking 요청 실패'); return json;
+    const json = JSON.parse(text); if (json.status === 'error') throw new Error(vikingErrorCode(text)); return json;
   }
   private ready() { if (this.value.status !== 'ready' || this.exited) throw new Error('OpenViking이 준비되지 않았습니다. 모델·번들 설정을 확인하세요.'); }
   async importPersonal(file: string, approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>) {
@@ -224,6 +247,7 @@ export class OpenVikingService implements KnowledgeService {
     await this.personal?.close(); this.personal = undefined;
     this.registrationAbort?.abort(); await this.registration?.catch(() => {});
     this.registration = undefined; this.registrationAbort = undefined;
+    await this.diagnosticWrites.catch(() => {});
     const child = this.process;
     if (child && !this.exited) {
       this.update('stopping');

@@ -21,7 +21,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
         return None
 
 
-def export_user(base_url, api_key, account, user, output):
+def export_user(base_url, api_key, account, user, output, include_vectors=True):
     parsed = urllib.parse.urlsplit(base_url)
     if (parsed.scheme != "http" or parsed.hostname not in ("127.0.0.1", "localhost")
             or parsed.username or parsed.password or parsed.path not in ("", "/")
@@ -44,9 +44,20 @@ def export_user(base_url, api_key, account, user, output):
         headers["X-API-Key"] = api_key
     request = urllib.request.Request(
         f"http://127.0.0.1:{parsed.port}/api/v1/pack/export",
-        data=json.dumps({"uri": "viking://user/" + user, "include_vectors": True}).encode(),
+        data=json.dumps({"uri": "viking://user/" + user, "include_vectors": include_vectors}).encode(),
         headers=headers, method="POST")
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+    # Authenticate/read the selected root before invoking the potentially expensive pack API.
+    # No auth bypass or copying a live database. Keys never enter argv or diagnostic files.
+    preflight = urllib.request.Request(
+        f"http://127.0.0.1:{parsed.port}/api/v1/fs/stat?" + urllib.parse.urlencode({"uri": "viking://user/" + user}),
+        headers=headers, method="GET")
+    try:
+        with opener.open(preflight, timeout=30) as response:
+            response.read(65536)
+    except urllib.error.HTTPError as error:
+        error.export_stage = "EXPORT_PREFLIGHT"
+        raise
     digest = hashlib.sha256(); size = 0
     created_partial = False
     created_output = False
@@ -55,7 +66,7 @@ def export_user(base_url, api_key, account, user, output):
         with partial.open("xb") as stream:
             created_partial = True
             os.chmod(partial, 0o600)
-            with opener.open(request, timeout=300) as response:
+            with opener.open(request, timeout=None) as response:
                 if response.status != 200:
                     raise ValueError("Export did not return HTTP 200.")
                 while block := response.read(1024 * 1024):
@@ -83,7 +94,10 @@ def export_user(base_url, api_key, account, user, output):
         completed = True
         return {"status": "exported", "file": str(output), "bytes": size,
                 "sha256": digest.hexdigest(), "root": "viking://user/" + user,
-                "formatVersion": 3, "vectorsRequested": True}
+                "formatVersion": 3, "vectorsRequested": include_vectors}
+    except urllib.error.HTTPError as error:
+        error.export_stage = "EXPORT_PACK"
+        raise
     finally:
         if created_partial:
             partial.unlink(missing_ok=True)
@@ -97,16 +111,31 @@ def main():
     parser.add_argument("--account", default="default")
     parser.add_argument("--user", default="default")
     parser.add_argument("--output")
+    parser.add_argument("--without-vectors", action="store_true", help="Export documents/memories without vector snapshots; Ned will recompute embeddings.")
     args = parser.parse_args()
     filename = "openviking-personal-" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S") + ".ovpack"
     output = Path(args.output) if args.output else Path(__file__).resolve().with_name(filename)
     print("Keep the legacy OpenViking running; pause other writes during export.")
     print("The package contains private data. Keep it locally; do not send it to support or GitHub.")
+    print("Use the OLD OpenViking server key (root_api_key or a matching user key), NOT an LLM/embedding key.")
     key = getpass.getpass("Legacy OpenViking API key (Enter if authentication is disabled): ")
     try:
-        print(json.dumps(export_user(args.base_url, key, args.account, args.user, output), indent=2))
+        print(json.dumps(export_user(args.base_url, key, args.account, args.user, output, include_vectors=not args.without_vectors), indent=2))
     except urllib.error.HTTPError as error:
-        print("EXPORT_FAILED HTTP_" + str(error.code)); raise SystemExit(1)
+        stage = getattr(error, "export_stage", "EXPORT_REQUEST")
+        print(stage + " HTTP_" + str(error.code))
+        if error.code == 401:
+            print("OV_AUTH: The OLD local OpenViking server rejected authentication. Enter its own key; do not use the intranet model key. Authentication was not disabled.")
+        elif error.code == 403:
+            print("OV_SCOPE: The authenticated key is not allowed to read this account/user. Use the matching identity or a local root/admin key.")
+        elif error.code == 404:
+            print("OV_NOT_FOUND: Check the server port and account/user IDs. No source data was modified.")
+        elif error.code >= 500:
+            print("OV_SERVER: The OLD server failed internally. No HTTP status alone identifies the cause.")
+            if stage == "EXPORT_PACK" and not args.without_vectors:
+                print("If vector snapshot export fails, rerun EXPORT_PERSONAL.cmd --without-vectors with a new output name. Content is retained; destination embeddings will be recomputed.")
+            print("If --without-vectors also fails, inspect the OLD server traceback locally; do not share its keys or private document contents.")
+        raise SystemExit(1)
     except Exception:
         print("EXPORT_FAILED: Check the local server, authentication, user scope, output path and OVPack v3 support.")
         raise SystemExit(1)

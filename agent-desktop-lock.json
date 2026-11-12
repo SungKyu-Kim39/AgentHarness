@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "manifests": {
+    "windows-x64": "675e3baa09f0ee1d4c679ce7cd3b5894565ee2003579850fa32f2a7c9c6a37c0",
+    "linux-x64": "851335089078a334a91b68bf98fbef162acf1414fecd5ac35ccca70b97bc8b30"
+  },
+  "repository": "https://github.com/vercel-labs/agent-desktop",
+  "version": "1.2.0",
+  "commit": "2b0a7334fc111730454b726e6800aa41cdafc093",
+  "license": "Apache-2.0",
+  "artifacts": [
+    {
+      "file": "windows.tar.gz",
+      "platform": "windows-x64",
+      "url": "https://github.com/vercel-labs/agent-desktop/releases/download/v1.2.0/agent-desktop-v1.2.0-x86_64-pc-windows-msvc.tar.gz",
+      "sha256": "a4199f741a441cedd349bf56c5eba01783b1261258b498efeb7ec9945220c3e8"
+    },
+    {
+      "file": "linux.tar.gz",
+      "platform": "linux-x64",
+      "url": "https://github.com/vercel-labs/agent-desktop/releases/download/v1.2.0/agent-desktop-v1.2.0-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "591ae7f4a38479dc045df97e27447c0c8b530441730ab6b990e27c813162af44"
+    },
+    {
+      "file": "source.tar.gz",
+      "url": "https://codeload.github.com/vercel-labs/agent-desktop/tar.gz/2b0a7334fc111730454b726e6800aa41cdafc093",
+      "sha256": "b8e5c536ba6e66f2e82b6863c198e06f1d11fcdfc100d44de0a871a38a82dc7f"
+    }
+  ]
+}

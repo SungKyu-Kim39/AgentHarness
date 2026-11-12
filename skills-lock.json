@@ -1,9 +1,14 @@
 {
   "schemaVersion": 1,
   "sources": {
+    "agentDesktop": [
+      "vercel-labs/agent-desktop",
+      "2b0a7334fc111730454b726e6800aa41cdafc093",
+      ".cache/agent-desktop/source"
+    ],
     "local": [
       "Ned",
-      "0.3.0",
+      "0.3.1",
       "."
     ],
     "aegis": [
@@ -73,6 +78,7 @@
     ]
   },
   "sourceArchiveHashes": {
+    "agentDesktop": "b8e5c536ba6e66f2e82b6863c198e06f1d11fcdfc100d44de0a871a38a82dc7f",
     "jeffallan": "ec911f76f63e1f4fd4b28925474cbae7c9f7b652a26ddba586b1173af94e2870",
     "ecc": "dc15cf3bfbb7985f203ba643290be61c500b0679f5d02255c9277c6ad6ea4cc9",
     "wshobson": "b5bcfff7fcba3c8ae961a860e03b0900a3c8bdfc1773ca0e2d787bc8c5f2c5f2",
@@ -81,6 +87,6 @@
     "marketing": "48a1f6187dff0eb9176e6d38906dbcb5e2581a08716c56f8cc3ee2f17f0791d6",
     "vercelInterface": "f0f61f41f0b53522eb065b268e18a617bf2cacb54d9502ed6b7411cb62de8745"
   },
-  "manifestSha256": "f5b414cb185dbaa5c95deda3e2cfc1344b531c80d6af387f36713c69a6c1a8bc",
-  "count": 34
+  "manifestSha256": "048411db90650f6e3a7668ac10d582b3582d9d19fff23849172622670887f799",
+  "count": 36
 }

@@ -68,6 +68,7 @@ async function stamp() {
 }
 async function packageApp() {
   const zed=await prepareZed();
+  run(process.execPath,['scripts/bundle-agent-desktop.mjs']);
   run(process.execPath,['scripts/ned-build.mjs']);
   await mkdir(output,{recursive:true});
   const config={
@@ -75,7 +76,7 @@ async function packageApp() {
     directories:{app:path.join(cache,'app'),output},files:['main.cjs','package.json'],asar:true,npmRebuild:false,publish:null,
     win:{target:'dir',signAndEditExecutable:false,icon:path.join(root,'assets/ned-icon.ico')},
     extraResources:[
-      {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*']},
+      {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*','windows-x64/agent-desktop/**/*']},
       {from:path.join(root,'vendor/skills'),to:'l-vibe/skills',filter:['**/*','!doc-coauthoring{,/**/*}']},
       {from:path.join(root,'distribution/methodology'),to:'l-vibe/methodology'},
       {from:path.join(root,'agent-config.example.json'),to:'l-vibe/agent-config.example.json'},
@@ -86,6 +87,7 @@ async function packageApp() {
       {from:path.join(cache,'app/agent.cjs'),to:'ned/agent.cjs'},
       {from:path.join(cache,'app/ACP-THIRD-PARTY-NOTICES.txt'),to:'ned/licenses/ACP-THIRD-PARTY-NOTICES.txt'},
       {from:path.join(root,'ned-runtime-lock.json'),to:'ned/locks/zed.json'},
+      {from:path.join(root,'agent-desktop-lock.json'),to:'ned/locks/agent-desktop.json'},
       {from:path.join(root,'ned-acp-lock.json'),to:'ned/locks/acp.json'},
       {from:path.join(root,'assets/ned-icon.png'),to:'ned/icon.png'},{from:path.join(root,'assets/ned-icon.ico'),to:'ned/icon.ico'},
       {from:path.join(root,'docs/offline-setup.md'),to:'ned/GETTING_STARTED.md'},
@@ -116,7 +118,7 @@ async function audit() {
     for(const file of ['Ned.exe','resources/app.asar','resources/ned/agent.cjs','resources/ned/icon.ico','resources/zed/Zed.exe'])
       if(await fileHash(path.join(extracted,file))!==await fileHash(path.join(staged,file))) throw new Error('Installer bytes differ: '+file);
     const components={};
-    for(const name of ['openviking','mcp','rea','skills']) {
+    for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
       const folder=name==='skills'?'l-vibe/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),await fileHash(path.join(original,'manifest.json')),name==='mcp');
@@ -131,9 +133,9 @@ async function bundle() {
   const name=`Ned-${version}-windows-x64`, stage=path.join(output,name);
   await rm(stage,{recursive:true,force:true});await mkdir(stage,{recursive:true});
   await cp(installer,path.join(stage,path.basename(installer)));
-  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],['docs/validation-0.3.0.md','VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],['docs/validation-0.3.1.md','VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
-  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd']]) await cp(path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd'],['distribution/export-openviking-personal-no-vectors.cmd','EXPORT_PERSONAL_NO_VECTORS.cmd']]) await cp(path.join(root,from),path.join(stage,to));
   await writeFile(path.join(stage,'CHECK_OPENVIKING.cmd'),(await readFile(path.join(root,'distribution/check-openviking.cmd'),'utf8')).replaceAll('L-Vibe','Ned').replaceAll('L_VIBE','NED'));
 
   await mkdir(path.join(stage,'source'),{recursive:true});

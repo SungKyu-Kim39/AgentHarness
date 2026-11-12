@@ -39,7 +39,18 @@ Section "Ned"
   RMDir /r "$INSTDIR\resources"
   RMDir /r "$INSTDIR\locales"
   SetOutPath "$INSTDIR"
+  ClearErrors
   File /r "${NED_APP_DIR}\*"
+  IfErrors install_failed
+  IfFileExists "$INSTDIR\resources\zed\Zed.exe" 0 install_failed
+  IfFileExists "$INSTDIR\resources\zed\bin\zed.exe" 0 install_failed
+  IfFileExists "$INSTDIR\resources\app.asar" 0 install_failed
+  Goto install_verified
+  install_failed:
+    MessageBox MB_OK|MB_ICONSTOP "Ned install is incomplete. Check free disk space and the installation folder. The bundled editor or host is missing. User settings were retained."
+    SetErrorLevel 1
+    Abort
+  install_verified:
   WriteUninstaller "$INSTDIR\Uninstall Ned.exe"
   CreateDirectory "$SMPROGRAMS\Ned"
   CreateShortcut "$SMPROGRAMS\Ned\Ned.lnk" "$INSTDIR\Ned.exe"

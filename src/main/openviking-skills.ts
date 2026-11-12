@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, realpath } from 'node:fs/promises';
 import { crc32 } from 'node:zlib';
 import path from 'node:path';
+import { vikingErrorCode } from './openviking-errors';
 import { atomicJSON } from './config';
 import type { SkillEntry } from './skills';
 
@@ -10,6 +11,7 @@ export const bundledSkillsRoot = 'viking://agent/skills';
 export interface SkillRegistration {
   status: 'pending' | 'registering' | 'ready' | 'error';
   registered: number; total: number; conflicts: string[]; failed: string[]; message?: string;
+  current?: { id: string; stage: string }; errors?: Array<{ id: string; stage: string; code: string; httpStatus?: number }>;
 }
 export type SkillTransport = (route: string, options?: { method?: 'GET' | 'POST' | 'PUT'; body?: unknown; signal?: AbortSignal }) => Promise<any>;
 interface Package { id: string; name: string; hash: string; archive: Buffer; body: string; files: Map<string, Buffer>; source: string; commit: string }
@@ -95,10 +97,13 @@ export async function registerBundledSkills(options: { bundle: string; stateFile
     if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     saved = { schemaVersion: 1, entries: {} };
   }
-  const state: SkillRegistration = { status: 'registering', registered: 0, total: packages.length, conflicts: [], failed: [] };
+  const state: SkillRegistration = { status: 'registering', registered: 0, total: packages.length, conflicts: [], failed: [], errors: [] };
   const publish = () => options.progress(structuredClone(state)); publish();
   for (const pkg of packages) {
     signal.throwIfAborted();
+    let stage = 'lookup';
+    const step = (next: string) => { stage = next; state.current = { id: pkg.id, stage }; publish(); };
+    step('lookup');
     try {
       let remote = await installed(transport, pkg.name, signal); const record = saved.entries[pkg.id];
       if (remote && (remote.source?.l_vibe_owner !== 'bundled-skills' || (record && (record.revision !== remote.revision || record.bundleHash !== remote.source.l_vibe_bundle_sha256)))) {
@@ -111,21 +116,33 @@ export async function registerBundledSkills(options: { bundle: string; stateFile
         // A changed bundle without a prior app record must not replace an existing package.
         if (remote && !record) { state.conflicts.push(pkg.id); publish(); continue; }
         const form = new FormData(); form.append('file', new Blob([new Uint8Array(pkg.archive)], { type: 'application/zip' }), pkg.name + '.zip');
+        step('upload');
         const upload = await transport('/api/v1/resources/temp_upload', { method: 'POST', body: form, signal });
         const id = upload.result?.temp_file_id; if (typeof id !== 'string') throw new Error('스킬 업로드 확인 실패');
+        step('import');
         await transport(remote ? `/api/v1/skills/${pkg.name}` : '/api/v1/skills', { method: remote ? 'PUT' : 'POST', signal, body: {
           temp_file_id: id, wait: true, target_uri: bundledSkillsRoot,
           source_metadata: { type: 'l-vibe-bundle', source: 'offline-bundle', l_vibe_owner: 'bundled-skills', l_vibe_bundle_sha256: pkg.hash, l_vibe_id: pkg.id, upstream_source: pkg.source, upstream_commit: pkg.commit },
         } });
+        step('verify');
         remote = await installed(transport, pkg.name, signal);
-        if (!remote || remote.source?.l_vibe_bundle_sha256 !== pkg.hash || !matches(pkg, remote)) throw new Error('등록된 스킬 내용 검증 실패');
+        if (!remote || remote.source?.l_vibe_bundle_sha256 !== pkg.hash || !matches(pkg, remote)) throw Object.assign(new Error('등록된 스킬 내용 검증 실패'), { diagnosticCode: 'OV_SKILL_INTEGRITY' });
       }
+      step('state');
       saved.entries[pkg.id] = { bundleHash: pkg.hash, revision: remote!.revision };
       signal.throwIfAborted(); await atomicJSON(options.stateFile, saved); state.registered++;
-    } catch (error) { signal.throwIfAborted(); state.failed.push(pkg.id); }
+    } catch (error) {
+      signal.throwIfAborted(); state.failed.push(pkg.id);
+      const status = (error as { status?: number })?.status;
+      const explicit = (error as { diagnosticCode?: string })?.diagnosticCode;
+      state.errors!.push({ id: pkg.id, stage, code: ['OV_SKILL_INTEGRITY'].includes(explicit ?? '') ? explicit! : vikingErrorCode(error instanceof Error ? error.message : ''),
+        ...(Number.isInteger(status) && status! >= 100 && status! <= 599 ? { httpStatus: status } : {}) });
+    }
     publish();
   }
+  state.current = undefined;
   state.status = state.conflicts.length || state.failed.length ? 'error' : 'ready';
   state.message = state.status === 'ready' ? `OpenViking 기본 스킬 ${state.registered}개 등록 확인` : `기본 스킬 ${state.registered}/${state.total}개 확인; 충돌 ${state.conflicts.length}개·실패 ${state.failed.length}개. 기존 내용은 보존하며 다음 실행에서 재확인합니다.`;
+  if (state.errors?.length) state.message += '\n' + state.errors.map(e => `${e.id}: ${e.stage} ${e.code}${e.httpStatus ? ' HTTP ' + e.httpStatus : ''}`).join('\n');
   publish(); return state;
 }

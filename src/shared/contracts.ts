@@ -147,7 +147,7 @@ export interface AppState {
   sessionApproval: boolean;
   capabilities: { commands: false; serena: boolean; snapshots: true };
   knowledge?: { status: 'unconfigured' | 'disabled' | 'starting' | 'ready' | 'stopping' | 'error'; message?: string; embedding?: { baseUrl: string; id: string; dimension: number }; indexedFiles: number;
-    skills?: { status: 'pending' | 'registering' | 'ready' | 'error'; registered: number; total: number; conflicts: string[]; failed: string[]; message?: string } };
+    skills?: { status: 'pending' | 'registering' | 'ready' | 'error'; registered: number; total: number; conflicts: string[]; failed: string[]; message?: string; current?: { id: string; stage: string }; errors?: Array<{ id: string; stage: string; code: string; httpStatus?: number }> } };
   skills?: Array<{ id: string; name: string; description: string }>;
 }
 export const requestSchema = z.discriminatedUnion("action", [

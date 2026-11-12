@@ -1,13 +1,14 @@
 @echo off
 setlocal
-set "LVIBE_PY=%LOCALAPPDATA%\Programs\L-Vibe\resources\runtime\windows-x64\openviking\python\python.exe"
-if not exist "%LVIBE_PY%" (
-  echo L-Vibe bundled Python was not found. Install L-Vibe first.
+set "NED_PY=%LOCALAPPDATA%\Programs\Ned\resources\runtime\windows-x64\openviking\python\python.exe"
+if not exist "%NED_PY%" set "NED_PY=%LOCALAPPDATA%\Programs\L-Vibe\resources\runtime\windows-x64\openviking\python\python.exe"
+if not exist "%NED_PY%" (
+  echo Ned bundled Python was not found. Install Ned first.
   pause
   exit /b 1
 )
-"%LVIBE_PY%" -I -B "%~dp0export-openviking-personal.py" %*
-set "LVIBE_EXIT=%ERRORLEVEL%"
-echo EXIT_CODE=%LVIBE_EXIT%
+"%NED_PY%" -I -B "%~dp0export-openviking-personal.py" %*
+set "NED_EXIT=%ERRORLEVEL%"
+echo EXIT_CODE=%NED_EXIT%
 pause
-exit /b %LVIBE_EXIT%
+exit /b %NED_EXIT%

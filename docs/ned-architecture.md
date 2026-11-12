@@ -1,10 +1,10 @@
 # Ned architecture and migration
 
-Status: implementation in progress. This document supersedes the OpenCode Desktop frontend choice. Published L-Vibe 0.2.7 artifacts remain historical builds; they do not contain this transition.
+Status: Windows acceptance candidate; first-launch and skill-registration diagnostics are under investigation. This document supersedes the OpenCode Desktop frontend choice. Published L-Vibe 0.2.7 artifacts remain historical builds; they do not contain this transition.
 
 ## Purpose
 
-Ned provides one offline installation and one settings import for employees who need an AI coding assistant without assembling an IDE, agent, knowledge server and skills themselves. Zed supplies direct editing, navigation and language assistance. A private OpenCode engine supplies agent sessions. The native Ned host owns configuration, approvals, lifecycle and intranet model connections. Aegis, Conductor, the 34 reviewed skills, OpenViking, Serena, Graphify, REA and the selected MCP integrations remain managed components.
+Ned provides one offline installation and one settings import for employees who need an AI coding assistant without assembling an IDE, agent, knowledge server and skills themselves. Zed supplies direct editing, navigation and language assistance. A private OpenCode engine supplies agent sessions. The native Ned host owns configuration, approvals, lifecycle and intranet model connections. Aegis, Conductor, the 36 reviewed skills, OpenViking, Serena, Graphify, REA and the selected MCP integrations remain managed components.
 
 ```mermaid
 flowchart LR
@@ -13,6 +13,7 @@ flowchart LR
   Bridge --> Host[Ned native host]
   Host --> Engine[Private OpenCode engine]
   Engine --> Broker[Guarded host tools]
+  Broker --> Desktop[Approved native agent-desktop UIA]
   Broker --> Project[Selected project]
   Broker --> Knowledge[Private OpenViking]
   Broker --> Packs[Aegis / Conductor / bundled skills]
@@ -30,6 +31,10 @@ flowchart LR
 - Manual editing and saving in Zed follows normal IDE behavior. Agent edits still pass native approval, base-content checks and snapshots. Unsaved editor buffers must be checked before agent writes to avoid overwriting user changes.
 - Commands remain blocked except explicitly implemented, approved build tools. Detect installed VS2017/VS2019 MSBuild, inspect solution configurations, then freeze executable, arguments, working directory and environment for approval. No automatic SDK installation or retargeting. Own child processes through Windows Job Objects and confirm cancellation.
 - LLM queue waits have no default elapsed-time deadline. Explicit user cancellation remains available. Infrastructure startup/health checks are separate from model generation waits.
+
+## Desktop automation
+
+The user explicitly expanded the original desktop-exclusion scope. Native agent-desktop 1.2.0 is bundled, with 18 reviewed host tools. Every observation and action has separate native approval; file auto-approval does not apply. Ref ownership is bound to engine session/project/window/process identity. Global input, arbitrary app launch, clipboard, terminal/system/managed editor/approval windows, raw MCP and trace export are unavailable. See [agent-desktop](agent-desktop.md).
 
 ## Packaging and name
 

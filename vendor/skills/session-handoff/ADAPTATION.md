@@ -4,7 +4,7 @@ Upstream: Ned original guidance
 
 Original authors: Ned contributors
 
-Commit: 0.3.0
+Commit: 0.3.1
 
 License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by Ned contributors.
 

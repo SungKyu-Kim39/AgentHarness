@@ -102,7 +102,9 @@ test('shutdown revokes even a late approval without uploading a private archive'
 test('the offline exporter only calls the selected local export API and never overwrites output', async t => {
   const f = await fixture(t); const pack = await readFile(f.archive); let calls = 0;
   const server = createServer(async (req, res) => {
-    calls++; assert.equal(req.method, 'POST'); assert.equal(req.url, '/api/v1/pack/export');
+    calls++;
+    if (req.method === 'GET') { assert.ok(req.url?.startsWith('/api/v1/fs/stat?')); assert.equal(req.headers.authorization, 'Bearer synthetic-local-key'); res.writeHead(200).end('{}'); return; }
+    assert.equal(req.method, 'POST'); assert.equal(req.url, '/api/v1/pack/export');
     assert.equal(req.headers.authorization, 'Bearer synthetic-local-key');
     let text = ''; for await (const chunk of req) text += chunk;
     assert.deepEqual(JSON.parse(text), { uri: rootURI, include_vectors: true });
@@ -122,5 +124,21 @@ except ValueError: print('REJECTED')
   assert.deepEqual(await readFile(out), pack); assert.ok((await readFile(out+'.sha256', 'utf8')).includes('exported.ovpack'));
   assert.equal((await run(base)).stdout.trim(), 'REJECTED');
   assert.equal((await run('http://external.invalid:1935')).stdout.trim(), 'REJECTED');
-  assert.equal(calls, 1);
+  assert.equal(calls, 2);
+});
+
+test('legacy export separates auth and pack HTTP failures, supports explicit no-vector mode and removes partial output',async t=>{
+ const f=await fixture(t);let failAt='auth';const calls:any[]=[];
+ const server=createServer(async(req,res)=>{calls.push(req.method);if(req.method==='GET'){res.writeHead(failAt==='auth'?401:200).end('{}');return;}let raw='';for await(const b of req)raw+=b;assert.equal(JSON.parse(raw).include_vectors,false);res.writeHead(500).end('private server detail');});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise<void>(r=>{server.closeAllConnections();server.close(()=>r());}));
+ const base='http://127.0.0.1:'+(server.address() as any).port,out=path.join(f.root,'failed.ovpack');
+ const code=`import importlib.util,sys,urllib.error,os
+spec=importlib.util.spec_from_file_location('exporter',sys.argv[1]);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+try:m.export_user(sys.argv[2],'synthetic-local-key','default','default',sys.argv[3],include_vectors=False)
+except urllib.error.HTTPError as e:print(e.export_stage, e.code)
+print(os.path.exists(sys.argv[3]),os.path.exists(sys.argv[3]+'.partial'))
+`;
+ const run=()=>execute('python3',['-I','-B','-c',code,path.resolve('distribution/export-openviking-personal.py'),base,out]);
+ assert.match((await run()).stdout,/EXPORT_PREFLIGHT 401\nFalse False/);assert.deepEqual(calls,['GET']);
+ failAt='pack';assert.match((await run()).stdout,/EXPORT_PACK 500\nFalse False/);assert.deepEqual(calls,['GET','GET','POST']);
 });

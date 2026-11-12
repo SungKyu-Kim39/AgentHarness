@@ -38,7 +38,7 @@ test('real pinned OpenViking registers default skill packages, restarts without 
     const deadline = Date.now() + 240000;
     while (Date.now() < deadline && ['pending', 'registering'].includes(viking.state().skills?.status ?? '')) await new Promise(resolve => setTimeout(resolve, 100));
     assert.equal(viking.state().skills?.status, 'ready', JSON.stringify(viking.state().skills) + '\n' + diagnostics.slice(-12000));
-    assert.equal(viking.state().skills?.registered, 34);
+    assert.equal(viking.state().skills?.registered, 36);
   };
   await waitForSkills();
   const afterFirstImport = requests.length;

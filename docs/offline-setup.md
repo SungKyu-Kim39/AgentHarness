@@ -1,8 +1,8 @@
 # Ned 폐쇄망 설치와 사용
 
-대상은 Windows 10 1903 이상 / Windows 11 22H2 이상 x64이다. 실제 사내 OS·보안 정책에서의 수용 결과는 [검증 상태](validation-0.3.0.md)에서 확인한다.
+대상은 Windows 10 1903 이상 / Windows 11 22H2 이상 x64이다. 실제 사내 OS·보안 정책에서의 수용 결과는 [검증 상태](validation-0.3.1.md)에서 확인한다.
 
-1. 반입용 `Ned-0.3.0-windows-x64.tgz`를 새 폴더에 압축 해제한다.
+1. 반입용 `Ned-0.3.1-windows-x64.tgz`를 새 폴더에 압축 해제한다.
 2. 기존 L-Vibe와 Zed를 완전히 종료한 뒤 포함된 Ned 설치 EXE를 실행한다. 일반 사용자 설치이며 관리자 권한을 요구하지 않는다.
 3. 처음 설치하고 저장 설정이 없으면 열린 JSON을 편집한다. 여러 LLM은 `providers`, 임베딩 한 개는 `openViking.embedding`에 입력한다. 끝 쉼표와 Markdown 코드 표시를 넣지 않는다.
 4. Ned를 실행하고 프로젝트 폴더를 선택한다. Zed에서 Ctrl+Shift+A로 Ned 대화를 연다. 모델은 대화의 모델 선택 항목에서 선택한다.

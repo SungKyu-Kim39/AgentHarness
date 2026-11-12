@@ -1,4 +1,4 @@
-> Ned 0.3.0 기준: Zed 편집기와 전용 OpenCode 엔진을 사용한다. 이전 Windows 실행 증거는 승계 주장하지 않으며 [현재 검증 상태](validation-0.3.0.md)를 함께 확인한다.
+> Ned 0.3.1 기준: Zed 편집기와 전용 OpenCode 엔진을 사용한다. 이전 Windows 실행 증거는 승계 주장하지 않으며 [현재 검증 상태](validation-0.3.1.md)를 함께 확인한다.
 
 # Ned Windows diagnostics
 

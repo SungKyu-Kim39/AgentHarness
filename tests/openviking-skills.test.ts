@@ -75,3 +75,10 @@ test('tampered bundles and cancellation cannot be marked as registered', async t
   const abort = new AbortController(); abort.abort(); await assert.rejects(registerBundledSkills({ ...o, signal: abort.signal })); assert.equal(server.writes.length, 0);
   await writeFile(path.join(f.bundle, 'cpp-testing/SKILL.md'), 'tampered'); await assert.rejects(registerBundledSkills(o), /무결성/); assert.equal(server.writes.length, 0);
 });
+
+test('skill failures expose only stage, fixed code and HTTP status and remain retryable',async t=>{
+ const f=await fixture(t),server=await fakeServer(f.bundle);const o=options(f,server);
+ const result=await registerBundledSkills({...o,transport:async(route,opts)=>{if(opts?.method==='POST' && !(opts.body instanceof FormData))throw Object.assign(new Error('unauthorized secret-key https://private'),{status:401});return server.transport(route,opts);}});
+ assert.equal(result.status,'error');assert.equal(result.errors?.length,2);assert.ok(result.errors?.every(e=>e.stage==='import'&&e.code==='OV_AUTH'&&e.httpStatus===401));
+ assert.ok(!JSON.stringify(result).includes('secret-key'));assert.equal((await registerBundledSkills(o)).status,'ready');
+});

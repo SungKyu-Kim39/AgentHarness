@@ -4,6 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { readFile, mkdir, access } from 'node:fs/promises';
 import path from 'node:path';
 import { prepareNative, getRuntime, replaceConfiguration } from '../native-control';
+import { recordEditorExit, checkEditorFiles } from './editor-startup';
 import { AgentOwner } from './owner';
 import { EditorNetwork, prepareEditor } from './profile';
 import { migrateLegacy, migrationNeedsBootstrap } from './migration';
@@ -35,7 +36,7 @@ async function shutdown() {
   quitting = true;
   try {
     // Ask the editor to close normally; its own close UI protects unsaved buffers.
-    if (editor?.exitCode === null) throw new Error('편집기에서 저장을 확인한 뒤 창을 닫아 주세요. 편집기 종료와 함께 Ned 서비스도 종료됩니다.');
+    if (editor && editor.exitCode === null && editor.signalCode === null) throw new Error('편집기에서 저장을 확인한 뒤 창을 닫아 주세요. 편집기 종료와 함께 Ned 서비스도 종료됩니다.');
     await owner?.close(); await getRuntime().close(); await network.close();
     closed = true; tray?.destroy();
   } catch (error) {
@@ -62,6 +63,7 @@ async function start() {
     const running = await new Promise<string>((resolve, reject) => execFile(path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32/tasklist.exe'), ['/FI', 'IMAGENAME eq Zed.exe', '/FO', 'CSV', '/NH'], { windowsHide: true, timeout: 10000 }, (error, stdout) => error ? reject(error) : resolve(stdout)));
     if (/"Zed.exe"/i.test(running)) throw new Error('기존 Zed를 완전히 종료한 뒤 Ned를 실행하세요. 개인 편집기 인스턴스에 연결하지 않습니다.');
   }
+  await checkEditorFiles(root, resources);
   const approve = async (message: string, detail: string, signal?: AbortSignal) => {
     if (detail.length > 60000) return false;
     const result = await dialog.showMessageBox({ type: 'question', title: 'Ned 승인', message, detail,
@@ -117,8 +119,9 @@ async function start() {
     { label: 'OpenViking / 기본 스킬 등록 상태', click: async () => {
       const state = runtime.status().knowledge, skills = state?.skills;
       await dialog.showMessageBox({ title: 'Ned 지식 서비스', message: skills ? `OpenViking 스킬 ${skills.registered}/${skills.total} · ${skills.status}` : `OpenViking ${state?.status ?? '설정 필요'}`,
-        detail: skills?.message ?? '개인 대화는 자동 업로드하지 않습니다.' });
+        detail: (skills?.current ? skills.current.id + ' · ' + skills.current.stage + '\n' : '') + (skills?.message ?? '개인 대화는 자동 업로드하지 않습니다.') + '\n진단: %APPDATA%\\Ned\\openviking\\skills-status.json / model-status.json' });
     } },
+    { label: 'OpenViking 기본 스킬 등록 재확인', click: async () => { try { await runtime.retryKnowledgeSkills(); } catch (error) { await dialog.showMessageBox({ title: 'Ned 스킬', message: errorMessage(error) }); } } },
     { label: '설정 JSON 가져와 교체 (편집기 종료 후 재실행)', click: async () => {
       const result = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
       if (result.canceled) return;
@@ -136,15 +139,21 @@ async function start() {
     { label: '종료 안내', click: () => { void dialog.showMessageBox({ title: 'Ned 종료', message: 'Zed 편집기에서 파일을 저장하고 모든 창을 닫으면 OpenCode·OpenViking과 함께 종료됩니다.' }); } },
   ]));
   editor = spawn(binary, [...(process.platform === 'win32' ? ['--foreground'] : []), '--user-data-dir', profile.data, project], { cwd: project, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
-  // Upstream diagnostic streams are not persisted: project text may occur there.
-  editor.stdout?.on('data', () => {}); editor.stderr?.on('data', () => {});
-  let started = false;
-  const notice = setTimeout(() => { started = true; }, 3000);
-  editor.once('error', () => { clearTimeout(notice); void dialog.showMessageBox({ type: 'error', title: 'Ned 편집기', message: '번들 Zed를 실행할 수 없습니다. 설치 리소스와 OS 요구사항을 확인하세요.' }).then(() => shutdown()).then(() => app.quit()).catch(() => {}); });
-  editor.once('exit', () => {
-    clearTimeout(notice);
+  const startedAt = Date.now(); let diagnostic = '', spawnError: string | undefined;
+  // Bounded in-memory classification; upstream text is never saved or displayed.
+  const collect = (bytes: Buffer) => { diagnostic = (diagnostic + bytes.toString()).slice(-65536); };
+  editor.stdout?.on('data', collect); editor.stderr?.on('data', collect);
+  editor.once('error', error => { spawnError = (error as NodeJS.ErrnoException).code; });
+  // close fires once after either a failed spawn or process exit and stream closure.
+  editor.once('close', (code, signal) => {
     const complete = async () => {
-      if (!started) await dialog.showMessageBox({ type: 'warning', title: 'Ned 편집기', message: '편집기가 바로 종료되었습니다. 개인 Zed가 실행 중이면 완전히 종료한 뒤 Ned를 다시 실행하세요.' });
+      const report = await recordEditorExit(root, binary, profile.data, profile.env, startedAt, code, signal, diagnostic, spawnError).catch(() => undefined);
+      if (spawnError || code !== 0 || signal || Date.now() - startedAt < 3000) {
+        await dialog.showMessageBox({ type: 'warning', title: 'Ned 편집기 시작 진단',
+          message: '편집기가 종료되었습니다. 실제 종료 상태를 확인해야 합니다.',
+          detail: JSON.stringify(report ?? { code: 'EDITOR_DIAGNOSTIC_WRITE_FAILED' }, null, 2) + '\n진단 파일: %APPDATA%\\Ned\\editor-startup-status.json\n개인 Zed 실행 여부만으로 원인을 단정하지 않습니다. 진단 파일에는 설정·키·코드·원본 로그가 포함되지 않습니다.' });
+      }
+      editor = undefined;
       await shutdown(); app.quit();
     };
     void complete().catch(() => {});

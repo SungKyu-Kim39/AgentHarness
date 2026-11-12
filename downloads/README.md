@@ -1,3 +1,13 @@
+## OpenViking 내보내기 도구 수정
+
+[Ned-openviking-export-fix-1.tgz](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-openviking-export-fix-1.tgz) · [SHA-256](Ned-openviking-export-fix-1.tgz.sha256)
+
+기존 Ned/L-Vibe에서도 실행할 수 있는 작은 도구 묶음이다. 새 폴더에 압축 해제하고 `EXPORT_PERSONAL.cmd`를 실행한다. **기존 로컬 OpenViking 서버의 키**로 인증한다. `EXPORT_PACK HTTP_500`이 벡터 내보내기에서 발생하면 `EXPORT_PERSONAL_NO_VECTORS.cmd`를 명시적으로 선택할 수 있다. 원본 자료를 변경하거나 자동 재시도하지 않는다. 자세한 내용은 [이관 안내](../docs/openviking-personal-migration.md)를 따른다.
+
+Ned 0.3.1 소스는 작업 중이며, 아래 0.3.0 설치 파일에 새 변경이 포함됐다는 뜻은 아니다.
+
+---
+
 # Ned 다운로드
 
 **Ned 0.3.0 · Zed 기반 전환 검증 후보**이다. Windows 실제 설치·화면·사내 서버·MSBuild·외부망 차단 수용은 미완료이며 1.0 완료를 의미하지 않는다.

@@ -40,7 +40,7 @@ export function editorSettings(executable: string, agent: string, descriptor: st
 export async function prepareEditor(root: string, executable: string, resources: string, descriptor: string, proxy: string) {
   const data = path.join(root, 'editor'), home = path.join(data, 'home');
   await mkdir(path.join(data, 'config'), { recursive: true, mode: 0o700 });
-  await mkdir(home, { recursive: true, mode: 0o700 });
+  for (const directory of ['home', 'roaming', 'local', 'config-home', 'data', 'cache', 'state', 'tmp']) await mkdir(path.join(data, directory), { recursive: true, mode: 0o700 });
   const clangd = process.platform === 'win32' ? path.join(resources, 'runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe') : undefined;
   // Managed security/agent settings are regenerated; appearance changes have a separate allowlist.
   const appearance = await readFile(path.join(data, 'appearance.json'), 'utf8').then(JSON.parse).catch(() => readFile(path.join(data, 'config/settings.json'), 'utf8').then(JSON.parse).catch(() => ({})));
@@ -51,12 +51,14 @@ export async function prepareEditor(root: string, executable: string, resources:
     { context: 'Workspace', bindings: { 'ctrl-shift-a': ['agent::NewExternalAgentThread', { agent: 'Ned' }] } },
   ], null, 2) + '\n');
   const env: NodeJS.ProcessEnv = {};
-  for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'LANG', 'LC_ALL', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'])
+  for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'SystemDrive', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432', 'ProgramData', 'PATHEXT', 'LANG', 'LC_ALL', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'])
     if (process.env[key]) env[key] = process.env[key];
   return { data, env: { ...env,
     HOME: home, USERPROFILE: home, APPDATA: path.join(data, 'roaming'), LOCALAPPDATA: path.join(data, 'local'),
     XDG_CONFIG_HOME: path.join(data, 'config-home'), XDG_DATA_HOME: path.join(data, 'data'), XDG_CACHE_HOME: path.join(data, 'cache'), XDG_STATE_HOME: path.join(data, 'state'),
-    PATH: process.platform === 'win32' ? path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32') : '/usr/bin:/bin',
+    PATH: process.platform === 'win32' ? ['System32', '', 'System32/Wbem', 'System32/WindowsPowerShell/v1.0'].map(p => path.join(process.env.SystemRoot ?? 'C:\\Windows', p)).join(path.delimiter) : '/usr/bin:/bin',
+    ...(process.platform === 'win32' ? { ComSpec: path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32/cmd.exe') } : {}),
+    TEMP: path.join(data, 'tmp'), TMP: path.join(data, 'tmp'),
     HTTP_PROXY: proxy, HTTPS_PROXY: proxy, ALL_PROXY: proxy, http_proxy: proxy, https_proxy: proxy, all_proxy: proxy, NO_PROXY: '', no_proxy: '',
     DO_NOT_TRACK: '1', OTEL_SDK_DISABLED: 'true',
   } };
