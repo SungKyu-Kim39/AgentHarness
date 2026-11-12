@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-11-12T09:02:17.070735+00:00",
+  "verification": "public unauthenticated ranged download",
+  "files": [
+    {
+      "name": "Ned-0.3.2-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.2-win-x64.exe",
+      "status": 206,
+      "contentRange": "bytes 0-4095/1176920431",
+      "responseContentLength": "4096",
+      "expectedWholeBytes": 1176920431,
+      "bytesRead": 4096,
+      "binarySignatureVerified": true,
+      "wholeRemoteChecksumPerformed": false
+    },
+    {
+      "name": "Ned-0.3.2-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.2-windows-x64.tgz",
+      "status": 206,
+      "contentRange": "bytes 0-4095/1173693834",
+      "responseContentLength": "4096",
+      "expectedWholeBytes": 1173693834,
+      "bytesRead": 4096,
+      "binarySignatureVerified": true,
+      "wholeRemoteChecksumPerformed": false
+    }
+  ],
+  "product": "Ned",
+  "version": "0.3.2",
+  "sourceCommit": "4c2d55e54bef1bdba577cda3833d1bc402e0299b",
+  "release": {
+    "isDraft": false,
+    "isPrerelease": true,
+    "tagName": "v0.3.2",
+    "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.2"
+  }
+}

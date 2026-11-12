@@ -1,5 +1,7 @@
 # Ned 0.3.2 Windows x64
 
+[GitHub 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.2) · [공개 다운로드 확인](Ned-0.3.2-public-verification.json)
+
 - [폐쇄망 반입 TGZ · 약 1.17GB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.2-windows-x64.tgz)
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.2-win-x64.exe)
 - [TGZ SHA-256](Ned-0.3.2-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.2-win-x64.exe.sha256) · [설치기 추출 감사](Ned-0.3.2-installer-audit.json) · [묶음 검증](Ned-0.3.2-bundle-verification.json) · [검사 기록](Ned-0.3.2-validation.json)
