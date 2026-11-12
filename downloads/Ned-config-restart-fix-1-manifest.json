@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "targetVersion": "0.3.1",
+  "hostVersion": "0.3.2",
+  "fixId": "ned-config-restart-1",
+  "sourceCommit": "e766c333513cb3ce02c2c79e4bbe8cf1b034b82a",
+  "exeSha256": "208c6c7754a2d95ebc053f91f4354052b3bf12b67df6aa230b1c299b1840d354",
+  "baselineAsarSha256": [
+    "fb10ba3a99479c22a24dbefc40f3b83d156ad1112d0e2ab15c023b5d2660d558",
+    "43478862038e45935aa805c2f8ffaf26fe2971d2e15202c2f2521f6486c2a753"
+  ],
+  "updatedAsarSha256": "2759e192f297446123fbda4a130d7a1b054f856fa6566d7f60289143c3e35e78",
+  "integrityFuseDisabledInOriginalBinary": true,
+  "changes": [
+    "Validated config import with normal editor close and automatic host relaunch",
+    "Private standard Windows AppData layout",
+    "Blank launchpad with project scope approval",
+    "Windows console supervisor preserves ACP process lifetime through PowerShell"
+  ],
+  "archiveBytes": 4204178,
+  "archiveSha256": "6f546f125f3e7b15d023efd2e24f5d367f72c22642cf6e975036a71b7a80ba2f"
+}

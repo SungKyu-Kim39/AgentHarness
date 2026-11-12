@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "sourceCommit": "e766c333513cb3ce02c2c79e4bbe8cf1b034b82a",
+  "os": "linux",
+  "archiveSha256": "6f546f125f3e7b15d023efd2e24f5d367f72c22642cf6e975036a71b7a80ba2f",
+  "checks": {
+    "typecheck": true,
+    "build": true,
+    "focusedTests": 16,
+    "focusedPassed": 16,
+    "actualElectronViaConsoleSupervisor": true,
+    "archiveMembers": 4253,
+    "unchangedFiles": 4199,
+    "unchangedLicenses": 6,
+    "changed": [
+      "main.cjs"
+    ]
+  },
+  "windowsAcceptance": false,
+  "windowsAutomaticRestart": false,
+  "windowsPatchedAcpChat": false,
+  "deploymentEvidence": {
+    "earlierStartupPatchLaunchConfirmed": true,
+    "directAcpInitializeConfirmed": true,
+    "powershellAcpEarlyExitCode": 0
+  }
+}
