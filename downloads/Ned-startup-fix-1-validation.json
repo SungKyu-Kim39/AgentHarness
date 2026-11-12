@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "fixId": "ned-startup-1",
+  "sourceCommit": "21e0cead18ee0ea59d7db17ff5f5abbd96765d9c",
+  "executionOS": "Linux",
+  "focusedTests": {
+    "passed": 10,
+    "failed": 0
+  },
+  "actualOriginalFiles": {
+    "apply": true,
+    "idempotent": true,
+    "rollback": true,
+    "originalStagingUnchanged": true
+  },
+  "windowsEvidence": {
+    "currentKnownFolderLookup": "0x80070003",
+    "panicSource": "crates/paths/src/paths.rs:204:18",
+    "standardLocalAndRoamingLookup": "0x00000000",
+    "systemSpecsNativeExit": "0xc0000005",
+    "normalGuiAfterPatch": "not-yet-confirmed"
+  }
+}

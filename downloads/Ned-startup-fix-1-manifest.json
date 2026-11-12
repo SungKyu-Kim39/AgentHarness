@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "targetVersion": "0.3.1",
+  "fixId": "ned-startup-1",
+  "sourceCommit": "21e0cead18ee0ea59d7db17ff5f5abbd96765d9c",
+  "exeSha256": "208c6c7754a2d95ebc053f91f4354052b3bf12b67df6aa230b1c299b1840d354",
+  "baselineAsarSha256": "fb10ba3a99479c22a24dbefc40f3b83d156ad1112d0e2ab15c023b5d2660d558",
+  "updatedAsarSha256": "43478862038e45935aa805c2f8ffaf26fe2971d2e15202c2f2521f6486c2a753",
+  "integrityFuseDisabledInOriginalBinary": true,
+  "changes": [
+    "Windows AppData directories within private USERPROFILE",
+    "Launchpad without mandatory folder selection",
+    "Sanitized Rust panic source locations"
+  ],
+  "archiveBytes": 4219995,
+  "archiveSha256": "23354b572fa7eead31df52c1cc72db67658730127ca8eaa2fdab26bd59a9cc87"
+}
