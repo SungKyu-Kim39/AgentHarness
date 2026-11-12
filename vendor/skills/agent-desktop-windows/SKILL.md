@@ -3,7 +3,7 @@ name: agent-desktop-windows
 description: "Windows UIA 지원 범위·권한·대화형 세션·안전한 재관찰"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

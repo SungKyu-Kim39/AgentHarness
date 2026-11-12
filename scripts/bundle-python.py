@@ -45,8 +45,18 @@ def main():
                 raise RuntimeError('Python runtime hash mismatch: ' + entry['path'])
         print('Verified Python runtime:', len(data['files']), 'files')
         return
+    if mode == 'refresh':
+        # Refresh only reviewed launcher scripts and their hashes; never install/download packages.
+        lock = json.loads(LOCK.read_text())
+        for script in ['openviking-launch.py', 'analysis-worker.py', 'rea-supervisor.py', 'sidecar-supervisor.py']:
+            source = Path('scripts') / script
+            if source.exists(): shutil.copyfile(source, ROOT / script.replace('openviking-launch.py', 'launch.py'))
+        files = [{'path': p.relative_to(ROOT).as_posix(), 'sha256': digest(p.read_bytes())} for p in sorted(ROOT.rglob('*')) if p.is_file() and p.name != 'manifest.json' and '__pycache__' not in p.parts]
+        save_json(ROOT / 'manifest.json', {'schemaVersion': 1, 'version': '0.5.4', 'graphifyVersion': '0.9.105', 'files': files})
+        lock['manifestSha256'] = digest((ROOT / 'manifest.json').read_bytes()); save_json(LOCK, lock)
+        print('Refreshed reviewed Python launchers:', len(files), 'files'); return
     if mode != 'fetch':
-        raise RuntimeError('Usage: bundle-python.py fetch|verify')
+        raise RuntimeError('Usage: bundle-python.py fetch|refresh|verify')
     CACHE.mkdir(parents=True, exist_ok=True)
     if LOCK.exists():
         lock = json.loads(LOCK.read_text())

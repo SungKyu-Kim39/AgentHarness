@@ -1687,7 +1687,7 @@
       "sha256": "36088dd9c76c992f6e745fc20f94aca873f69c3331ce25ea3df36835cc4af73f"
     }
   },
-  "manifestSha256": "002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1",
+  "manifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
   "nativePackages": {
     "msvc-runtime": {
       "version": "14.51.36231",

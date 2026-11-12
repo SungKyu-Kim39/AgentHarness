@@ -40,7 +40,7 @@ export class ModelGateway {
           ...(typeof osCode === 'string' && /^[A-Z0-9_]{1,32}$/.test(osCode) ? { osError: osCode } : {}) });
         upstream?.destroy();
         if (res.destroyed) return;
-        const body = JSON.stringify({ error: { message: message + ' [' + code + ']', type: 'l_vibe_gateway', code } });
+        const body = JSON.stringify({ error: { message: message + ' [' + code + ']', type: 'ned_gateway', code } });
         if (res.headersSent) { res.end('data: ' + body + '\n\n'); }
         else res.writeHead(http, { 'Content-Type': 'application/json' }).end(body);
       };

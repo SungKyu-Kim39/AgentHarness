@@ -15,7 +15,7 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "941873a93fca670fc16362de192521f2b5ca27675fb55f18c2112cde86ca9089",
-          "bundledSha256": "9238803827fff5ab1ad43c61bdb3684c0b862a870b46340666c91d72e5824649"
+          "bundledSha256": "cb377973dac8afd4981011c29d976b8993a2d427d9dfcf13ac9331cfce1c207a"
         },
         {
           "path": "references/commands-system.md",
@@ -26,7 +26,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "dc081bd96521d5555331baaf44d831c38bde544f634c68bf91ec6eaf5e77def9"
+          "sha256": "ac52d0fa1b829c429cca03cc716de095118a6d1e4a7e03eec3ef153b752bb3cb"
         },
         {
           "path": "LICENSE",
@@ -50,7 +50,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "9238803827fff5ab1ad43c61bdb3684c0b862a870b46340666c91d72e5824649"
+          "sha256": "cb377973dac8afd4981011c29d976b8993a2d427d9dfcf13ac9331cfce1c207a"
         }
       ]
     },
@@ -67,13 +67,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "6d1ce79a23caf84a5ef75695a4896a1b8bdde7d2b4ff55a655c20118b38e189c",
-          "bundledSha256": "84f2ed29be90fd4389b9b74c7b1e1909be11f419260238e2ed6a37f27ff5b59b"
+          "bundledSha256": "775980e91d486d69341b3c9ebfd40555b64f1c4646e7ffdd2dc901e11ece0769"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "6aa50d82858bda40283f33fd18ab6dc33e771aefa6c6f8521f00193e4329fcbc"
+          "sha256": "c0286129544c76cd95a675ea7aea0e7e4ccf68c460fdebcaa1c3468b8ff04924"
         },
         {
           "path": "LICENSE",
@@ -97,7 +97,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "84f2ed29be90fd4389b9b74c7b1e1909be11f419260238e2ed6a37f27ff5b59b"
+          "sha256": "775980e91d486d69341b3c9ebfd40555b64f1c4646e7ffdd2dc901e11ece0769"
         }
       ]
     },
@@ -1098,18 +1098,18 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "53017f862c526df6080210a1a00e6678c2cd5382b5d1a51026bf3b0bde7f7ed2",
-          "bundledSha256": "a769488c5a0e0d6d40cc3e4185e9ba9e4385520f829bf4417aaf1c9a6199f8c6"
+          "bundledSha256": "8b8dad8673688aff30902bfb8f6f7df3c227927441f9ceeb81b1071e42dcff50"
         },
         {
           "path": "references/build-tooling.md",
           "upstreamSha256": "337ae8b622628fafae86f89d914561ee6176b8d74073db2d5580e91ddd240f30",
-          "bundledSha256": "dbab0e785275d5c592379e5c8483f45a2db98920e8ea0d87231c076a563e568e"
+          "bundledSha256": "e35a9c60f5f99fefd48c1db44c5ef68c6d1c93122ac8ad64c4b3ba0869551b71"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "37b800361a5a63b030a92fd8d39c7f5b377fd6c881a8c223388da8d4b7565966"
+          "sha256": "e5a89707e8951e7ff48ba0d7b7cc50b57048466e3146e652ba27ea8b1618bc1f"
         },
         {
           "path": "LICENSE",
@@ -1117,7 +1117,7 @@
         },
         {
           "path": "references/build-tooling.md",
-          "sha256": "dbab0e785275d5c592379e5c8483f45a2db98920e8ea0d87231c076a563e568e"
+          "sha256": "e35a9c60f5f99fefd48c1db44c5ef68c6d1c93122ac8ad64c4b3ba0869551b71"
         },
         {
           "path": "references/concurrency.md",
@@ -1137,7 +1137,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "a769488c5a0e0d6d40cc3e4185e9ba9e4385520f829bf4417aaf1c9a6199f8c6"
+          "sha256": "8b8dad8673688aff30902bfb8f6f7df3c227927441f9ceeb81b1071e42dcff50"
         }
       ]
     },
@@ -1154,13 +1154,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "a92fb5da9b7e3cd1b4dee185b3eb9d0a55352af6396bf996d2eef72d683784df",
-          "bundledSha256": "e5e6778715a9ca1c5c092d7c33d2c126662d6eeb6431a1e81ebafdffb6b6b62c"
+          "bundledSha256": "b05add94b78ef263a96cd9cb406fd88680511add407ffc9abd914b7dfd3757de"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "ef7e7d7f9e50166e58ffa780decff5f84d5499ec887d2c9a4bd4c6ae6562a5f3"
+          "sha256": "646ed138eacc24f43650dc6b2681ee6f3d3f6ac1591ee8c13ec01bc4e478a922"
         },
         {
           "path": "LICENSE",
@@ -1168,7 +1168,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "e5e6778715a9ca1c5c092d7c33d2c126662d6eeb6431a1e81ebafdffb6b6b62c"
+          "sha256": "b05add94b78ef263a96cd9cb406fd88680511add407ffc9abd914b7dfd3757de"
         }
       ]
     },
@@ -1185,7 +1185,7 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "3214e018c4aeedb5a4710f24979fef8f959a799ebb8888288e80dbe6bd2f7a1f",
-          "bundledSha256": "b4a8d5045b06d2e3d299ccdd49de631e68701aa6e6847a73e87f7254edfcb127"
+          "bundledSha256": "8832528bb6c8c32ef068a04ec52d04479a8edef9127d0d79fd982a26b391cd5e"
         },
         {
           "path": "references/legacy-testing.md",
@@ -1196,7 +1196,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "0c3df8eb7039f7b9cf4c93cc1aa01136d9fad5db546f1abefd975c75d3ea39d0"
+          "sha256": "2a777dc29896a27e396ad40654c393a28a8527f97ba154354764b2cd44c820cb"
         },
         {
           "path": "LICENSE",
@@ -1224,7 +1224,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "b4a8d5045b06d2e3d299ccdd49de631e68701aa6e6847a73e87f7254edfcb127"
+          "sha256": "8832528bb6c8c32ef068a04ec52d04479a8edef9127d0d79fd982a26b391cd5e"
         }
       ]
     },
@@ -1241,13 +1241,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "ef88873a4b0d0fe155c0a196ffecd5c7b5e28edd00fbbdb5c1fd2ca8fd0eb6f0",
-          "bundledSha256": "5914dbf366e121aff29166532576d481c423336a62d435f359f52e2d3d2c9303"
+          "bundledSha256": "957db18fffe1d866b38dabb145ec41cda0cfbf8f858290c52e6032123e4ddce5"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "ba0eb7139d683559d29cc0f943447d1642d79f946ac284a7d6d665f2ed4c8f18"
+          "sha256": "bf9413e3b0e1e0cc597754561024b530355f8189a477e7f9bfbfcdcf7207fb32"
         },
         {
           "path": "LICENSE",
@@ -1255,7 +1255,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "5914dbf366e121aff29166532576d481c423336a62d435f359f52e2d3d2c9303"
+          "sha256": "957db18fffe1d866b38dabb145ec41cda0cfbf8f858290c52e6032123e4ddce5"
         }
       ]
     },
@@ -1272,13 +1272,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "250e464413a13c0eb93cc73447b423df1f9aa8e4f80e5e68c41f895b2c33e352",
-          "bundledSha256": "2493203a6f5de0cd5ba3ff6cd362e21f9d24c011163c4643b0218ce8003c4009"
+          "bundledSha256": "65302f1869b4732323931592f61e4a33c80792d99622eb39e4c4e69651c33d15"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "46c3a865353a0c44d53d76e5b144e6faa6c4e282568c6f67ca214d9a2282372d"
+          "sha256": "eff3e5947c19195911624acd74dc8a326c563f5dfdfe885144316e80ecd8a09e"
         },
         {
           "path": "LICENSE",
@@ -1286,7 +1286,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "2493203a6f5de0cd5ba3ff6cd362e21f9d24c011163c4643b0218ce8003c4009"
+          "sha256": "65302f1869b4732323931592f61e4a33c80792d99622eb39e4c4e69651c33d15"
         }
       ]
     },
@@ -1303,13 +1303,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "dad2f1964295eee14a96e06213ce3f60992bbcdc1f37a50c828bbc2e1abd79dd",
-          "bundledSha256": "3fee8e7deda2e233fb4bee6c874893b735db98326bf4e881a4cbe4ef026b049f"
+          "bundledSha256": "9a9218241fa1825ca1ddc2908163487b199a8408416ff144ebc85373317ee84b"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "2b7eae0106306ce3de675d083eb716fe429171b97f43ce916652fcb542c6e29e"
+          "sha256": "43fe01c2814c02511aefb3cb516dd97f07b796512c19ca30c05f18c29d287f71"
         },
         {
           "path": "LICENSE",
@@ -1317,7 +1317,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "3fee8e7deda2e233fb4bee6c874893b735db98326bf4e881a4cbe4ef026b049f"
+          "sha256": "9a9218241fa1825ca1ddc2908163487b199a8408416ff144ebc85373317ee84b"
         }
       ]
     },
@@ -1334,13 +1334,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "5fb7f4d995fc05386a8c04b045f96fd3cb652cbd31fd52d78966f86323b373b8",
-          "bundledSha256": "0213f345282a3818ae5586a2408cb0b9256df0f6b7b7716e8fd7b4a20b1418b1"
+          "bundledSha256": "c0bd714f6068fb1445617516e1e26efc8b65c4f564ae6973f8acd95d60c028fd"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "eb772a0b77855baebf47a6eaed48842c984561b08a5ea0294e62a9cd45490300"
+          "sha256": "1d4ee84e5c0a260a0d8c59407a89f79b47002c4eaf26d323c9003d37887f989b"
         },
         {
           "path": "LICENSE",
@@ -1352,7 +1352,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "0213f345282a3818ae5586a2408cb0b9256df0f6b7b7716e8fd7b4a20b1418b1"
+          "sha256": "c0bd714f6068fb1445617516e1e26efc8b65c4f564ae6973f8acd95d60c028fd"
         }
       ]
     },
@@ -1369,13 +1369,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "79059f17da8b20cdf27327f6de0ea005c73c2c442f48f70688abca4c77cb6f8f",
-          "bundledSha256": "3a5eb5515131a56ddd6be969ae1338960e24f0e65729d09276ae53f4cb051235"
+          "bundledSha256": "3b593f966de40d7167432a4b32c9e65d0bebd920fb246bd515c23899d77e161f"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "a267e5097b24be38e4f45c3835aea5a3aadb1685ad5e0eb8ce8596bd3e5d75a7"
+          "sha256": "78a74e68d9e54f37bd94365defa01588f583756c158191fd5e0310aa529c1554"
         },
         {
           "path": "LICENSE",
@@ -1391,7 +1391,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "3a5eb5515131a56ddd6be969ae1338960e24f0e65729d09276ae53f4cb051235"
+          "sha256": "3b593f966de40d7167432a4b32c9e65d0bebd920fb246bd515c23899d77e161f"
         }
       ]
     },
@@ -1408,7 +1408,7 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "f9af6a8193fc1a9f8ca3c54bb8d19095a5f20c9472ca6d014488bbde50b67da0",
-          "bundledSha256": "dcd1203f29fbea1f309e4d3585809e76dff7e617ca18119db74bc125b1a5e94f"
+          "bundledSha256": "f45d5c06090172618951afc231761672df6c558cc79f71b7a8dba53037ccd86c"
         },
         {
           "path": "reporting.md",
@@ -1419,7 +1419,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "848bc5f20536da2cf126285c2c5de2cab3cf8ee300d3601fc16b7315a3c8a384"
+          "sha256": "c650caa3d620fb6c84f864403ff678414c0a86dea6b51cde716359cb55153bfe"
         },
         {
           "path": "adversarial.md",
@@ -1443,7 +1443,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "dcd1203f29fbea1f309e4d3585809e76dff7e617ca18119db74bc125b1a5e94f"
+          "sha256": "f45d5c06090172618951afc231761672df6c558cc79f71b7a8dba53037ccd86c"
         }
       ]
     },
@@ -1460,13 +1460,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "68b8781a489abc358644d9efdf4bf24998dfae319b4c6d79f2fd5cf07a927aef",
-          "bundledSha256": "b0cec6601a77103f6348232a8c453a74933a2c69aff63115dd86e88bda41fdd7"
+          "bundledSha256": "3bbcc1b3866d77709fe862a560810f7ca67fd0c6784216295ab076c8691fc3b2"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "d8eb65bf6cefb1862bad0a77dd230604ce6076a150e0de24237347250e490deb"
+          "sha256": "9b6fdc4b42a33ba99108c5bd5a4a8689fa90acd731e5ae27ecc3b541b8ed99f6"
         },
         {
           "path": "LICENSE",
@@ -1474,7 +1474,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "b0cec6601a77103f6348232a8c453a74933a2c69aff63115dd86e88bda41fdd7"
+          "sha256": "3bbcc1b3866d77709fe862a560810f7ca67fd0c6784216295ab076c8691fc3b2"
         }
       ]
     },
@@ -1491,13 +1491,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "af7590fa616360259da712b5ede5f79b817beb854c47a465f95774354988e8a2",
-          "bundledSha256": "42c216f3d65d663609e6fb6fb8c4f5ccc48d10f0f74597ffaa6bdfea64bc4cd4"
+          "bundledSha256": "ec3e3883a246ba0243d1b49d2f9ea6aec645ff1875ef4a1933b0102dc7b3f2dd"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "1ba9c47bf135d8a578aee0e30a4a96a4dd27a8c30605fc4f91c9869a7194e60c"
+          "sha256": "56a6afc2725db80d0d4d16ca824e11ede6bd2251a9eab3f58dcae5a9bedd9058"
         },
         {
           "path": "LICENSE",
@@ -1505,7 +1505,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "42c216f3d65d663609e6fb6fb8c4f5ccc48d10f0f74597ffaa6bdfea64bc4cd4"
+          "sha256": "ec3e3883a246ba0243d1b49d2f9ea6aec645ff1875ef4a1933b0102dc7b3f2dd"
         }
       ]
     },
@@ -1522,13 +1522,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "1e424822043480375b80aef9416227b1c8083af749ca536568716265f79ca54b",
-          "bundledSha256": "a6db69fad39ea48d3259c495075d69229c46d57bb22d89062288d596a1d561aa"
+          "bundledSha256": "b91b81561869becde2f1c55e889ebc6cced145c3a368000c652be79b3b968f2d"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "acc5a95fe8e8faad0bbf71a6d979aa5d9ffc6e20df973eecbd64f714be9a77d7"
+          "sha256": "177e01a3c39a1f2f51de475b5dfbfad372c6ff2fa3a68c429460b70b8dd6c2b8"
         },
         {
           "path": "LICENSE",
@@ -1536,7 +1536,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "a6db69fad39ea48d3259c495075d69229c46d57bb22d89062288d596a1d561aa"
+          "sha256": "b91b81561869becde2f1c55e889ebc6cced145c3a368000c652be79b3b968f2d"
         }
       ]
     },
@@ -1553,13 +1553,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "5811e8b3547cda6bc8af118aaf0d7589e8861cdc9facce6372dc78aea99ab87d",
-          "bundledSha256": "a85ed1a8e099c3302823ec8a93e87ce99cff01b97f31866e0b58884944d60b0c"
+          "bundledSha256": "cd4e9d4da1c86e76d0be1358333a7fe95a3dc89a46d6b82cf0b7e0e486dea07f"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "4ca2082fdd9b3d1a381056d2c856c512896d652ff770e110d14130fd563e30c9"
+          "sha256": "e6a8ffa3ae986bb869cc49ae56a742896e11b24bdce714b7fad9dc04688349d3"
         },
         {
           "path": "LICENSE",
@@ -1567,7 +1567,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "a85ed1a8e099c3302823ec8a93e87ce99cff01b97f31866e0b58884944d60b0c"
+          "sha256": "cd4e9d4da1c86e76d0be1358333a7fe95a3dc89a46d6b82cf0b7e0e486dea07f"
         }
       ]
     },
@@ -1584,13 +1584,13 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "91a15cfc144efffcd622b09827362a73993a3ff30e3a78114801832477c9f8a0",
-          "bundledSha256": "64f09a4485f188a1bd61ee924ced6886fecb4e80cc1596e0bf8267dcdc575723"
+          "bundledSha256": "7d87c570977153563a5e468c5eb4cff3370773eb4556f9d1f362d3181d50c440"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "d48a3bbc13113ee7c5b043fb0ebbd5edc2f36bb1cdc9381d6d2c1021662fb25f"
+          "sha256": "972758989132689ae8f22952bdea6421a92baf3cedb41eba93b615cefb63f8b5"
         },
         {
           "path": "LICENSE",
@@ -1598,7 +1598,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "64f09a4485f188a1bd61ee924ced6886fecb4e80cc1596e0bf8267dcdc575723"
+          "sha256": "7d87c570977153563a5e468c5eb4cff3370773eb4556f9d1f362d3181d50c440"
         }
       ]
     },
@@ -1615,7 +1615,7 @@
         {
           "path": "SKILL.md",
           "upstreamSha256": "938a9a9246c6b05657f509e7ab181f1c961dc14f9dcb5d452c574d3e44a39be2",
-          "bundledSha256": "ab3c2d2f057402ac28e9118ad2794c428dfbf8606148cc7d1ff121930235b3ad"
+          "bundledSha256": "da15eb8d388ae74730b4c3287dbd6efa123b78aa9ed4708d3a4f633e2eba48c3"
         },
         {
           "path": "references/sample-size-guide.md",
@@ -1631,7 +1631,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "ce4fa0e2bc704053781dfd4376c560d50dbd9ce6ed391873571434e8cc68ac82"
+          "sha256": "cbf07f448127aaa2ea112901186ae22c078f221190432184191373448fd63d77"
         },
         {
           "path": "LICENSE",
@@ -1647,7 +1647,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "ab3c2d2f057402ac28e9118ad2794c428dfbf8606148cc7d1ff121930235b3ad"
+          "sha256": "da15eb8d388ae74730b4c3287dbd6efa123b78aa9ed4708d3a4f633e2eba48c3"
         }
       ]
     },
@@ -1665,13 +1665,13 @@
           "path": "SKILL.md",
           "upstreamPath": "command.md",
           "upstreamSha256": "d246b026f4f29b5823a9cc857f9edf3d2507002e055e32040cadeaf3b38e0234",
-          "bundledSha256": "634e49c130cf9ecb0865eae8826932693dd44364ed661a016d070382777af13f"
+          "bundledSha256": "3a676d568e7d36f3816eb271806a17d9db7475e07b5e170ee226f3e6ddce4ebc"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "e9c71eed1b4432d6dba0e3c1a5f7b6d711be5d33cd448c728f602251411e8782"
+          "sha256": "05ab2e914d111d6f57d9b27b0554ce691f83d947273db3004cbd40f131b3cdc3"
         },
         {
           "path": "LICENSE",
@@ -1679,7 +1679,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "634e49c130cf9ecb0865eae8826932693dd44364ed661a016d070382777af13f"
+          "sha256": "3a676d568e7d36f3816eb271806a17d9db7475e07b5e170ee226f3e6ddce4ebc"
         }
       ]
     }

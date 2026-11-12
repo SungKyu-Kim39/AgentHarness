@@ -14,4 +14,4 @@ Specific policy: 대상 DB와 버전을 확인하고 실제 백업·복구 절�
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream dad2f1964295eee14a96e06213ce3f60992bbcdc1f37a50c828bbc2e1abd79dd; bundled 3fee8e7deda2e233fb4bee6c874893b735db98326bf4e881a4cbe4ef026b049f
+- SKILL.md: upstream dad2f1964295eee14a96e06213ce3f60992bbcdc1f37a50c828bbc2e1abd79dd; bundled 9a9218241fa1825ca1ddc2908163487b199a8408416ff144ebc85373317ee84b

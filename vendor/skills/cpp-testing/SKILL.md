@@ -3,7 +3,7 @@ name: cpp-testing
 description: "C++ 회귀·특성화·GoogleTest/CTest·sanitizer; 반입된 로컬 도구만 사용"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 
@@ -166,7 +166,7 @@ project(example LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# L-Vibe: use a previously imported local GoogleTest package.
+# Ned: use a previously imported local GoogleTest package.
 # A missing package is an unmet prerequisite, not permission to download.
 find_package(GTest CONFIG REQUIRED)
 

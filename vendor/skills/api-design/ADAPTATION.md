@@ -14,4 +14,4 @@ Specific policy: 실제 사내 API 계약과 서버 제약을 먼저 읽는다. 
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 250e464413a13c0eb93cc73447b423df1f9aa8e4f80e5e68c41f895b2c33e352; bundled 2493203a6f5de0cd5ba3ff6cd362e21f9d24c011163c4643b0218ce8003c4009
+- SKILL.md: upstream 250e464413a13c0eb93cc73447b423df1f9aa8e4f80e5e68c41f895b2c33e352; bundled 65302f1869b4732323931592f61e4a33c80792d99622eb39e4c4e69651c33d15

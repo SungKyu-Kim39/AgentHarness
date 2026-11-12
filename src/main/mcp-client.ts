@@ -41,8 +41,8 @@ export class PrivateMcpClient {
         if (message.jsonrpc !== '2.0') continue;
         if (message.method && message.id !== undefined) {
           const reply = message.method === 'roots/list'
-            ? { jsonrpc: '2.0', id: message.id, result: { roots: [{ uri: pathToFileURL(this.launch.cwd).href, name: 'L-Vibe controlled snapshot' }] } }
-            : { jsonrpc: '2.0', id: message.id, error: { code: -32601, message: 'L-Vibe does not provide sampling, elicitation or execution to MCP servers' } };
+            ? { jsonrpc: '2.0', id: message.id, result: { roots: [{ uri: pathToFileURL(this.launch.cwd).href, name: 'Ned controlled snapshot' }] } }
+            : { jsonrpc: '2.0', id: message.id, error: { code: -32601, message: 'Ned does not provide sampling, elicitation or execution to MCP servers' } };
           child.stdin.write(JSON.stringify(reply) + '\n'); continue;
         }
         const request = this.pending.get(message.id); if (!request) continue;
@@ -51,7 +51,7 @@ export class PrivateMcpClient {
       }
     });
     try {
-      const hello = await this.rpc('initialize', { protocolVersion: '2025-06-18', capabilities: { roots: { listChanged: false } }, clientInfo: { name: 'L-Vibe guarded offline host', version: '0.2.2' } });
+      const hello = await this.rpc('initialize', { protocolVersion: '2025-06-18', capabilities: { roots: { listChanged: false } }, clientInfo: { name: 'Ned guarded offline host', version: '0.2.2' } });
       if (typeof hello?.protocolVersion !== 'string' || !hello.serverInfo) throw new Error('MCP 초기화 응답 오류');
       child.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');
       const catalog = await this.rpc('tools/list', {});

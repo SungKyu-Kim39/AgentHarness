@@ -14,4 +14,4 @@ Specific policy: 승인된 프로젝트의 CSV·JSON·스키마와 사용자가 
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream af7590fa616360259da712b5ede5f79b817beb854c47a465f95774354988e8a2; bundled 42c216f3d65d663609e6fb6fb8c4f5ccc48d10f0f74597ffaa6bdfea64bc4cd4
+- SKILL.md: upstream af7590fa616360259da712b5ede5f79b817beb854c47a465f95774354988e8a2; bundled ec3e3883a246ba0243d1b49d2f9ea6aec645ff1875ef4a1933b0102dc7b3f2dd

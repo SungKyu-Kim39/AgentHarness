@@ -78,7 +78,7 @@ const forbiddenPort = (forbidden.address() as {port: number}).port;
 const page = createServer((req, res) => {
   hits++; res.setHeader('Content-Type', 'text/html; charset=utf-8');
   if (!['GET', 'HEAD'].includes(req.method ?? '')) mutations++;
-  res.end(`<html><title>Offline fixture</title><h1>L-Vibe 로컬 검증</h1><button>계속</button><script>console.error('LOCAL_CONSOLE_FIXTURE');fetch('http://127.0.0.1:${forbiddenPort}/secret').catch(()=>{});fetch('/mutation',{method:'POST'}).catch(()=>{});</script></html>`);
+  res.end(`<html><title>Offline fixture</title><h1>Ned 로컬 검증</h1><button>계속</button><script>console.error('LOCAL_CONSOLE_FIXTURE');fetch('http://127.0.0.1:${forbiddenPort}/secret').catch(()=>{});fetch('/mutation',{method:'POST'}).catch(()=>{});</script></html>`);
 });
 await new Promise<void>(r => page.listen(0, '127.0.0.1', r));
 const pagePort = (page.address() as {port: number}).port;
@@ -113,7 +113,7 @@ try {
   }
   if (phase === 'all' || phase === 'browser') {
   for (const backend of ['playwright', 'devtools']) {
-    const result = await call('browser_check', { url: `http://127.0.0.1:${pagePort}/`, backend, screenshot: true, performance: backend === 'devtools' }, /L-Vibe 로컬 검증/);
+    const result = await call('browser_check', { url: `http://127.0.0.1:${pagePort}/`, backend, screenshot: true, performance: backend === 'devtools' }, /Ned 로컬 검증/);
     assert.match(text(result), /LOCAL_CONSOLE_FIXTURE/);
     assert.ok(result.content.some(c => c.type === 'image' && c.data && c.data.length > 100));
     if (backend === 'devtools') assert.match(text(result), /trace|LCP/i);

@@ -3,6 +3,7 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { readFile, mkdir, mkdtemp, writeFile, copyFile, lstat, rm } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
+import { managedResource } from './ned/resources';
 import { z } from 'zod';
 import { DesktopTools, desktopTools, desktopToolNames } from './desktop-tools';
 import { VisualStudioBuild } from './vs-build';
@@ -63,7 +64,7 @@ export class HostTools {
   }) {
     this.desktop = new DesktopTools(root, resources, options.approve);
     this.builds = new VisualStudioBuild(resources, options.approve);
-    this.skills = new OfflineSkills(path.join(resources, 'l-vibe/skills'));
+    this.skills = new OfflineSkills(managedResource(resources, 'skills'));
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
   }
   async start() {
@@ -155,7 +156,7 @@ export class HostTools {
     }
     if (name === 'read_methodology') {
       const a = z.object({ name: z.enum(['aegis', 'conductor']) }).strict().parse(args);
-      return readFile(path.join(this.resources, 'l-vibe/methodology', a.name + '.md'), 'utf8');
+      return readFile(path.join(managedResource(this.resources, 'methodology'), a.name + '.md'), 'utf8');
     }
     if (name === 'skill_catalog') { z.object({}).strict().parse(args); return JSON.stringify(this.skills.catalog()); }
     if (name === 'read_skill') { const a = z.object({ id: z.string().max(128), document: z.string().max(512).optional() }).strict().parse(args); return this.skills.read(a.id, a.document); }

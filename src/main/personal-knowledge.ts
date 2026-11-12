@@ -133,7 +133,7 @@ export class PersonalKnowledge {
       if (existing || registry.entries.some(e => e.root === preview.root)) throw new Error('같은 사용자 영역의 가져오기 기록이 있습니다. 기존 자료와 실패 상태를 보존했으며 자동 덮어쓰기는 하지 않습니다.');
       if (registry.entries.length >= 32) throw new Error('개인 지식 가져오기 개수 제한에 도달했습니다.');
       const approved = await approve('개인 공통 지식 가져오기',
-        `선택한 파일: ${file}\n원본 사용자 영역: ${preview.root}\n파일: ${preview.files}개\nSHA-256: ${sha256}\n\nL-Vibe의 개인 저장소에 가져와 모든 프로젝트에서 읽기 전용으로 검색합니다. 기존 대상은 덮어쓰지 않습니다. 벡터는 호환될 때 재사용하고, 필요하면 설정한 사내 임베딩 API로 재계산합니다. 대화/개인정보 관리 자료는 보존하되 검색 도구에는 노출하지 않습니다. 사용자 스킬은 자료로만 보존하며 실행형 플러그인으로 설치하지 않습니다.`, signal);
+        `선택한 파일: ${file}\n원본 사용자 영역: ${preview.root}\n파일: ${preview.files}개\nSHA-256: ${sha256}\n\nNed의 개인 저장소에 가져와 모든 프로젝트에서 읽기 전용으로 검색합니다. 기존 대상은 덮어쓰지 않습니다. 벡터는 호환될 때 재사용하고, 필요하면 설정한 사내 임베딩 API로 재계산합니다. 대화/개인정보 관리 자료는 보존하되 검색 도구에는 노출하지 않습니다. 사용자 스킬은 자료로만 보존하며 실행형 플러그인으로 설치하지 않습니다.`, signal);
       if (!approved || signal.aborted) throw new Error('개인 지식 가져오기를 취소했습니다.');
       const archive = path.join(this.directory, 'personal-' + sha256 + '.ovpack');
       await rename(snapshot, archive);

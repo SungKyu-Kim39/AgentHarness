@@ -14,4 +14,4 @@ Specific policy: 분석 단위·무작위 배정·독립성·누락·표본 수�
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 91a15cfc144efffcd622b09827362a73993a3ff30e3a78114801832477c9f8a0; bundled 64f09a4485f188a1bd61ee924ced6886fecb4e80cc1596e0bf8267dcdc575723
+- SKILL.md: upstream 91a15cfc144efffcd622b09827362a73993a3ff30e3a78114801832477c9f8a0; bundled 7d87c570977153563a5e468c5eb4cff3370773eb4556f9d1f362d3181d50c440

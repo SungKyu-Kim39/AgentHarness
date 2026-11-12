@@ -14,5 +14,5 @@ Specific policy: Use only the Ned desktop_* host tools, never raw CLI/MCP comman
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 941873a93fca670fc16362de192521f2b5ca27675fb55f18c2112cde86ca9089; bundled 9238803827fff5ab1ad43c61bdb3684c0b862a870b46340666c91d72e5824649
+- SKILL.md: upstream 941873a93fca670fc16362de192521f2b5ca27675fb55f18c2112cde86ca9089; bundled cb377973dac8afd4981011c29d976b8993a2d427d9dfcf13ac9331cfce1c207a
 - references/commands-system.md: upstream 164676e9ffddae0895e86ae1a638edbd0823c7e849ae102ff251d9b957ee60df; bundled 8e9b3d36836a4937c65de97717e3414cf83f28019942b823081010dddf48b1d3

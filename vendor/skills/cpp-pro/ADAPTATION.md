@@ -14,5 +14,5 @@ Specific policy: 먼저 실제 컴파일러·SDK·C++ 표준·ABI·예외/RTTI �
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 53017f862c526df6080210a1a00e6678c2cd5382b5d1a51026bf3b0bde7f7ed2; bundled a769488c5a0e0d6d40cc3e4185e9ba9e4385520f829bf4417aaf1c9a6199f8c6
-- references/build-tooling.md: upstream 337ae8b622628fafae86f89d914561ee6176b8d74073db2d5580e91ddd240f30; bundled dbab0e785275d5c592379e5c8483f45a2db98920e8ea0d87231c076a563e568e
+- SKILL.md: upstream 53017f862c526df6080210a1a00e6678c2cd5382b5d1a51026bf3b0bde7f7ed2; bundled 8b8dad8673688aff30902bfb8f6f7df3c227927441f9ceeb81b1071e42dcff50
+- references/build-tooling.md: upstream 337ae8b622628fafae86f89d914561ee6176b8d74073db2d5580e91ddd240f30; bundled e35a9c60f5f99fefd48c1db44c5ef68c6d1c93122ac8ad64c4b3ba0869551b71

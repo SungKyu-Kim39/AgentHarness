@@ -3,7 +3,7 @@ name: api-design
 description: "REST 경로·응답·오류·페이지 처리·호환성·멱등성 검토"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

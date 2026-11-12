@@ -110,6 +110,10 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
   assert.equal(await readFile(path.join(project, 'main.c'), 'utf8'), 'int main() { return 7; }\n');
   assert.equal(approvals, 1); assert.ok(bufferReads >= 2);
   assert.ok(wire.every(body => body.model === 'wire-b'));
+  const advertised = wire.flatMap(body => (body.tools ?? []).map((tool: any) => tool.function.name));
+  assert.ok(advertised.includes('ned_host_read_file'));
+  assert.ok(advertised.every((name: string) => !/l[_-]vibe/i.test(name)));
+
   dirty = true; turn++; step = 0;
   await request('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Now change the return value to 9.' }] });
   assert.equal(await readFile(path.join(project, 'main.c'), 'utf8'), 'int main() { return 7; }\n');

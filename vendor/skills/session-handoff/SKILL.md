@@ -3,7 +3,7 @@ name: session-handoff
 description: "장기 작업의 사용자 결정·확인한 사실·변경·검증·미결 사항을 근거와 함께 인계"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

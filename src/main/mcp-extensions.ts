@@ -171,11 +171,11 @@ export class McpExtensions {
       const launchArgs = process.platform === 'win32' ? ['-I', '-B', paths.supervisor, executable, ...argv] : argv;
       const env: NodeJS.ProcessEnv = { HOME: work, USERPROFILE: work, APPDATA: work, LOCALAPPDATA: work, PATH: path.dirname(paths.git), TEMP: work, TMP: work, ELECTRON_RUN_AS_NODE: '1', PYTHONDONTWRITEBYTECODE: '1', DO_NOT_TRACK: '1' };
       for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR']) if (process.env[key]) env[key] = process.env[key];
-      const allowedTools = service === 'playwright' ? ['browser_navigate', 'browser_snapshot', 'browser_console_messages', 'browser_take_screenshot', 'browser_close'] : service === 'devtools' ? ['navigate_page', 'take_snapshot', 'list_console_messages', 'take_screenshot', 'performance_start_trace', 'close_page'] : service === 'git' ? [tool, 'l_vibe_snapshot_tracked_paths'] : [tool];
+      const allowedTools = service === 'playwright' ? ['browser_navigate', 'browser_snapshot', 'browser_console_messages', 'browser_take_screenshot', 'browser_close'] : service === 'devtools' ? ['navigate_page', 'take_snapshot', 'list_console_messages', 'take_screenshot', 'performance_start_trace', 'close_page'] : service === 'git' ? [tool, 'ned_snapshot_tracked_paths'] : [tool];
       client = new PrivateMcpClient({ executable: binary, args: launchArgs, cwd: work, env, allowedTools, timeout: 90000, diagnostic: this.options.diagnostic });
       this.clients.add(client); signal?.addEventListener('abort', abort, { once: true }); signal?.throwIfAborted();
       if (service === 'git') {
-        const index = await client.call('l_vibe_snapshot_tracked_paths', {}, signal);
+        const index = await client.call('ned_snapshot_tracked_paths', {}, signal);
         if (index.isError) throw new Error('Git index의 읽기 범위를 확인하지 못했습니다.');
         const tracked = z.array(relative).max(20000).parse(JSON.parse(index.content.filter(c => c.type === 'text').map(c => c.text).join('')));
         for (const relative of tracked) {

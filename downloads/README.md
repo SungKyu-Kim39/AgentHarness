@@ -1,6 +1,6 @@
 # Ned latest repair patch
 
-[Ned 설정 자동 적용·Windows ACP 수정 패치 1 (약 4.2MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-config-restart-fix-1.tgz)은 원본 0.3.1 또는 시작 수정 패치 1 적용본에 사용한다. Ned/Zed 완전 종료 → 새 폴더에 압축 해제 → `APPLY_FIX.cmd` → `applied`/`already-applied`, `EXIT_CODE=0` 확인 → Ned 실행 순서다. 시작 수정도 포함하며 기존 설정·키·지식은 유지한다. [안내](../docs/ned-config-restart-fix-1.md) · [해시](Ned-config-restart-fix-1.tgz.sha256) · [검증](Ned-config-restart-fix-1-validation.json). Windows ACP 채팅·자동 재시작은 배포 확인 대기 중이다.
+[Ned 설정 자동 적용·Windows ACP 수정 패치 1 (약 4.2MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-config-restart-fix-1.tgz)은 원본 0.3.1 또는 시작 수정 패치 1 적용본에 사용한다. Ned/Zed 완전 종료 → 새 폴더에 압축 해제 → `APPLY_FIX.cmd` → `applied`/`already-applied`, `EXIT_CODE=0` 확인 → Ned 실행 순서다. 시작 수정도 포함하며 기존 설정·키·지식은 유지한다. [안내](../docs/ned-config-restart-fix-1.md) · [해시](Ned-config-restart-fix-1.tgz.sha256) · [검증](Ned-config-restart-fix-1-validation.json). 사용자가 Windows ACP 모델 목록·대화와 JSON 가져오기 후 자동 재시작·적용 성공을 확인하였다. 도구 이름 Ned 통일은 후속 전체 0.3.2 설치본에 포함한다.
 
 ## Ned 0.3.1 시작 수정 패치 1
 

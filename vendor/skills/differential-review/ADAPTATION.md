@@ -14,5 +14,5 @@ Specific policy: 프로젝트 안의 변경 전후·호스트 스냅샷·사용�
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream f9af6a8193fc1a9f8ca3c54bb8d19095a5f20c9472ca6d014488bbde50b67da0; bundled dcd1203f29fbea1f309e4d3585809e76dff7e617ca18119db74bc125b1a5e94f
+- SKILL.md: upstream f9af6a8193fc1a9f8ca3c54bb8d19095a5f20c9472ca6d014488bbde50b67da0; bundled f45d5c06090172618951afc231761672df6c558cc79f71b7a8dba53037ccd86c
 - reporting.md: upstream 0016876dc6f158e926448bff1b6f634796757c7afe09dff177cfe30250724fc4; bundled 02232ac2aafcc0ad0c666ad1bc6688e3aa4032dd48bbc35da959b81a4d1af2be

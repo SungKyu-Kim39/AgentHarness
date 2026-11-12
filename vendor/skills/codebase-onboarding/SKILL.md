@@ -3,7 +3,7 @@ name: codebase-onboarding
 description: "처음 여는 저장소의 진입점·구조·데이터 흐름·규칙을 실제 파일로 확인"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

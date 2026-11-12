@@ -3,7 +3,7 @@ name: ab-testing
 description: "가설·무작위 배정·MDE·검정력·표본 수·가드레일·중지 규칙; 로컬 계산 예제"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

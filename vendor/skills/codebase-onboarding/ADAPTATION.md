@@ -14,4 +14,4 @@ Specific policy: 호스트의 승인된 프로젝트 읽기·검색과 실제 Gr
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream ef88873a4b0d0fe155c0a196ffecd5c7b5e28edd00fbbdb5c1fd2ca8fd0eb6f0; bundled 5914dbf366e121aff29166532576d481c423336a62d435f359f52e2d3d2c9303
+- SKILL.md: upstream ef88873a4b0d0fe155c0a196ffecd5c7b5e28edd00fbbdb5c1fd2ca8fd0eb6f0; bundled 957db18fffe1d866b38dabb145ec41cda0cfbf8f858290c52e6032123e4ddce5

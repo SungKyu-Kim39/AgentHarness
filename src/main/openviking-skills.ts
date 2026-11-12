@@ -58,7 +58,7 @@ export async function loadBundledSkillPackages(root: string): Promise<Package[]>
       files.set(relative, bytes);
     }
     const main = files.get('SKILL.md'); if (!main) throw new Error('기본 스킬 본문 없음');
-    const body = `# L-Vibe bundled skill: ${entry.id}\n\n${entry.adapter}\n\nThis is static guidance. It does not install an executor, grant permissions or upload personal conversations. Use the local L-Vibe skill catalog ID ${entry.id} for the reviewed original package.\n\n${bodyOf(main.toString('utf8'))}`;
+    const body = `# Ned bundled skill: ${entry.id}\n\n${entry.adapter}\n\nThis is static guidance. It does not install an executor, grant permissions or upload personal conversations. Use the local Ned skill catalog ID ${entry.id} for the reviewed original package.\n\n${bodyOf(main.toString('utf8'))}`;
     files.set('SKILL.md', Buffer.from(`---\nname: ${name}\ndescription: ${JSON.stringify(entry.description)}\n---\n\n${body}\n`));
     files.set('L-VIBE-BUNDLE.json', Buffer.from(JSON.stringify({ schemaVersion: 1, id: entry.id, source: entry.source, commit: entry.commit, license: entry.license, files: entry.files }, null, 2) + '\n'));
     const bytes = archive(files, name);

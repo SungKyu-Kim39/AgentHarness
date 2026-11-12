@@ -75,7 +75,7 @@ def main():
         (work / 'empty-gitconfig').write_text('')
         from mcp_server_git.server import create_server
         server = create_server(work / 'source')
-        @server.tool(name='l_vibe_snapshot_tracked_paths')
+        @server.tool(name='ned_snapshot_tracked_paths')
         def tracked_paths() -> str:
             """Host-internal preparation: paths from the copied Git index only."""
             import git
@@ -154,7 +154,7 @@ def run_serena(config, work, site):
     global_config.update(common, web_dashboard=False, web_dashboard_open_on_launch=False, gui_log_window=False, projects=[], base_modes=[], default_modes=['interactive'], log_level='ERROR', trusted_project_path_patterns=[str(source)])
     (home / 'serena_config.yml').write_text(yaml.safe_dump(global_config), encoding='utf-8')
     project_config = yaml.safe_load((site / 'serena/resources/project.template.yml').read_text())
-    project_config.update(common, project_name='L-Vibe snapshot', language_servers=['cpp'], read_only=True, ignore_all_files_in_gitignore=False, ignored_paths=[], default_modes=['interactive'])
+    project_config.update(common, project_name='Ned snapshot', language_servers=['cpp'], read_only=True, ignore_all_files_in_gitignore=False, ignored_paths=[], default_modes=['interactive'])
     (source / '.serena').mkdir(exist_ok=True)
     (source / '.serena/project.yml').write_text(yaml.safe_dump(project_config), encoding='utf-8')
     # A redirect-only VFS confines native preprocessing, including absolute

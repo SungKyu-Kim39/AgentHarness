@@ -3,7 +3,7 @@ name: legacy-modernizer
 description: "기존 동작 조사·점진 이행·플랫폼 제약·롤백 검증"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

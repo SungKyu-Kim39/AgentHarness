@@ -14,4 +14,4 @@ Specific policy: 실제 범위·호환성·데이터 보존에 영향을 주는 
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 79059f17da8b20cdf27327f6de0ea005c73c2c442f48f70688abca4c77cb6f8f; bundled 3a5eb5515131a56ddd6be969ae1338960e24f0e65729d09276ae53f4cb051235
+- SKILL.md: upstream 79059f17da8b20cdf27327f6de0ea005c73c2c442f48f70688abca4c77cb6f8f; bundled 3b593f966de40d7167432a4b32c9e65d0bebd920fb246bd515c23899d77e161f

@@ -3,7 +3,7 @@ name: statistical-analysis
 description: "분포·이상치·가설 검정·효과 크기·신뢰 구간·표본·인과 해석의 한계"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

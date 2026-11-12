@@ -14,4 +14,4 @@ Specific policy: 기존 예외/Result/오류 코드 정책과 ABI를 존중한�
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 5fb7f4d995fc05386a8c04b045f96fd3cb652cbd31fd52d78966f86323b373b8; bundled 0213f345282a3818ae5586a2408cb0b9256df0f6b7b7716e8fd7b4a20b1418b1
+- SKILL.md: upstream 5fb7f4d995fc05386a8c04b045f96fd3cb652cbd31fd52d78966f86323b373b8; bundled c0bd714f6068fb1445617516e1e26efc8b65c4f564ae6973f8acd95d60c028fd

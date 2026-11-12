@@ -3,7 +3,7 @@ name: agent-desktop
 description: "승인한 창의 접근성 트리·qualified ref·의미 기반 동작·결과 확인"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

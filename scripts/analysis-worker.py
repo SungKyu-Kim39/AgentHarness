@@ -6,7 +6,7 @@ import socket
 import sys
 
 def blocked(*args, **kwargs):
-    raise PermissionError('L-Vibe static analysis has no network permission')
+    raise PermissionError('Ned static analysis has no network permission')
 
 socket.socket.connect = blocked
 socket.socket.connect_ex = blocked

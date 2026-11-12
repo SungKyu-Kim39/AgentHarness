@@ -3,7 +3,7 @@ name: error-handling-patterns
 description: "예외·Result·오류 코드·취소·제한된 재시도·자원 정리"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

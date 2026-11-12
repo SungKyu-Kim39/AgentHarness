@@ -3,7 +3,7 @@ name: cpp-pro
 description: "C++ 코드·자원 수명·동시성·빌드 문제; 기존 SDK·컴파일러 표준 유지"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

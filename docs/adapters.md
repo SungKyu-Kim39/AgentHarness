@@ -20,6 +20,6 @@ OpenViking은 사용자 폴더의 로컬 서비스이며 기본 스킬 등록과
 
 ## 명령과 MCP
 
-6종 MCP는 Serena, Git, Playwright, MarkItDown, Chrome DevTools, DuckDB Local이다. 각 허용 목록·경로·읽기/실행 경계는 기존 MCP 중계에 유지한다. 이름에 `l_vibe_host_`가 남은 것은 기존 내부 프로토콜 호환을 위한 것이며 제품 표시명은 Ned이다.
+6종 MCP는 Serena, Git, Playwright, MarkItDown, Chrome DevTools, DuckDB Local이다. 각 허용 목록·경로·읽기/실행 경계는 기존 MCP 중계에 유지한다. 이름에 `ned_host_`가 남은 것은 기존 내부 프로토콜 호환을 위한 것이며 제품 표시명은 Ned이다.
 
 `inspect_build`는 VS2017/2019와 프로젝트 구성을 읽는다. `build_project`는 발견된 구성만 선택하고 네이티브 승인 후 고정 MSBuild 인자로 실행한다. 일반 셸·패키지 설치·임의 실행 플러그인은 제공하지 않는다.

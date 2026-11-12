@@ -3,7 +3,7 @@ name: web-design-guidelines
 description: "로컬 고정 UI 규칙으로 접근성·포커스·폼·상태·반응형·성능·한국어 사용성 검토"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

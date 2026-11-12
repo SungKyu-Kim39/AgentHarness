@@ -116,7 +116,7 @@ export class ToolBroker {
           result = {
             protocolVersion: "2024-11-05",
             capabilities: { tools: {} },
-            serverInfo: { name: "l-vibe-broker", version: "0.1.0" },
+            serverInfo: { name: "ned-broker", version: "0.1.0" },
           };
         else if (input.method === "ping") result = {};
         else if (input.method === "tools/list")

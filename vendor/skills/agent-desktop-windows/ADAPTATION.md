@@ -14,4 +14,4 @@ Specific policy: The bundled native Windows UIA runtime requires an interactive 
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 6d1ce79a23caf84a5ef75695a4896a1b8bdde7d2b4ff55a655c20118b38e189c; bundled 84f2ed29be90fd4389b9b74c7b1e1909be11f419260238e2ed6a37f27ff5b59b
+- SKILL.md: upstream 6d1ce79a23caf84a5ef75695a4896a1b8bdde7d2b4ff55a655c20118b38e189c; bundled 775980e91d486d69341b3c9ebfd40555b64f1c4646e7ffdd2dc901e11ece0769

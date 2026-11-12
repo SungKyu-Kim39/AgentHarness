@@ -3,7 +3,7 @@ name: explore-data
 description: "CSV·JSON·테이블 결과의 단위·키·결측·중복·분포·품질 조사"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 
@@ -16,7 +16,7 @@ Use approved project reads/searches and host-mediated edits. Do not install pack
 
 # /explore-data - Profile and Explore a Dataset
 
-> L-Vibe local-file adaptation: no warehouse connector or external service is installed or required.
+> Ned local-file adaptation: no warehouse connector or external service is installed or required.
 
 Generate a comprehensive data profile for a table or uploaded file. Understand its shape, quality, and patterns before diving into analysis.
 

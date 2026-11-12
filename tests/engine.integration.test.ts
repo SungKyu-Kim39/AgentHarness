@@ -72,7 +72,7 @@ test(
           (tool: any) => tool.function.name,
         );
         assert.ok(
-          names.every((n) => n.startsWith("l_vibe_") || n === "invalid"),
+          names.every((n) => n.startsWith("ned_") || n === "invalid"),
           `unexpected tools: ${names}`,
         );
         const sequence = [
@@ -153,7 +153,7 @@ test(
     await engine.start(config, broker);
     await engine.prompt(
       "Read main.c, read both methodologies, then change return 0 to return 1.",
-      "Only use l_vibe tools.",
+      "Only use ned tools.",
     );
     const deadline = Date.now() + 45000;
     while (!session.proposals.length && Date.now() < deadline) {

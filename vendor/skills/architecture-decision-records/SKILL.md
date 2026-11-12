@@ -3,7 +3,7 @@ name: architecture-decision-records
 description: "대안·선택 근거·결과·되돌리기를 기존 트랙 또는 짧은 ADR로 정리"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 

@@ -14,4 +14,4 @@ Specific policy: 작업 중 확인한 사실·사용자 결정·변경·검증·
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 68b8781a489abc358644d9efdf4bf24998dfae319b4c6d79f2fd5cf07a927aef; bundled b0cec6601a77103f6348232a8c453a74933a2c69aff63115dd86e88bda41fdd7
+- SKILL.md: upstream 68b8781a489abc358644d9efdf4bf24998dfae319b4c6d79f2fd5cf07a927aef; bundled 3bbcc1b3866d77709fe862a560810f7ca67fd0c6784216295ab076c8691fc3b2

@@ -7,6 +7,7 @@ import { createPackage,extractAll,extractFile } from '@electron/asar';
 import fuses from '@electron/fuses';
 import { verifyAsciiTree,verifyAsciiTar } from './package-paths.mjs';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+if(hash(await readFile('.cache/ned/app/main.cjs'))!=='b0db37640f93d6f2632d77e3a562f45a78b5bc44ea5b104f9d84983e094fefd8')throw new Error('Historical patch: rebuild host source at 21e0cead18ee0ea59d7db17ff5f5abbd96765d9c; use the current full installer for newer code');
 const base=path.resolve('release/ned/win-unpacked'),output=path.resolve('.cache/ned/startup-fix-1'),app=path.resolve('.cache/ned/startup-fix-app');
 const baseline='fb10ba3a99479c22a24dbefc40f3b83d156ad1112d0e2ab15c023b5d2660d558';
 const exeHash='208c6c7754a2d95ebc053f91f4354052b3bf12b67df6aa230b1c299b1840d354';
@@ -18,7 +19,7 @@ extractAll(base+'/resources/app.asar',app);
 await cp('.cache/ned/app/main.cjs',app+'/main.cjs'); // Keep every original dependency and license.
 await createPackage(app,output+'/app.asar');
 if(!extractFile(output+'/app.asar','main.cjs').equals(await readFile('.cache/ned/app/main.cjs')))throw new Error('Host archive verification failed');
-const manifest={schemaVersion:1,product:'Ned',targetVersion:'0.3.1',fixId:'ned-startup-1',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),exeSha256:exeHash,baselineAsarSha256:baseline,updatedAsarSha256:hash(await readFile(output+'/app.asar')),integrityFuseDisabledInOriginalBinary:true,changes:['Windows AppData directories within private USERPROFILE','Launchpad without mandatory folder selection','Sanitized Rust panic source locations']};
+const manifest={schemaVersion:1,product:'Ned',targetVersion:'0.3.1',fixId:'ned-startup-1',sourceCommit:'21e0cead18ee0ea59d7db17ff5f5abbd96765d9c',exeSha256:exeHash,baselineAsarSha256:baseline,updatedAsarSha256:hash(await readFile(output+'/app.asar')),integrityFuseDisabledInOriginalBinary:true,changes:['Windows AppData directories within private USERPROFILE','Launchpad without mandatory folder selection','Sanitized Rust panic source locations']};
 const raw=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(output+'/manifest.json',raw);
 const installer=(await readFile('distribution/ned/apply-startup-fix.py','utf8')).replace('__MANIFEST_SHA256__',hash(raw));await writeFile(output+'/apply-startup-fix.py',installer);
 for(const [name,args] of [['APPLY_FIX',''],['ROLLBACK_FIX',' --rollback']])await writeFile(output+'/'+name+'.cmd','@echo off\r\nsetlocal\r\nset "NED_FIX_PY=%LOCALAPPDATA%\\Programs\\Ned\\resources\\runtime\\windows-x64\\openviking\\python\\python.exe"\r\nif not exist "%NED_FIX_PY%" (echo NED_BUNDLED_PYTHON_NOT_FOUND & pause & exit /b 1)\r\n"%NED_FIX_PY%" -I -B "%~dp0apply-startup-fix.py"'+args+'\r\nset "NED_FIX_EXIT=%ERRORLEVEL%"\r\necho EXIT_CODE=%NED_FIX_EXIT%\r\npause\r\nexit /b %NED_FIX_EXIT%\r\n');

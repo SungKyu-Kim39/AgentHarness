@@ -3,7 +3,7 @@ name: validate-data
 description: "조인·분모·기간·편향·계산·시각화·결론의 근거와 재현성 검토"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 
@@ -16,7 +16,7 @@ Use approved project reads/searches and host-mediated edits. Do not install pack
 
 # /validate-data - Validate Analysis Before Sharing
 
-> L-Vibe local-file adaptation: no warehouse connector or external service is installed or required.
+> Ned local-file adaptation: no warehouse connector or external service is installed or required.
 
 Review an analysis for accuracy, methodology, and potential biases before sharing with stakeholders. Generates a confidence assessment and improvement suggestions.
 

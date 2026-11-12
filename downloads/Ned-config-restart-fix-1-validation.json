@@ -18,11 +18,17 @@
     ]
   },
   "windowsAcceptance": false,
-  "windowsAutomaticRestart": false,
-  "windowsPatchedAcpChat": false,
+  "windowsAutomaticRestart": true,
+  "windowsPatchedAcpChat": true,
   "deploymentEvidence": {
     "earlierStartupPatchLaunchConfirmed": true,
     "directAcpInitializeConfirmed": true,
-    "powershellAcpEarlyExitCode": 0
+    "powershellAcpEarlyExitCode": 0,
+    "confirmation": {
+      "method": "user-report",
+      "agentModelListAndChat": true,
+      "importAutomaticRestartAndAppliedConfig": true,
+      "scope": "Published cumulative patch 1 before tool namespace rename; not full Windows acceptance"
+    }
   }
 }

@@ -3,7 +3,7 @@ name: differential-review
 description: "변경 전후의 보안 회귀·영향 범위·공격 조건·테스트 근거 검토"
 ---
 
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 This is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.
 
@@ -114,7 +114,7 @@ Before delivering:
 
 ---
 
-## L-Vibe integration
+## Ned integration
 
 Use the bundled security and code review guidance selectively. No audit-context-building or issue-writer plugin is installed.
 

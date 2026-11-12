@@ -14,4 +14,4 @@ Specific policy: 사용자가 제공한 로컬 분석·질의·실제 결과의 
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 1e424822043480375b80aef9416227b1c8083af749ca536568716265f79ca54b; bundled a6db69fad39ea48d3259c495075d69229c46d57bb22d89062288d596a1d561aa
+- SKILL.md: upstream 1e424822043480375b80aef9416227b1c8083af749ca536568716265f79ca54b; bundled b91b81561869becde2f1c55e889ebc6cced145c3a368000c652be79b3b968f2d

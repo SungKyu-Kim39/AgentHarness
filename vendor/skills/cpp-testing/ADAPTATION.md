@@ -14,4 +14,4 @@ Specific policy: 기존 테스트 프레임워크와 컴파일러를 우선한�
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream a92fb5da9b7e3cd1b4dee185b3eb9d0a55352af6396bf996d2eef72d683784df; bundled e5e6778715a9ca1c5c092d7c33d2c126662d6eeb6431a1e81ebafdffb6b6b62c
+- SKILL.md: upstream a92fb5da9b7e3cd1b4dee185b3eb9d0a55352af6396bf996d2eef72d683784df; bundled b05add94b78ef263a96cd9cb406fd88680511add407ffc9abd914b7dfd3757de

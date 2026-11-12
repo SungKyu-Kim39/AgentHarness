@@ -14,7 +14,7 @@ Ned 0.3.2의 설정 파일 수명과 기존 설치본에서 설정을 교체하�
 
 ## 모델 설정을 변경하는 방법
 
-1. 반입 TGZ의 `agent-config.json`을 별도 파일로 복사한다. TGZ를 보관하지 않았다면 `%LOCALAPPDATA%\Programs\Ned\resources\l-vibe\agent-config.example.json`을 복사한다.
+1. 반입 TGZ의 `agent-config.json`을 별도 파일로 복사한다. TGZ를 보관하지 않았다면 `%LOCALAPPDATA%\Programs\Ned\resources\ned\agent-config.example.json`을 복사한다.
 2. 복사본을 메모장 등으로 편집한다. 모든 LLM provider·모델과 단일 `openViking.embedding`을 실제 사내 주소·키·ID로 채운다. 이 가져오기는 전체 설정 교체이므로 유지할 provider도 함께 넣는다. 예제의 `REPLACE_...` 값과 `.internal.example` 주소를 실제 운영 값으로 사용하지 않는다.
 3. 앱이 실행된다면 진행 중인 작업을 마친 뒤 Windows 알림 영역의 Ned 아이콘을 오른쪽 클릭한다. 아이콘이 접혀 있으면 숨겨진 아이콘 표시를 연다.
 4. **설정 JSON 가져와 적용 (자동 재시작)**을 선택하고 편집한 JSON을 지정한다. 검증·암호화 저장에 성공하면 편집기에 정상 종료를 요청하고, 서비스 종료 확인 후 Ned를 자동으로 다시 실행하여 새 설정을 적용한다. 저장하지 않은 파일이 있으면 Zed의 저장 확인을 완료한다. 모델 선택창은 이미 등록한 모델 사이를 전환하는 용도다.

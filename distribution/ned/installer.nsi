@@ -71,7 +71,7 @@ Section "Ned"
     CopyFiles /SILENT "$EXEDIR\agent-config.json" "$APPDATA\Ned\config-import.json"
     Goto open_config
   default_config:
-    CopyFiles /SILENT "$INSTDIR\resources\l-vibe\agent-config.example.json" "$APPDATA\Ned\config-import.json"
+    CopyFiles /SILENT "$INSTDIR\resources\ned\agent-config.example.json" "$APPDATA\Ned\config-import.json"
   open_config:
     IfSilent import_done
     Exec '"$SYSDIR\notepad.exe" "$APPDATA\Ned\config-import.json"'

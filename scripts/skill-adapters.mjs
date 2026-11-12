@@ -41,13 +41,13 @@ export function adaptDocument(id, document, original, description) {
     text = replace(text, '- Run AddressSanitizer and UndefinedBehaviorSanitizer', '- Run supported, locally available sanitizers through an approved executor; otherwise record not run', id);
   }
   if (id === 'cpp-pro' && document === 'references/build-tooling.md') {
-    text = replace(text, '# Dependencies with FetchContent\ninclude(FetchContent)\n\nFetchContent_Declare(\n    fmt\n    GIT_REPOSITORY https://github.com/fmtlib/fmt.git\n    GIT_TAG 10.1.1\n)\nFetchContent_MakeAvailable(fmt)', '# L-Vibe: resolve a previously imported local package; never download.\n# CMAKE_PREFIX_PATH must point to an approved local dependency prefix.\nfind_package(fmt CONFIG REQUIRED)', id);
+    text = replace(text, '# Dependencies with FetchContent\ninclude(FetchContent)\n\nFetchContent_Declare(\n    fmt\n    GIT_REPOSITORY https://github.com/fmtlib/fmt.git\n    GIT_TAG 10.1.1\n)\nFetchContent_MakeAvailable(fmt)', '# Ned: resolve a previously imported local package; never download.\n# CMAKE_PREFIX_PATH must point to an approved local dependency prefix.\nfind_package(fmt CONFIG REQUIRED)', id);
     const cut = text.indexOf('## Conan Package Manager');
     if (cut < 0) throw new Error('Missing pinned C++ online-package appendix');
-    text = text.slice(0, cut) + '## Offline dependencies and validation\n\nUse the project\'s reviewed local dependency set. Online Conan installation and GitHub-hosted CI examples were omitted in this L-Vibe adaptation. Local tools in the examples are optional prerequisites, not bundled capabilities.\n';
+    text = text.slice(0, cut) + '## Offline dependencies and validation\n\nUse the project\'s reviewed local dependency set. Online Conan installation and GitHub-hosted CI examples were omitted in this Ned adaptation. Local tools in the examples are optional prerequisites, not bundled capabilities.\n';
   }
   if (id === 'cpp-testing' && document === 'SKILL.md') {
-    text = replace(text, 'include(FetchContent)\n# Prefer project-locked versions. If using a tag, use a pinned version per project policy.\nset(GTEST_VERSION v1.17.0) # Adjust to project policy.\nFetchContent_Declare(\n  googletest\n  # Google Test framework (official repository)\n  URL https://github.com/google/googletest/archive/refs/tags/${GTEST_VERSION}.zip\n)\nFetchContent_MakeAvailable(googletest)', '# L-Vibe: use a previously imported local GoogleTest package.\n# A missing package is an unmet prerequisite, not permission to download.\nfind_package(GTest CONFIG REQUIRED)', id);
+    text = replace(text, 'include(FetchContent)\n# Prefer project-locked versions. If using a tag, use a pinned version per project policy.\nset(GTEST_VERSION v1.17.0) # Adjust to project policy.\nFetchContent_Declare(\n  googletest\n  # Google Test framework (official repository)\n  URL https://github.com/google/googletest/archive/refs/tags/${GTEST_VERSION}.zip\n)\nFetchContent_MakeAvailable(googletest)', '# Ned: use a previously imported local GoogleTest package.\n# A missing package is an unmet prerequisite, not permission to download.\nfind_package(GTest CONFIG REQUIRED)', id);
   }
   if (id === 'legacy-modernizer') {
     text = text.replaceAll('Target 80%+ coverage of existing behavior.', 'Agree coverage for the actual changed behavior and risk.').replaceAll('(target 80%+)', '(scope matched to actual risk)');
@@ -69,7 +69,7 @@ export function adaptDocument(id, document, original, description) {
     text = text.slice(0, start) + text.slice(end);
     const integration = text.indexOf('## Integration'); const example = text.indexOf('## Example Usage', integration);
     if (integration < 0 || example < 0) throw new Error('Missing pinned integration section');
-    text = text.slice(0, integration) + '## L-Vibe integration\n\nUse the bundled security and code review guidance selectively. No audit-context-building or issue-writer plugin is installed.\n\n---\n\n' + text.slice(example);
+    text = text.slice(0, integration) + '## Ned integration\n\nUse the bundled security and code review guidance selectively. No audit-context-building or issue-writer plugin is installed.\n\n---\n\n' + text.slice(example);
     text = text.replaceAll('Always generate comprehensive markdown report file', 'Provide an evidence-based report; propose a project file only when useful and approved').replaceAll('Always write report', 'Preserve findings in the answer or an approved project report').replaceAll('Report file generated', 'Findings and analysis limits delivered').replaceAll('Always generate the output file', 'Provide the report in the answer or an approved project file').replaceAll('Output report only to chat (file required)', 'Write outside the approved project or claim unperformed history analysis');
   }
   if (id === 'differential-review' && document === 'reporting.md') {
@@ -80,7 +80,7 @@ export function adaptDocument(id, document, original, description) {
     if (tail < 0) throw new Error('Missing pinned report integration');
     text = text.slice(0, tail) + '## Write failure\n\nIf an approved project write fails, report the failure and provide the report in the conversation. Do not retry outside the approved project.\n';
   }
-  if (id === 'explore-data' || id === 'validate-data') text = text.replace('> If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../../CONNECTORS.md).', '> L-Vibe local-file adaptation: no warehouse connector or external service is installed or required.');
+  if (id === 'explore-data' || id === 'validate-data') text = text.replace('> If you see unfamiliar placeholders or need to check which tools are connected, see [CONNECTORS.md](../../CONNECTORS.md).', '> Ned local-file adaptation: no warehouse connector or external service is installed or required.');
   if (id === 'explore-data' && document === 'SKILL.md') {
     const start = text.indexOf('**If a data warehouse MCP server is connected:**'); const end = text.indexOf('### 2. Understand Structure', start);
     if (start < 0 || end < 0) throw new Error('Missing pinned dataset access workflow');
@@ -112,7 +112,7 @@ export function adaptDocument(id, document, original, description) {
     // Official Desktop discovers SKILL.md directly, so the safety mapping must
     // also be inside the document, not just in the host catalog metadata.
     text = text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '');
-    text = `---\nname: ${id}\ndescription: ${JSON.stringify(description)}\n---\n\n# L-Vibe offline adaptation\n\nThis is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.\n\n${policies[id]}\n\nUse approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.\n\n---\n\n${text}`;
+    text = `---\nname: ${id}\ndescription: ${JSON.stringify(description)}\n---\n\n# Ned offline adaptation\n\nThis is a reviewed static skill, not an executable plugin. Read only the relevant references. Local guidance needs no external Internet; citation URLs are attribution only. The model connection remains the configured intranet API.\n\n${policies[id]}\n\nUse approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.\n\n---\n\n${text}`;
   }
   return text;
 }

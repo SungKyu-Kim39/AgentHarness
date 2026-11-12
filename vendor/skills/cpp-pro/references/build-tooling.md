@@ -41,7 +41,7 @@ target_compile_features(mylib PUBLIC cxx_std_20)
 add_executable(myapp src/main.cpp)
 target_link_libraries(myapp PRIVATE mylib)
 
-# L-Vibe: resolve a previously imported local package; never download.
+# Ned: resolve a previously imported local package; never download.
 # CMAKE_PREFIX_PATH must point to an approved local dependency prefix.
 find_package(fmt CONFIG REQUIRED)
 
@@ -304,4 +304,4 @@ ms_print massif.out.*
 
 ## Offline dependencies and validation
 
-Use the project's reviewed local dependency set. Online Conan installation and GitHub-hosted CI examples were omitted in this L-Vibe adaptation. Local tools in the examples are optional prerequisites, not bundled capabilities.
+Use the project's reviewed local dependency set. Online Conan installation and GitHub-hosted CI examples were omitted in this Ned adaptation. Local tools in the examples are optional prerequisites, not bundled capabilities.

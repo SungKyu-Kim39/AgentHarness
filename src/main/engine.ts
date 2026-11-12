@@ -36,9 +36,9 @@ export const engineConfig = (
       },
     },
   },
-  permission: { "*": "deny", "l_vibe_*": "allow" },
+  permission: { "*": "deny", "ned_*": "allow" },
   mcp: {
-    l_vibe: {
+    ned: {
       type: "remote",
       url: broker.url,
       headers: { Authorization: `Bearer ${broker.token}` },
@@ -50,8 +50,8 @@ export const engineConfig = (
   agent: {
     harness: {
       mode: "primary",
-      description: "L-Vibe 개발 지원",
-      permission: { "*": "deny", "l_vibe_*": "allow" },
+      description: "Ned 개발 지원",
+      permission: { "*": "deny", "ned_*": "allow" },
       steps: 50,
     },
     build: { disable: true },
@@ -204,7 +204,7 @@ export class Engine {
     await this.request("/global/health");
     const session = await this.request("/session", {
       method: "POST",
-      body: JSON.stringify({ title: "L-Vibe" }),
+      body: JSON.stringify({ title: "Ned" }),
     });
     this.sessionID = session.id;
     if (typeof this.sessionID !== "string")

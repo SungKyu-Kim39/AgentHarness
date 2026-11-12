@@ -14,6 +14,6 @@ Specific policy: 사내 기능/성능/모델 프롬프트 비교에도 가설·�
 
 Changed documents (hashes are also retained in the manifest):
 
-- SKILL.md: upstream 938a9a9246c6b05657f509e7ab181f1c961dc14f9dcb5d452c574d3e44a39be2; bundled ab3c2d2f057402ac28e9118ad2794c428dfbf8606148cc7d1ff121930235b3ad
+- SKILL.md: upstream 938a9a9246c6b05657f509e7ab181f1c961dc14f9dcb5d452c574d3e44a39be2; bundled da15eb8d388ae74730b4c3287dbd6efa123b78aa9ed4708d3a4f633e2eba48c3
 - references/sample-size-guide.md: upstream 53525ddf0e904477262dc3dbc89d4bd4205f2e07d655616de91e22a310f768c4; bundled 973f89aab0991fb3aaa7e8092f3127d269a3d73d2df4d624310cd6eb1abe55b5
 - references/test-templates.md: upstream 761a40b9de8d16f18fa7f60b59e77aa749607ac8014af43e0b022f47fa87c812; bundled 42b6cd49ab1dc5137bd09e4fec145dabeace3e53784d6548e2a48752d85590ca

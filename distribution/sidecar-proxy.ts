@@ -23,7 +23,7 @@ export class SidecarProxy {
           /^\/api\/(?:experimental\/(?:config|mcp)|config|integration|credential|plugin|mcp|pty|shell|schedule|server|permission\/saved)(?:\/|$)/.test(pathname) ||
           /^\/api\/session\/[^/]+\/(?:shell|command|move|background|synthetic)(?:\/|$)/.test(pathname) ||
           pathname === '/api/experimental/session/import'
-        )) { res.writeHead(403, { 'Content-Type': 'application/json' }).end('{"message":"L-Vibe 앱 정책으로 이 실행·설정 변경 경로가 차단되었습니다."}'); return; }
+        )) { res.writeHead(403, { 'Content-Type': 'application/json' }).end('{"message":"Ned 앱 정책으로 이 실행·설정 변경 경로가 차단되었습니다."}'); return; }
         const chunks: Buffer[] = []; let size = 0;
         for await (const bytes of req) { size += bytes.length; if (size > 8 * 1024 * 1024) throw new Error('Request too large'); chunks.push(bytes); }
         let body = Buffer.concat(chunks);

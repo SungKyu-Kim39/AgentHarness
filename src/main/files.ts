@@ -146,7 +146,7 @@ export class ProjectFiles {
     await this.resolve(proposal.path, true);
     const temp = path.join(
       path.dirname(target),
-      `.l-vibe-${randomUUID()}.tmp`,
+      `.ned-${randomUUID()}.tmp`,
     );
     try {
       const mode = await lstat(target).then(

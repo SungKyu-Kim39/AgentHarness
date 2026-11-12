@@ -88,7 +88,7 @@ test('real v2 model selection uses wire IDs and guarded MCP edits require native
     let text = ''; for await (const bytes of req) text += bytes;
     const body = JSON.parse(text); calls.push({ url: req.url!, body, auth: req.headers.authorization });
     if (!body.stream || !body.tools?.length) {
-      res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ id: 'aux', object: 'chat.completion', model: body.model, choices: [{ index: 0, message: { role: 'assistant', content: 'L-Vibe test title' }, finish_reason: 'stop' }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } })); return;
+      res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ id: 'aux', object: 'chat.completion', model: body.model, choices: [{ index: 0, message: { role: 'assistant', content: 'Ned test title' }, finish_reason: 'stop' }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } })); return;
     }
     const sequence = [['read_file', { path: 'main.c' }], ['propose_edit', { path: 'main.c', content: 'int main() { return 7; }\n' }]] as const;
     let delta: unknown = { role: 'assistant', content: 'Native approval test complete.' }, finish = 'stop';

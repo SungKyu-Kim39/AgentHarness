@@ -78,10 +78,10 @@ async function packageApp() {
     win:{target:'dir',signAndEditExecutable:false,icon:path.join(root,'assets/ned-icon.ico')},
     extraResources:[
       {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*','windows-x64/agent-desktop/**/*']},
-      {from:path.join(root,'vendor/skills'),to:'l-vibe/skills',filter:['**/*','!doc-coauthoring{,/**/*}']},
-      {from:path.join(root,'distribution/methodology'),to:'l-vibe/methodology'},
-      {from:path.join(root,'agent-config.example.json'),to:'l-vibe/agent-config.example.json'},
-      {from:path.join(root,'skills-lock.json'),to:'l-vibe/skills-lock.json'},
+      {from:path.join(root,'vendor/skills'),to:'ned/skills',filter:['**/*','!doc-coauthoring{,/**/*}']},
+      {from:path.join(root,'distribution/methodology'),to:'ned/methodology'},
+      {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
+      {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       {from:path.join(root,'LICENSE'),to:'ned/licenses/Ned-MIT.txt'},
       {from:path.join(root,'.cache/l-vibe-desktop/source/LICENSE'),to:'ned/licenses/OpenCode-MIT.txt'},
       {from:path.join(root,'THIRD_PARTY_NOTICES.md'),to:'ned/licenses/THIRD_PARTY_NOTICES.md'},
@@ -125,7 +125,7 @@ async function audit() {
       if(await fileHash(path.join(extracted,file))!==payloadHashes[file]) throw new Error('Installer bytes differ: '+file);
     const components={};
     for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
-      const folder=name==='skills'?'l-vibe/skills':'runtime/windows-x64/'+name;
+      const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }

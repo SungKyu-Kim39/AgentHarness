@@ -1,4 +1,4 @@
-"""L-Vibe-owned supervisor for the pinned OpenViking distribution.
+"""Ned-owned supervisor for the pinned OpenViking distribution.
 
 One worker, no bot, no activation commands, no inherited user configuration.
 The parent owns stdin; EOF requests shutdown. Windows Job Objects terminate
@@ -47,7 +47,7 @@ def configure_user_pack_import():
     original = operations._ensure_parent_exists
     source = inspect.getsource(original).replace("\r\n", "\n")
     if hashlib.sha256(source.encode()).hexdigest() != "91a8134aabc54256c30963c1d565295eaf8b11e9ded02dca53854c0349af27a7":
-        raise RuntimeError("L-Vibe: unsupported OVPack parent helper")
+        raise RuntimeError("Ned: unsupported OVPack parent helper")
     async def ensure_parent(viking_fs, parent, ctx):
         if parent == "viking://user":
             return
@@ -74,7 +74,7 @@ def configure_tokenizers(directory=None):
                 raise ValueError("data hash mismatch")
             assets[url] = (file, expected)
     except (OSError, ValueError, KeyError, TypeError):
-        raise RuntimeError("L-Vibe tokenizer cache is missing or corrupt. Apply the offline tokenizer repair or reinstall the complete bundle.") from None
+        raise RuntimeError("Ned tokenizer cache is missing or corrupt. Apply the offline tokenizer repair or reinstall the complete bundle.") from None
     os.environ["TIKTOKEN_CACHE_DIR"] = str(root)
     # LiteLLM otherwise replaces TIKTOKEN_CACHE_DIR during its own import.
     os.environ["CUSTOM_TIKTOKEN_CACHE_DIR"] = str(root)
@@ -83,13 +83,13 @@ def configure_tokenizers(directory=None):
     def read_bundled(blobpath, expected_hash=None):
         entry = assets.get(blobpath)
         if entry is None or (expected_hash is not None and expected_hash != entry[1]):
-            raise RuntimeError("L-Vibe tokenizer data is not in the offline catalog; downloading is disabled.")
+            raise RuntimeError("Ned tokenizer data is not in the offline catalog; downloading is disabled.")
         try:
             content = entry[0].read_bytes()
         except OSError:
-            raise RuntimeError("L-Vibe tokenizer cache is missing; downloading is disabled.") from None
+            raise RuntimeError("Ned tokenizer cache is missing; downloading is disabled.") from None
         if hashlib.sha256(content).hexdigest() != entry[1]:
-            raise RuntimeError("L-Vibe tokenizer cache is corrupt; downloading is disabled.")
+            raise RuntimeError("Ned tokenizer cache is corrupt; downloading is disabled.")
         return content
 
     tiktoken.load.read_file_cached = read_bundled
@@ -136,7 +136,7 @@ def windows_socketpair(original_connect, family=None, type=socket.SOCK_STREAM, p
     """
     family = socket.AF_INET if family is None else family
     if family not in (socket.AF_INET, socket.AF_INET6) or type != socket.SOCK_STREAM or proto not in (0, socket.IPPROTO_TCP):
-        raise ValueError("L-Vibe: unsupported Windows socketpair parameters")
+        raise ValueError("Ned: unsupported Windows socketpair parameters")
     host = "127.0.0.1" if family == socket.AF_INET else "::1"
     listener = socket.socket(family, type, proto)
     client = server = None
@@ -150,7 +150,7 @@ def windows_socketpair(original_connect, family=None, type=socket.SOCK_STREAM, p
         original_connect(client, address)
         server, peer = listener.accept()
         if peer != client.getsockname() or client.getpeername() != server.getsockname():
-            raise ConnectionError("L-Vibe: Windows socketpair peer verification failed")
+            raise ConnectionError("Ned: Windows socketpair peer verification failed")
         client.settimeout(socket.getdefaulttimeout())
         server.settimeout(socket.getdefaulttimeout())
         return server, client
@@ -174,14 +174,14 @@ def restrict_python_network(config):
     original_getaddrinfo = socket.getaddrinfo
     def check(address):
         if not isinstance(address, tuple) or address[:2] != allowed:
-            raise PermissionError("L-Vibe: outbound connection is not an approved model gateway")
+            raise PermissionError("Ned: outbound connection is not an approved model gateway")
     def connect(sock, address):
         check(address); return original_connect(sock, address)
     def connect_ex(sock, address):
         check(address); return original_connect_ex(sock, address)
     def getaddrinfo(host, port, *args, **kwargs):
         if host not in ("127.0.0.1", None):
-            raise PermissionError("L-Vibe: external DNS is disabled")
+            raise PermissionError("Ned: external DNS is disabled")
         return original_getaddrinfo(host, port, *args, **kwargs)
     socket.socket.connect = connect
     socket.socket.connect_ex = connect_ex

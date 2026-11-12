@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { atomicJSON } from '../../src/main/config';
 import { agentLaunch } from './agent-launch';
+import { ensureEditorInstructions } from './editor-instructions';
 
 /** All managed editor HTTP and CONNECT requests are denied. Agent traffic uses stdio. */
 export class EditorNetwork {
@@ -42,6 +43,7 @@ export function editorSettings(executable: string, agent: string, descriptor: st
 export async function prepareEditor(root: string, executable: string, resources: string, descriptor: string, proxy: string) {
   const data = path.join(root, 'editor'), home = path.join(data, 'home');
   await mkdir(path.join(data, 'config'), { recursive: true, mode: 0o700 });
+  await ensureEditorInstructions(path.join(data, 'config'));
   for (const directory of ['home', 'home/AppData/Local', 'home/AppData/Roaming', 'home/AppData/LocalLow', 'home/Desktop', 'home/Documents', 'home/Downloads', 'roaming', 'local', 'config-home', 'data', 'cache', 'state', 'tmp']) await mkdir(path.join(data, directory), { recursive: true, mode: 0o700 });
   const clangd = process.platform === 'win32' ? path.join(resources, 'runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe') : undefined;
   // Managed security/agent settings are regenerated; appearance changes have a separate allowlist.

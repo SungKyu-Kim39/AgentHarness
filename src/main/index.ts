@@ -109,10 +109,10 @@ app.whenReady().then(async () => {
     },
     changed: (state) => {
       if (window && !window.isDestroyed())
-        window.webContents.send("l-vibe:state", state);
+        window.webContents.send("ned:state", state);
     },
   });
-  ipcMain.handle("l-vibe:invoke", async (event, input) => {
+  ipcMain.handle("ned:invoke", async (event, input) => {
     if (
       event.sender !== window?.webContents ||
       event.senderFrame !== window.webContents.mainFrame ||
