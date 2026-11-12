@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.1",
+  "buildSourceCommit": "38f174d12ef91679138a46e29be562b326e6f8d0",
+  "artifactCommit": "fbf2882",
+  "verification": "Public unauthenticated range GET; complete installed payload and full local SHA-256 verified separately",
+  "files": [
+    {
+      "file": "Ned-0.3.1-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.1-win-x64.exe",
+      "status": 206,
+      "bytes": 1176902415,
+      "contentRange": "bytes 0-31/1176902415",
+      "expectedBinaryPrefix": true,
+      "matchesLocalPrefix": true,
+      "responseHost": "media.githubusercontent.com"
+    },
+    {
+      "file": "Ned-0.3.1-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.1-windows-x64.tgz",
+      "status": 206,
+      "bytes": 1173624892,
+      "contentRange": "bytes 0-31/1173624892",
+      "expectedBinaryPrefix": true,
+      "matchesLocalPrefix": true,
+      "responseHost": "media.githubusercontent.com"
+    }
+  ],
+  "release": {
+    "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.1",
+    "tag": "v0.3.1",
+    "draft": false,
+    "prerelease": true,
+    "publishedAt": "2026-11-12T05:53:29Z",
+    "downloadLinksInBody": true,
+    "attachmentUpload": "Rejected with HTTP 401; verified Git LFS download links supplied"
+  }
+}

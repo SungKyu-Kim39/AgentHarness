@@ -50,3 +50,11 @@ Windows 패키지에는 `npm run ned:prepare`, `npm run package:win`, `npm run b
 [현재 검증](docs/validation-0.3.1.md)·[Windows 수용](docs/windows-acceptance.md)·[라이선스](docs/license-policy.md)를 읽고 남은 설치·UI·실제 모델·MSBuild·DNS/TCP 검증을 이어간다. EXE 생성만으로 출시 완료 처리하지 않는다.
 
 이전 L-Vibe 0.2.7의 상세 인계·해시·Windows 런타임 이력은 [당시 인계서](https://github.com/SungKyu-Kim39/AgentHarness/blob/31748467fcbd0639f70db923ac9d9aea8c268b9f/HANDOFF.md)와 버전별 검증 문서를 보존하여 참고한다.
+
+## 0.3.1 최종 배포
+
+빌드 소스: `38f174d12ef91679138a46e29be562b326e6f8d0`. 바이너리·감사·manifest 게시: `fbf2882`. [공개 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.1), [직접 다운로드](downloads/README.md), [공개 다운로드 검사](downloads/Ned-0.3.1-public-verification.json)를 따른다. EXE는 1,176,902,415 bytes, TGZ는 1,173,624,892 bytes이다. 실제 설치기에서 ASCII 94,237개 파일/8,744개 디렉터리와 런타임·스킬 해시를 검증했고, TGZ 내부 EXE도 동일하다.
+
+GitHub 릴리스 작성·공개는 성공했다. 현재 연결의 `uploads.github.com` 첨부 요청은 HTTP 401로 거절되어 릴리스 본문에 정상 업로드한 Git LFS 파일의 직접 다운로드 링크를 제공했다. 공개 EXE와 TGZ는 HTTP 206, 정확한 전체 크기, MZ/gzip 형식과 로컬 접두부 일치를 확인했다. 실제 Windows·사내 모델 수용은 여전히 사용자 설치 결과로 확인해야 한다.
+
+추가로 모델 endpoint가 응답하지 않는 합성 서버를 두고 실제 OpenViking 로컬 시작을 검사했다. 약 16초 만에 ready였고 ready 전 모델 요청은 0개였다. 기본 스킬 등록은 비동기이며 편집기 시작을 막지 않는다. 임베딩/LLM 응답 대기에는 기본 제한이 없다.

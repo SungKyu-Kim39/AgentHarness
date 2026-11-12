@@ -12,7 +12,7 @@ Windows x64 검증 후보이다. 시작 안내창, agent-desktop 승인 도구 1
 
 기존 L-Vibe와 Zed를 완전히 종료하고 TGZ의 EXE로 설치한 뒤 **Ned 바로가기**를 실행한다. 기존 설정·기록·지식은 원본을 보존하여 이관한다. 첫 실행은 Ned 아이콘과 단계별 문구를 표시한다. 모델·임베딩 대기는 기본 시간 제한을 두지 않는다.
 
-[검증 보고서](../docs/validation-0.3.1.md) · [실제 설치 EXE 추출 감사](Ned-0.3.1-installer-audit.json) · [반입 manifest](Ned-0.3.1-manifest.json) · [검사 결과](Ned-0.3.1-validation.json) · [설치 안내](../docs/offline-setup.md) · [agent-desktop 범위](../docs/agent-desktop.md)
+[검증 보고서](../docs/validation-0.3.1.md) · [실제 설치 EXE 추출 감사](Ned-0.3.1-installer-audit.json) · [반입 manifest](Ned-0.3.1-manifest.json) · [검사 결과](Ned-0.3.1-validation.json) · [공개 다운로드 확인](Ned-0.3.1-public-verification.json) · [설치 안내](../docs/offline-setup.md) · [agent-desktop 범위](../docs/agent-desktop.md)
 
 94,237개 설치 파일의 ASCII 경로와 고정 구성 요소를 실제 EXE에서 대조했다. TGZ 안의 EXE 해시도 일치한다. 빌드 소스는 `38f174d12ef91679138a46e29be562b326e6f8d0`이다. 릴리스의 직접 다운로드 링크는 이 저장소의 LFS 파일을 가리킨다. 현재 연결의 releases 첨부 업로드는 401로 거절되어 별도 첨부 파일은 제공하지 못했다.
 
