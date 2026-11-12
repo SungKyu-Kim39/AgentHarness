@@ -15,11 +15,13 @@ const execute = promisify(execFile);
 const executable = path.resolve('.cache/openviking/env-linux/bin/python3');
 const legacyPackage = path.resolve('.cache/openviking-050-review/package');
 
-test('real OpenViking 0.5.0 user export imports into 0.5.4 and personal knowledge is readable from two projects',
+for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includeVectors ? 'vector' : 'no-vector'} export imports into 0.5.4 and personal knowledge is readable from two projects`,
   { skip: !existsSync(executable) || !existsSync(legacyPackage), timeout: 300000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-personal-live-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-personal-live-'));
+  const services:OpenVikingService[]=[];let tools:HostTools|undefined;let endpoint:ReturnType<typeof createServer>|undefined;
+  t.after(async()=>{await tools?.close();for(const service of services)await service.close().catch(()=>{});endpoint?.closeAllConnections();await new Promise<void>(r=>{if(endpoint?.listening)endpoint.close(()=>r());else r();});await rm(root,{recursive:true,force:true});});
   const calls: string[] = [];
-  const endpoint = createServer(async (req, res) => {
+  endpoint = createServer(async (req, res) => {
     let raw='';for await(const chunk of req)raw+=chunk;
     const body=JSON.parse(raw);calls.push(req.url!);
     if(req.url==='/v1/embeddings') {
@@ -28,9 +30,8 @@ test('real OpenViking 0.5.0 user export imports into 0.5.4 and personal knowledg
     }
     res.writeHead(200,{'Content-Type':'application/json'}).end(JSON.stringify({id:'summary',object:'chat.completion',model:body.model,choices:[{index:0,message:{role:'assistant',content:'Legacy personal reference.'},finish_reason:'stop'}],usage:{prompt_tokens:5,completion_tokens:4,total_tokens:9}}));
   });
-  await new Promise<void>(r=>endpoint.listen(0,'127.0.0.1',r));
-  t.after(()=>new Promise<void>(r=>{endpoint.closeAllConnections();endpoint.close(()=>r());}));
-  const baseUrl='http://127.0.0.1:'+(endpoint.address() as {port:number}).port+'/v1';
+  await new Promise<void>(r=>endpoint!.listen(0,'127.0.0.1',r));
+  const baseUrl='http://127.0.0.1:'+(endpoint!.address() as {port:number}).port+'/v1';
   const config=configSchema.parse({schemaVersion:2,model:{baseUrl,apiKey:'test-only-llm-key',id:'llm-test'},openViking:{enabled:true,embedding:{baseUrl,apiKey:'test-only-embedding-key',id:'embed-test',dimension:4}}});
   let diagnostics='';
   const launcher=await readFile('scripts/openviking-launch.py','utf8');
@@ -49,7 +50,7 @@ test('real OpenViking 0.5.0 user export imports into 0.5.4 and personal knowledg
     const data=path.join(root,name);await mkdir(data,{recursive:true});
     await cp('vendor/runtime/windows-x64/openviking/tokenizers',path.join(data,'tokenizers'),{recursive:true});
     const service=new OpenVikingService(data,data,()=>{},{executable,launcher:script,cwd:data,diagnostic:text=>{diagnostics+=text;}});
-    t.after(()=>service.close());await service.configure(config);
+    services.push(service);await service.configure(config);
     assert.equal(service.state().status,'ready',diagnostics.slice(-10000));return service;
   };
   const legacy=await make('legacy',legacyLauncher);
@@ -64,7 +65,7 @@ test('real OpenViking 0.5.0 user export imports into 0.5.4 and personal knowledg
   const archive=path.join(root,'legacy-personal.ovpack');
   const exportCode=`import sys,importlib.util,json
 spec=importlib.util.spec_from_file_location('exporter',sys.argv[1]);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
-print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.argv[4])))
+print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.argv[4],include_vectors=${includeVectors ? 'True' : 'False'})))
 `;
   await execute(executable,['-I','-B','-c',exportCode,path.resolve('distribution/export-openviking-personal.py'),internals.baseUrl,internals.token,archive],{timeout:120000});
   await legacy.close();
@@ -74,7 +75,7 @@ print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.a
   try { imported=await current.importPersonal(archive,async()=>{approvals++;return true;}); }
   catch(error) { assert.fail(String(error)+'\n'+diagnostics.slice(-15000)); }
   assert.equal(imported.status,'imported');assert.equal(approvals,1);
-  assert.ok(diagnostics.includes('L_VIBE_TEST_VECTOR_ACTION=restore'), 'SDK must restore the compatible vector snapshot\n'+diagnostics.slice(-15000));
+  if(includeVectors) assert.ok(diagnostics.includes('L_VIBE_TEST_VECTOR_ACTION=restore'), 'SDK must restore the compatible vector snapshot\n'+diagnostics.slice(-15000));
   assert.equal((await current.personalStatus())[0].root,'viking://user/default');
   const currentInternals=current as unknown as {baseUrl:string;token:string};
   const forbidden=await fetch(currentInternals.baseUrl+'/api/v1/content/write',{method:'POST',headers:{Authorization:'Bearer '+currentInternals.token,'X-API-Key':currentInternals.token,'X-OpenViking-Account':'l-vibe','X-OpenViking-User':'local-user','Content-Type':'application/json'},body:JSON.stringify({uri:'viking://user/default/resources/legacy-note.md',content:'must not replace private knowledge',mode:'replace',wait:true,processing_mode:'vectors_only'})});
@@ -84,8 +85,7 @@ print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.a
   await assert.rejects(current.personalRead('viking://user/default/privacy/current.json'),/범위/);
   const projects=[path.join(root,'project-a'),path.join(root,'project-b')];
   for(const p of projects)await mkdir(p);
-  const tools=new HostTools(path.join(root,'host'),path.join(root,'resources'),{project:async id=>projects[id==='a'?0:1],approve:async()=>false,knowledge:()=>current,redactor:new Redactor()});
-  t.after(()=>tools.close());
+  tools=new HostTools(path.join(root,'host'),path.join(root,'resources'),{project:async id=>projects[id==='a'?0:1],approve:async()=>false,knowledge:()=>current,redactor:new Redactor()});
   for(const session of ['a','b']) {
     let found;
     try { found=JSON.parse(await tools.call('personal_knowledge_search',{query:'preferred compiler',limit:10},session)); }

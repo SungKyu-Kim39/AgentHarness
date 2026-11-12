@@ -143,6 +143,7 @@ async function start() {
       try { const imported = await runtime.importPersonalKnowledge(result.filePaths[0]); await messageBox({ title: 'Ned 개인 지식', message: imported.status, detail: imported.root }); }
       catch (error) { await messageBox({ title: 'Ned 개인 지식', type: 'error', message: errorMessage(error) }); }
     } },
+    { label: '개인 공통 지식 가져오기 상태', click: async () => { try { const state = await runtime.personalKnowledgeStatus(); await messageBox({ title: 'Ned 개인 지식 상태', message: state.length ? '개인 자료 가져오기 상태' : '가져온 개인 자료가 없습니다.', detail: JSON.stringify(state, null, 2) + '\nimporting은 색인 준비 중입니다. ready는 검색 영역 색인 검증까지 완료한 상태입니다.' }); } catch (error) { await messageBox({ title: 'Ned 개인 지식', message: errorMessage(error) }); } } },
     { type: 'separator' },
     { label: '종료 안내', click: () => { void messageBox({ title: 'Ned 종료', message: 'Zed 편집기에서 파일을 저장하고 모든 창을 닫으면 OpenCode·OpenViking과 함께 종료됩니다.' }); } },
   ]));

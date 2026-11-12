@@ -91,6 +91,15 @@ export class PersonalKnowledge {
     const registry = await this.registry();
     return registry.entries.map(({ sha256, root, status, files, importedAt }) => ({ sha256, root, status, files, importedAt }));
   }
+  private async verifyIndex(entry: Pick<Entry, 'root' | 'roots'>, signal: AbortSignal) {
+    // OVPack import enqueues embedding work; HTTP success is not search readiness.
+    // The wait API has no default deadline, preserving long intranet model queues.
+    await this.request(entry.root, '/api/v1/system/wait', { method: 'POST', body: {}, signal });
+    for (const uri of entry.roots) {
+      const report = await this.request(entry.root, '/api/v1/system/consistency', { method: 'POST', body: { uri }, signal });
+      if (report.result?.ok !== true) throw new Error('OV_PERSONAL_INDEX_INCOMPLETE');
+    }
+  }
   import(file: string, approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>) {
     const run = this.operation.then(() => this.importOne(file, approve));
     this.operation = run.catch(() => {}); return run;
@@ -118,6 +127,7 @@ export class PersonalKnowledge {
       const existing = registry.entries.find(e => e.sha256 === sha256);
       if (existing?.status === 'ready') {
         await this.request(existing.root, '/api/v1/fs/stat?uri=' + encodeURIComponent(existing.root), { signal });
+        await this.verifyIndex(existing, signal);
         return { status: 'already-imported', root: existing.root, sha256 };
       }
       if (existing || registry.entries.some(e => e.root === preview.root)) throw new Error('같은 사용자 영역의 가져오기 기록이 있습니다. 기존 자료와 실패 상태를 보존했으며 자동 덮어쓰기는 하지 않습니다.');
@@ -138,6 +148,8 @@ export class PersonalKnowledge {
         stageName = 'OV_PERSONAL_IMPORT';
         const imported = await this.request(entry.root, '/api/v1/pack/import', { method: 'POST', body: { temp_file_id: id, parent: 'viking://user', on_conflict: 'fail', vector_mode: 'auto' }, signal });
         if (imported.result?.uri !== entry.root) throw new Error('개인 지식 가져오기 경로 확인 실패');
+        stageName = 'OV_PERSONAL_INDEX';
+        await this.verifyIndex(entry, signal);
         stageName = 'OV_PERSONAL_VERIFY';
         await this.request(entry.root, '/api/v1/fs/stat?uri=' + encodeURIComponent(entry.root), { signal });
         signal.throwIfAborted(); entry.status = 'ready'; await atomicJSON(this.file, registry);

@@ -24,6 +24,13 @@ for (const item of [...artifacts].sort((a, b) => Number(!!a.platform) - Number(!
   if (item.platform) {
     await cp('.cache/agent-desktop/source/LICENSE', target + '/LICENSE.txt');
     await cp('.cache/agent-desktop/source.tar.gz', target + '/source.tar.gz');
+    if (item.platform === 'windows-x64') {
+      const runtime = 'vendor/runtime/windows-x64/openviking/python';
+      const dll = await readFile(runtime + '/vcruntime140.dll');
+      if (hash(dll) !== 'd5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066') throw new Error('Pinned Microsoft runtime dependency changed');
+      await writeFile(target + '/vcruntime140.dll', dll);
+      await cp(runtime + '/LICENSE.txt', target + '/LICENSE.CPython-Windows.txt');
+    }
     const files = [];
     for (const name of (await readdir(target)).filter(n => n !== 'manifest.json').sort()) { const data = await readFile(path.join(target, name)); files.push({ path: name, sha256: hash(data) }); }
     await writeFile(target + '/manifest.json', JSON.stringify({ schemaVersion: 1, version, commit, files }, null, 2) + '\n');
@@ -32,5 +39,5 @@ for (const item of [...artifacts].sort((a, b) => Number(!!a.platform) - Number(!
 }
 const manifests = {};
 for (const platform of ['windows-x64', 'linux-x64']) manifests[platform] = hash(await readFile(`vendor/runtime/${platform}/agent-desktop/manifest.json`));
-await writeFile('agent-desktop-lock.json', JSON.stringify({ schemaVersion: 1, manifests, repository: 'https://github.com/vercel-labs/agent-desktop', version, commit, license: 'Apache-2.0', artifacts }, null, 2) + '\n');
+await writeFile('agent-desktop-lock.json', JSON.stringify({ schemaVersion: 1, manifests, windowsRuntime: { file: 'vcruntime140.dll', sha256: 'd5e4d9a3e835fa679450145d6a7d94e36573a509317111904d9b3712c30d9066', source: 'Pinned CPython standalone Windows runtime; see python-runtime-lock.json', license: 'Microsoft Distributable Code; see LICENSE.CPython-Windows.txt' }, repository: 'https://github.com/vercel-labs/agent-desktop', version, commit, license: 'Apache-2.0', artifacts }, null, 2) + '\n');
 console.log('Pinned agent-desktop native runtimes verified.');

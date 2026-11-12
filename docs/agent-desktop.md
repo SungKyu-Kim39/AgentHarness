@@ -1,6 +1,6 @@
 # Ned agent-desktop integration
 
-Ned 0.3.1 includes the official native agent-desktop 1.2.0 binary, matching source, Apache-2.0 license, and two reviewed static skills. It does not require an employee-side npm install or an external service. The selected intranet LLM chooses when to call host tools; agent-desktop itself has no model.
+Ned 0.3.1 includes the official native agent-desktop 1.2.0 binary, matching source, Apache-2.0 license, pinned VCRUNTIME140.dll with its original CPython/Windows notice, and two reviewed static skills. It does not require an employee-side npm install or an external service. The selected intranet LLM chooses when to call host tools; agent-desktop itself has no model.
 
 ## Usage
 

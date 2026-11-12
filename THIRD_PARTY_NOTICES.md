@@ -1,6 +1,6 @@
 ## agent-desktop 1.2.0
 
-Vercel Labs contributors, Apache-2.0. Pinned commit: `2b0a7334fc111730454b726e6800aa41cdafc093`. Native binaries are unmodified. The matching source archive and original license are installed under `resources/runtime/windows-x64/agent-desktop/`. Ned exposes a guarded subset of MCP tools and adapted static desktop/Windows guidance. See `agent-desktop-lock.json` and each skill's `ADAPTATION.md`. No upstream shell hooks or online npm bootstrap are installed.
+Vercel Labs contributors, Apache-2.0. Pinned commit: `2b0a7334fc111730454b726e6800aa41cdafc093`. Native binaries are unmodified. Windows VCRUNTIME140.dll is copied from the already pinned CPython standalone distribution, with LICENSE.CPython-Windows.txt; its Microsoft terms remain separate from Apache-2.0. The matching source archive and original license are installed under `resources/runtime/windows-x64/agent-desktop/`. Ned exposes a guarded subset of MCP tools and adapted static desktop/Windows guidance. See `agent-desktop-lock.json` and each skill's `ADAPTATION.md`. No upstream shell hooks or online npm bootstrap are installed.
 
 # Ned distribution notices
 

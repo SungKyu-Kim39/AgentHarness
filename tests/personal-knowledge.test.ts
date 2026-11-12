@@ -26,6 +26,8 @@ with zipfile.ZipFile(sys.argv[1],'w') as z:
   const transport: SkillTransport = async (route, options) => {
     options?.signal?.throwIfAborted(); requests.push({ route, options });
     if (route === '/api/v1/resources/temp_upload') return { result: { temp_file_id: 'uploaded-pack' } };
+    if (route === '/api/v1/system/wait') return { result: {} };
+    if (route === '/api/v1/system/consistency') return { result: { ok: true } };
     if (route === '/api/v1/pack/import') return { result: { uri: rootURI } };
     if (route.startsWith('/api/v1/search/find')) {
       const target = (options!.body as any).target_uri;
@@ -80,6 +82,8 @@ test('an interrupted or conflicting import stays failed, preserves its archive a
   const f = await fixture(t);
   const manager = new PersonalKnowledge(path.join(f.root, 'failed'), 'python3', async (user, route, options) => {
     assert.equal(user, 'default');
+    if (route === '/api/v1/system/wait') return { result: {} };
+    if (route === '/api/v1/system/consistency') return { result: { ok: true } };
     if (route === '/api/v1/pack/import') throw Object.assign(new Error('synthetic HTTP 409'), { status: 409 });
     return f.transport(route, options);
   });t.after(() => manager.close());
@@ -141,4 +145,18 @@ print(os.path.exists(sys.argv[3]),os.path.exists(sys.argv[3]+'.partial'))
  const run=()=>execute('python3',['-I','-B','-c',code,path.resolve('distribution/export-openviking-personal.py'),base,out]);
  assert.match((await run()).stdout,/EXPORT_PREFLIGHT 401\nFalse False/);assert.deepEqual(calls,['GET']);
  failAt='pack';assert.match((await run()).stdout,/EXPORT_PACK 500\nFalse False/);assert.deepEqual(calls,['GET','GET','POST']);
+});
+
+test('personal imports wait for actual indexing and never advertise ready when consistency fails',async t=>{
+ const f=await fixture(t);let release!:()=>void,waiting=false,consistent=false;
+ const gate=new Promise<void>(r=>{release=r;});
+ const manager=new PersonalKnowledge(path.join(f.root,'index-data'),'python3',async(_user,route,opts)=>{
+   if(route==='/api/v1/system/wait'){waiting=true;await gate;return {result:{}};}
+   if(route==='/api/v1/system/consistency')return {result:{ok:consistent}};
+   return f.transport(route,opts);
+ });t.after(()=>manager.close());
+ const pending=manager.import(f.archive,async()=>true);
+ while(!waiting)await new Promise(r=>setTimeout(r,5));assert.equal((await manager.status())[0].status,'importing');
+ release();await assert.rejects(pending,/OV_PERSONAL_INDEX/);assert.equal((await manager.status())[0].status,'failed');
+ assert.equal(JSON.parse(await manager.search('compiler',3)).results.length,0);
 });
