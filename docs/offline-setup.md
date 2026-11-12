@@ -7,7 +7,7 @@
 3. 처음 설치하고 저장 설정이 없으면 열린 JSON을 편집한다. 여러 LLM은 `providers`, 임베딩 한 개는 `openViking.embedding`에 입력한다. 끝 쉼표와 Markdown 코드 표시를 넣지 않는다.
 4. Ned를 실행하고 프로젝트 폴더를 선택한다. Zed에서 Ctrl+Shift+A로 Ned 대화를 연다. 모델은 대화의 모델 선택 항목에서 선택한다.
 
-설치 경로는 `%LOCALAPPDATA%\\Programs\\Ned`, 설정·기록·지식 데이터 경로는 `%APPDATA%\\Ned`이다. 실행기 잠금·캐시는 `%LOCALAPPDATA%\Ned-Launcher`에 분리한다. 파일·경로 이름은 ASCII를 사용하고 한국어 내용·UI는 유지한다. 직원 PC에서 npm·pip·uvx·Bun 설치나 Git clone을 수행하지 않는다.
+설치 경로는 `%LOCALAPPDATA%\\Programs\\Ned`, 설정·기록·지식 데이터 경로는 `%APPDATA%\\Ned`이다. 최초 데이터 이관을 준비하는 실행만 `%LOCALAPPDATA%\Ned-Launcher`를 사용하고, 복사 후 Ned 프로필로 한 번 재실행하여 기존 암호화 키를 함께 사용한다. 파일·경로 이름은 ASCII를 사용하고 한국어 내용·UI는 유지한다. 직원 PC에서 npm·pip·uvx·Bun 설치나 Git clone을 수행하지 않는다.
 
 최초 준비 설정은 `%APPDATA%\\Ned\\config-import.json`이다. 검증·암호화 저장에 성공하면 삭제되므로 `settings.enc.json`만 남는 것은 정상이다. 이후 설정 변경은 알림 영역의 **Ned → 설정 JSON 가져와 교체**로 수행하고 편집기를 종료한 뒤 Ned를 다시 실행한다. 설치 폴더의 예제 JSON 수정만으로 저장 설정이 바뀌지 않는다. 실제 키를 지원 문서나 공개 저장소에 올리지 않는다.
 

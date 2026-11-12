@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { lstat, readdir, mkdir, copyFile, rename, rm, rmdir, access } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -5,6 +6,10 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { atomicJSON } from '../../src/main/config';
 const execute = promisify(execFile);
+/** Bootstrap elsewhere only until the complete legacy profile, including Local State, exists. */
+export function migrationNeedsBootstrap(legacy: string, target: string) {
+  return !existsSync(path.join(target, 'settings.enc.json')) && !existsSync(path.join(target, 'migration.json')) && existsSync(path.join(legacy, 'settings.enc.json'));
+}
 async function exists(file: string) { return access(file).then(() => true, () => false); }
 /** Transactional copy: original survives, existing Ned state is never overwritten. */
 export async function migrateLegacy(legacy: string, target: string, isRunning?: () => Promise<boolean>) {

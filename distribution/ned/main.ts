@@ -6,15 +6,18 @@ import path from 'node:path';
 import { prepareNative, getRuntime, replaceConfiguration } from '../native-control';
 import { AgentOwner } from './owner';
 import { EditorNetwork, prepareEditor } from './profile';
-import { migrateLegacy } from './migration';
+import { migrateLegacy, migrationNeedsBootstrap } from './migration';
 declare const NED_VERSION: string;
 app.setName('Ned');
 app.setAppUserModelId('com.lig.ned');
 for (const flag of ['disable-background-networking', 'disable-component-update', 'disable-sync', 'disable-domain-reliability']) app.commandLine.appendSwitch(flag);
 const appData = app.getPath('appData');
 const root = path.join(appData, 'Ned');
-// Electron's singleton/cache files must not make the migration destination nonempty.
-const launcherData = path.join(process.env.LOCALAPPDATA ?? appData, 'Ned-Launcher');
+// A migrated vault must use its copied Electron Local State encryption key.
+// The initial copying process uses another profile, then exits before touching the vault.
+const legacy = path.join(appData, 'L-Vibe');
+const bootstrap = migrationNeedsBootstrap(legacy, root);
+const launcherData = bootstrap ? path.join(process.env.LOCALAPPDATA ?? appData, 'Ned-Launcher') : root;
 mkdirSync(launcherData, { recursive: true, mode: 0o700 }); app.setPath('userData', launcherData);
 const resources = app.isPackaged ? process.resourcesPath : path.resolve(process.env.NED_DEV_RESOURCES ?? '.cache/ned/resources');
 let tray: Tray | undefined, editor: ChildProcess | undefined, owner: AgentOwner | undefined;
@@ -51,7 +54,8 @@ async function chooseProject() {
   return selection.canceled ? undefined : selection.filePaths[0];
 }
 async function start() {
-  await migrateLegacy(path.join(appData, 'L-Vibe'), root);
+  await migrateLegacy(legacy, root);
+  if (bootstrap) { closed = true; app.relaunch(); app.quit(); return; }
   await mkdir(root, { recursive: true, mode: 0o700 });
   await app.whenReady();
   if (process.platform === 'win32') {
