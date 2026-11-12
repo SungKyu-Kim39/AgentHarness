@@ -2,6 +2,7 @@ import path from 'node:path';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
 import { atomicJSON } from '../../src/main/config';
+import { agentLaunch } from './agent-launch';
 
 /** All managed editor HTTP and CONNECT requests are denied. Agent traffic uses stdio. */
 export class EditorNetwork {
@@ -32,7 +33,7 @@ export function editorSettings(executable: string, agent: string, descriptor: st
     collaboration_panel: { button: false }, notification_panel: { button: false },
     title_bar: { show_onboarding_banner: false, show_sign_in: false },
     agent: { default_profile: 'ask', enable_feedback: false },
-    agent_servers: { Ned: { type: 'custom', command: executable, args: [agent, descriptor], env: { ELECTRON_RUN_AS_NODE: '1' } } },
+    agent_servers: { Ned: { type: 'custom', ...agentLaunch(executable, agent, descriptor) } },
     context_servers: {}, session: { trust_all_worktrees: false, restore_unsaved_buffers: true }, prettier: { allowed: false },
     // No per-user shell startup or shell environment extraction for the agent.
     load_direnv: 'disabled',

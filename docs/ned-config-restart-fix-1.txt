@@ -10,6 +10,8 @@ Save cancellation leaves restart pending; cancel that pending restart in the
 tray if desired. The saved configuration stays available for next startup.
 Invalid imports and unconfirmed shutdown never trigger a replacement process.
 
+Also fixes Windows ACP lifetime: Zed launches the bundled Python console supervisor, which waits for the Electron Node agent and preserves its raw stdio. No extra runtime download.
+
 The patch is cumulative with startup fix 1. Existing settings, keys, knowledge,
 history and projects are not modified by the patch. ROLLBACK_FIX.cmd restores
 the exact host archive that this patch backed up. The Control Panel version

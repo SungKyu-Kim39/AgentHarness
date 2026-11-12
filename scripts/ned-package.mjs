@@ -111,12 +111,17 @@ async function audit() {
   const extracted=path.join(cache,'installer-audit');
   await rm(extracted,{recursive:true,force:true});await mkdir(extracted,{recursive:true});
   try {
-    const seven=await getPath7za();run(seven,['t',installer]);run(seven,['x','-y','-o'+extracted,installer],{stdio:'ignore'});
+    const seven=await getPath7za();run(seven,['t',installer]);
+    const compared=['Ned.exe','resources/app.asar','resources/ned/agent.cjs','resources/ned/icon.ico','resources/zed/Zed.exe'];
+    const payloadHashes=Object.fromEntries(await Promise.all(compared.map(async file=>[file,await fileHash(path.join(staged,file))])));
+    // Optional build-machine cleanup after archive integrity passes; retain exact payload hashes for comparison.
+    if(process.env.NED_AUDIT_DISCARD_STAGE==='1') await rm(staged,{recursive:true,force:true});
+    run(seven,['x','-y','-o'+extracted,installer],{stdio:'ignore'});
     const paths=await verifyAsciiTree(extracted), resources=path.join(extracted,'resources');
     const app=JSON.parse(extractFile(path.join(resources,'app.asar'),'package.json'));
     if (app.name!=='ned'||app.version!==version) throw new Error('Wrong app in installer');
-    for(const file of ['Ned.exe','resources/app.asar','resources/ned/agent.cjs','resources/ned/icon.ico','resources/zed/Zed.exe'])
-      if(await fileHash(path.join(extracted,file))!==await fileHash(path.join(staged,file))) throw new Error('Installer bytes differ: '+file);
+    for(const file of compared)
+      if(await fileHash(path.join(extracted,file))!==payloadHashes[file]) throw new Error('Installer bytes differ: '+file);
     const components={};
     for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
       const folder=name==='skills'?'l-vibe/skills':'runtime/windows-x64/'+name;
@@ -135,7 +140,7 @@ async function bundle() {
   await cp(installer,path.join(stage,path.basename(installer)));
   for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[`docs/validation-${version}.md`,'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
-  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd'],['distribution/export-openviking-personal-no-vectors.cmd','EXPORT_PERSONAL_NO_VECTORS.cmd']]) await cp(path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd'],['distribution/export-openviking-personal-no-vectors.cmd','EXPORT_PERSONAL_NO_VECTORS.cmd'],['distribution/ned/agent-probe.py','agent-probe.py'],['distribution/ned/check-agent.cmd','CHECK_AGENT.cmd']]) await cp(path.join(root,from),path.join(stage,to));
   await writeFile(path.join(stage,'CHECK_OPENVIKING.cmd'),(await readFile(path.join(root,'distribution/check-openviking.cmd'),'utf8')).replaceAll('L-Vibe','Ned').replaceAll('L_VIBE','NED'));
 
   await mkdir(path.join(stage,'source'),{recursive:true});

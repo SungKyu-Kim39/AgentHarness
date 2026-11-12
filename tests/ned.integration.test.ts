@@ -82,7 +82,9 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
   (runtime as any).proxy.server.on('request', (req: any, res: any) => { res.once('finish', () => traces.push(req.method + ' ' + req.url + ' ' + res.statusCode)); });
   const descriptor = await owner.start();
   runtime.setEditorCheck((session, directory, proposal, signal) => owner!.checkBuffer(session, directory, proposal, signal));
-  child = spawn(process.env.NED_TEST_AGENT_EXECUTABLE ?? process.execPath, [bridge, descriptor], { stdio: 'pipe', env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
+  const executable = process.env.NED_TEST_AGENT_EXECUTABLE ?? process.execPath;
+  const supervised = process.env.NED_TEST_AGENT_SUPERVISED === '1';
+  child = spawn(supervised ? 'python3' : executable, supervised ? ['-I', '-B', path.resolve('scripts/sidecar-supervisor.py'), executable, bridge, descriptor] : [bridge, descriptor], { stdio: 'pipe', env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } });
   let serial = 0, stderr = '';
   const pending = new Map<number, { resolve(value: any): void; reject(error: Error): void; method: string }>();
   const updates: any[] = [];

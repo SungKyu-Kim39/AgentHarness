@@ -7,6 +7,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { ConfigVault } from '../src/main/config';
 import { ConfigurationRestart } from '../distribution/ned/configuration-restart';
 import { editorCloseScript } from '../distribution/ned/editor-close';
+import { agentLaunch } from '../distribution/ned/agent-launch';
 import { NativeRuntime, engineConfiguration } from '../distribution/native-control';
 
 const configuration = (name: string) => JSON.stringify({ schemaVersion: 2, model: { providerID: 'intranet', model: 'coding' }, providers: {
@@ -90,4 +91,16 @@ test('Windows close script accepts only our numeric PID and posts normal WM_CLOS
   assert.match(script, /GetWindow\(\$hwnd, 4\)/); // Skip owned/modal windows.
   assert.match(script, /PostMessage\(\$hwnd, 0x0010/);
   assert.doesNotMatch(script, /Stop-Process|taskkill|TerminateProcess|SendKeys|WM_QUIT|0x0012/i);
+});
+
+test('Windows ACP uses the bundled console supervisor with fixed argv and Electron Node mode', () => {
+  const root = 'C:\\Users\\Test User\\Programs\\Ned';
+  const executable = path.win32.join(root, 'Ned.exe'), agent = path.win32.join(root, 'resources/ned/agent.cjs');
+  const descriptor = 'C:\\Users\\Test User\\AppData\\Roaming\\Ned\\runtime\\ned-agent.json';
+  const launch = agentLaunch(executable, agent, descriptor, 'win32');
+  assert.equal(launch.command, path.win32.join(root, 'resources/runtime/windows-x64/openviking/python/python.exe'));
+  assert.deepEqual(launch.args, ['-I', '-B', path.win32.join(root, 'resources/runtime/windows-x64/openviking/sidecar-supervisor.py'), executable, agent, descriptor]);
+  assert.equal(launch.env.ELECTRON_RUN_AS_NODE, '1');
+  assert.throws(() => agentLaunch('relative.exe', agent, descriptor, 'win32'));
+  assert.deepEqual(agentLaunch('/Ned', '/agent.cjs', '/descriptor.json', 'linux').args, ['/agent.cjs', '/descriptor.json']);
 });
