@@ -28,3 +28,18 @@ test('missing editor files fail before starting model services and record a safe
  await assert.rejects(checkEditorFiles(root,path.join(root,'empty')),/EDITOR_BUNDLE_MISSING/);
  const state=JSON.parse(await readFile(path.join(root,'editor-startup-status.json'),'utf8'));assert.equal(state.code,'EDITOR_BUNDLE_MISSING');assert.ok(state.missing.length>0);
 });
+
+test('panic headers expose only pinned upstream source locations; arbitrary paths and payloads never enter diagnostics',()=>{
+ const details=editorExitDetail(101,null,"thread 'main' panicked at C:\\build\\private\\crates\\paths\\src\\paths.rs:204:18:\nfailed to determine LocalAppData directory USER_SECRET");
+ assert.ok(details.markers.includes('local_app_data'));assert.deepEqual(details.panicLocations,[{source:'crates/paths/src/paths.rs',line:204,column:18}]);assert.ok(!JSON.stringify(details).includes('USER_SECRET'));assert.ok(!JSON.stringify(details).includes('private'));
+ const other=editorExitDetail(101,null,"thread 'main' panicked at C:\\USER_SECRET\\custom.rs:12:4:\nUSER_SECRET");assert.ok(other.panicLocations[0].sourceHash);assert.equal(other.panicLocations[0].source,undefined);assert.ok(!JSON.stringify(other).includes('USER_SECRET'));
+});
+
+test('Windows Known Folder relative AppData layout exists inside the private USERPROFILE',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-knownfolders-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const {env}=await prepareEditor(root,'/Ned.exe','/resources','/descriptor','http://127.0.0.1:9');
+ assert.equal(env.APPDATA,path.join(env.USERPROFILE!,'AppData','Roaming'));
+ assert.equal(env.LOCALAPPDATA,path.join(env.USERPROFILE!,'AppData','Local'));
+ for(const folder of ['Local','Roaming','LocalLow'])assert.equal((await stat(path.join(env.USERPROFILE!,'AppData',folder))).isDirectory(),true);
+ assert.equal(editorExitDetail(-1073741819,null,'').nativeFailure,'access_violation');
+});

@@ -4,6 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { readFile, mkdir, access } from 'node:fs/promises';
 import path from 'node:path';
 import { prepareNative, getRuntime, replaceConfiguration } from '../native-control';
+import { editorLaunch } from './editor-launch';
 import { StartupWindow } from './startup-window';
 import { recordEditorExit, checkEditorFiles } from './editor-startup';
 import { AgentOwner } from './owner';
@@ -54,10 +55,7 @@ app.on('before-quit', event => {
   event.preventDefault();
   if (!quitting) void shutdown().then(() => app.quit()).catch(() => {});
 });
-async function chooseProject() {
-  const selection = await openDialog({ title: 'Ned에서 작업할 프로젝트 폴더 선택', properties: ['openDirectory'] });
-  return selection.canceled ? undefined : selection.filePaths[0];
-}
+
 async function start() {
   await app.whenReady();
   await startup.open(resources); startup.setPhase('migration');
@@ -102,12 +100,9 @@ async function start() {
   });
   if (!ready) { closed = true; startup.close(); app.quit(); return; }
   const runtime = getRuntime();
-  const project = await chooseProject();
-  if (!project) { await runtime.close(); closed = true; startup.close(); app.quit(); return; }
   startup.setPhase('engine');
-  await runtime.authorizeProject(project);
   const connection = await runtime.connection([path.join(resources, process.platform === 'win32' ? 'opencode-cli.exe' : 'opencode-cli')]);
-  const confirmed = new Set([await runtime.canonicalProject(project)]);
+  const confirmed = new Set<string>();
   owner = new AgentOwner(root, runtime, connection, async directory => {
     if (confirmed.has(directory)) return true;
     if (!await approve('Ned 프로젝트 접근 승인', directory + '\n이 폴더 안의 읽기·검색을 허용합니다. AI 수정과 빌드는 별도로 승인합니다.')) return false;
@@ -148,7 +143,8 @@ async function start() {
     { label: '종료 안내', click: () => { void messageBox({ title: 'Ned 종료', message: 'Zed 편집기에서 파일을 저장하고 모든 창을 닫으면 OpenCode·OpenViking과 함께 종료됩니다.' }); } },
   ]));
   startup.setPhase('editor');
-  editor = spawn(binary, [...(process.platform === 'win32' ? ['--foreground'] : []), '--user-data-dir', profile.data, project], { cwd: project, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
+  const launch = editorLaunch(profile.data);
+  editor = spawn(binary, launch.args, { cwd: launch.cwd, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
   editor.once('spawn', () => startup.close());
   const startedAt = Date.now(); let diagnostic = '', spawnError: string | undefined;
   // Bounded in-memory classification; upstream text is never saved or displayed.
@@ -161,8 +157,8 @@ async function start() {
       const report = await recordEditorExit(root, binary, profile.data, profile.env, startedAt, code, signal, diagnostic, spawnError).catch(() => undefined);
       if (spawnError || code !== 0 || signal || Date.now() - startedAt < 3000) {
         await messageBox({ type: 'warning', title: 'Ned 편집기 시작 진단',
-          message: '편집기가 종료되었습니다. 실제 종료 상태를 확인해야 합니다.',
-          detail: JSON.stringify(report ?? { code: 'EDITOR_DIAGNOSTIC_WRITE_FAILED' }, null, 2) + '\n진단 파일: %APPDATA%\\Ned\\editor-startup-status.json\n개인 Zed 실행 여부만으로 원인을 단정하지 않습니다. 진단 파일에는 설정·키·코드·원본 로그가 포함되지 않습니다.' });
+          message: code === 101 ? '편집기 초기화 중 오류가 발생했습니다. 진단 코드와 소스 위치를 확인하세요.' : '편집기가 종료되었습니다. 진단 상태를 확인하세요.',
+          detail: JSON.stringify(report ?? { code: 'EDITOR_DIAGNOSTIC_WRITE_FAILED' }, null, 2) + '\n진단 파일: ' + path.join(root, 'editor-startup-status.json') + '\n설정·키·사용자 코드·원본 로그는 포함하지 않습니다.' });
       }
       editor = undefined;
       await shutdown(); app.quit();

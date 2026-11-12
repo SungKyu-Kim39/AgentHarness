@@ -1,0 +1,31 @@
+// Build-machine only, cumulative 0.3.1 archive patch. No runtime downloads.
+import { readFile,writeFile,mkdir,rm,cp,stat } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import { createPackage,extractAll,extractFile } from '@electron/asar';
+import fuses from '@electron/fuses';
+import { verifyAsciiTree,verifyAsciiTar } from './package-paths.mjs';
+const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+const base=path.resolve('release/ned/win-unpacked'),output=path.resolve('.cache/ned/startup-fix-1'),app=path.resolve('.cache/ned/startup-fix-app');
+const baseline='fb10ba3a99479c22a24dbefc40f3b83d156ad1112d0e2ab15c023b5d2660d558';
+const exeHash='208c6c7754a2d95ebc053f91f4354052b3bf12b67df6aa230b1c299b1840d354';
+if(hash(await readFile(base+'/resources/app.asar'))!==baseline||hash(await readFile(base+'/Ned.exe'))!==exeHash)throw new Error('Wrong 0.3.1 patch baseline');
+const wire=await fuses.getCurrentFuseWire(base+'/Ned.exe');
+if(wire[fuses.FuseV1Options.EnableEmbeddedAsarIntegrityValidation]!==48)throw new Error('Archive-only patch is not compatible with this integrity fuse');
+await rm(output,{recursive:true,force:true});await rm(app,{recursive:true,force:true});await mkdir(output,{recursive:true});await mkdir(app,{recursive:true});
+extractAll(base+'/resources/app.asar',app);
+await cp('.cache/ned/app/main.cjs',app+'/main.cjs'); // Keep every original dependency and license.
+await createPackage(app,output+'/app.asar');
+if(!extractFile(output+'/app.asar','main.cjs').equals(await readFile('.cache/ned/app/main.cjs')))throw new Error('Host archive verification failed');
+const manifest={schemaVersion:1,product:'Ned',targetVersion:'0.3.1',fixId:'ned-startup-1',sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),exeSha256:exeHash,baselineAsarSha256:baseline,updatedAsarSha256:hash(await readFile(output+'/app.asar')),integrityFuseDisabledInOriginalBinary:true,changes:['Windows AppData directories within private USERPROFILE','Launchpad without mandatory folder selection','Sanitized Rust panic source locations']};
+const raw=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(output+'/manifest.json',raw);
+const installer=(await readFile('distribution/ned/apply-startup-fix.py','utf8')).replace('__MANIFEST_SHA256__',hash(raw));await writeFile(output+'/apply-startup-fix.py',installer);
+for(const [name,args] of [['APPLY_FIX',''],['ROLLBACK_FIX',' --rollback']])await writeFile(output+'/'+name+'.cmd','@echo off\r\nsetlocal\r\nset "NED_FIX_PY=%LOCALAPPDATA%\\Programs\\Ned\\resources\\runtime\\windows-x64\\openviking\\python\\python.exe"\r\nif not exist "%NED_FIX_PY%" (echo NED_BUNDLED_PYTHON_NOT_FOUND & pause & exit /b 1)\r\n"%NED_FIX_PY%" -I -B "%~dp0apply-startup-fix.py"'+args+'\r\nset "NED_FIX_EXIT=%ERRORLEVEL%"\r\necho EXIT_CODE=%NED_FIX_EXIT%\r\npause\r\nexit /b %NED_FIX_EXIT%\r\n');
+for(const [from,to] of [['editor-probe.py','editor-probe.py'],['check-editor.cmd','CHECK_EDITOR.cmd'],['zed-sources.json','zed-sources.json']])await cp('distribution/ned/'+from,output+'/'+to);
+await writeFile(output+'/README.txt',await readFile('docs/ned-startup-fix-1.txt'));
+await verifyAsciiTree(output);
+const archive=path.resolve('downloads/Ned-startup-fix-1.tgz');execFileSync('tar',['-czf',archive,'-C',output,'.']);verifyAsciiTar(archive);
+await writeFile(archive+'.sha256',hash(await readFile(archive))+'  '+path.basename(archive)+'\n');
+await writeFile('downloads/Ned-startup-fix-1-manifest.json',JSON.stringify({...manifest,archiveBytes:(await stat(archive)).size,archiveSha256:hash(await readFile(archive))},null,2)+'\n');
+console.log({bytes:(await stat(archive)).size,updatedAsarSha256:manifest.updatedAsarSha256});

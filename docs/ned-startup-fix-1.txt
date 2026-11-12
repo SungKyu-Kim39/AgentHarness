@@ -1,0 +1,31 @@
+Ned 0.3.1 startup fix 1
+
+1. Close Ned and all Zed processes completely.
+2. Extract this archive to a writable folder; keep its files together.
+3. Run APPLY_FIX.cmd. Check status applied or already-applied and EXIT_CODE=0.
+4. Start the installed Ned shortcut. The editor should show its launchpad;
+   a project folder is no longer required before opening the editor.
+5. Open a folder/recent project in the editor. AI project access requires its
+   separate native approval. Existing model/embedding settings and data remain.
+
+Confirmed cause on the deployment PC: Windows Known Folder lookup failed with
+0x80070003 because private USERPROFILE did not contain AppData/Local and Roaming.
+The corrected standard layout returned success for both folder APIs.
+The system-specs probe also reported 0xc0000005; GUI success still needs checking.
+This patch fixes the confirmed directory defect, not every possible native crash.
+
+Only the exact original Ned 0.3.1 host archive is replaced. The original archive
+is retained at resources/app.asar.ned-startup-1.backup. Executables, credentials,
+model settings, OpenViking storage and project files are not changed.
+The original archive integrity fuse is verified at build time; no fuse is changed.
+The Control Panel installation version remains 0.3.1 for this small patch.
+
+ROLLBACK_FIX.cmd restores only this exact backup when the current archive matches
+this patch. Unknown versions, modified files, conflicting backups or running apps
+are refused. Do not delete user data or disable Windows security protections.
+
+If Ned still exits, send the new editor-startup-status.json (diagnosticRevision 2)
+from APPDATA/Ned, not raw logs/settings/API keys.
+CHECK_EDITOR.cmd can first compare fresh diagnostic profiles without starting
+model services. A temporary empty editor window may briefly appear and close.
+The updated check tests the normal GUI even if --system-specs crashes.

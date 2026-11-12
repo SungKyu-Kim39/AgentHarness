@@ -1,9 +1,16 @@
+import { createHash } from 'node:crypto';
+import sourceNames from './zed-sources.json';
 import { spawn } from 'node:child_process';
 import { open, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { atomicJSON } from '../../src/main/config';
 
+const knownSources = new Set(sourceNames);
 const patterns: Array<[string, RegExp]> = [
+  ['data_directory_initialized_early', /set_custom_data_dir called after/i],
+  ['local_app_data', /failed to determine LocalAppData/i],
+  ['roaming_app_data', /failed to determine RoamingAppData/i],
+  ['home_directory', /failed to determine home directory/i],
   ['graphics', /failed to initialize DirectX|D3D|DXGI_ERROR|no suitable graphics|Vulkan/i],
   ['permission', /Access is denied|Permission denied|os error 5/i],
   ['cli_helper', /zed-cli|failed to.*(?:cli path|askpass)/i],
@@ -15,7 +22,15 @@ export function editorExitDetail(code: number | null, signal: string | null, tex
   const hex = code === null ? undefined : '0x' + (code >>> 0).toString(16).padStart(8, '0');
   const markers = patterns.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
   const loader = hex === '0xc0000135' ? 'missing_dll' : hex === '0xc000007b' ? 'invalid_binary' : hex === '0xc0000142' ? 'dll_initialization' : hex === '0xc000001d' ? 'unsupported_instruction' : undefined;
-  return { exitCode: code, exitHex: hex, signal, markers, ...(loader ? { loader } : {}) };
+  const panicLocations: Array<{ source?: string; sourceHash?: string; line: number; column?: number }> = [];
+  for (const m of text.matchAll(/panicked at ([^\r\n]+?\.rs):(\d+)(?::(\d+))?/g)) {
+    const raw = m[1].replaceAll('\\', '/').replace(/^[ '"]+|[ '"]+$/g, '');
+    const index = raw.indexOf('crates/'), relative = index < 0 ? raw : raw.slice(index);
+    const location = { ...(knownSources.has(relative) ? { source: relative } : { sourceHash: createHash('sha256').update(raw).digest('hex') }), line: Number(m[2]), ...(m[3] ? { column: Number(m[3]) } : {}) };
+    if (!panicLocations.some(item => JSON.stringify(item) === JSON.stringify(location))) panicLocations.push(location);
+    if (panicLocations.length === 8) break;
+  }
+  return { exitCode: code, exitHex: hex, signal, markers, panicLocations, ...(hex === '0xc0000005' ? { nativeFailure: 'access_violation' } : {}), ...(loader ? { loader } : {}) };
 }
 /** Only a bounded tail of this run's app-owned log is inspected. Raw text is never persisted. */
 export async function editorLogMarkers(data: string, startedAt: number) {
@@ -39,7 +54,7 @@ export async function recordEditorExit(root: string, binary: string, data: strin
       child.once('exit', value => { clearTimeout(timer); resolve(value === 0 ? 'passed' : 'failed'); });
     });
   }
-  const report = { schemaVersion: 1, recordedAt: new Date().toISOString(), elapsedMs: Date.now() - startedAt, platform: process.platform, ...detail,
+  const report = { schemaVersion: 1, diagnosticRevision: 2, profileLayout: 'standard-appdata', recordedAt: new Date().toISOString(), elapsedMs: Date.now() - startedAt, platform: process.platform, ...detail,
     ...(osError && /^[A-Z0-9_]{1,32}$/.test(osError) ? { osError } : {}), loaderProbe };
   await atomicJSON(path.join(root, 'editor-startup-status.json'), report);
   return report;

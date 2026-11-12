@@ -10,6 +10,10 @@ Ned는 사내 Qwen 모델에 **Zed 편집기, 전용 OpenCode 엔진, Aegis·Con
 
 검은 배경에 흰색 굵은 Ned 글자의 새 아이콘을 사용한다. 번들 Zed는 구성 요소의 원래 이름을 유지한다. [Ned 설치 EXE·반입 TGZ 다운로드](downloads/README.md)에서 새 후보와 이전 L-Vibe 0.2.7 기록을 구분한다.
 
+## 0.3.1 시작 수정 패치
+
+[시작 수정 패치 1](docs/ned-startup-fix-1.md)은 배포 PC에서 확인한 Windows AppData 경로 오류와 강제 프로젝트 선택을 수정한다. 원본 0.3.1 EXE와 구분하여 적용한다. 패치 후에는 시작 화면에서 폴더를 열고 AI 접근 범위를 승인한다. 정상 GUI 시작 여부는 배포 PC에서 확인 중이다.
+
 ## 사용하는 흐름
 
 1. 반입용 TGZ를 압축 해제하고 포함된 Ned 설치 EXE를 실행한다.

@@ -139,7 +139,7 @@ def main():
             result = {'layout':'standard' if aligned else 'current'}
             result['knownFolders'] = json.loads(known.stdout) if known.returncode==0 else {'probeFailed':True}
             result['initialization'] = process_probe(binary,['--foreground','--user-data-dir',str(data),'--system-specs'],base,env,sources,15)
-            if result['initialization']['exitCode']==0:
+            if aligned or result['initialization']['exitCode']==0:
                 result['window'] = process_probe(binary,['--foreground','--user-data-dir',str(data),str(base/'empty-project')],base,env,sources,5)
             report['results'].append(result)
             print(json.dumps(result,ensure_ascii=True,indent=2),flush=True)

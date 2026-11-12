@@ -1,0 +1,30 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,readFile,rm} from 'node:fs/promises';
+import path from 'node:path';
+import {tmpdir} from 'node:os';
+import {connect} from 'node:net';
+import {editorLaunch} from '../distribution/ned/editor-launch';
+import {editorSettings} from '../distribution/ned/profile';
+import {AgentOwner} from '../distribution/ned/owner';
+import {Peer} from '../distribution/ned/rpc';
+import type {NativeRuntime} from '../distribution/native-control';
+test('blank startup uses the launchpad and passes no project path to the editor',()=>{
+ assert.deepEqual(editorLaunch('C:\\Ned\\editor','win32'),{args:['--foreground','--user-data-dir','C:\\Ned\\editor'],cwd:'C:\\Ned\\editor\\home'});
+ assert.deepEqual(editorLaunch('/private/editor','linux'),{args:['--user-data-dir','/private/editor'],cwd:'/private/editor/home'});
+ assert.equal(editorSettings('/Ned.exe','/agent.cjs','/descriptor','http://127.0.0.1:9').restore_on_startup,'launchpad');
+ assert.throws(()=>editorLaunch('relative','win32'));
+});
+test('blank editor ownership does not authorize app data; real project access needs a user decision before binding',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-blank-'));let approvals=0,allow=false;const authorized:string[]=[];
+ const project=path.join(root,'project');
+ const runtime={canonicalProject:async(p:string)=>{if(p===root)throw new Error('Open a project folder first');return p;},authorizeProject:async(p:string)=>{authorized.push(p);}} as unknown as NativeRuntime;
+ const owner=new AgentOwner(root,runtime,{url:'http://127.0.0.1:1',password:'test-only'},async()=>{approvals++;return allow;});
+ const descriptor=JSON.parse(await readFile(await owner.start(),'utf8'));const socket=connect(descriptor.socket);const peer=new Peer(socket,async()=>{throw new Error('No client callback');});
+ t.after(async()=>{peer.close();await owner.close();await rm(root,{recursive:true,force:true});});
+ await peer.call('hello',{token:descriptor.token});assert.equal(approvals,0);assert.deepEqual(authorized,[]);
+ await assert.rejects(peer.call('authorize',{cwd:root}),/Open a project/);assert.equal(approvals,0);
+ await assert.rejects(peer.call('authorize',{cwd:project}),/거절/);assert.deepEqual(authorized,[]);
+ allow=true;await peer.call('authorize',{cwd:project});assert.deepEqual(authorized,[project]);assert.equal(approvals,2);
+ await peer.call('authorize',{cwd:project});assert.equal(approvals,2);
+});

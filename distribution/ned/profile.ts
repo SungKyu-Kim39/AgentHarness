@@ -18,6 +18,7 @@ export class EditorNetwork {
 export function editorSettings(executable: string, agent: string, descriptor: string, proxy: string, clangd?: string) {
   return {
     telemetry: { diagnostics: false, metrics: false }, auto_update: false,
+    restore_on_startup: 'launchpad',
     proxy, server_url: proxy, credentials_url: 'http://127.0.0.1:1/ned-private-credentials',
     auto_install_extensions: { html: false }, suggest_extensions: false,
     granted_extension_capabilities: [], language_servers: [], format_on_save: 'off',
@@ -40,7 +41,7 @@ export function editorSettings(executable: string, agent: string, descriptor: st
 export async function prepareEditor(root: string, executable: string, resources: string, descriptor: string, proxy: string) {
   const data = path.join(root, 'editor'), home = path.join(data, 'home');
   await mkdir(path.join(data, 'config'), { recursive: true, mode: 0o700 });
-  for (const directory of ['home', 'roaming', 'local', 'config-home', 'data', 'cache', 'state', 'tmp']) await mkdir(path.join(data, directory), { recursive: true, mode: 0o700 });
+  for (const directory of ['home', 'home/AppData/Local', 'home/AppData/Roaming', 'home/AppData/LocalLow', 'home/Desktop', 'home/Documents', 'home/Downloads', 'roaming', 'local', 'config-home', 'data', 'cache', 'state', 'tmp']) await mkdir(path.join(data, directory), { recursive: true, mode: 0o700 });
   const clangd = process.platform === 'win32' ? path.join(resources, 'runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe') : undefined;
   // Managed security/agent settings are regenerated; appearance changes have a separate allowlist.
   const appearance = await readFile(path.join(data, 'appearance.json'), 'utf8').then(JSON.parse).catch(() => readFile(path.join(data, 'config/settings.json'), 'utf8').then(JSON.parse).catch(() => ({})));
@@ -54,7 +55,7 @@ export async function prepareEditor(root: string, executable: string, resources:
   for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'SystemDrive', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432', 'ProgramData', 'PATHEXT', 'LANG', 'LC_ALL', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'])
     if (process.env[key]) env[key] = process.env[key];
   return { data, env: { ...env,
-    HOME: home, USERPROFILE: home, APPDATA: path.join(data, 'roaming'), LOCALAPPDATA: path.join(data, 'local'),
+    HOME: home, USERPROFILE: home, APPDATA: path.join(home, 'AppData', 'Roaming'), LOCALAPPDATA: path.join(home, 'AppData', 'Local'),
     XDG_CONFIG_HOME: path.join(data, 'config-home'), XDG_DATA_HOME: path.join(data, 'data'), XDG_CACHE_HOME: path.join(data, 'cache'), XDG_STATE_HOME: path.join(data, 'state'),
     PATH: process.platform === 'win32' ? ['System32', '', 'System32/Wbem', 'System32/WindowsPowerShell/v1.0'].map(p => path.join(process.env.SystemRoot ?? 'C:\\Windows', p)).join(path.delimiter) : '/usr/bin:/bin',
     ...(process.platform === 'win32' ? { ComSpec: path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32/cmd.exe') } : {}),

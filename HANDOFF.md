@@ -58,3 +58,9 @@ Windows 패키지에는 `npm run ned:prepare`, `npm run package:win`, `npm run b
 GitHub 릴리스 작성·공개는 성공했다. 현재 연결의 `uploads.github.com` 첨부 요청은 HTTP 401로 거절되어 릴리스 본문에 정상 업로드한 Git LFS 파일의 직접 다운로드 링크를 제공했다. 공개 EXE와 TGZ는 HTTP 206, 정확한 전체 크기, MZ/gzip 형식과 로컬 접두부 일치를 확인했다. 실제 Windows·사내 모델 수용은 여전히 사용자 설치 결과로 확인해야 한다.
 
 추가로 모델 endpoint가 응답하지 않는 합성 서버를 두고 실제 OpenViking 로컬 시작을 검사했다. 약 16초 만에 ready였고 ready 전 모델 요청은 0개였다. 기본 스킬 등록은 비동기이며 편집기 시작을 막지 않는다. 임베딩/LLM 응답 대기에는 기본 제한이 없다.
+
+## 시작 실패 후속 조사와 빈 시작 화면
+
+사용자 0.3.1 Windows에서 405ms 후 exit 101, panic, loaderProbe passed, 앱 소유 Zed.log 없음. 공개 진단 도구 `Ned-editor-probe-1.tgz`를 사용해 current layout에서 Local/Roaming Known Folder가 0x80070003, Rust panic이 crates/paths/src/paths.rs:204:18임을 확인했다. standard USERPROFILE/AppData/Local,Roaming 구성에서는 두 API가 성공하고 private home 안으로 해석됐다. Profile Known Folder 자체는 실제 OS 프로필을 반환하므로 환경 변수만으로 모든 OS 경로가 격리됐다고 주장하지 않는다. --system-specs는 standard에서도 0xc0000005로 끝나 정상 GUI 추가 확인이 필요하다.
+
+시작 수정 패치 1 소스는 표준 AppData 생성/환경 정렬, 강제 폴더 선택 제거, restore_on_startup launchpad, 안전한 panic 소스 위치 기록을 포함한다. `scripts/ned-startup-fix.mjs`는 기존 0.3.1 staging의 app.asar를 추출해 main만 교체하고 모든 기존 Node 의존성/고지를 유지한다. exe+asar 원본 해시를 고정하고 기존 fuse가 0임을 확인하며 어떤 fuse도 변경하지 않는다. 설치 EXE를 다시 빌드하기 전 이 작은 패치로 사용자 PC의 정상 GUI를 검증한다.
