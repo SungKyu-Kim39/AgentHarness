@@ -1,3 +1,29 @@
+# Ned 다운로드
+
+**Ned 0.3.0 · Zed 기반 전환 검증 후보**이다. Windows 실제 설치·화면·사내 서버·MSBuild·외부망 차단 수용은 미완료이며 1.0 완료를 의미하지 않는다.
+
+| 파일 | 다운로드 | 크기 |
+|---|---|---:|
+| 폐쇄망 반입 TGZ (설치 EXE·JSON·안내·소스 포함) | [Ned-0.3.0-windows-x64.tgz](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.0-windows-x64.tgz) | 1,128,796,546 bytes |
+| 설치 EXE 단독 | [Ned-0.3.0-win-x64.exe](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.0-win-x64.exe) | 1,132,157,259 bytes |
+| TGZ SHA-256 | [검증 파일](Ned-0.3.0-windows-x64.tgz.sha256) | |
+
+TGZ를 압축 해제하고 EXE 설치 → 중앙 JSON 편집 → Ned 실행 → 프로젝트 선택 → Ctrl+Shift+A로 Ned 대화를 연다. 기존 L-Vibe·Zed는 먼저 종료한다. 모델·기록·지식은 원본을 보존하여 이관한다.
+
+[소개](../docs/ned-introduction.md) · [설치·설정](../docs/offline-setup.md) · [검증 상태](../docs/validation-0.3.0.md) · [라이선스](../docs/license-policy.md) · [파일 manifest](Ned-0.3.0-manifest.json) · [실제 EXE 추출 감사](Ned-0.3.0-installer-audit.json)
+
+설치기 SHA-256: `78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b`
+
+TGZ SHA-256: `674ea4dc96640282ea21f5dee6586a6ff9167aadb15878c07fa2bfdc9330f711`
+
+빌드 소스: `fd4ad45ec00a8831fc951dab5c27365cc1eb7015`
+
+설치기에서 94,216개 파일의 ASCII 경로와 고정 런타임·34개 스킬을 검사하였다. TGZ 안의 EXE 해시와 소스 묶음도 대조하였다. 실제 Windows 실행 검증과 구분한다.
+
+---
+
+## 이전 L-Vibe 배포 기록
+
 > 아래 다운로드는 기존 L-Vibe 배포본이다. Ned 0.3.0 전환 소스·새 아이콘·Zed 실행기를 포함하는 파일로 오인하지 않는다. 신규 산출물은 생성·검증·게시 후 이 페이지에 별도로 기록한다. [Ned 소개](../docs/ned-introduction.md)
 
 # L-Vibe 다운로드

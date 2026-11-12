@@ -1,0 +1,39 @@
+{
+  "sourceCommit": "fd4ad45ec00a8831fc951dab5c27365cc1eb7015",
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.0",
+  "verifiedFrom": "installer-archive",
+  "os": "linux",
+  "createdAt": "2026-11-12T01:49:40.297Z",
+  "installer": {
+    "name": "Ned-0.3.0-win-x64.exe",
+    "bytes": 1132157259,
+    "sha256": "78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b"
+  },
+  "paths": {
+    "encoding": "ascii",
+    "files": 94216,
+    "directories": 8739
+  },
+  "components": {
+    "openviking": {
+      "manifestSha256": "179da3acafb3858025d8d13d2688c03dcd34b7ac1326417b4baeb4b92f7fda85",
+      "files": 63069
+    },
+    "mcp": {
+      "manifestSha256": "002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1",
+      "files": 21031
+    },
+    "rea": {
+      "manifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+      "files": 9019
+    },
+    "skills": {
+      "manifestSha256": "f5b414cb185dbaa5c95deda3e2cfc1344b531c80d6af387f36713c69a6c1a8bc",
+      "files": 259,
+      "count": 34
+    }
+  },
+  "windowsAcceptance": false
+}
