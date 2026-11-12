@@ -10,7 +10,7 @@
 
 TGZ를 압축 해제하고 EXE 설치 → 중앙 JSON 편집 → Ned 실행 → 프로젝트 선택 → Ctrl+Shift+A로 Ned 대화를 연다. 기존 L-Vibe·Zed는 먼저 종료한다. 모델·기록·지식은 원본을 보존하여 이관한다.
 
-[소개](../docs/ned-introduction.md) · [설치·설정](../docs/offline-setup.md) · [검증 상태](../docs/validation-0.3.0.md) · [라이선스](../docs/license-policy.md) · [파일 manifest](Ned-0.3.0-manifest.json) · [실제 EXE 추출 감사](Ned-0.3.0-installer-audit.json)
+[소개](../docs/ned-introduction.md) · [설치·설정](../docs/offline-setup.md) · [검증 상태](../docs/validation-0.3.0.md) · [라이선스](../docs/license-policy.md) · [파일 manifest](Ned-0.3.0-manifest.json) · [실제 EXE 추출 감사](Ned-0.3.0-installer-audit.json) · [공개 다운로드 검증](Ned-0.3.0-public-verification.json)
 
 설치기 SHA-256: `78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b`
 
@@ -24,7 +24,7 @@ TGZ SHA-256: `674ea4dc96640282ea21f5dee6586a6ff9167aadb15878c07fa2bfdc9330f711`
 
 ## 이전 L-Vibe 배포 기록
 
-> 아래 다운로드는 기존 L-Vibe 배포본이다. Ned 0.3.0 전환 소스·새 아이콘·Zed 실행기를 포함하는 파일로 오인하지 않는다. 신규 산출물은 생성·검증·게시 후 이 페이지에 별도로 기록한다. [Ned 소개](../docs/ned-introduction.md)
+> 아래는 이전 L-Vibe 배포 기록이다. Ned 0.3.0 파일은 위 표에서 받는다. [Ned 소개](../docs/ned-introduction.md)
 
 # L-Vibe 다운로드
 

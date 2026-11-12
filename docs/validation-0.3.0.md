@@ -31,3 +31,5 @@ ACP 번들이 읽는 원본 192개 파일을 고정 OpenCode 소스 아카이브
 `npm run bundle:offline` 결과 TGZ는 1,128,796,546 bytes, SHA-256 `674ea4dc96640282ea21f5dee6586a6ff9167aadb15878c07fa2bfdc9330f711`이다. 내부 EXE는 1,132,157,259 bytes, SHA-256 `78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b`이다. TGZ의 21개 항목과 내부 소스 묶음의 519개 항목을 검사하고 EXE를 스트리밍 해시하여 동일성을 확인하였다. [다운로드·manifest](../downloads/README.md)에 근거를 함께 제공한다.
 
 이 검사는 Linux에서의 파일·패키지 검증이다. 실제 Windows에서 아이콘이 표시되고 프로그램이 정상 작동했다는 판정은 포함하지 않는다.
+
+공개 게시 후 TGZ 전체 GET을 수행하여 1,128,796,546 bytes와 SHA-256 일치를 확인하였다. EXE 단독 링크는 HEAD 크기와 HTTP 206 범위 요청의 65,536 bytes PE 헤더(MZ)를 확인하였다. EXE 단독 전체 GET은 반복하지 않았으며 로컬 전체 해시·LFS OID·TGZ 내부 EXE 해시로 동일성을 대조하였다. [공개 검증 기록](../downloads/Ned-0.3.0-public-verification.json)을 참조한다.

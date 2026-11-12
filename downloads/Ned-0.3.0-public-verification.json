@@ -1,0 +1,21 @@
+{
+  "product": "Ned",
+  "version": "0.3.0",
+  "publishedCommit": "50aca87",
+  "exe": {
+    "headBytes": 1132157259,
+    "sampleBytes": 65536,
+    "sampleStartsWith": "MZ",
+    "rangeHttpStatus": 206,
+    "expectedSha256": "78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b",
+    "fullGet": false,
+    "localFullHashAndLfsOidVerified": true
+  },
+  "tgz": {
+    "bytes": 1128796546,
+    "sha256": "674ea4dc96640282ea21f5dee6586a6ff9167aadb15878c07fa2bfdc9330f711",
+    "fullGet": true,
+    "matchesLocal": true
+  },
+  "windowsAcceptance": false
+}
