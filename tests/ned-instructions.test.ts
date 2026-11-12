@@ -17,6 +17,10 @@ test('initial profile includes the exact Korean block; repeated startup preserve
  assert.ok(content.startsWith(custom)); assert.ok(content.endsWith(koreanInstructions + '\n'));
  await prepareEditor(root, '/Ned', '/resources', '/descriptor', 'http://127.0.0.1:9');
  assert.equal(await readFile(path.join(directory, 'AGENTS.md'), 'utf8'), content);
+ const crlf = custom + koreanInstructions.replaceAll('\n', '\r\n') + '\r\n';
+ await writeFile(path.join(directory, 'AGENTS.md'), crlf);
+ await ensureEditorInstructions(directory);
+ assert.equal(await readFile(path.join(directory, 'AGENTS.md'), 'utf8'), crlf);
  const config = configSchema.parse({ model: { baseUrl: 'http://127.0.0.1:19350/v1', apiKey: 'synthetic', id: 'coding' } });
  const models: any = [{ provider: 'intranet', name: 'Coding', id: 'coding', gateway: { baseUrl: 'http://127.0.0.1:19351/v1', token: 'local' } }];
  assert.ok(engineConfiguration(config, models).agents.build.system.endsWith(koreanInstructions));

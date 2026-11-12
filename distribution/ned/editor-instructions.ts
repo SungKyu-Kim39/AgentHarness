@@ -19,7 +19,7 @@ export async function ensureEditorInstructions(directory: string) {
   });
   if (existing && (!existing.isFile() || existing.isSymbolicLink() || existing.size > 1024 * 1024)) throw new Error('Ned AGENTS.md 파일 형식 또는 경로를 확인하세요.');
   const before = existing ? await readFile(file, 'utf8') : '';
-  if (before.includes(koreanInstructions)) return;
+  if (before.replace(/\r\n/g, '\n').includes(koreanInstructions)) return;
   const separator = !before || before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
   const handle = await open(file, constants.O_CREAT | constants.O_WRONLY | constants.O_APPEND | (constants.O_NOFOLLOW ?? 0), 0o600);
   try { await handle.writeFile(separator + koreanInstructions + '\n', 'utf8'); }
