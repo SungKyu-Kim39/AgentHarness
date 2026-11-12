@@ -42,9 +42,10 @@ const envelope = (reply: McpToolResult): any => reply.structuredContent ?? JSON.
 const same = (a: Window, b: Window) => a.id === b.id && a.pid === b.pid && a.app_name === b.app_name && a.process_instance === b.process_instance;
 export function permittedDesktopWindow(w: Window) {
   return Number.isInteger(w.pid) && w.pid > 0 && w.pid !== process.pid && typeof w.id === 'string' && !!w.id && typeof w.app_name === 'string' &&
-    !/ned|zed|opencode|agent-desktop|electron|powershell|terminal|cmd(?:\.exe)?$|conhost|openconsole|explorer|credential|consent|taskmgr|regedit|mmc|rundll32/i.test(w.app_name);
+    !/ned|l-vibe|zed|opencode|agent-desktop|electron|powershell|terminal|cmd(?:\.exe)?$|conhost|openconsole|explorer|credential|consent|taskmgr|regedit|mmc|rundll32/i.test(w.app_name);
 }
-interface DesktopSession { client: PrivateMcpClient; home: string; project: string; refs: Map<string, Window> }
+interface DesktopRef { window: Window; role?: string; name?: string }
+interface DesktopSession { client: PrivateMcpClient; home: string; project: string; refs: Map<string, DesktopRef> }
 /** Native-only, semantic window-scoped surface; no executable plugins or online setup. */
 export class DesktopTools {
   private sessions = new Map<string, DesktopSession>(); private queue = Promise.resolve(); private stopped = false;
@@ -64,8 +65,8 @@ export class DesktopTools {
       const cancel = () => { void ctx.client.close().catch(() => { this.uncertain = true; }); };
       signal?.addEventListener('abort', cancel, { once:true });
       try {
-        let target: Window | undefined;
-        if (args.ref_id) { target = ctx.refs.get(args.ref_id); if (!target) throw new Error('이 세션에서 관찰한 qualified ref만 사용할 수 있습니다.'); }
+        let target: Window | undefined, observed: DesktopRef | undefined;
+        if (args.ref_id) { observed = ctx.refs.get(args.ref_id); target = observed?.window; if (!target) throw new Error('이 세션에서 관찰한 qualified ref만 사용할 수 있습니다.'); }
         if (args.window_id || target) {
           const windows = await this.windows(ctx, signal);
           const live = windows.find(w => w.id === (args.window_id ?? target!.id));
@@ -74,7 +75,7 @@ export class DesktopTools {
         }
         const fixed = structuredClone(args), selected = target && structuredClone(target);
         if (!await this.approve(readOnly.has(name) ? 'Desktop 관찰 승인' : 'Desktop 동작 승인',
-          JSON.stringify({ tool:name, arguments:fixed, target:selected && { app:selected.app_name, window:selected.id, pid:selected.pid, title:selected.title } }, null, 2) + '\n프로젝트 밖의 화면을 관찰하거나 조작합니다. 화면 내용은 선택한 사내 모델로 전달되며 대화 기록에 남을 수 있습니다. 별도 자동 승인은 적용되지 않습니다.', signal)) throw new Error('Desktop 실행이 거절되었습니다.');
+          JSON.stringify({ tool:name, arguments:fixed, element:observed && { role:observed.role, name:observed.name }, target:selected && { app:selected.app_name, window:selected.id, pid:selected.pid, title:selected.title } }, null, 2) + '\n프로젝트 밖의 화면을 관찰하거나 조작합니다. 화면 내용은 선택한 사내 모델로 전달되며 대화 기록에 남을 수 있습니다. 별도 자동 승인은 적용되지 않습니다.', signal)) throw new Error('Desktop 실행이 거절되었습니다.');
         signal?.throwIfAborted();
         if (this.stopped || this.blocked.has(session)) throw new Error('Desktop 실행이 중지되었습니다.');
         if (selected) { const live = (await this.windows(ctx, signal)).find(w => w.id === selected.id); if (!live || !same(live, selected)) throw new Error('승인 뒤 대상 창이 변경되었습니다.'); }
@@ -83,8 +84,8 @@ export class DesktopTools {
         if (name === 'desktop_snapshot' && !reply.isError) {
           const data = envelope(reply).data;
           if (!data?.window || !selected || !same(data.window, selected) || !permittedDesktopWindow(data.window)) throw new Error('관찰된 창의 신원을 확인하지 못했습니다.');
-          const refs = new Map<string, Window>();
-          const walk = (node: any) => { if (!node || typeof node !== 'object') return; if (typeof node.ref_id === 'string' && ref.safeParse(node.ref_id).success) refs.set(node.ref_id, selected); for (const c of node.children ?? []) walk(c); };
+          const refs = new Map<string, DesktopRef>();
+          const walk = (node: any) => { if (!node || typeof node !== 'object') return; if (typeof node.ref_id === 'string' && ref.safeParse(node.ref_id).success) refs.set(node.ref_id, { window:selected, role:typeof node.role==='string'?node.role.slice(0,100):undefined, name:typeof node.name==='string'?node.name.slice(0,1000):undefined }); for (const c of node.children ?? []) walk(c); };
           walk(data.tree); ctx.refs = refs;
         }
         return reply;

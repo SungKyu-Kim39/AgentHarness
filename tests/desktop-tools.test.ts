@@ -9,19 +9,19 @@ const target = { id:'w-test',pid:1234,app_name:'Notepad',process_instance:'p1',t
 const reply = (data: unknown) => ({ content:[{type:'text',text:JSON.stringify({ok:true,data})}],structuredContent:{ok:true,data} });
 test('desktop scope rejects managed, system and terminal windows', () => {
   assert.equal(permittedDesktopWindow(target), true);
-  for (const app_name of ['Ned','Zed','Windows Terminal','cmd.exe','powershell.exe','explorer.exe','consent.exe','OpenCode','agent-desktop']) assert.equal(permittedDesktopWindow({...target,app_name}),false,app_name);
+  for (const app_name of ['Ned','L-Vibe','Zed','Windows Terminal','cmd.exe','powershell.exe','explorer.exe','consent.exe','OpenCode','agent-desktop']) assert.equal(permittedDesktopWindow({...target,app_name}),false,app_name);
   assert.equal(permittedDesktopWindow({...target,pid:process.pid}),false);
 });
 test('desktop refs, project and native approval bind each action; changed identities and unknown arguments fail closed', async t => {
   const root = await mkdtemp(path.join(tmpdir(),'ned-desktop-')); t.after(()=>rm(root,{recursive:true,force:true}));
-  let approvals=0, allow=true, live={...target}; const calls:string[]=[];
-  const tools = new DesktopTools(root,root,async ()=>{approvals++;return allow;});
+  let approvals=0, allow=true, live={...target};let lastDetail=''; const calls:string[]=[];
+  const tools = new DesktopTools(root,root,async (_title,detail)=>{approvals++;lastDetail=detail;return allow;});
   const home=path.join(root,'private');await mkdir(home);
-  const client={ call:async(name:string,args:any)=>{ calls.push(name); return name==='desktop_list_windows'? reply([live,{...live,id:'own',app_name:'Ned'}]):name==='desktop_snapshot'?reply({window:live,tree:{ref_id:'@s1:e1',children:[{ref_id:'@s1:e2'}]}}):reply({applied:args}); },close:async()=>{} };
+  const client={ call:async(name:string,args:any)=>{ calls.push(name); return name==='desktop_list_windows'? reply([live,{...live,id:'own',app_name:'Ned'}]):name==='desktop_snapshot'?reply({window:live,tree:{ref_id:'@s1:e1',children:[{ref_id:'@s1:e2',role:'button',name:'Save fixture'}]}}):reply({applied:args}); },close:async()=>{} };
   (tools as any).sessions.set('s',{client,home,project:'/project',refs:new Map()});
   await assert.rejects(tools.call('desktop_click',{ref_id:'@forged:e1'},'s','/project'),/qualified ref/);assert.equal(approvals,0);
   await tools.call('desktop_snapshot',{window_id:target.id},'s','/project');
-  await tools.call('desktop_click',{ref_id:'@s1:e2'},'s','/project');assert.equal(approvals,2);
+  await tools.call('desktop_click',{ref_id:'@s1:e2'},'s','/project');assert.equal(approvals,2);assert.ok(lastDetail.includes('Save fixture'));assert.ok(lastDetail.includes('button'));
   await assert.rejects(tools.call('desktop_click',{ref_id:'@s1:e2'},'s','/other'),/프로젝트/);
   await assert.rejects(tools.call('desktop_click',{ref_id:'@s1:e2',force:true},'s','/project'));
   await assert.rejects(tools.call('desktop_snapshot',{window_id:'own'},'s','/project'),/대상 창/);
