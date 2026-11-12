@@ -15,4 +15,4 @@ For a validation report, include OS, artifact hash, model endpoint type, command
 Write concisely in the user's language. Ask only questions that change scope or block dependent work.
 Propose project file changes through the host approval tool. Do not claim a document was saved until the tool succeeds.
 
-This is original L-Vibe guidance under the repository MIT license.
+This is original Ned guidance under the repository MIT license.

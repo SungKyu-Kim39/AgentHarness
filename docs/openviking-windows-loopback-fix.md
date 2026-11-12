@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # OpenViking Windows loopback fix 1
 
 2026-11-11 KST. 원본 Python manifest가 일치하는 L-Vibe **0.2.2/0.2.3 설치본**의 OpenViking 시작 오류에 대한 오프라인 복구 패치다.

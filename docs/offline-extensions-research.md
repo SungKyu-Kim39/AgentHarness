@@ -1,6 +1,8 @@
+> Ned 0.3.0 기준: Zed 편집기와 전용 OpenCode 엔진을 사용한다. 이전 Windows 실행 증거는 승계 주장하지 않으며 [현재 검증 상태](validation-0.3.0.md)를 함께 확인한다.
+
 # 폐쇄망 스킬·MCP·플러그인 조사 — 2026-11-10
 
-L-Vibe의 기본 스킬 **소스 번들에 16개를 추가해 총 34개**로 구성했다. 신규 MCP·실행형 플러그인은 설치하거나 활성화하지 않았다. 아래 후보는 사용자 선택용이며 Windows 번들·승인 중계·외부 통신 검증을 완료한 구성이라는 뜻은 아니다.
+Ned의 기본 스킬 **소스 번들에 16개를 추가해 총 34개**로 구성했다. 신규 MCP·실행형 플러그인은 설치하거나 활성화하지 않았다. 아래 후보는 사용자 선택용이며 Windows 번들·승인 중계·외부 통신 검증을 완료한 구성이라는 뜻은 아니다.
 
 0.2.0 EXE/TGZ에는 기존 18개가 들어 있다. 이 문서의 34개는 `vendor/skills`와 `skills-lock.json` 기준이며, 0.2.1 설치 후보의 입력이다. 0.2.1은 최초 실행 때 기본 스킬을 OpenViking skills에 자동 등록한다. 공개 파일의 버전과 해시는 [다운로드 안내](../downloads/README.md)에서 확인한다.
 
@@ -9,7 +11,7 @@ L-Vibe의 기본 스킬 **소스 번들에 16개를 추가해 총 34개**로 구
 국내 GeekNews·PyTorchKR, 해외 Reddit의 사용 경험과 GitHub 원본을 함께 확인했다. 커뮤니티 소개·작성자의 후기·편집 순위를 독립 성능 검증이나 사용자 전체의 합의로 취급하지 않았다. 개별 스킬의 효과를 사내 Qwen에서 비교 측정한 결과는 아직 없다.
 
 - [GeekNews: Superpowers 소개와 워크플로](https://news.hada.io/topic?id=23620), [사용 후기 토론](https://news.hada.io/topic?id=29552): 계획·TDD·리뷰를 재사용하는 방식이 유용하다는 의견을 확인했다. 이미 Aegis가 같은 역할을 맡으므로 Superpowers 전체를 중복 설치하지 않았다.
-- [GeekNews: 스킬 파일 관리 토론](https://news.hada.io/topic?id=33338), [Superlite/Superpowers 비교 토론](https://news.hada.io/topic?id=35647): 팀의 실제 규칙, 필요한 문서만 읽는 방식, 절차·컨텍스트 비용도 고려했다. 공개 벤치마크의 수치를 L-Vibe 성능으로 옮기지 않았다.
+- [GeekNews: 스킬 파일 관리 토론](https://news.hada.io/topic?id=33338), [Superlite/Superpowers 비교 토론](https://news.hada.io/topic?id=35647): 팀의 실제 규칙, 필요한 문서만 읽는 방식, 절차·컨텍스트 비용도 고려했다. 공개 벤치마크의 수치를 Ned 성능으로 옮기지 않았다.
 - [PyTorchKR: Awesome Claude Skills 소개](https://discuss.pytorch.kr/t/awesome-claude-skills-1-000-claude/11063): 후보 탐색에 활용했다. 목록에 실렸다는 이유만으로 전체 팩이나 외부 SaaS 연동을 포함하지 않았다.
 - [Reddit: 자주 쓰는 스킬](https://www.reddit.com/r/ClaudeCode/comments/1q0n9jo/musthave_skills/), [중복·과다 스킬에 관한 경험](https://www.reddit.com/r/ClaudeCode/comments/1rp02ln/what_skills_are_you_using/): 디버깅·검증의 수요와 과도한 지침의 비용을 함께 반영했다.
 - [Reddit: Playwright MCP 사용 경험](https://www.reddit.com/r/Playwright/comments/1ra1lm7/is_it_worth_using_playwright_mcpcli_as_a_tester/), [탐색 도구와 회귀 테스트의 차이](https://www.reddit.com/r/Playwright/comments/1v8swyu/are_we_using_playwright_mcp_for_testing_when_its/): 실제 화면 확인과 테스트 초안 작성의 가치를 후보 선정에 반영했다. MCP로 한 번 조작한 결과를 반복 가능한 회귀 테스트 통과로 표시하지 않는다.
@@ -29,7 +31,7 @@ L-Vibe의 기본 스킬 **소스 번들에 16개를 추가해 총 34개**로 구
 | error-handling-patterns | 예외/Result/오류 코드·취소·복구 | wshobson/agents | 기존 ABI 존중; 비밀 제거·재시도 예산 명시 |
 | architecture-decision-records | 설계 대안·결정 근거·되돌리기 | wshobson/agents | adr-tools 설치 제거; 기존 트랙 우선 |
 | differential-review | 변경 전후 보안 회귀와 영향 범위 검토 | Trail of Bits | 자동 위임·외부 출력 경로 제거; 이력 미확인 명시 |
-| session-handoff | 긴 작업의 사실·결정·변경·검증·미결 인계 | L-Vibe 원본 | 현재 대화 요약; 영속 문서 변경은 승인 |
+| session-handoff | 긴 작업의 사실·결정·변경·검증·미결 인계 | Ned 원본 | 현재 대화 요약; 영속 문서 변경은 승인 |
 | explore-data | 로컬 데이터의 단위·키·결측·분포·품질 | Anthropic knowledge-work-plugins | 커넥터 요구 제거; 로컬 파일/제공 결과 우선 |
 | validate-data | 조인·분모·기간·편향·결론 재현성 검토 | Anthropic knowledge-work-plugins | 원본·실행기가 없으면 재계산 미실행 명시 |
 | data-visualization | 차트·축·불확실성·시각적 근거 | Anthropic knowledge-work-plugins | Python 예제 지침; Plotly HTML은 JS 포함, CDN 불필요 |
@@ -73,7 +75,7 @@ L-Vibe의 기본 스킬 **소스 번들에 16개를 추가해 총 34개**로 구
 
 Playwright 원본은 allowed/blocked origins가 **보안 경계가 아니며 리다이렉트에 적용되지 않는다**고 명시한다. 이 옵션만으로 폐쇄망 보장을 주장하지 않는다. 페이지의 CDN·이미지·서비스워커 등 하위 요청도 호스트/OS 통제와 실제 관찰 대상이다.
 
-MarkItDown 원본은 `convert_to_markdown(uri)`가 로컬 파일과 웹 URI를 다루며 인증 없는 네트워크 노출에 주의해야 한다고 명시한다. L-Vibe에는 임의 URI를 그대로 전달하는 구성을 넣지 않는다. MCP의 읽기/쓰기 힌트만으로 승인 경계를 결정하지 않는다.
+MarkItDown 원본은 `convert_to_markdown(uri)`가 로컬 파일과 웹 URI를 다루며 인증 없는 네트워크 노출에 주의해야 한다고 명시한다. Ned에는 임의 URI를 그대로 전달하는 구성을 넣지 않는다. MCP의 읽기/쓰기 힌트만으로 승인 경계를 결정하지 않는다.
 
 권장 조합은 C/C++ 중심이면 **1+2**, 웹 바이브 코딩까지 하면 **3**, 문서 기반 개발이 많으면 **4**, 데이터 분석까지 실행하려면 **6**이다. 5는 성능 분석 수요가 있을 때 추가한다. 새 MCP가 지침만 추가하는 작업보다 큰 이유는 실행 프로세스·파일/브라우저 권한·중지 확인까지 연결해야 하기 때문이다.
 

@@ -16,4 +16,4 @@ Use a bundled approved browser runner when available. If it is unavailable, dist
 Record reproducible findings with paths, lines, user impact and a suggested fix. Do not modify unrelated design choices.
 Apply fixes only through the host's approved project file tools.
 
-This is original L-Vibe guidance under the repository MIT license.
+This is original Ned guidance under the repository MIT license.

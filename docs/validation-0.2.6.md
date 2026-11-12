@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # L-Vibe 0.2.6 — personal OpenViking knowledge migration
 
 2026-11-11 KST. 기존 OpenViking 0.5.0의 사용자 영역을 OVPack v3로 내보내고 L-Vibe의 0.5.4에 가져오는 기능을 추가했다. 가져온 자료는 해당 PC 사용자의 모든 프로젝트에서 읽기 전용 개인 도구로 검색한다. 기존 프로젝트 지식 도구의 범위는 유지한다.

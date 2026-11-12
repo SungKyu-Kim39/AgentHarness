@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # OpenViking offline tokenizer repair
 
 2026-11-11 KST. 0.2.2/0.2.3/0.2.4의 OpenViking import가 `cl100k_base.tiktoken` 다운로드를 시도하는 문제를 고치는 누적 오프라인 패치다. Windows 내부 socketpair 수정도 함께 포함한다.

@@ -8,6 +8,7 @@ import { Readable, Writable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { connect } from 'node:net';
 import { Peer } from './rpc';
+import { localStreamFetch } from '../../src/main/local-stream-fetch';
 
 async function main() {
   const descriptor = JSON.parse(await readFile(process.argv[2], 'utf8'));
@@ -21,7 +22,7 @@ async function main() {
     try {
       const result = await acp.client.request(methods.client.fs.readTextFile, { sessionId: params.session, path: params.path },
         { cancellationSignal: AbortSignal.timeout(12000) });
-      return { matches: typeof result?.content === 'string' && result.content === params.before };
+      return { matches: typeof result?.content === 'string' && result.content.replaceAll('\r\n', '\n') === params.before.replaceAll('\r\n', '\n') };
     } catch (error: any) {
       // ACP resource_not_found is acceptable only for a proposed new file.
       if (params.missing && error?.code === -32002) return { matches: true };
@@ -77,7 +78,7 @@ async function main() {
     );
     acp = yield* ACP.connect(client, { readable: input, writable: output });
     yield* Effect.promise(() => acp.closed);
-  })).pipe(Effect.provide(Logger.layer([]))));
+  })).pipe(Effect.provide(Logger.layer([])), Effect.provideService(FetchHttpClient.Fetch, localStreamFetch(endpoint.url))));
   peer.close();
 }
 declare const NED_VERSION: string;

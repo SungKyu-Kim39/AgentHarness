@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # L-Vibe 0.2.3 — ASCII package paths
 
 0.2.2 TGZ를 일부 Windows 압축 도구로 해제했을 때 한글 파일명이 깨지는 문제를 수정한다. `GETTING_STARTED.txt`, `VALIDATION_REPORT.md`, `READINESS.json`을 사용하며 제품이 배포하는 파일·폴더 이름은 printable ASCII로 제한한다. 한국어 문서 내용과 UI 문구는 유지한다.

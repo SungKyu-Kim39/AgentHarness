@@ -11,8 +11,8 @@ import { pathToFileURL } from "node:url";
 import { requestSchema } from "../shared/contracts";
 import { ConfigVault } from "./config";
 import { Host } from "./host";
-app.setName("L-Vibe");
-app.setPath("userData", path.join(app.getPath("appData"), "L-Vibe"));
+app.setName("Ned");
+app.setPath("userData", path.join(app.getPath("appData"), "Ned"));
 app.commandLine.appendSwitch("disable-background-networking");
 app.commandLine.appendSwitch("disable-component-update");
 app.commandLine.appendSwitch("disable-sync");
@@ -54,7 +54,7 @@ app.whenReady().then(async () => {
     height: 960,
     minWidth: 1040,
     minHeight: 680,
-    title: "L-Vibe",
+    title: "Ned",
     icon: app.isPackaged ? path.join(process.resourcesPath, 'assets/ned-icon.png') : path.join(app.getAppPath(), 'assets/ned-icon.png'),
     backgroundColor: "#f7f8fa",
     show: false,

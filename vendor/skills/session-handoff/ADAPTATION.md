@@ -1,14 +1,14 @@
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
-Upstream: L-Vibe original guidance
+Upstream: Ned original guidance
 
-Original authors: L-Vibe contributors
+Original authors: Ned contributors
 
-Commit: 0.2.1
+Commit: 0.3.0
 
-License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by L-Vibe contributors.
+License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by Ned contributors.
 
-Modified for L-Vibe on 2026-11-10: static documents only; Desktop frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.
+Modified for Ned on 2026-11-12: static documents only; agent skill frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.
 
 Specific policy: 작업 중 확인한 사실·사용자 결정·변경·검증·미결 사항을 근거와 함께 인계한다. 대화·지식 저장소·프로젝트 문서 사이의 자동 복사를 하지 않는다. 영속 문서가 필요하면 승인된 프로젝트 편집으로 제안한다.
 

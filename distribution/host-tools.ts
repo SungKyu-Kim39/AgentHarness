@@ -141,6 +141,7 @@ export class HostTools {
         if (!unchanged || !decision.approved || !this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
         if (decision.autoApproveRequest) this.editGrant = { session, project, run, request };
         await this.options.validateEdit?.(session, project, proposal, signal);
+        if (!this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run || (this.options.request && await this.options.request(session) !== request)) throw new Error('요청이 바뀌어 파일 수정을 보류합니다.');
         await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
         try { await files.apply(proposal, signal); }
         catch (error) { this.editGrant = undefined; throw error; }

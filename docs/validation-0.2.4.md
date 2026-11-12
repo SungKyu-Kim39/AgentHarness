@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # L-Vibe 0.2.4 — Windows OpenViking startup fix
 
 2026-11-11 KST. Windows asyncio가 내부 TCP socketpair를 만들 때 기존 모델 중계 포트 제한에 차단되는 실행 경로를 수정한다. [원인과 기존 설치본용 패치](openviking-windows-loopback-fix.md)에 상세 근거를 기록한다. 지정하지 않은 로컬 포트·외부 connect/connect_ex·외부 DNS 차단은 유지한다.

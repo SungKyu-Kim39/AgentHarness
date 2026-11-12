@@ -45,7 +45,7 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
  { skip: !existsSync(cli) || !existsSync(bridge), timeout: 120000 }, async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'ned-acp-'));
   const project = path.join(root, 'project'), data = path.join(root, 'data');
-  await mkdir(project); await mkdir(data); await writeFile(path.join(project, 'main.c'), 'int main() { return 0; }\n');
+  await mkdir(project); await mkdir(data); await writeFile(path.join(project, 'main.c'), 'int main() { return 0; }\r\n');
   let turn = 0, step = 0, approvals = 0, bufferReads = 0, dirty = false;
   const wire: any[] = [];
   const model = createServer(async (req, res) => {
@@ -89,13 +89,15 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
     const message = JSON.parse(line);
     if (message.method === 'fs/read_text_file') {
       bufferReads++;
-      void readFile(path.join(project, 'main.c'), 'utf8').then(content => child!.stdin!.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: { content: dirty ? 'unsaved editor text' : content } }) + '\n'));
+      void readFile(path.join(project, 'main.c'), 'utf8').then(content => child!.stdin!.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: { content: dirty ? 'unsaved editor text' : content.replaceAll('\r\n', '\n') } }) + '\n'));
     } else if (message.method) updates.push(message);
     else { const entry = pending.get(message.id); pending.delete(message.id); if (message.error) entry?.reject(new Error(entry?.method + ": " + JSON.stringify(message.error) + "\n" + traces.join("\n"))); else entry?.resolve(message.result); }
   });
   const init = await request('initialize', { protocolVersion: 1, clientCapabilities: { fs: { readTextFile: true, writeTextFile: false }, terminal: false }, clientInfo: { name: 'ned-fixture', version: '1' } });
   assert.equal(init.agentInfo.name, 'Ned');
   await assert.rejects(request('session/new', { cwd: project, mcpServers: [{ name: 'untrusted', command: 'anything', args: [], env: [] }] }), /Ned-managed/);
+  await assert.rejects(request('session/new', { cwd: data, mcpServers: [] }), /앱 관리 경로/);
+  await assert.rejects(request('session/prompt', { sessionId: 'forged-session', prompt: [] }), /Session not attached/);
   const created = await request('session/new', { cwd: project, mcpServers: [] });
   assert.ok(created.sessionId); assert.ok(JSON.stringify(created.configOptions).includes('wire') || JSON.stringify(created.configOptions).includes('p/'));
   await request('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Read main.c and change the return value to 7.' }] });

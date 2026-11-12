@@ -1,3 +1,7 @@
+# Ned distribution notices
+
+Ned host source uses the root MIT license. Zed v1.28.1 is primarily GPL-3.0-or-later with marked Apache-2.0 components. Include its matching source and GPL/Apache/third-party notices in the offline distribution. Generated Ned wordmark assets replace the active LIG icon. The following earlier component notices remain applicable to the shared runtimes; they do not relicense the whole bundle as MIT. See [license policy](docs/license-policy.md).
+
 # L-Vibe third-party licensing
 
 The root MIT license covers L-Vibe-authored code. Bundled software, skills,

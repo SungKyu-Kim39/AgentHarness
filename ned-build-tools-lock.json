@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "innoextract": {
+    "baseCommit": "6e9e34ed0876014fdb46e684103ef8c3605e382e",
+    "formatSupportCommit": "93ea8b13553797aab0103108ba0bf59b988d2dbc",
+    "sourceUrl": "https://codeload.github.com/Red54/innoextract/tar.gz/93ea8b13553797aab0103108ba0bf59b988d2dbc",
+    "sourceSha256": "ec2c66a2f3082ddc61073a4203e33d13a001419b1e17253e23d0f91ff7a76202",
+    "reviewedChanges": "Inno Setup 6.4.2/6.4.3 header and flag parsing only; upstream PR 197; build PC only",
+    "cmakePolicyOverride": "CMP0167 OLD for cached Boost 1.83 headers/libraries"
+  }
+}

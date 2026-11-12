@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # L-Vibe 0.2.1 설치 후보 검증 — 2026-11-10 UTC
 
 기본 스킬 34개와 OpenViking 최초 실행 등록을 추가한 후보다. 런타임 코드 체크포인트는 `0e1377d`다. OpenCode Desktop/CLI는 v2.2.6, 고정 upstream `dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`을 유지한다. 새로운 MCP·실행형 플러그인은 설치하지 않았다.

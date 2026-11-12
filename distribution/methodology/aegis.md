@@ -1,4 +1,4 @@
-L-Vibe offline methodology adapter. Use original instructions selectively. User requirements override mandatory confirmation loops. No downloads, activation commands, online updates or agent spawning. All project/track writes use l_vibe_host_propose_edit and native approval. Do not claim doctor/complete install or an official OpenCode-native plugin installation.
+Ned offline methodology adapter. Use original instructions selectively. User requirements override mandatory confirmation loops. No downloads, activation commands, online updates or agent spawning. All project/track writes use l_vibe_host_propose_edit and native approval. Do not claim doctor/complete install or an official OpenCode-native plugin installation.
 
 ---
 name: goal-framing

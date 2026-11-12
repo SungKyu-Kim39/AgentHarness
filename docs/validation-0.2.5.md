@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # L-Vibe 0.2.5 — offline tokenizer data
 
 2026-11-11 KST. [OpenViking 토크나이저 원인·복구](openviking-tokenizer-fix.md)에 확인한 CRLF cache, LiteLLM cache 경로 덮어쓰기와 폐쇄망 첫 import 실패를 기록했다. 새 전체 설치본은 데이터 6개/인코더 7종, 공식 SHA-256, app 소유 cache와 온라인 fallback 없는 loader 및 이전 Windows socketpair 수정을 포함한다.

@@ -1,13 +1,16 @@
 {
   "schemaVersion": 1,
-  "stage": "windows-offline-installation-candidate",
+  "stage": "zed-transition-windows-acceptance-candidate",
   "releaseReady": false,
   "blockers": [
+    "Validate managed Zed UI, private profile isolation, editor buffer protection and Windows single-instance coexistence.",
+    "Validate legacy L-Vibe DPAPI/history/OpenViking migration and real VS2017/2019 MSBuild success/cancellation on Windows.",
     "Complete v2 repetition detection, verified stop across all host work/children and manual tool-free replay.",
     "Expose host snapshots as session-wide before/after comparisons in the Desktop diff UI.",
     "Validate the complete six-MCP installer on Windows; packaged-file hashes do not replace actual DLL loading, tool execution and child-process termination acceptance.",
     "Validate Serena read-only tools and pinned clangd on actual Windows C/C++ projects/SDKs; Linux definition/reference fixtures do not replace this acceptance test.",
     "Audit external network and arbitrary plugin paths; observe DNS/TCP on isolated Windows VMs.",
     "Pass Win10/Win11 installation, ACL, credential, lifecycle and actual intranet-model acceptance tests."
-  ]
+  ],
+  "product": "Ned"
 }

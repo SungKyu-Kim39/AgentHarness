@@ -1,5 +1,6 @@
 import { app, dialog, safeStorage, Menu, Tray, nativeImage, shell } from 'electron';
 import { spawn, execFile, type ChildProcess } from 'node:child_process';
+import { mkdirSync } from 'node:fs';
 import { readFile, mkdir, access } from 'node:fs/promises';
 import path from 'node:path';
 import { prepareNative, getRuntime, replaceConfiguration } from '../native-control';
@@ -12,7 +13,10 @@ app.setAppUserModelId('com.lig.ned');
 for (const flag of ['disable-background-networking', 'disable-component-update', 'disable-sync', 'disable-domain-reliability']) app.commandLine.appendSwitch(flag);
 const appData = app.getPath('appData');
 const root = path.join(appData, 'Ned');
-const resources = app.isPackaged ? process.resourcesPath : path.resolve('.cache/ned/resources');
+// Electron's singleton/cache files must not make the migration destination nonempty.
+const launcherData = path.join(process.env.LOCALAPPDATA ?? appData, 'Ned-Launcher');
+mkdirSync(launcherData, { recursive: true, mode: 0o700 }); app.setPath('userData', launcherData);
+const resources = app.isPackaged ? process.resourcesPath : path.resolve(process.env.NED_DEV_RESOURCES ?? '.cache/ned/resources');
 let tray: Tray | undefined, editor: ChildProcess | undefined, owner: AgentOwner | undefined;
 const network = new EditorNetwork();
 let quitting = false, closed = false;
@@ -49,8 +53,11 @@ async function chooseProject() {
 async function start() {
   await migrateLegacy(path.join(appData, 'L-Vibe'), root);
   await mkdir(root, { recursive: true, mode: 0o700 });
-  app.setPath('userData', root);
   await app.whenReady();
+  if (process.platform === 'win32') {
+    const running = await new Promise<string>((resolve, reject) => execFile(path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32/tasklist.exe'), ['/FI', 'IMAGENAME eq Zed.exe', '/FO', 'CSV', '/NH'], { windowsHide: true, timeout: 10000 }, (error, stdout) => error ? reject(error) : resolve(stdout)));
+    if (/"Zed.exe"/i.test(running)) throw new Error('기존 Zed를 완전히 종료한 뒤 Ned를 실행하세요. 개인 편집기 인스턴스에 연결하지 않습니다.');
+  }
   const approve = async (message: string, detail: string, signal?: AbortSignal) => {
     if (detail.length > 60000) return false;
     const result = await dialog.showMessageBox({ type: 'question', title: 'Ned 승인', message, detail,
@@ -124,7 +131,7 @@ async function start() {
     { type: 'separator' },
     { label: '종료 안내', click: () => { void dialog.showMessageBox({ title: 'Ned 종료', message: 'Zed 편집기에서 파일을 저장하고 모든 창을 닫으면 OpenCode·OpenViking과 함께 종료됩니다.' }); } },
   ]));
-  editor = spawn(binary, ['--foreground', '--user-data-dir', profile.data, project], { cwd: project, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
+  editor = spawn(binary, [...(process.platform === 'win32' ? ['--foreground'] : []), '--user-data-dir', profile.data, project], { cwd: project, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
   // Upstream diagnostic streams are not persisted: project text may occur there.
   editor.stdout?.on('data', () => {}); editor.stderr?.on('data', () => {});
   let started = false;

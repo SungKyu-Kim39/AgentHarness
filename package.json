@@ -13,7 +13,7 @@
     "build": "node scripts/ned-build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
-    "verify": "npm run typecheck && npm run skills:verify && npm test && npm run desktop:verify",
+    "verify": "npm run build && npm run typecheck && npm run skills:verify && npm test",
     "skills:bundle": "node scripts/bundle-skills.mjs fetch",
     "skills:verify": "node scripts/bundle-skills.mjs verify",
     "start": "node scripts/ned-package.mjs dev",
@@ -38,7 +38,8 @@
     "audit:installer": "node scripts/ned-package.mjs audit",
     "ned:build": "node scripts/ned-build.mjs",
     "desktop:build:legacy": "node scripts/desktop.mjs build",
-    "desktop:package:legacy": "node scripts/desktop.mjs package"
+    "desktop:package:legacy": "node scripts/desktop.mjs package",
+    "ned:prepare": "node scripts/ned-package.mjs prepare"
   },
   "dependencies": {
     "diff": "8.0.2",
@@ -55,12 +56,13 @@
     "@vitejs/plugin-react": "5.1.0",
     "electron": "45.2.3",
     "electron-builder": "26.18.0",
-    "prettier": "3.6.2",
     "esbuild": "0.25.12",
+    "playwright": "1.56.1",
+    "prettier": "3.6.2",
+    "resedit": "3.1.0",
     "tsx": "4.20.6",
     "typescript": "5.9.3",
-    "vite": "7.2.2",
-    "playwright": "1.56.1"
+    "vite": "7.2.2"
   },
   "build": {
     "appId": "com.lig.ned",

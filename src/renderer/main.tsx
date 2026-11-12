@@ -121,7 +121,7 @@ function App() {
     setError("");
     if (!window.vibe) {
       setError(
-        "화면 미리보기입니다. 파일·모델 연결은 L-Vibe 데스크톱 앱에서 사용할 수 있습니다.",
+        "화면 미리보기입니다. 파일·모델 연결은 Ned 데스크톱 앱에서 사용할 수 있습니다.",
       );
       return;
     }
@@ -165,7 +165,7 @@ function App() {
         <div className="brand">
           <img className="lig-logo" src={nedIcon} alt="Ned" />
           <div>
-            <strong>L-Vibe</strong>
+            <strong>Ned</strong>
             <span className="brand-sub">VIBE CODING WORKSPACE</span>
           </div>
         </div>
@@ -257,7 +257,7 @@ function App() {
             <ChevronRight size={14} />
           </button>
           <div className="version">
-            <span>L-Vibe</span>
+            <span>Ned</span>
             <span>v0.1.0</span>
           </div>
         </div>
@@ -375,7 +375,7 @@ function App() {
                       <div className="message-meta">
                         <strong>
                           {entry.item.role === "assistant"
-                            ? "L-Vibe"
+                            ? "Ned"
                             : "사용자"}
                         </strong>
                         {entry.item.replay && (

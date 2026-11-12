@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # L-Vibe 0.2.7 — model transport, thinking variants and edit approval
 
 2026-11-11 KST. 사용자 제보의 세션 압축 ECONNRESET, thinking 옵션 형식 및 파일 수정 승인 혼동을 다룬 검증 후보다.

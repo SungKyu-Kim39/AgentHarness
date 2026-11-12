@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # Windows 오프라인 설치 후보 검증 — 2026-11-10 UTC
 
 대상은 L-Vibe 0.2.0 검증 후보입니다. 런타임 코드 체크포인트는 `137db3d`이며 OpenCode Desktop/CLI는 v2.2.6, upstream 커밋 `dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`으로 고정했습니다. 아래 결과는 Windows 실환경 수용 검증을 대체하지 않습니다.

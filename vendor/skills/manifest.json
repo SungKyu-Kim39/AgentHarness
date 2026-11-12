@@ -363,8 +363,8 @@
       "name": "개발 문서",
       "description": "요구사항·설계·운영·검증 문서의 구조화",
       "directory": "developer-documents",
-      "source": "L-Vibe original MIT guidance",
-      "commit": "0.2.1",
+      "source": "Ned original MIT guidance",
+      "commit": "0.3.0",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.",
       "files": [
@@ -374,7 +374,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "cb647f5b5fad35bdd4193c98c099820a62f0fbf9c672fba90cb7b8098c8f2a9e"
+          "sha256": "8219005a68e18d083973710b5b3616dd0fbca6eb10affc4ae19d604057126378"
         }
       ]
     },
@@ -383,8 +383,8 @@
       "name": "UI 사용성·접근성",
       "description": "키보드·포커스·상태·반응형 동작 검토",
       "directory": "ui-accessibility",
-      "source": "L-Vibe original MIT guidance",
-      "commit": "0.2.1",
+      "source": "Ned original MIT guidance",
+      "commit": "0.3.0",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.",
       "files": [
@@ -394,7 +394,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "ea5fff8ac70174fd73ef1e50e0314842ef74bb5ddd38b2fc25ff799cf0248e91"
+          "sha256": "c9ed972c75ed13576d3ab736f4bac0ea9bdb87a1325acee1542e3f842ce4a896"
         }
       ]
     },
@@ -1010,7 +1010,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "e7f0841f46e161218a0419e39d89092eeca68b72ad7446c2862369afb5186dee"
+          "sha256": "37b800361a5a63b030a92fd8d39c7f5b377fd6c881a8c223388da8d4b7565966"
         },
         {
           "path": "LICENSE",
@@ -1061,7 +1061,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "541dbd808f8492262a0abf0c67b4c7ddd1af73a5f85dae5a6f5c250281a8e2e3"
+          "sha256": "ef7e7d7f9e50166e58ffa780decff5f84d5499ec887d2c9a4bd4c6ae6562a5f3"
         },
         {
           "path": "LICENSE",
@@ -1097,7 +1097,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "831c9d5bcb2fd61ce1eafed5518e415791a1dbfeb786f93309b581fa2557d39f"
+          "sha256": "0c3df8eb7039f7b9cf4c93cc1aa01136d9fad5db546f1abefd975c75d3ea39d0"
         },
         {
           "path": "LICENSE",
@@ -1148,7 +1148,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "209011744ca8b2763c566f2d09206f68e79c078fcd56c52fdd6d753ded445c31"
+          "sha256": "ba0eb7139d683559d29cc0f943447d1642d79f946ac284a7d6d665f2ed4c8f18"
         },
         {
           "path": "LICENSE",
@@ -1179,7 +1179,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "a3654c6bcf2c28108bdff342886a506eccd99713761154f6c2843ab26a60653b"
+          "sha256": "46c3a865353a0c44d53d76e5b144e6faa6c4e282568c6f67ca214d9a2282372d"
         },
         {
           "path": "LICENSE",
@@ -1210,7 +1210,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "0258940ebfb4ac68960677dce8b3154274f929b561aa00701088a577101d626b"
+          "sha256": "2b7eae0106306ce3de675d083eb716fe429171b97f43ce916652fcb542c6e29e"
         },
         {
           "path": "LICENSE",
@@ -1241,7 +1241,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "513ff3ce8a11f86db9207e0c95f963906b8b2ffee2b12ba87b5fd46c0ee8798d"
+          "sha256": "eb772a0b77855baebf47a6eaed48842c984561b08a5ea0294e62a9cd45490300"
         },
         {
           "path": "LICENSE",
@@ -1276,7 +1276,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "23af9e88125e607da8a616401c36c5ac3ee4e4e1db712e678d276352f49d1fcc"
+          "sha256": "a267e5097b24be38e4f45c3835aea5a3aadb1685ad5e0eb8ce8596bd3e5d75a7"
         },
         {
           "path": "LICENSE",
@@ -1320,7 +1320,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "2482ffffb7b26693140ac8e205df6dbf7a9c7c5bdad18b0916bd27b5320b25f5"
+          "sha256": "848bc5f20536da2cf126285c2c5de2cab3cf8ee300d3601fc16b7315a3c8a384"
         },
         {
           "path": "adversarial.md",
@@ -1353,8 +1353,8 @@
       "name": "작업 인계·재개",
       "description": "장기 작업의 사용자 결정·확인한 사실·변경·검증·미결 사항을 근거와 함께 인계",
       "directory": "session-handoff",
-      "source": "L-Vibe original MIT guidance",
-      "commit": "0.2.1",
+      "source": "Ned original MIT guidance",
+      "commit": "0.3.0",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 작업 중 확인한 사실·사용자 결정·변경·검증·미결 사항을 근거와 함께 인계한다. 대화·지식 저장소·프로젝트 문서 사이의 자동 복사를 하지 않는다. 영속 문서가 필요하면 승인된 프로젝트 편집으로 제안한다.",
       "modifications": [
@@ -1367,7 +1367,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "ac9828b13675ce05535b046a123846a440a76fdf1f7ac661e79b40563c5a8b6b"
+          "sha256": "76e0e2be9073076519320ea47020c719bc7730aa14ebda767a4cbf115e33f2b3"
         },
         {
           "path": "LICENSE",
@@ -1398,7 +1398,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "6b6914db01dbe325d1490f1bfe7c1c716d201032b9f0a3473a1faf25fbdfe384"
+          "sha256": "1ba9c47bf135d8a578aee0e30a4a96a4dd27a8c30605fc4f91c9869a7194e60c"
         },
         {
           "path": "LICENSE",
@@ -1429,7 +1429,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "b15d8fd13f030f83a4db5a0351d9b59dd86b9f46c553597716c46d11368a60ff"
+          "sha256": "acc5a95fe8e8faad0bbf71a6d979aa5d9ffc6e20df973eecbd64f714be9a77d7"
         },
         {
           "path": "LICENSE",
@@ -1460,7 +1460,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "686d8a0f69f6bf7a049cb40de387d33293bdaa813f738f1fbf6a02383629eda9"
+          "sha256": "4ca2082fdd9b3d1a381056d2c856c512896d652ff770e110d14130fd563e30c9"
         },
         {
           "path": "LICENSE",
@@ -1491,7 +1491,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "3818e658f8d63e8230a19aedf692c34aba9424bd02006acba23565c9a622197b"
+          "sha256": "d48a3bbc13113ee7c5b043fb0ebbd5edc2f36bb1cdc9381d6d2c1021662fb25f"
         },
         {
           "path": "LICENSE",
@@ -1532,7 +1532,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "d3ef460f2d6a3b917dd5bf683a729fc3a8e379f62f71f5526cb5e804d4e229b2"
+          "sha256": "ce4fa0e2bc704053781dfd4376c560d50dbd9ce6ed391873571434e8cc68ac82"
         },
         {
           "path": "LICENSE",
@@ -1572,7 +1572,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "fa2bdbd5f9fcc28f8b8754afe06aa74c7dd115cc8c85faf53ee344656630047e"
+          "sha256": "e9c71eed1b4432d6dba0e3c1a5f7b6d711be5d33cd448c728f602251411e8782"
         },
         {
           "path": "LICENSE",

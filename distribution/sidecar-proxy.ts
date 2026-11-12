@@ -11,6 +11,7 @@ export class SidecarProxy {
       if (req.headers.authorization !== auth) { res.writeHead(401).end(); return; }
       try {
         const target = new URL(req.url ?? '/', this.backend.url);
+        if (target.origin !== new URL(this.backend.url).origin) { res.writeHead(403).end(); return; }
         const pathname = decodeURIComponent(target.pathname).replace(/\/{2,}/g, '/');
         const operation = /^\/api\/session\/([^/]+)\/(interrupt|prompt)$/.exec(pathname);
         if (req.method === 'POST' && operation) {

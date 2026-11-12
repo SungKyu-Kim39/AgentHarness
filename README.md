@@ -1,91 +1,26 @@
 # Ned
 
-[기존 L-Vibe 설치 EXE · 폐쇄망 반입 TGZ 다운로드](downloads/README.md)
+Ned는 사내 Qwen 모델에 **Zed 편집기, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 오프라인 도구**를 연결하는 Windows x64 바이브 코딩 작업 환경이다. 개별 도구의 설치·설정을 직원에게 맡기지 않고 한 프로그램으로 제공하는 것을 목적으로 한다.
 
-[L-Vibe 소개 · 목적과 활용 방법](docs/l-vibe-introduction.md)
+[소개와 활용](docs/ned-introduction.md) · [설치 안내](docs/offline-setup.md) · [모델 설정](docs/model-controls.md) · [구성과 승인 경계](docs/architecture.md) · [라이선스](docs/license-policy.md) · [개발 인계](HANDOFF.md)
 
-[다른 PC에서 개발 이어가기 · 작업 인계서](HANDOFF.md)
+## 현재 상태
 
-**Ned**는 Zed 편집기와 앱 전용 OpenCode 엔진, Aegis·Conductor·OpenViking 및 오프라인 도구를 한 번에 설치·설정하는 바이브 코딩 작업 환경입니다. 검은 배경의 흰색 Ned 아이콘을 사용합니다. [Zed 기반 전환 설계](docs/ned-architecture.md)를 확인하세요.
+0.3.0은 Zed 기반으로 전환하는 검증 후보이다. 새 실행기·ACP·저장하지 않은 편집 내용 보호·기존 데이터 보존 이관을 구현하였으며, 실제 OpenCode 엔진을 사용하는 Linux 연동 검사에서 확인하였다. Windows 설치·편집기 화면·실제 MSBuild 실행·사내 모델과 외부망 차단 수용은 별도 확인 대상이다. [검증 상태](docs/validation-0.3.0.md)를 따른다.
 
-0.3.0 전환 소스는 전용 Zed 프로필, 기존 엔진에 연결하는 ACP, 저장하지 않은 편집기 변경 보호, 기존 데이터 보존 이관과 승인된 VS2017/2019 MSBuild 도구를 추가합니다. Linux의 실제 엔진 연동 검사와 Windows 실사용 수용은 구분합니다. 아래 다운로드와 0.2.7 안내는 이전 공개 배포본을 설명합니다.
+검은 배경에 흰색 굵은 Ned 글자의 새 아이콘을 사용한다. 번들 Zed는 구성 요소의 원래 이름을 유지한다. 현재 공개된 이전 L-Vibe 0.2.7 다운로드는 [다운로드 기록](downloads/README.md)에서 구분한다.
 
-## 이전 배포본 (L-Vibe 0.2.7)
+## 사용하는 흐름
 
-Windows 10·11 x64 폐쇄망용 **OpenCode Desktop 기반 바이브 코딩 배포판**입니다. 공식 Desktop/엔진 v2.2.6을 고정하고, 사내 모델 설정·승인 중계·로컬 서비스를 결합합니다. 기존 PC의 OpenCode·Zed 설정·플러그인을 자동으로 읽거나 복제하지 않습니다. 기존 OpenViking 지식은 사용자가 명시적으로 선택하여 가져올 수 있습니다.
+1. 반입용 TGZ를 압축 해제하고 포함된 Ned 설치 EXE를 실행한다.
+2. 최초 설정 JSON에 사내 LLM과 단일 임베딩 모델을 입력한다.
+3. Ned를 실행하여 프로젝트 폴더를 선택한다.
+4. Zed에서 코드를 직접 편집·저장하고, **Ctrl+Shift+A**로 Ned AI 대화를 연다.
 
-0.2.7은 모델 중계 대기 시간·세션 압축 오류 진단, thinking 옵션/variants 호환과 요청별 파일 수정 자동 승인을 보완한 **검증 후보**입니다. 기존 개인 지식 가져오기·모든 프로젝트의 개인 검색을 유지합니다. Windows loopback·토크나이저 오프라인 수정과 ASCII 배포 정책을 유지하며 MCP 6종과 기본 스킬 34개를 제공합니다. [0.2.7 검증 상태](docs/validation-0.2.7.md)를 확인하세요. Windows·실제 사용자 자료의 전체 수용을 완료한 1.0 배포판은 아닙니다.
+AI 수정은 별도 승인과 충돌 확인을 거친다. 저장하지 않은 편집 내용이 있으면 먼저 Ctrl+S로 저장한다. VS2017/2019가 있으면 AI가 설치된 MSBuild와 프로젝트 구성을 조사한 뒤 승인을 받아 빌드할 수 있다. SDK·모델 가중치와 개발 도구를 직원 PC에서 자동 설치하지 않는다.
 
-[개인 지식 이관 안내](docs/openviking-personal-migration.md)의 절차로 기존 서버에서 OVPack을 내보내고 알림 영역 메뉴에서 가져옵니다. 원본과 승인한 사본을 보존하고, 새 대화 자동 업로드나 사용자 스킬의 실행형 플러그인 설치는 하지 않습니다. 기존 설치본의 모델 설정과 사용자 데이터는 유지합니다.
+여러 LLM과 모델별 한도·thinking 변형을 중앙 JSON으로 설정한다. 모델 서버 대기열을 고려하여 응답 대기에 기본 시간 제한을 두지 않는다. OpenViking은 앱과 함께 시작·종료하며, 기본 스킬 34개를 자동 등록한다. 개인 대화는 자동 업로드하지 않는다.
 
-## 폐쇄망에서 설치
+## 개발과 검증
 
-1. 반입한 `L-Vibe-0.2.7-windows-x64.tgz`를 압축 해제합니다.
-2. 기존 앱이 실행 중이면 완전히 종료하고 `L-Vibe-0.2.7-win-x64.exe`로 일반 사용자에게 설치합니다.
-3. 저장 설정이 없는 첫 설치에서는 자동으로 열린 설정 JSON을 편집하고 저장합니다. 기존 설정이 있으면 보존하며 메모장을 열지 않습니다.
-4. L-Vibe를 실행하고 프로젝트 폴더와 모델을 선택합니다.
-
-자세한 내용은 [설치 안내](docs/offline-setup.md)를 확인하세요. 직원 PC에서 npm·pip·uvx·Bun·Git clone이나 런타임 설치를 실행하지 않습니다. 모델 가중치는 포함하지 않으며, 설정한 사내 모델 API가 필요합니다. 설치·업데이트·기본 제거는 사용자 데이터 폴더를 유지합니다.
-
-압축 안의 안내 파일은 `GETTING_STARTED.txt`, 검증 보고서는 `VALIDATION_REPORT.md`, 출시 상태는 `READINESS.json`입니다. 파일·경로 이름만 영문으로 통일하며 한국어 UI와 문서 내용은 유지합니다.
-
-설정 복구·라이선스·Windows 진단 안내와 `CHECK_OPENVIKING.cmd`/검사 스크립트도 함께 제공합니다. 시작 실패 시 `%APPDATA%\L-Vibe\openviking\startup-status.json`의 단계/코드와 [진단 절차](docs/windows-diagnostics.md)를 확인하세요.
-
-`settings.enc.json`이 있고 `config-import.json`이 없는 것은 예상된 상태입니다. 임시 JSON은 암호화 저장 후 삭제합니다. 기존 설정을 바꾸는 절차는 [설정 복구·교체 안내](docs/configuration-recovery.md)를 따르세요.
-
-## 모델 설정
-
-[agent-config.example.json](agent-config.example.json)은 OpenCode v2의 `providers → settings / models` 형식입니다.
-
-- `settings.baseURL`: `/v1` 등을 포함한 API 기준 경로입니다.
-- `settings.apiKey`: 사내 API 키입니다. `APIKey` 표기도 인식합니다.
-- `models.<별칭>.modelID`: 서버에 등록된 정확한 ID입니다.
-- `model`: `{ "providerID": "intranet", "model": "model-1" }`처럼 기본 모델의 별칭을 선택합니다.
-- `capabilities`, `cost`, `limit`를 유지하고 공식 모델 선택창에 등록합니다.
-- 임베딩은 별도의 `openViking.embedding` 한 개이며 LLM 선택과 독립적입니다.
-
-첫 실행은 JSON을 검증하고 Electron safeStorage로 암호화 저장한 후 준비 평문을 삭제합니다. 실제 키는 렌더러·엔진·로그에 넣지 않습니다. 엔진은 실행별 토큰으로 호스트 중계를 사용합니다. 기존 설정 교체는 알림 영역 L-Vibe 메뉴에서 파일을 선택하여 명시적으로 수행합니다. 배포 원본 JSON은 사용자가 관리하는 파일입니다.
-
-[thinking·전송 대기 시간·파일 수정 자동 승인](docs/model-controls.md)을 확인하세요.
-
-## 현재 연결된 기능
-
-- 앱 전용 엔진, 임의 localhost 포트·인증, 앱과 함께 시작·종료하는 수명 관리.
-- 네이티브 선택기로 허용한 프로젝트만 읽는 MCP 중계, 읽기·텍스트 검색, 수정 승인·충돌 검사·호스트 스냅샷.
-- OpenViking 0.5.4와 단일 임베딩, 선택한 프로젝트 파일의 승인 후 색인·검색. 개인 대화 자동 업로드 없음.
-- morluto/rea 6.8.0의 제한된 정적 분석, Graphify 0.9.105의 네트워크 없는 AST 추출.
-- Aegis·Conductor 순수 지침 어댑터와 오프라인 기본 스킬 34개. 최초 실행에서 OpenViking skills에 참조·라이선스와 함께 자동 등록하며 재실행 중복 색인과 사용자 편집본 덮어쓰기를 방지합니다. [추가 스킬·MCP 조사와 선택 목록](docs/offline-extensions-research.md)을 참고하세요.
-
-Serena/clangd·Git·Playwright·MarkItDown·Chrome DevTools·DuckDB의 통제된 MCP가 포함됩니다. 실제 Linux 호출과 Windows 설치 리소스 검사를 구분해 검증 기록을 확인하세요. 일반 명령 실행과 새 Desktop의 반복 감지·답변 재출력, Windows 설치·업데이트·ACL·자식 종료·DNS/TCP 관찰과 실제 사내 Qwen 수용 검증은 남아 있습니다.
-
-## 빌드 PC
-
-Node 24, Python 3.12, tar와 고정 Bun 1.4.4를 사용합니다. 아래 의존성 다운로드·설치는 모두 빌드 PC에서 수행하며 직원 PC로 전가하지 않습니다.
-
-```sh
-npm ci
-npm run desktop:prepare
-# 준비된 upstream 소스에서 Bun 의존성을 frozen lock으로 설치합니다.
-# GitHub API 제한 시 desktop-dependencies.py가 동일 해시의 공식 codeload 아카이브를 준비합니다.
-python3 scripts/desktop-dependencies.py
-npm run bundle:python
-npm run bundle:rea
-npm run bundle:mcp
-npm run mcp:verify
-npm run desktop:prepare
-npm run skills:verify
-npm run verify
-npm run build
-npm run package:win
-npm run audit:installer
-# 소스와 검증 문서를 커밋한 뒤 TGZ를 생성합니다.
-npm run bundle:offline
-```
-
-`desktop-dependencies.py`는 CLI·Windows native prebuild·Ghostty의 고정 버전/해시를 검증합니다. Python은 Windows wheel 의존성과 Windows 전용 markers를 모두 해석해 완성된 배포본을 구성하며 가상환경을 복사하지 않습니다. REA는 별도 npm lock으로 고정합니다. `bundle:offline`은 커밋된 소스·EXE·설정 예제·안내·해시·라이선스·대응 소스를 TGZ로 묶습니다. 배포 경로가 ASCII가 아니거나 실제 EXE의 ASCII 검사 기록이 없으면 생성을 중단합니다. 빌드 성공과 출시 수용 검증은 구분합니다.
-
-원형 `src/renderer`, `src/preload`와 `dev:prototype`, `build:prototype`, `start:prototype`는 이관 전 비교·회귀 검증용입니다. 원형 테스트를 새 Desktop 검증으로 계산하지 않습니다. 새 소스는 `distribution/` overlay, `upstream-lock.json`, `scripts/desktop.mjs`로 관리합니다.
-
-설계는 [아키텍처](docs/architecture.md), [요구사항](docs/requirements.md), [구현 계획](docs/implementation-plan.md), [Windows 수용 절차](docs/windows-acceptance.md)를 참고하세요. OpenViking의 AGPL-3.0 대응 소스와 각 구성 요소의 라이선스를 배포 묶음에 포함합니다.
-
-자체 코드는 MIT이며 번들은 GPL/AGPL/LGPL·CC-BY-SA 및 브라우저/DLL의 별도 조건을 포함합니다. [라이선스 정책 재검토](docs/license-policy.md)와 [제3자 고지](THIRD_PARTY_NOTICES.md)에 확인한 조건 및 남은 재배포 검토를 기록합니다. 전체 설치 묶음의 라이선스 검토 완료를 의미하지 않습니다.
+`npm run build`는 Ned 실행기와 ACP 어댑터를 빌드한다. 고정 OpenCode 소스·Bun 의존성과 Windows 오프라인 런타임이 먼저 필요하다. [빌드·인계 절차](HANDOFF.md)를 따른다. 완전한 Windows 수용 전에는 1.0 완료 또는 폐쇄망 검증 완료로 표시하지 않는다.

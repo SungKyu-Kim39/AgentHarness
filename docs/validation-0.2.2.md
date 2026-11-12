@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # L-Vibe 0.2.2 — 오프라인 설치 검증 후보
 
 공식 OpenCode Desktop/CLI v2.2.6 (`dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`) 기반이다. `releaseReady`는 false이며 Windows 실행 수용 완료를 의미하지 않는다. MCP 6종의 별도 실제 Linux 호출은 [기존 검증 기록](mcp-validation.md)에 있다.

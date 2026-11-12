@@ -35,7 +35,7 @@ flowchart LR
 
 The product name is **Ned**. The launcher, installer, tray and product UI use `assets/ned-icon.png` / `assets/ned-icon.ico`: black background, white bold Ned text. Zed retains its vendor component identity.
 
-New installation: `%LOCALAPPDATA%\Programs\Ned`. New private data: `%APPDATA%\Ned`. Copy existing app-owned L-Vibe settings, engine history and OpenViking data only when the old app is stopped, preserve the original, and never overwrite an existing Ned profile. Encrypted settings must still decrypt as the same Windows user; never fall back to plaintext. Historical L-Vibe installers and repair tools keep their original paths and names.
+New installation: `%LOCALAPPDATA%\Programs\Ned`. New private data: `%APPDATA%\Ned`. Electron singleton/cache metadata uses `%LOCALAPPDATA%\Ned-Launcher` so it cannot interfere with a transactional data migration. Copy existing app-owned L-Vibe settings, engine history and OpenViking data only when the old app is stopped, preserve the original, and never overwrite an existing Ned profile. Encrypted settings must still decrypt as the same Windows user; never fall back to plaintext. Historical L-Vibe installers and repair tools keep their original paths and names.
 
 The handover remains one ASCII-named TGZ, one offline installer EXE, one central JSON, one launch shortcut. Bundle all required runtimes, language tools, sources and license notices before import. Model weights and proprietary SDKs are not bundled.
 

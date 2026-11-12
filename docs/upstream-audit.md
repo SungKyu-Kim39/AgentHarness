@@ -1,3 +1,5 @@
+> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+
 # Desktop 기반 초기 구현 점검
 
 기준: OpenCode v2.2.6 / `dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`. archive SHA-256 및 중요 경계 파일은 `upstream-lock.json`에 고정했다. 이 기록은 Windows 배포 검증 결과가 아니다.

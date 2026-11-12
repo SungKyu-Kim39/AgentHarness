@@ -8,7 +8,7 @@ export class EditorNetwork {
   private server?: Server;
   async start() {
     this.server = createServer((_req, res) => res.writeHead(403).end('Ned offline editor'));
-    this.server.on('connect', (_req, socket) => { socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n'); });
+    this.server.on('connect', (_req, socket) => { socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n', () => socket.destroy()); });
     await new Promise<void>((resolve, reject) => { this.server!.once('error', reject); this.server!.listen(0, '127.0.0.1', resolve); });
     const address = this.server.address(); if (!address || typeof address === 'string') throw new Error('Editor proxy failed');
     return 'http://127.0.0.1:' + address.port;
@@ -43,7 +43,7 @@ export async function prepareEditor(root: string, executable: string, resources:
   await mkdir(home, { recursive: true, mode: 0o700 });
   const clangd = process.platform === 'win32' ? path.join(resources, 'runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe') : undefined;
   // Managed security/agent settings are regenerated; appearance changes have a separate allowlist.
-  const appearance = await readFile(path.join(data, 'appearance.json'), 'utf8').then(JSON.parse).catch(() => ({}));
+  const appearance = await readFile(path.join(data, 'appearance.json'), 'utf8').then(JSON.parse).catch(() => readFile(path.join(data, 'config/settings.json'), 'utf8').then(JSON.parse).catch(() => ({})));
   const allowed: Record<string, unknown> = {};
   for (const key of ['theme', 'buffer_font_size', 'ui_font_size', 'tab_size', 'vim_mode']) if (appearance[key] !== undefined) allowed[key] = appearance[key];
   await atomicJSON(path.join(data, 'config/settings.json'), { ...allowed, ...editorSettings(executable, path.join(resources, 'ned/agent.cjs'), descriptor, proxy, clangd) });

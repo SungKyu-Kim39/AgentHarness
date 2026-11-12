@@ -1,4 +1,4 @@
-# L-Vibe offline adaptation
+# Ned offline adaptation
 
 Upstream: https://github.com/coreyhaines31/marketingskills/tree/9d6d7ce8d18eb155dc2f9762435f097e60cdad7c/skills/ab-testing
 
@@ -6,9 +6,9 @@ Original authors: coreyhaines31/marketingskills contributors
 
 Commit: 9d6d7ce8d18eb155dc2f9762435f097e60cdad7c
 
-License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by L-Vibe contributors.
+License: MIT; see LICENSE. Original author attribution and license are retained. This adapted skill and notice are distributed under MIT; the application license does not replace the upstream license. Modifications by Ned contributors.
 
-Modified for L-Vibe on 2026-11-10: static documents only; Desktop frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.
+Modified for Ned on 2026-11-12: static documents only; agent skill frontmatter reduced to name/description; approval/offline boundaries embedded; online installation/download/CI examples and unsupported automatic agent/plugin operations removed where present; local dependency examples substituted; scope and output requirements adapted to user decisions. No upstream executable scripts, hooks, agents or plugins are bundled by this skill.
 
 Specific policy: 사내 기능/성능/모델 프롬프트 비교에도 가설·무작위 배정 단위·노출·주 지표·가드레일·MDE·표본 수·중지 규칙을 명시한다. 같은 문제를 여러 번 평가하면 짝지음/클러스터를 고려한다. SRM과 누락·교차 노출을 검사하고 사후 세그먼트는 탐색으로 표시한다. 클라우드 분석·기능 플래그·온라인 계산기를 연결하지 않는다. 실험 실행/출시/기록 변경은 별도 승인 대상이며 마케팅 목표·실험 횟수를 일률적으로 강제하지 않는다.
 
