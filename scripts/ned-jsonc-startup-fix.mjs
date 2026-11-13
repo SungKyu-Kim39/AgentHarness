@@ -33,8 +33,8 @@ await cp('.cache/ned/app/main.cjs',app+'/main.cjs');
 await createPackage(app,output+'/app.asar');
 const hostModuleSmoke=verifyBundledHost(extractFile(output+'/app.asar','main.cjs'));
 // The archive retains every original entry, with only main.cjs permitted to change.
-const entries=listPackage(base+'/resources/app.asar');
-if(JSON.stringify(entries)!==JSON.stringify(listPackage(output+'/app.asar')))throw new Error('Archive file list changed');
+const entries=listPackage(base+'/resources/app.asar').sort();
+if(JSON.stringify(entries)!==JSON.stringify(listPackage(output+'/app.asar').sort()))throw new Error('Archive file list changed');
 for(const entry of entries) {
   const name=entry.slice(1);
   if(name==='main.cjs'||statFile(base+'/resources/app.asar',name).files)continue;
