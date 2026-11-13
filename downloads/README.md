@@ -1,3 +1,21 @@
+# Ned 0.3.4 Windows x64
+
+[GitHub 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.4) · [검사 기록](Ned-0.3.4-validation.json)
+
+- [폐쇄망 반입 TGZ · EXE/설정 JSON/안내/진단/소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.4-windows-x64.tgz) (1,173,699,552 bytes)
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.4-win-x64.exe) (1,176,868,983 bytes)
+- [TGZ SHA-256](Ned-0.3.4-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.4-win-x64.exe.sha256) · [설치기 감사](Ned-0.3.4-installer-audit.json) · [TGZ 대조](Ned-0.3.4-bundle-verification.json)
+
+0.3.3에서 발생한 `Cannot find module './impl/format'` 시작 오류를 수정한 전체 설치본이다. JSONC ESM 하위 모듈을 번들에 포함하며 **0.3.3용 시작 패치는 추가 적용하지 않는다.** OpenViking 내보내기 도구 수정과 `CHECK_EXPORT.cmd`도 반입 TGZ에 포함한다. 기존 파일 수정 자동 승인·편집기 설정 보존·Ned 아이콘 기능을 유지한다.
+
+Ned와 개인 Zed를 종료하고 새 폴더에 압축 해제한 EXE로 업데이트한다. 기존 설정·대화·지식·편집기 환경을 유지한다. 최초 설치는 EXE 옆 `agent-config.json`을 준비하고, 기존 저장 설정의 변경은 Ned 설정 가져오기 메뉴를 사용한다.
+
+새 버전 집중 검사는 20개 통과(실패 0, 선택적 Wine 설치 실행 1개 제외)했고 타입/빌드/스킬36개 검사가 통과했다. 실제 EXE에서 추출한 앱 번들의 모듈 초기화와 구성 요소 해시, ASCII 경로 및 TGZ 내부 EXE·대응 소스를 대조했다. 실제 Windows/사내망 전체 수용 결과와 구분한다. 원본 0.3.3 배포 파일과 패치는 아래에 그대로 보존한다.
+
+[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/validation-0.3.4.md) · [라이선스](../docs/license-policy.md)
+
+---
+
 # Ned 0.3.3 Windows x64
 
 ## 0.3.3 실행 오류 수정 패치

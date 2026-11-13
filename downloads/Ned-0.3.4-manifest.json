@@ -1,0 +1,18 @@
+{
+  "product": "Ned",
+  "version": "0.3.4",
+  "sourceCommit": "bfa9eb38286d6853abc28a4cb9e5838483dd275a",
+  "archive": "Ned-0.3.4-windows-x64.tgz",
+  "bytes": 1173699552,
+  "sha256": "b400faa722f7918e87a945d551a50dd20b84b1508fd4d026dda2360063859a9d",
+  "files": {
+    "encoding": "ascii",
+    "files": 27,
+    "directories": 1
+  },
+  "installer": {
+    "name": "Ned-0.3.4-win-x64.exe",
+    "bytes": 1176868983,
+    "sha256": "fc1eab24a0a6efd782be3b338b200aee854c51691ff0a4c9716f40968cf962ee"
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.4",
+  "sourceCommit": "bfa9eb38286d6853abc28a4cb9e5838483dd275a",
+  "os": "linux",
+  "recordedAt": "2026-11-13T02:48:08.837986+00:00",
+  "typecheck": "passed",
+  "nedBuild": "passed",
+  "bundledSkills": 36,
+  "skillHashes": "passed",
+  "focusedTests": {
+    "tests": 21,
+    "pass": 20,
+    "fail": 0,
+    "skipped": 1,
+    "duration_ms": 6849.786904
+  },
+  "testCommand": "tsx --test tests/ned-host-bundle.test.mjs tests/ned-jsonc-fix.test.mjs tests/editor-preferences.test.ts tests/ned-config-restart.test.ts tests/ned-installer.test.mjs tests/installer-audit.test.mjs tests/ned-names.test.ts",
+  "actualInstallerHostModuleSmoke": {
+    "passed": true,
+    "stoppedBeforeApplicationStartup": true,
+    "nonBuiltinImports": [
+      "electron"
+    ]
+  },
+  "independentBuildComparison": {
+    "version": "0.3.4",
+    "mainSha256": "88cacd550d3a55c6a9e42aa0f70a2ef496a3c296ef7e8e594a56f5fc3db6499e",
+    "agentSha256": "93720f04af7cb00ad8f1cb8a185eb25fb7a9f7918d81c4fb745610bec725f4fb",
+    "independentRebuildMatchesStaged": true,
+    "pinnedBaseConfigRestored": true
+  },
+  "editorBranding": {
+    "schemaVersion": 1,
+    "component": "Zed v1.28.1 managed editor",
+    "change": "Windows icon resources only; Ned taskbar, Alt-Tab and window-class icon",
+    "originalSha256": "c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a",
+    "modifiedSha256": "01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde",
+    "iconSha256": "98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb",
+    "nonResourceSectionsUnchanged": true,
+    "vendorVersionMetadataPreserved": true,
+    "authenticode": "modified resource image is unsigned; original vendor archive is preserved by the upstream lock"
+  },
+  "installer": {
+    "name": "Ned-0.3.4-win-x64.exe",
+    "bytes": 1176868983,
+    "sha256": "fc1eab24a0a6efd782be3b338b200aee854c51691ff0a4c9716f40968cf962ee"
+  },
+  "archive": {
+    "name": "Ned-0.3.4-windows-x64.tgz",
+    "bytes": 1173699552,
+    "sha256": "b400faa722f7918e87a945d551a50dd20b84b1508fd4d026dda2360063859a9d"
+  },
+  "includedFixes": [
+    "JSONC ESM host bundle; no separate 0.3.3 startup patch required",
+    "Minimal authenticated OpenViking export preflight and safe CHECK_EXPORT.cmd"
+  ],
+  "windowsAcceptance": false,
+  "unverified": [
+    "Actual 0.3.4 install/upgrade and editor GUI launch on Windows 10/11",
+    "Actual company model endpoint and external DNS/TCP isolation",
+    "Complete desktop GUI actions and knowledge migration on the deployment PC"
+  ],
+  "optionalWineInstallerTest": "skipped: Windows loader unavailable; compiler/archive/import checks are separate",
+  "releaseReady": false
+}
