@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.6",
+  "sourceCommit": "9aeb3cb66cec2be391beddf7548f558ef39aac61",
+  "recordedAt": "2026-11-13T06:14:39.992557+00:00",
+  "release": {
+    "isDraft": false,
+    "isPrerelease": true,
+    "tagName": "v0.3.6",
+    "targetCommitish": "9aeb3cb66cec2be391beddf7548f558ef39aac61",
+    "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.6"
+  },
+  "tagPointsToSourceCommit": true,
+  "publicFiles": [
+    {
+      "name": "Ned-0.3.6-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-win-x64.exe",
+      "httpStatus": 200,
+      "bytes": 1176898071,
+      "sha256": "c8d8aa63269118a1fa9d732dc0347631aefbf6e72992fac3c0fb2c276563c326",
+      "fullRemoteSha256Verified": true,
+      "seconds": 249.122
+    },
+    {
+      "name": "Ned-0.3.6-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-windows-x64.tgz",
+      "httpStatus": 200,
+      "bytes": 1173759060,
+      "sha256": "21d03e9bf2af0a776be138a31525435e277c95fdc85882b170c07cb5cdfb297d",
+      "fullRemoteSha256Verified": true,
+      "seconds": 205.046
+    }
+  ],
+  "publicMetadata": [
+    {
+      "name": "Ned-0.3.6-validation.json",
+      "httpStatus": 200,
+      "bytes": 3652,
+      "sha256": "6351a92ce3f97f2185c26435fbb519d3d9175b209bda5f6033721e373d0dcdb8",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-installer-audit.json",
+      "httpStatus": 200,
+      "bytes": 2028,
+      "sha256": "058a1763e940d0831165720d52b75fa3539c93140ffcece5405eb12b6fe6b5a7",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-manifest.json",
+      "httpStatus": 200,
+      "bytes": 498,
+      "sha256": "9f1c61141fcab4d424bd8b5e59047b3cdebf7e4b96a0868fae25d94b6534f7ad",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-bundle-verification.json",
+      "httpStatus": 200,
+      "bytes": 3203,
+      "sha256": "0a65c9664913e44003b35d9a3759a28fea9477b670380908d1771eabe0476e4a",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-win-x64.exe.sha256",
+      "httpStatus": 200,
+      "bytes": 88,
+      "sha256": "ada77190ade58f96d0e915d5e3660df8f7e947ae6d1d99d6141b8fc07f34c9c2",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-windows-x64.tgz.sha256",
+      "httpStatus": 200,
+      "bytes": 92,
+      "sha256": "0cb922d0847071c32d8ce16bddec5875f7470b76a5c018bf1110cf1a638aa0b5",
+      "fullBytesMatch": true
+    }
+  ],
+  "distribution": "Git LFS downloads linked from release notes",
+  "windowsAcceptance": false,
+  "releaseReady": false
+}

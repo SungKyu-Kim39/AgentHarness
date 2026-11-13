@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.6",
+  "sourceCommit": "9aeb3cb66cec2be391beddf7548f558ef39aac61",
+  "verifiedAt": "2026-11-13T06:13:58.442658+00:00",
+  "clientAuthenticationSupplied": false,
+  "files": [
+    {
+      "name": "Ned-0.3.6-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-win-x64.exe",
+      "httpStatus": 200,
+      "bytes": 1176898071,
+      "sha256": "c8d8aa63269118a1fa9d732dc0347631aefbf6e72992fac3c0fb2c276563c326",
+      "fullRemoteSha256Verified": true,
+      "seconds": 249.122
+    },
+    {
+      "name": "Ned-0.3.6-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-windows-x64.tgz",
+      "httpStatus": 200,
+      "bytes": 1173759060,
+      "sha256": "21d03e9bf2af0a776be138a31525435e277c95fdc85882b170c07cb5cdfb297d",
+      "fullRemoteSha256Verified": true,
+      "seconds": 205.046
+    }
+  ]
+}
