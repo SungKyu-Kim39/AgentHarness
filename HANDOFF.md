@@ -174,3 +174,11 @@ Windows 사용자 후속 결과: probe-2의 파일 5개 해시 모두 일치, na
 ## 2026-11-13: 0.3.6 fixes
 
 Desktop snapshot 1.2.0 compact response fix and original 0.3.4/0.3.5 reversible patch are implemented. The 0.3.5 user reported native folder selection crash 0xc000041d, unknown module, after about 17 minutes. Its cause remains unconfirmed. Windows editor native prompts are disabled; the host tray offers a system folder picker with real shell navigation and private-profile CLI dispatch. Installation directory selection is added; existing InstallLocation is reused, unrelated nonempty folders/roots refused, and custom-path diagnostics updated. Data remains APPDATA/Ned. See validation-0.3.6.md and release metadata for the actual build and Windows acceptance boundary.
+
+## Post-0.3.6: installation folder creation and project menu wording
+
+- Resolve the proposed install path with Win32 GetFullPathNameW, which accepts a nonexistent target, rather than depending on NSIS GetFullPathName's existence-sensitive conversion. Retain root/unrelated-directory guards. Normalize the accepted path and explicitly CreateDirectory before resource cleanup/copy; report creation failure. Do not create directories while the user types in the directory page.
+- Change the live tray item to `프로젝트 폴더 열기` and update the setup/introduction/comparison guides. Project selection remains available for normal project directories on other drives as well as Desktop/Favorites.
+- Extend the optional Windows/Wine installer fixture to use a missing parent/child/Ned hierarchy and assert that the executable is installed without precreating it.
+- Verification: fixture installer compiled successfully with a separately downloaded Debian NSIS 3.13-1 compiler and produced a PE executable. This is syntax/package-generation evidence, not the pinned release-toolchain or Windows installation acceptance. Full npm dependency restoration failed in this fresh environment; Windows/Wine runtime is unavailable.
+- Source only: original 0.3.6 binaries and tag remain immutable. Bump the product version before generating the next full installer; do not rebuild over the published 0.3.6 filenames.

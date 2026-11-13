@@ -18,10 +18,13 @@ test('compiled installer imports only EXEDIR config, preserves encrypted setting
  const output=await run(wine,['cmd.exe','/c','echo %APPDATA%'],{cwd,env,timeout:60000});
  const roaming=output.stdout.trim().split(/\r?\n/).find(s=>/^[A-Z]:\\/.test(s));assert.ok(roaming);
  const userData=path.join(prefix,'drive_c',...roaming.slice(3).split('\\'),'Ned'),staged=path.join(userData,'config-import.json');
- const installed=path.join(root,'install'),winInstalled='Z:'+installed.replaceAll('/','\\');
+ const installed=path.join(root,'new-parent','new-child','Ned'),winInstalled='Z:'+installed.replaceAll('/','\\');
  await writeFile(path.join(cwd,'agent-config.json'),'must-not-use-cwd');
  const install=()=>run(wine,[exe,'/S','/D='+winInstalled],{cwd,env,timeout:45000});
+ // The whole target hierarchy is missing; neither the user nor a fixture precreates it.
+ await assert.rejects(access(path.dirname(installed)));
  await install();assert.equal(await readFile(staged,'utf8'),'template-fixture');
+ assert.equal(await readFile(path.join(installed,'Ned.exe'),'utf8'),'fixture');
  // A subsequent installer with no /D must use the registered custom location.
  await writeFile(path.join(payload,'Ned.exe'),'fixture');
  await run(wine,[exe,'/S'],{cwd,env,timeout:45000});

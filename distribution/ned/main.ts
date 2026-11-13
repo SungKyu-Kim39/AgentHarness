@@ -166,7 +166,7 @@ async function start() {
   permissions.onChange(updatePermissionMenu);
   trayMenu = Menu.buildFromTemplate([
     { label: 'Ned ' + NED_VERSION + ' · Zed + OpenCode', enabled: false },
-    { label: '프로젝트 폴더 열기 · 바탕화면 / 즐겨찾기', click: openProject },
+    { label: '프로젝트 폴더 열기', click: openProject },
     { id: 'permissions', label: '권한', submenu: [
       ...permissionModes.map(mode => ({ id: 'permission-' + mode.value, label: mode.name, type: 'radio' as const, checked: permissions.mode === mode.value, click: () => setPermission(mode.value) })),
       { type: 'separator' },

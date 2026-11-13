@@ -40,7 +40,15 @@ FunctionEnd
 ; This guard also runs for /S /D=... before any resource cleanup.
 Function CheckInstallDirectory
   StrCpy $9 "invalid"
-  GetFullPathName $0 "$INSTDIR"
+  ; Resolve lexically through Win32: NSIS GetFullPathName can fail for a path
+  ; whose final directory does not exist yet. Do not create folders in the
+  ; directory-page callback; create the accepted target only when installing.
+  StrCpy $0 ""
+  System::Call 'kernel32::GetFullPathNameW(w "$INSTDIR", i ${NSIS_MAX_STRLEN}, w .r0, p 0) i .r2'
+  ${If} $2 == 0
+  ${OrIf} $2 >= ${NSIS_MAX_STRLEN}
+    Return
+  ${EndIf}
   ${GetRoot} "$0" $1
   ${If} $0 == "$1"
   ${OrIf} $0 == "$1\"
@@ -84,6 +92,7 @@ Function VerifyInstallDirectory
     SetErrorLevel 1
     Abort
   ${EndIf}
+  StrCpy $INSTDIR "$0"
   ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "InstallLocation"
   ${If} $0 != ""
   ${AndIf} $0 != $INSTDIR
@@ -98,6 +107,13 @@ FunctionEnd
 Section "Ned"
   SetShellVarContext current
   Call VerifyInstallDirectory
+  ClearErrors
+  CreateDirectory "$INSTDIR"
+  ${If} ${Errors}
+    MessageBox MB_OK|MB_ICONSTOP "설치 폴더를 만들 수 없습니다. 드라이브 여유 공간과 쓰기 권한을 확인하고 다시 시도하세요." /SD IDOK
+    SetErrorLevel 1
+    Abort
+  ${EndIf}
   ; Only installed product resources are replaced; user data is outside INSTDIR.
   ; Close the app before upgrading, so runtime files are not in use.
   RMDir /r "$INSTDIR\resources"
