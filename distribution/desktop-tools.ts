@@ -105,10 +105,18 @@ export class DesktopTools {
         if (this.stopped || this.blocked.has(session)) throw new Error('Desktop 실행이 중지되었습니다.');
         if (selected) { const live = (await this.windows(ctx, signal)).find(w => w.id === selected.id); if (!live || !same(live, selected)) throw new Error('승인 뒤 대상 창이 변경되었습니다.'); }
         if (name === 'desktop_list_windows') return { content: [{ type:'text', text:JSON.stringify(await this.windows(ctx, signal)) }] };
+        if (name === 'desktop_snapshot') ctx.refs.clear();
         const reply = await ctx.client.call(name, fixed, signal);
         if (name === 'desktop_snapshot' && !reply.isError) {
           const data = envelope(reply).data;
-          if (!data?.window || !selected || !same(data.window, selected) || !permittedDesktopWindow(data.window)) throw new Error('관찰된 창의 신원을 확인하지 못했습니다.');
+          // Pinned 1.2.0 serializes {app, window:{id,title}}, not a full WindowInfo.
+          // Corroborate its compact descriptor against a fresh, full inventory.
+          if (!selected || data?.window?.id !== selected.id || data?.app !== selected.app_name ||
+              ['pid','app_name','process_instance'].some(key => Object.hasOwn(data.window,key) && data.window[key] !== selected[key as keyof Window]))
+            throw new Error('관찰된 창의 신원을 확인하지 못했습니다.');
+          const after = (await this.windows(ctx, signal)).find(w => w.id === selected.id);
+          signal?.throwIfAborted();
+          if (!after || !same(after, selected)) throw new Error('스냅샷을 읽는 동안 대상 창이 변경되었습니다. 창 목록부터 다시 확인하세요.');
           const refs = new Map<string, DesktopRef>();
           const walk = (node: any) => { if (!node || typeof node !== 'object') return; if (typeof node.ref_id === 'string' && ref.safeParse(node.ref_id).success) refs.set(node.ref_id, { window:selected, role:typeof node.role==='string'?node.role.slice(0,100):undefined, name:typeof node.name==='string'?node.name.slice(0,1000):undefined }); for (const c of node.children ?? []) walk(c); };
           walk(data.tree); ctx.refs = refs; this.needsObservation.delete(session);

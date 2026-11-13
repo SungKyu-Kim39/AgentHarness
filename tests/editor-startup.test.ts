@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp,mkdir,writeFile,readFile,rm,stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { editorExitDetail,recordEditorExit,editorLogMarkers } from '../distribution/ned/editor-startup';
+import { editorExitDetail,recordEditorExit,editorLogMarkers,editorExitPresentation } from '../distribution/ned/editor-startup';
 import { prepareEditor } from '../distribution/ned/profile';
 test('editor diagnostics classify native loader and graphics failures without recording raw output',async t=>{
   const root=await mkdtemp(path.join(tmpdir(),'ned-editor-'));t.after(()=>rm(root,{recursive:true,force:true}));
@@ -42,4 +42,13 @@ test('Windows Known Folder relative AppData layout exists inside the private USE
  assert.equal(env.LOCALAPPDATA,path.join(env.USERPROFILE!,'AppData','Local'));
  for(const folder of ['Local','Roaming','LocalLow'])assert.equal((await stat(path.join(env.USERPROFILE!,'AppData',folder))).isDirectory(),true);
  assert.equal(editorExitDetail(-1073741819,null,'').nativeFailure,'access_violation');
+});
+test('late Windows callback failure is classified without inventing a GPU or input-method cause',()=>{
+ const detail=editorExitDetail(3221226525,null,'');
+ assert.equal(detail.exitHex,'0xc000041d');assert.equal(detail.nativeFailure,'fatal_user_callback_exception');
+ assert.equal(detail.loader,undefined);assert.deepEqual(detail.markers,[]);assert.deepEqual(detail.panicLocations,[]);
+ assert.equal(editorExitDetail(-1073740771,null,'').nativeFailure,'fatal_user_callback_exception');
+ const view=editorExitPresentation(1027558,3221226525);
+ assert.equal(view.title,'Ned 편집기 종료 진단');assert.match(view.message,/원인을 단정할 수 없/);
+ assert.equal(editorExitPresentation(405,101).title,'Ned 편집기 시작 진단');
 });

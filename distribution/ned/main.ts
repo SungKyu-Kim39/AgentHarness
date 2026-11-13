@@ -8,7 +8,7 @@ import { editorLaunch } from './editor-launch';
 import { requestEditorClose } from './editor-close';
 import { ConfigurationRestart } from './configuration-restart';
 import { StartupWindow } from './startup-window';
-import { recordEditorExit, checkEditorFiles } from './editor-startup';
+import { recordEditorExit, checkEditorFiles, editorExitPresentation } from './editor-startup';
 import { AgentOwner } from './owner';
 import { EditorNetwork, prepareEditor } from './profile';
 import { migrateLegacy, migrationNeedsBootstrap } from './migration';
@@ -204,8 +204,7 @@ async function start() {
       const report = await recordEditorExit(root, binary, profile.data, profile.env, startedAt, code, signal, diagnostic, spawnError).catch(() => undefined);
       const cleanExit = !spawnError && code === 0 && !signal;
       if (!cleanExit || (!configurationRestart.pending && !configurationRestart.busy && Date.now() - startedAt < 3000)) {
-        await messageBox({ type: 'warning', title: 'Ned 편집기 시작 진단',
-          message: code === 101 ? '편집기 초기화 중 오류가 발생했습니다. 진단 코드와 소스 위치를 확인하세요.' : '편집기가 종료되었습니다. 진단 상태를 확인하세요.',
+        await messageBox({ type: 'warning', ...editorExitPresentation(Date.now() - startedAt, code),
           detail: JSON.stringify(report ?? { code: 'EDITOR_DIAGNOSTIC_WRITE_FAILED' }, null, 2) + '\n진단 파일: ' + path.join(root, 'editor-startup-status.json') + '\n설정·키·사용자 코드·원본 로그는 포함하지 않습니다.' });
       }
       editor = undefined;

@@ -22,6 +22,7 @@ export function editorExitDetail(code: number | null, signal: string | null, tex
   const hex = code === null ? undefined : '0x' + (code >>> 0).toString(16).padStart(8, '0');
   const markers = patterns.filter(([, pattern]) => pattern.test(text)).map(([name]) => name);
   const loader = hex === '0xc0000135' ? 'missing_dll' : hex === '0xc000007b' ? 'invalid_binary' : hex === '0xc0000142' ? 'dll_initialization' : hex === '0xc000001d' ? 'unsupported_instruction' : undefined;
+  const nativeFailure = hex === '0xc0000005' ? 'access_violation' : hex === '0xc000041d' ? 'fatal_user_callback_exception' : undefined;
   const panicLocations: Array<{ source?: string; sourceHash?: string; line: number; column?: number }> = [];
   for (const m of text.matchAll(/panicked at ([^\r\n]+?\.rs):(\d+)(?::(\d+))?/g)) {
     const raw = m[1].replaceAll('\\', '/').replace(/^[ '"]+|[ '"]+$/g, '');
@@ -30,7 +31,15 @@ export function editorExitDetail(code: number | null, signal: string | null, tex
     if (!panicLocations.some(item => JSON.stringify(item) === JSON.stringify(location))) panicLocations.push(location);
     if (panicLocations.length === 8) break;
   }
-  return { exitCode: code, exitHex: hex, signal, markers, panicLocations, ...(hex === '0xc0000005' ? { nativeFailure: 'access_violation' } : {}), ...(loader ? { loader } : {}) };
+  return { exitCode: code, exitHex: hex, signal, markers, panicLocations, ...(nativeFailure ? { nativeFailure } : {}), ...(loader ? { loader } : {}) };
+}
+export function editorExitPresentation(elapsedMs: number, code: number | null) {
+  const early = elapsedMs < 15000;
+  return { title: early ? 'Ned 편집기 시작 진단' : 'Ned 편집기 종료 진단',
+    message: (code !== null && (code >>> 0) === 0xc000041d)
+      ? 'Windows 창 콜백 처리 중 예외로 편집기가 종료되었습니다. 오류 모듈을 확인해야 하며 종료 코드만으로 원인을 단정할 수 없습니다.'
+      : code === 101 ? '편집기에서 panic이 발생했습니다. 진단 코드와 소스 위치를 확인하세요.'
+      : early ? '편집기가 시작 직후 종료되었습니다. 진단 상태를 확인하세요.' : '실행 중이던 편집기가 종료되었습니다. 진단 상태를 확인하세요.' };
 }
 /** Only a bounded tail of this run's app-owned log is inspected. Raw text is never persisted. */
 export async function editorLogMarkers(data: string, startedAt: number) {

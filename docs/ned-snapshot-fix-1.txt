@@ -1,0 +1,37 @@
+Ned desktop snapshot repair 1
+
+For the original published Ned 0.3.4 and 0.3.5 Windows x64 installers.
+Fixes: "관찰된 창의 신원을 확인하지 못했습니다."
+
+1. Save your files and close Ned and all Zed windows normally.
+2. Extract this archive into a new local folder.
+3. Run APPLY_FIX.cmd. Expect applied or already-applied and EXIT_CODE=0.
+4. Start Ned, list the target windows again, and request a new snapshot.
+   Use the new snapshot's refs for subsequent actions.
+
+No reinstallation or model JSON change is required. The script identifies
+the exact installed EXE and original app.asar using pinned SHA-256 values.
+Unknown builds, modified archives or running Ned/Zed processes are refused.
+
+Only resources/app.asar is replaced. The original is retained as
+resources/app.asar.ned-snapshot-1.backup. Model settings, permission mode,
+editor preferences, conversations, projects and OpenViking data are unchanged.
+The installed Python runs with -I -S -B; no package installation or network
+access is needed. Installation location is the standard per-user Ned folder.
+
+The pinned agent-desktop 1.2.0 snapshot payload has app at the top level and
+only id/title in window. Ned incorrectly expected the full inventory fields
+there. The repair compares the compact fields and corroborates PID, process
+instance and application against a fresh inventory after capture. A changed,
+missing or excluded target is refused. Old refs are cleared on a new capture
+attempt. Window titles may change without invalidating the owning process.
+The repair does not disable identity checks or change approval settings.
+
+Recovery: close Ned/Zed and run ROLLBACK_FIX.cmd. Rollback restores the known
+snapshot bug. Do not remove the backup before verifying the repaired app.
+
+Verification covers the pinned source's actual serialized payload, hostile
+or racing identities, stale ref removal and the actual patched CJS/ASAR bytes.
+Physical Windows GUI execution remains a deployment check. A cloud GTK test
+could not join the separate display authentication context; no real button
+click or Windows capture success is claimed from that attempt.

@@ -17,7 +17,7 @@ test('desktop refs, project and native approval bind each action; changed identi
   let approvals=0, allow=true, live={...target};let lastDetail=''; const calls:string[]=[];
   const tools = new DesktopTools(root,root,async (_title,detail)=>{approvals++;lastDetail=detail;return allow;});
   const home=path.join(root,'private');await mkdir(home);
-  const client={ call:async(name:string,args:any)=>{ calls.push(name); return name==='desktop_list_windows'? reply([live,{...live,id:'own',app_name:'Ned'}]):name==='desktop_snapshot'?reply({window:live,tree:{ref_id:'@s1:e1',children:[{ref_id:'@s1:e2',role:'button',name:'Save fixture'}]}}):reply({applied:args}); },close:async()=>{} };
+  const client={ call:async(name:string,args:any)=>{ calls.push(name); return name==='desktop_list_windows'? reply([live,{...live,id:'own',app_name:'Ned'}]):name==='desktop_snapshot'?reply({app:live.app_name,window:{id:live.id,title:live.title},tree:{ref_id:'@s1:e1',children:[{ref_id:'@s1:e2',role:'button',name:'Save fixture'}]}}):reply({applied:args}); },close:async()=>{} };
   (tools as any).sessions.set('s',{client,home,project:'/project',refs:new Map()});
   await assert.rejects(tools.call('desktop_click',{ref_id:'@forged:e1'},'s','/project'),/qualified ref/);assert.equal(approvals,0);
   await tools.call('desktop_snapshot',{window_id:target.id},'s','/project');
@@ -30,6 +30,41 @@ test('desktop refs, project and native approval bind each action; changed identi
   allow=true;live={...live,process_instance:'replacement'};
   await assert.rejects(tools.call('desktop_click',{ref_id:'@s1:e2'},'s','/project'),/바뀌/);
   await tools.cancel('s');await assert.rejects(tools.call('desktop_status',{},'s','/project'),/중지/);
+});
+test('pinned compact snapshots bind refs to fresh inventory; capture races and contradictory fields invalidate old refs',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-snapshot-shape-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const tools=new DesktopTools(root,root,async()=>true);t.after(()=>tools.close());
+ const home=path.join(root,'home');await mkdir(home);
+ let live={...target},body:any,snapshotError=false,afterCapture=()=>{};const actions:string[]=[];
+ const compact=()=>({app:target.app_name,window:{id:target.id,title:'new title'},snapshot_id:'compact',complete:true,ref_count:1,tree:{ref_id:'@compact:e1',role:'button'}});
+ const context={home,project:'/p',refs:new Map(),client:{close:async()=>{},call:async(name:string)=>{
+  if(name==='desktop_list_windows')return reply([live]);
+  if(name==='desktop_snapshot'){const result=reply(body??compact());afterCapture();return snapshotError?{...result,isError:true}:result;}
+  actions.push(name);return reply({});
+ }}};
+ (tools as any).sessions.set('s',context);
+ // format_snapshot_fields in the pinned Rust source only emits id/title inside window.
+ await tools.call('desktop_snapshot',{window_id:target.id},'s','/p');
+ await tools.call('desktop_click',{ref_id:'@compact:e1'},'s','/p');assert.deepEqual(actions,['desktop_click']);
+ assert.deepEqual((context.refs.get('@compact:e1') as any).window,target);
+ for(const mismatch of [{app:'Other'},{window:{id:'other'}},{window:{id:target.id,pid:999}},{window:{id:target.id,app_name:'Other'}},{window:{id:target.id,process_instance:'replacement'}}]){
+  body={...compact(),...mismatch};
+  await assert.rejects(tools.call('desktop_snapshot',{window_id:target.id},'s','/p'),/신원/);
+  assert.equal(context.refs.size,0);
+ }
+ body=undefined;
+ for(const changed of [{...target,pid:999},{...target,process_instance:'replacement'},{...target,app_name:'Ned'}]){
+  live={...target};afterCapture=()=>{live=changed};
+  await assert.rejects(tools.call('desktop_snapshot',{window_id:target.id},'s','/p'),/대상 창이 변경/);
+  assert.equal(context.refs.size,0);
+ }
+ live={...target};afterCapture=()=>{live={...target,title:'changed during capture'}};
+ await tools.call('desktop_snapshot',{window_id:target.id},'s','/p');assert.equal(context.refs.size,1);
+ snapshotError=true;afterCapture=()=>{};
+ assert.equal((await tools.call('desktop_snapshot',{window_id:target.id},'s','/p')).isError,true);
+ assert.equal(context.refs.size,0);
+ await assert.rejects(tools.call('desktop_click',{ref_id:'@compact:e1'},'s','/p'),/qualified ref/);
+ assert.deepEqual(actions,['desktop_click']);
 });
 test('real pinned agent-desktop MCP starts with a private home and reports capabilities without internet or a model',
  {skip:process.platform!=='linux'||!existsSync('vendor/runtime/linux-x64/agent-desktop/agent-desktop'),timeout:30000},async t=>{
@@ -50,7 +85,7 @@ test('a closed desktop client is disposed before a fresh observation; uncertain 
  const broken={available:true,call:async(name:string)=>{if(name==='desktop_list_windows')return reply([target]);clicks++;broken.available=false;throw Error('transport lost')},close:async()=>{disposed++}};
  const oldHome=path.join(root,'old');await mkdir(oldHome);
  (tools as any).sessions.set('s',{client:broken,home:oldHome,project:'/p',refs:new Map([['@s1:e2',{window:target}]])});
- (tools as any).create=async(project:string)=>{created++;return{client:{available:true,call:async(name:string)=>name==='desktop_list_windows'?reply([target]):name==='desktop_snapshot'?reply({window:target,tree:{ref_id:'@fresh:e1'}}):reply({}),close:async()=>{}},home:path.join(root,'fresh'),project,refs:new Map()}};
+ (tools as any).create=async(project:string)=>{created++;return{client:{available:true,call:async(name:string)=>name==='desktop_list_windows'?reply([target]):name==='desktop_snapshot'?reply({app:target.app_name,window:{id:target.id,title:target.title},tree:{ref_id:'@fresh:e1'}}):reply({}),close:async()=>{}},home:path.join(root,'fresh'),project,refs:new Map()}};
  await assert.rejects(tools.call('desktop_click',{ref_id:'@s1:e2'},'s','/p'),/DESKTOP_CONNECTION_CLOSED/);
  assert.equal(clicks,1);assert.equal(disposed,1);assert.equal(existsSync(oldHome),false);
  await assert.rejects(tools.call('desktop_focus_window',{window_id:target.id},'s','/p'),/snapshot/);
