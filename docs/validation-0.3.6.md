@@ -19,3 +19,11 @@ The NSIS directory page allows a dedicated writable folder such as D:\Programs\N
 The pinned NSIS compiler is exercised with a fixture payload. The optional Wine execution fixture covers configuration import, registered custom-directory reuse and refusal to delete unrelated resources; it is skipped when the Windows loader is unavailable. Compiler success and archive extraction do not establish actual Windows installation/ACL behavior.
 
 Build, typecheck, focused regression results, actual installer extraction/hash/ASCII audits, source comparison and public download hashes are recorded separately in downloads metadata. Full Windows GUI, real company model/embedding endpoints, knowledge migration and DNS/TCP isolation acceptance remain deployment checks. Existing model queue behavior is preserved; no default model-response deadline is added.
+
+## Same-version repair: rebuild1
+
+The user requested that the application version remain 0.3.6. Files use a rebuild1 suffix; the original EXE, TGZ and source tag remain unchanged. The revised installer explicitly creates missing nested installation directories and uses GetFullPathNameW so validation does not require the target to exist. The tray item is shortened to `프로젝트 폴더 열기`.
+
+The repair is based on the original 0.3.6 installer SHA-256 c8d8aa63269118a1fa9d732dc0347631aefbf6e72992fac3c0fb2c276563c326. The host is rebuilt from current TypeScript using the locked dependencies. Its compiled bytes must equal the original with only the menu label changed. ASAR entries/dependencies, ACP, editor, model bridge and runtime files are preserved; only the host archive, setup guide and build provenance are replaced/added. Re-extraction of the newly generated installer compares the entire payload inventory, not only selected component hashes. The original runtime component manifests are verified again.
+
+The packaging, changed-area test results, source commit, product version, build revision and public hashes are recorded separately for the revised files. Windows installation/upgrade, actual missing-folder creation and GUI selection still require deployment-PC acceptance; a compiler or archive check does not replace that execution evidence.

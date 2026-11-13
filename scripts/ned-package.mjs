@@ -11,13 +11,17 @@ import { verifyAsciiTree, verifyAsciiTar } from './package-paths.mjs';
 import { verifyManifest, fileHash } from './installer-audit.mjs';
 import { brandEditor, verifyEditorIcon } from './ned-editor-branding.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
+import { prepareRebuild, rebuildBaseline, payloadInventory } from './ned-rebuild.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
+const revision=process.env.NED_BUILD_REVISION ?? '';
+if(revision && revision!=='rebuild1')throw new Error('Unsupported build revision');
+const artifactVersion=version+(revision?'-'+revision:'');
 const output = path.join(root,'release/ned');
 const cache = path.join(root,'.cache/ned');
 const staged = path.join(output,'win-unpacked');
-const installer = path.join(output,`Ned-${version}-win-x64.exe`);
+const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
 const buildCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const run = (command,args,options={}) => execFileSync(command,args,{cwd:root,stdio:'inherit',...options});
@@ -122,7 +126,7 @@ async function audit() {
   try {
     const seven=await getPath7za();run(seven,['t',installer]);
     const compared=['Ned.exe','resources/app.asar','resources/ned/agent.cjs','resources/ned/icon.ico','resources/zed/Zed.exe','resources/ned/editor-branding.json'];
-    const checkpointFile=path.join(cache,'installer-audit-checkpoint-'+version+'.json');
+    const checkpointFile=path.join(cache,'installer-audit-checkpoint-'+artifactVersion+'.json');
     const installerSha256=await fileHash(installer);
     let payloadHashes;
     if(await exists(path.join(staged,'Ned.exe'))) {
@@ -145,20 +149,29 @@ async function audit() {
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
     if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
     verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
+    const baseline=revision?await rebuildBaseline(root,version,revision):undefined;
     const components={};
     for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
-      components[name]=await verifyManifest(path.join(resources,folder),await fileHash(path.join(original,'manifest.json')),name==='mcp');
+      components[name]=await verifyManifest(path.join(resources,folder),baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }
-    const report={sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,hostModuleSmoke,windowsAcceptance:false};
+    let rebuild;
+    if(revision){
+      const proof=await json(path.join(cache,revision,'provenance.json'));
+      if(proof.sourceCommit!==buildCommit||proof.buildRevision!==revision)throw new Error('Stale rebuild provenance');
+      const actual=await payloadInventory(extracted);delete actual['$PLUGINSDIR/System.dll'];
+      if(JSON.stringify(Object.entries(actual).sort())!==JSON.stringify(Object.entries(proof.payloadInventory).sort()))throw new Error('Installer payload differs from the rebuilt staging');
+      const {payloadInventory:_,...summary}=proof;rebuild=summary;
+    }
+    const report={buildRevision:revision||undefined,rebuild,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,hostModuleSmoke,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }
 async function bundle() {
   const report=await json(path.join(output,'installer-audit.json'));
   if(report.installer.sha256!==await fileHash(installer)) throw new Error('Stale audit');
-  const name=`Ned-${version}-windows-x64`, stage=path.join(output,name);
+  const name=`Ned-${artifactVersion}-windows-x64`, stage=path.join(output,name);
   await rm(stage,{recursive:true,force:true});await mkdir(stage,{recursive:true});
   await cp(installer,path.join(stage,path.basename(installer)));
   for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[`docs/validation-${version}.md`,'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
@@ -176,12 +189,20 @@ async function bundle() {
   const archive=path.join(output,name+'.tgz');run('tar',['-czf',archive,'-C',output,name]);
   verifyAsciiTar(archive);
   const sha=await fileHash(archive);await writeFile(archive+'.sha256',sha+'  '+path.basename(archive)+'\n');
-  await writeFile(path.join(output,'bundle-manifest.json'),JSON.stringify({product:'Ned',version,sourceCommit:commit,archive:path.basename(archive),bytes:(await stat(archive)).size,sha256:sha,files,installer:report.installer},null,2)+'\n');
+  await writeFile(path.join(output,'bundle-manifest.json'),JSON.stringify({product:'Ned',version,buildRevision:revision||undefined,sourceCommit:commit,archive:path.basename(archive),bytes:(await stat(archive)).size,sha256:sha,files,installer:report.installer},null,2)+'\n');
 }
-if(mode==='package') {await packageApp();await audit();}
+if(mode==='rebuild') {
+  if(!revision)throw new Error('Set NED_BUILD_REVISION for a same-version rebuild');
+  const seven=await getPath7za();
+  await prepareRebuild(root,cache,staged,version,revision,buildCommit,seven);
+  const nsis=await getMakeNsisPath('0.0.0');
+  run(nsis.path,['-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
+  await audit();
+}
+else if(mode==='package') {if(revision)throw new Error('Use rebuild for a repair revision');await packageApp();await audit();}
 else if(mode==='stage') await packageApp(false);
 else if(mode==='audit') await audit();
 else if(mode==='bundle') await bundle();
 else if(mode==='dev') {await prepareZed();run(process.execPath,['scripts/ned-build.mjs']);if(process.platform!=='win32') throw new Error('Managed native development requires Windows; use the ACP integration tests on Linux.');run(path.join(root,'node_modules/electron/dist/electron.exe'),[path.join(cache,'app')],{env:{...process.env,NED_DEV_RESOURCES:path.join(staged,'resources')}});}
 else if(mode==='prepare') await prepareZed();
-else throw new Error('Usage: ned-package.mjs prepare|package|stage|audit|bundle');
+else throw new Error('Usage: ned-package.mjs prepare|package|stage|rebuild|audit|bundle');
