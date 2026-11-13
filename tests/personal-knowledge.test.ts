@@ -169,7 +169,7 @@ test('export diagnostic reveals only fixed metadata and the exporter uses authen
   assert.equal(req.headers.authorization,'Bearer '+secret);assert.equal(req.headers['x-openviking-account'],'default');assert.equal(req.headers['x-openviking-user'],'default');
   res.setHeader('Content-Type','application/json');
   if(url.pathname==='/health'){res.end(JSON.stringify({version:'0.5.0',healthy:true,auth_mode:'trusted',role:'user',account_id:'default',user_id:'default',private:privateText}));return;}
-  if(url.pathname==='/ready'){res.end(JSON.stringify({status:'ok',checks:{private:privateText}}));return;}
+  if(url.pathname==='/ready'){res.writeHead(503).end(JSON.stringify({status:'not_ready',checks:{agfs:{status:'error',checks:{filesystem:secret}},vectordb:'error: '+privateText,embedding:'ok',private:privateText}}));return;}
   if(url.pathname==='/api/v1/fs/stat'){res.writeHead(500).end(JSON.stringify({error:{code:'INTERNAL',message:secret,details:privateText}}));return;}
   if(url.pathname==='/api/v1/fs/ls'){
    assert.equal(url.searchParams.get('simple'),'true');assert.equal(url.searchParams.get('node_limit'),'1');assert.equal(url.searchParams.get('include_abstract'),'false');assert.equal(url.searchParams.get('recursive'),'false');
@@ -188,7 +188,7 @@ else:
  except ValueError:print('REJECTED_RESPONSE')
 `;
  const run=(mode:string)=>execute('python3',['-I','-S','-B','-c',program,path.resolve('distribution/export-openviking-personal.py'),base,out,mode]);
- const diagnostic=(await run('diagnose')).stdout;assert.doesNotMatch(diagnostic,new RegExp(secret+'|'+privateText));const report=JSON.parse(diagnostic);assert.equal(report.exportRequested,false);assert.equal(report.results[2].httpStatus,500);assert.equal(report.results[2].serverCode,'INTERNAL');assert.equal(report.results[3].readable,true);assert.equal(packCalls,0);await assert.rejects(readFile(out));
+ const diagnostic=(await run('diagnose')).stdout;assert.doesNotMatch(diagnostic,new RegExp(secret+'|'+privateText));const report=JSON.parse(diagnostic);assert.equal(report.exportRequested,false);assert.equal(report.results[1].httpStatus,503);assert.equal(report.results[1].ready,false);assert.deepEqual(report.results[1].checks,{agfs:'error',vectordb:'error',embedding:'ok'});assert.equal(report.results[2].httpStatus,500);assert.equal(report.results[2].serverCode,'INTERNAL');assert.equal(report.results[3].readable,true);assert.equal(packCalls,0);await assert.rejects(readFile(out));
  calls.length=0;assert.equal(JSON.parse((await run('export')).stdout).status,'exported');assert.deepEqual(calls,['GET /api/v1/fs/ls','POST /api/v1/pack/export']);assert.deepEqual(await readFile(out),pack);
  await rm(out);await rm(out+'.sha256');invalidList=true;assert.match((await run('export')).stdout,/REJECTED_RESPONSE/);assert.equal(packCalls,1);await assert.rejects(readFile(out));
  invalidList=false;authFailure=true;assert.match((await run('export')).stdout,/EXPORT_PREFLIGHT 403/);assert.equal(packCalls,1);

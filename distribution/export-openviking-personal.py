@@ -80,6 +80,44 @@ def safe_error(error):
     return {"serverCode": code} if isinstance(code, str) and code in SAFE_ERROR_CODES else {}
 
 
+def probe_metadata(stage, body, http_status, account, user):
+    row = {"responseValid": True}
+    code = body.get("error", {}).get("code") if isinstance(body.get("error"), dict) else None
+    if isinstance(code, str) and code in SAFE_ERROR_CODES: row["serverCode"] = code
+    if stage == "health":
+        version = body.get("version")
+        if isinstance(version, str) and re.fullmatch(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,4}", version):
+            row["version"] = version
+        if isinstance(body.get("healthy"), bool): row["healthy"] = body["healthy"]
+        if isinstance(body.get("root_api_key_required"), bool): row["rootKeyRequired"] = body["root_api_key_required"]
+        if body.get("auth_mode") in ("dev", "trusted", "api_key", "ldap", "oidc"):
+            row["authMode"] = body["auth_mode"]
+        if body.get("role") in ("root", "admin", "user"): row["role"] = body["role"]
+        for key, selected in (("account_id", account), ("user_id", user)):
+            if isinstance(body.get(key), str): row[key + "MatchesRequested"] = body[key] == selected
+    elif stage in ("list", "stat"):
+        expected = list if stage == "list" else dict
+        row["readable"] = http_status == 200 and body.get("status") == "ok" and isinstance(body.get("result"), expected)
+    elif stage == "ready":
+        row["ready"] = http_status == 200 and body.get("status") in ("ok", "ready")
+        if body.get("reason") == "initializing": row["initializing"] = True
+        checks = body.get("checks")
+        if isinstance(checks, dict):
+            row["checks"] = {}
+            for name in ("agfs", "vectordb", "api_key_manager", "embedding", "ollama"):
+                if name not in checks: continue
+                value = checks[name]
+                value = value.get("status") if isinstance(value, dict) else value
+                if value in ("ok", "error", "unhealthy", "not_configured", "not_initialized", "not_supported"):
+                    row["checks"][name] = value
+                elif isinstance(value, str) and value.startswith("error:"):
+                    row["checks"][name] = "error"
+                elif isinstance(value, str) and value.startswith("unreachable"):
+                    row["checks"][name] = "unreachable"
+                else: row["checks"][name] = "unrecognized"
+    return row
+
+
 def diagnose_export(base_url, api_key, account, user):
     origin, headers, opener, uri = local_connection(base_url, api_key, account, user)
     report = {"schemaVersion": 1, "probe": "Ned legacy export readiness", "revision": 2,
@@ -94,26 +132,13 @@ def diagnose_export(base_url, api_key, account, user):
             with opener.open(request, timeout=30) as response:
                 row["httpStatus"] = response.status
                 body = bounded_json(response)
-            row["responseValid"] = True
-            if stage == "health":
-                version = body.get("version")
-                if isinstance(version, str) and re.fullmatch(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,4}", version):
-                    row["version"] = version
-                if isinstance(body.get("healthy"), bool): row["healthy"] = body["healthy"]
-                if body.get("auth_mode") in ("dev", "trusted", "api_key", "ldap", "oidc"):
-                    row["authMode"] = body["auth_mode"]
-                if body.get("role") in ("root", "admin", "user"): row["role"] = body["role"]
-                for key, selected in (("account_id", account), ("user_id", user)):
-                    if isinstance(body.get(key), str): row[key + "MatchesRequested"] = body[key] == selected
-            elif stage == "list":
-                row["readable"] = body.get("status") == "ok" and isinstance(body.get("result"), list)
-            elif stage == "stat":
-                row["readable"] = body.get("status") == "ok" and isinstance(body.get("result"), dict)
-            else:
-                row["ready"] = body.get("status") in ("ok", "ready")
+            row.update(probe_metadata(stage, body, response.status, account, user))
         except urllib.error.HTTPError as error:
-            row.update(httpStatus=error.code, **safe_error(error))
-            error.close()
+            row["httpStatus"] = error.code
+            try:
+                row.update(probe_metadata(stage, bounded_json(error), error.code, account, user))
+            except (ValueError, OSError): row["responseValid"] = False
+            finally: error.close()
         except (ValueError, OSError, urllib.error.URLError):
             row["responseValid"] = False
         report["results"].append(row)
