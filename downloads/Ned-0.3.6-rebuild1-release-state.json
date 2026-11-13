@@ -1,0 +1,91 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.6",
+  "buildRevision": "rebuild1",
+  "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d",
+  "auditSourceCommit": "319192941efc7ffc1aee783b204ccd86904b58c6",
+  "recordedAt": "2026-11-13T11:42:31.585980+00:00",
+  "release": {
+    "isDraft": false,
+    "isPrerelease": true,
+    "tagName": "v0.3.6-rebuild1",
+    "targetCommitish": "5dab50279b91fdb0bb135793df699b57410c6e3d",
+    "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.6-rebuild1"
+  },
+  "tagPointsToBuildSource": true,
+  "original036TagUnchanged": true,
+  "verifiedVersion": {
+    "productVersion": "0.3.6",
+    "fileVersion": "0.3.6.0",
+    "asarVersion": "0.3.6",
+    "verifiedUnchanged": true
+  },
+  "publicFiles": [
+    {
+      "name": "Ned-0.3.6-rebuild1-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-win-x64.exe",
+      "httpStatus": 200,
+      "bytes": 1176899012,
+      "sha256": "4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252",
+      "fullRemoteSha256Verified": true,
+      "seconds": 203.703
+    },
+    {
+      "name": "Ned-0.3.6-rebuild1-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-windows-x64.tgz",
+      "httpStatus": 200,
+      "bytes": 1175951945,
+      "sha256": "ad1162f2ace1d32c685ef911c244f0f063440181128b1a3a94f04c1dcdcc730d",
+      "fullRemoteSha256Verified": true,
+      "seconds": 250.265
+    }
+  ],
+  "publicMetadata": [
+    {
+      "name": "Ned-0.3.6-rebuild1-validation.json",
+      "httpStatus": 200,
+      "bytes": 3733,
+      "sha256": "006d97625bcb03f093bb2321ca56f63c04b9bd3b566c85410237a4899192523d",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-rebuild1-installer-audit.json",
+      "httpStatus": 200,
+      "bytes": 3354,
+      "sha256": "a05ae453fb2f33d8f7d1946ff393959f785c783878e5ced0bf7f8ae3d5fd34a4",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-rebuild1-manifest.json",
+      "httpStatus": 200,
+      "bytes": 614,
+      "sha256": "1df62505a45a6ea297ca1701a83cb06fbbb2c11e27c92c6b1209bf393c5f994d",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-rebuild1-bundle-verification.json",
+      "httpStatus": 200,
+      "bytes": 1870,
+      "sha256": "8966ae458fabed44601283f648e9c0765279bbb9d89baec50cb6bd9c9ccc1a76",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-rebuild1-win-x64.exe.sha256",
+      "httpStatus": 200,
+      "bytes": 97,
+      "sha256": "477d1552f7a929891896f14b68dc7432a8e70dba3fc6e963d6861b3cbe325abf",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.6-rebuild1-windows-x64.tgz.sha256",
+      "httpStatus": 200,
+      "bytes": 101,
+      "sha256": "bf916020c3b48ccb540f1e83f0aa40d856709a0152e21107b7d056280d84e9f3",
+      "fullBytesMatch": true
+    }
+  ],
+  "distribution": "Git LFS downloads linked from release notes",
+  "windowsAcceptance": false,
+  "releaseReady": false
+}

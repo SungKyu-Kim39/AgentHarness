@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.6",
+  "buildRevision": "rebuild1",
+  "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d",
+  "verifiedAt": "2026-11-13T11:41:08.686951+00:00",
+  "clientAuthenticationSupplied": false,
+  "files": [
+    {
+      "name": "Ned-0.3.6-rebuild1-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-win-x64.exe",
+      "httpStatus": 200,
+      "bytes": 1176899012,
+      "sha256": "4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252",
+      "fullRemoteSha256Verified": true,
+      "seconds": 203.703
+    },
+    {
+      "name": "Ned-0.3.6-rebuild1-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-windows-x64.tgz",
+      "httpStatus": 200,
+      "bytes": 1175951945,
+      "sha256": "ad1162f2ace1d32c685ef911c244f0f063440181128b1a3a94f04c1dcdcc730d",
+      "fullRemoteSha256Verified": true,
+      "seconds": 250.265
+    }
+  ]
+}
