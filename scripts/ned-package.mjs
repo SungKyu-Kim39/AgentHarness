@@ -71,7 +71,7 @@ async function stamp() {
   const check=PE.NtExecutableResource.from(PE.NtExecutable.from(await readFile(filename)));
   if (Resource.IconGroupEntry.fromEntries(check.entries)[0]?.icons.length !== icon.icons.length) throw new Error('Ned executable icon missing');
 }
-async function packageApp() {
+async function packageApp(compileInstaller=true) {
   const zed=await prepareZed();
   run(process.execPath,['scripts/bundle-agent-desktop.mjs']);
   run(process.execPath,['scripts/ned-build.mjs']);
@@ -111,6 +111,7 @@ async function packageApp() {
   const configuration=path.join(cache,'builder.json');await writeFile(configuration,JSON.stringify(config,null,2));
   run(process.execPath,['node_modules/electron-builder/out/cli/cli.js','--win','--dir','--x64','--publish','never','--config',configuration]);
   await stamp(); await verifyAsciiTree(staged);
+  if(!compileInstaller)return;
   const nsis=await getMakeNsisPath('0.0.0');
   run(nsis.path,['-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
 }
@@ -120,7 +121,17 @@ async function audit() {
   try {
     const seven=await getPath7za();run(seven,['t',installer]);
     const compared=['Ned.exe','resources/app.asar','resources/ned/agent.cjs','resources/ned/icon.ico','resources/zed/Zed.exe','resources/ned/editor-branding.json'];
-    const payloadHashes=Object.fromEntries(await Promise.all(compared.map(async file=>[file,await fileHash(path.join(staged,file))])));
+    const checkpointFile=path.join(cache,'installer-audit-checkpoint-'+version+'.json');
+    const installerSha256=await fileHash(installer);
+    let payloadHashes;
+    if(await exists(path.join(staged,'Ned.exe'))) {
+      payloadHashes=Object.fromEntries(await Promise.all(compared.map(async file=>[file,await fileHash(path.join(staged,file))])));
+      await writeFile(checkpointFile,JSON.stringify({sourceCommit:buildCommit,version,installerSha256,payloadHashes},null,2)+'\n');
+    } else {
+      const checkpoint=await json(checkpointFile);
+      if(checkpoint.sourceCommit!==buildCommit||checkpoint.version!==version||checkpoint.installerSha256!==installerSha256||compared.some(file=>typeof checkpoint.payloadHashes?.[file]!=='string'))throw new Error('Stale installer audit checkpoint; regenerate staging first');
+      payloadHashes=checkpoint.payloadHashes;
+    }
     // Optional build-machine cleanup after archive integrity passes; retain exact payload hashes for comparison.
     if(process.env.NED_AUDIT_DISCARD_STAGE==='1') await rm(staged,{recursive:true,force:true});
     run(seven,['x','-y','-o'+extracted,installer],{stdio:'ignore'});
@@ -165,8 +176,9 @@ async function bundle() {
   await writeFile(path.join(output,'bundle-manifest.json'),JSON.stringify({product:'Ned',version,sourceCommit:commit,archive:path.basename(archive),bytes:(await stat(archive)).size,sha256:sha,files,installer:report.installer},null,2)+'\n');
 }
 if(mode==='package') {await packageApp();await audit();}
+else if(mode==='stage') await packageApp(false);
 else if(mode==='audit') await audit();
 else if(mode==='bundle') await bundle();
 else if(mode==='dev') {await prepareZed();run(process.execPath,['scripts/ned-build.mjs']);if(process.platform!=='win32') throw new Error('Managed native development requires Windows; use the ACP integration tests on Linux.');run(path.join(root,'node_modules/electron/dist/electron.exe'),[path.join(cache,'app')],{env:{...process.env,NED_DEV_RESOURCES:path.join(staged,'resources')}});}
 else if(mode==='prepare') await prepareZed();
-else throw new Error('Usage: ned-package.mjs prepare|package|audit|bundle');
+else throw new Error('Usage: ned-package.mjs prepare|package|stage|audit|bundle');
