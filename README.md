@@ -6,6 +6,8 @@ Ned는 사내 Qwen 모델에 **Zed 편집기, 전용 OpenCode 엔진, Aegis·Con
 
 ## 현재 상태
 
+[Ned 0.3.5를 배포했다](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.5). 업데이트 후 **알림 영역 Ned 우클릭 → 권한 → 전체 권한** 또는 대화 입력창의 권한 선택 항목으로 지원 도구의 반복 승인창을 생략할 수 있다. 선택은 즉시 적용되며 새 대화·프로젝트·재시작·업데이트 후에도 유지된다. [설치 EXE·반입 TGZ](downloads/README.md)와 공개 다운로드 전체 해시 검증 기록을 제공한다.
+
 0.3.5는 대화 입력창과 알림 영역에 **권한 → 전체 권한** 메뉴를 추가한다. 선택한 모드는 재시작·업데이트 후에도 유지하며 지원 도구의 반복 승인창을 생략한다. [권한 모드](docs/approval-modes.md)를 따른다.
 
 [Ned 설치 EXE·폐쇄망 반입 TGZ](downloads/README.md)에서 최신 배포본과 검증 기록을 받는다. 0.3.4의 JSONC 시작 오류 수정도 유지하며 기존 0.3.3용 실행 패치는 추가 적용하지 않는다.

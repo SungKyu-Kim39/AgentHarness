@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.5",
+  "sourceCommit": "909f2abd4d7126bcc772fe15f2b86c3fe524d36e",
+  "verifiedAt": "2026-11-13T04:07:30.918007+00:00",
+  "clientAuthenticationSupplied": false,
+  "files": [
+    {
+      "name": "Ned-0.3.5-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.5-win-x64.exe",
+      "httpStatus": 200,
+      "bytes": 1176894920,
+      "sha256": "5eef7de82a725dcc5344818ec43864f8485ea236b1c183652ea1a32ab32c5d82",
+      "fullRemoteSha256Verified": true,
+      "seconds": 244.09
+    },
+    {
+      "name": "Ned-0.3.5-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.5-windows-x64.tgz",
+      "httpStatus": 200,
+      "bytes": 1173739258,
+      "sha256": "9aa40341d26a8133838643cf5ea6b07a81126c07af5f63be16aa5fdd1f9662a3",
+      "fullRemoteSha256Verified": true,
+      "seconds": 251.207
+    }
+  ],
+  "metadataFiles": [
+    {
+      "name": "Ned-0.3.5-validation.json",
+      "httpStatus": 200,
+      "bytes": 3258,
+      "sha256": "d27a300ab8e5a42e2692761f4e59d550c6cb4d98852f39ecd63bb27d48bb75f7",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.5-installer-audit.json",
+      "httpStatus": 200,
+      "bytes": 2028,
+      "sha256": "4eeb7851e52a74d7f567f7abda7f375f201577ba6df6c00ef6eef733b6ffca9f",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.5-manifest.json",
+      "httpStatus": 200,
+      "bytes": 498,
+      "sha256": "861b40463b099e6c7171ec7c7e7b8bd29b0948a5f9f620f24924ce7ffa810d61",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.5-win-x64.exe.sha256",
+      "httpStatus": 200,
+      "bytes": 88,
+      "sha256": "0f496eb721396befbd6f33c79d17b6864d3c74fb408ed5b2361fa6e489da873d",
+      "fullBytesMatch": true
+    },
+    {
+      "name": "Ned-0.3.5-windows-x64.tgz.sha256",
+      "httpStatus": 200,
+      "bytes": 92,
+      "sha256": "c4ad786377c6d040d0293564cc75bf359d92ab9db081e2c4fca3726cea67d15a",
+      "fullBytesMatch": true
+    }
+  ]
+}

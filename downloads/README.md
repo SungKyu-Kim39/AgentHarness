@@ -1,6 +1,6 @@
 # Ned 0.3.5 Windows x64
 
-[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.5) · [검증 기록](Ned-0.3.5-validation.json)
+[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.5) · [검증 기록](Ned-0.3.5-validation.json) · [공개 다운로드 전체 검사](Ned-0.3.5-public-verification.json)
 
 - [폐쇄망 반입 TGZ · EXE/설정/안내/소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.5-windows-x64.tgz) (1,173,739,258 bytes)
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.5-win-x64.exe) (1,176,894,920 bytes)

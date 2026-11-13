@@ -4,6 +4,8 @@
 
 ## 0.3.5 persistent permission controls
 
+공개 배포 완료: 아티팩트 커밋 4c9ba6d, 릴리스 https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.5 (공개 prerelease, draft 아님, tag/source 909f2abd4d7126bcc772fe15f2b86c3fe524d36e). 공개 GitHub/LFS의 EXE/TGZ를 전체 스트리밍해 HTTP200/정확한 크기/전체 SHA-256을 대조했고 메타데이터·체크섬5개도 일치했다. downloads/Ned-0.3.5-public-verification.json과 Ned-0.3.5-release.json에 기록했다. 설치 파일은 릴리스 본문의 직접 다운로드 링크로 제공한다. Windows 실제 메뉴 렌더링·사내망 수용은 아직 배포 확인 대상이다.
+
 0.3.5 실제 설치본·TGZ 검증 완료: 소스 909f2abd4d7126bcc772fe15f2b86c3fe524d36e, EXE 1,176,894,920 bytes / SHA-256 5eef7de82a725dcc5344818ec43864f8485ea236b1c183652ea1a32ab32c5d82, TGZ 1,173,739,258 bytes / SHA-256 9aa40341d26a8133838643cf5ea6b07a81126c07af5f63be16aa5fdd1f9662a3. 실제 EXE의 ASAR 초기화, 파일94,239개/디렉터리8,743개 ASCII, 구성 요소 manifest·스킬36개, 별도 host/ACP 재빌드 일치, TGZ 내부 EXE·대응 소스를 대조했다. 최종 집중 검사40개 중39개 통과/실패0/선택적 Wine 실행1개 제외와 두 타입 검사를 통과했다. 자세한 범위는 downloads/Ned-0.3.5-*.json이다. Windows 메뉴 렌더링과 실제 사내망 전체 수용은 별도 확인 대상으로 유지한다.
 
 사용자가 반복 승인창 대신 Codex와 같은 전체 권한 선택 메뉴를 요청했다. ACP 입력창의 별도 권한 선택 옵션과 알림 영역의 동일한 3개 라디오 모드(승인 요청/프로젝트 파일 자동 승인/전체 권한)를 구현했다. permissions.json은 모델 JSON과 분리해 사용자 데이터에 원자 저장하며 새 대화·프로젝트·재시작·업데이트 후에도 유지한다. 기본은 ask, full은 지원하는 프로젝트 접근·파일 수정·빌드·지식 전달·데스크톱 도구의 native 승인창을 생략한다. 도구별 자동 동의와 제품 결정 질문은 구분하며 임의 shell/플러그인/다운로드 기능을 추가하지 않는다.
