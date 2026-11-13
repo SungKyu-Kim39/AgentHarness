@@ -30,7 +30,7 @@ async function main() {
   };
   let editorWriter: WritableStreamDefaultWriter<any> | undefined;
   const options = (session: string, original?: any[]) => {
-    if (original) sessionOptions.set(session, original.filter(option => option.id !== permissionConfigId));
+    if (original) sessionOptions.set(session, original.filter(option => option.id !== permissionConfigId && !option.id.startsWith(permissionConfigId + '.')));
     return [...(sessionOptions.get(session) ?? []), permissionOption(mode, revision)];
   };
   const peer = new Peer(socket, async (method, params) => {

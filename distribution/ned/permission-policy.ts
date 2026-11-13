@@ -23,6 +23,7 @@ export function permissionOption(mode: PermissionMode, revision: number) {
 export class PermissionPolicy {
   private current: PermissionMode = 'ask';
   private persisted?: PermissionMode;
+  private persistedRevision?: number;
   private generation = 0;
   private controller = new AbortController();
   private queue: Promise<unknown> = Promise.resolve();
@@ -47,21 +48,27 @@ export class PermissionPolicy {
     this.current = permissionMode(saved.mode);
     this.generation = saved.revision ?? 0;
     this.persisted = this.current;
+    this.persistedRevision = this.generation;
   }
   async set(value: unknown, expectedRevision?: number) {
     const next = permissionMode(value);
     const work = this.queue.then(async () => {
       if (expectedRevision !== undefined && expectedRevision !== this.generation) throw new Error('권한 설정이 변경되었습니다. 최신 메뉴에서 다시 선택하세요.');
-      if (next === this.current && next === this.persisted) return;
+      if (next === this.current && next === this.persisted && this.persistedRevision === this.generation) return;
       if (this.generation >= Number.MAX_SAFE_INTEGER) throw new Error('Ned 권한 설정 버전을 확인하세요.');
-      this.saving = true; this.controller.abort(); this.controller = new AbortController(); this.current = 'ask';
-      this.generation++;
+      this.saving = true; this.controller.abort(); this.controller = new AbortController();
+      const revision = this.generation + 1;
       try {
         const stat = await lstat(this.file).catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return undefined; throw error; });
         if (stat && (!stat.isFile() || stat.isSymbolicLink())) throw new Error('권한 설정 파일의 링크나 폴더를 덮어쓸 수 없습니다.');
-        await atomicJSON(this.file, { schemaVersion: 1, mode: next, revision: this.generation });
+        await atomicJSON(this.file, { schemaVersion: 1, mode: next, revision });
         this.current = next;
+        this.generation = revision;
         this.persisted = next;
+        this.persistedRevision = revision;
+      } catch (error) {
+        this.current = 'ask'; this.generation = revision;
+        throw error;
       } finally { this.saving = false; this.changed(); }
     });
     this.queue = work.catch(() => {}); return work;

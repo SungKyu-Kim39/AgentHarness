@@ -38,6 +38,15 @@ test('stale or concurrently queued editor defaults cannot raise the global permi
   await assert.rejects(policy.set('full',fullRevision));assert.equal(policy.mode,'ask');
 });
 
+test('status keeps a consistent mode/revision during save while new effects are suspended', async t => {
+  const root=await mkdtemp(path.join(tmpdir(),'ned-policy-status-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const policy=new PermissionPolicy(root);await policy.set('full');const previous=policy.revision;
+  const changing=policy.set('ask');await Promise.resolve();
+  assert.equal(policy.mode,'full');assert.equal(policy.revision,previous);
+  await assert.rejects(policy.decide('effect',undefined,true,async()=>true),/적용 중/);
+  await changing;assert.equal(policy.mode,'ask');assert.equal(policy.revision,previous+1);
+});
+
 test('full mode covers the runtime effect gate; restart suspension and failed persistence fail closed', async t => {
   const root=await mkdtemp(path.join(tmpdir(),'ned-runtime-mode-'));t.after(()=>rm(root,{recursive:true,force:true}));
   const policy=new PermissionPolicy(root);await policy.set('full');let prompts=0;

@@ -121,9 +121,8 @@ export class NativeRuntime {
   async setPermissionMode(value: unknown, expectedRevision?: number) {
     if (!this.permissions) throw new Error('Ned 권한 메뉴가 준비되지 않았습니다.');
     const mode = permissionMode(value);
-    const before = this.permissions.revision;
+    if (mode !== this.permissions.mode || mode === 'ask') this.revokeEditApproval();
     await this.permissions.set(mode, expectedRevision);
-    if (before !== this.permissions.revision || mode === 'ask') this.revokeEditApproval();
   }
   approveOperation(message: string, detail: string, signal?: AbortSignal) {
     if (this.approvalsPaused || signal?.aborted) return Promise.resolve(false);
