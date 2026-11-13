@@ -1,0 +1,34 @@
+Ned 0.3.3 startup repair / JSONC bundle
+
+Purpose
+Repairs "Cannot find module './impl/format'" before the launcher opens.
+The 0.3.3 host selected jsonc-parser's UMD entry; its aliased requires were
+not bundled. This patch bundles the static ESM implementation instead.
+
+Apply on the affected Windows PC
+1. Close Ned and all Zed windows normally. Save your files first.
+2. Extract this archive into a NEW local folder.
+3. Run APPLY_FIX.cmd. Expect status applied or already-applied, EXIT_CODE=0.
+4. Launch Ned using its existing shortcut.
+
+Only the original published Ned 0.3.3 installation is accepted. Other
+versions or changed application archives are refused. Do not copy app.asar
+manually. No administrator rights or network access is required.
+
+The patch replaces only resources/app.asar and preserves the original as
+resources/app.asar.ned-jsonc-startup-1.backup. It does not modify Ned.exe,
+editor preferences, encrypted model settings, history or OpenViking data.
+The patch uses the installed Python with -I -S -B (no site packages).
+
+Recovery
+Close Ned and Zed normally, then run ROLLBACK_FIX.cmd from this folder.
+Rollback restores the original 0.3.3 host, including its known startup bug.
+Do not remove the backup until the repaired application has been verified.
+
+Build-machine verification
+Exact published EXE/ASAR hashes and the original integrity fuse are checked.
+The actual updated ASAR's main.cjs initializes all top-level imports under
+an isolated Electron stub, stopping before services, profiles or models
+start. The old ASAR fails that same check with ./impl/format. Bundled JSONC
+parse/edit/format preserves UI preferences and comments in a separate test.
+These checks do not claim a real Windows editor/model session was tested.

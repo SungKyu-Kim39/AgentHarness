@@ -1,5 +1,11 @@
 # Ned 0.3.3 validation candidate
 
+## Deployment regression: launcher cannot initialize
+
+Windows deployment reported `Cannot find module './impl/format'` in the shipped main.cjs. The exact published ASAR reproduces that failure. esbuild selected jsonc-parser's UMD entry, whose factory aliases `require`; its relative parser/edit/format imports escaped bundling. Earlier source-level tests and installer hash/extraction audits did not execute the distributed host's module initialization and did not establish successful launcher startup.
+
+The JSONC startup repair selects the static ESM entry for that dependency only. Build and installer extraction now run an isolated import-initialization gate against the actual main.cjs bytes, stopping at the Electron application entry point before any profile, service or model startup. A negative regression check reproduces the original UMD failure; separate bundled-code tests exercise JSONC parse/edit/format and preserve UI preferences/comments without access to node_modules. This is not a Windows GUI acceptance test. The immutable original 0.3.3 EXE/TGZ require `Ned-jsonc-startup-fix-1.tgz`; user settings and knowledge must not be deleted to address this error.
+
 This revision adds installer-side configuration staging, memory-only conversation/project edit approval, approved GUI application dispatch and desktop connection recovery. It remains a Windows acceptance candidate. The prior deployment confirmation of ACP chat and automatic configuration restart belongs to the cumulative 0.3.1 patch; it is not proof that every new full-installer feature has run on Windows.
 
 ## Configuration installation

@@ -3,6 +3,8 @@ import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { verifyBundledHost } from './ned-host-smoke.mjs';
+import { hostAliases } from './ned-host-build.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const upstream = path.join(root, '.cache/l-vibe-desktop/source');
 const output = path.join(root, '.cache/ned/app');
@@ -57,6 +59,10 @@ for (const input of Object.keys(acpBuild.metafile.inputs)) {
 }
 await writeFile(path.join(output,'ACP-THIRD-PARTY-NOTICES.txt'), [...packages.values()].join('\n\n')+'\n');
 if (process.argv[2] !== 'agent') {
-  await build({ ...common, entryPoints: [path.join(root, 'distribution/ned/main.ts')], outfile: path.join(output, 'main.cjs'), external: ['electron'], define: { NED_VERSION: JSON.stringify(version) } });
+  await build({ ...common, entryPoints: [path.join(root, 'distribution/ned/main.ts')], outfile: path.join(output, 'main.cjs'), external: ['electron'],
+    // The UMD entry aliases require inside a factory, hiding its submodules from esbuild.
+    alias: hostAliases,
+    define: { NED_VERSION: JSON.stringify(version) } });
+  verifyBundledHost(await readFile(path.join(output, 'main.cjs')));
   await writeFile(path.join(output, 'package.json'), JSON.stringify({ name: 'ned', productName: 'Ned', version, main: 'main.cjs', private: true, description: 'Managed offline Zed and OpenCode workspace', author: 'SungKyu Kim', license: 'MIT' }, null, 2));
 }

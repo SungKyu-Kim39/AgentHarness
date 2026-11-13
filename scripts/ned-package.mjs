@@ -10,6 +10,7 @@ import { Data, Resource } from 'resedit';
 import { verifyAsciiTree, verifyAsciiTar } from './package-paths.mjs';
 import { verifyManifest, fileHash } from './installer-audit.mjs';
 import { brandEditor, verifyEditorIcon } from './ned-editor-branding.mjs';
+import { verifyBundledHost } from './ned-host-smoke.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
@@ -138,6 +139,7 @@ async function audit() {
     const paths=await verifyAsciiTree(extracted), resources=path.join(extracted,'resources');
     const app=JSON.parse(extractFile(path.join(resources,'app.asar'),'package.json'));
     if (app.name!=='ned'||app.version!==version) throw new Error('Wrong app in installer');
+    const hostModuleSmoke=verifyBundledHost(extractFile(path.join(resources,'app.asar'),'main.cjs'));
     for(const file of compared)
       if(await fileHash(path.join(extracted,file))!==payloadHashes[file]) throw new Error('Installer bytes differ: '+file);
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
@@ -149,7 +151,7 @@ async function audit() {
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }
-    const report={sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,windowsAcceptance:false};
+    const report={sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,hostModuleSmoke,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }
