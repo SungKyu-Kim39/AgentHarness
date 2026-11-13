@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.3",
+  "sourceCommit": "1bcde52758c5aa48c3d7cc957dec63283b781faa",
+  "verifiedAt": "2026-11-13T01:01:39.828121+00:00",
+  "os": "linux",
+  "archive": "Ned-0.3.3-windows-x64.tgz",
+  "sha256": "ee80dfa432f05f601185baa62316a1630554f9b9719a343471a25a8d8a399956",
+  "bytes": 1173675928,
+  "regularFiles": 26,
+  "asciiOuterPaths": true,
+  "sourceRegularFiles": 512,
+  "asciiSourcePaths": true,
+  "sourceFilesComparedToCommit": {
+    "distribution/desktop-launch.ts": "8bd3529426f07eab746537c5365d817c56396c7fdbe7f921ce01ef96cd709f50",
+    "distribution/desktop-tools.ts": "eaa74adc1e31d9b9f9de0ad4c6e15359b30903e6dd88bca100a074a7c8e24ecd",
+    "distribution/host-tools.ts": "3251b7c822ae4bd001e331fb91f00ef901d86567f98f451bd3ce50847a639ca0",
+    "distribution/ned/editor-preferences.ts": "1c6b5f0d0ab37cc7a349bde92a3dc77aa394f28d7b8f537de1e4e817aa38ac5d",
+    "distribution/ned/installer.nsi": "e1644356964e9b278af69a4b595bf4eabc0cca371419dbc5f12df443f836f310",
+    "distribution/ned/main.ts": "bdab280eb2d09fd5a157e1038be2e2f441893a283b10aa8bb6f61ff6c309cd88",
+    "distribution/ned/owner.ts": "9caf9bdf6536819cd4e824d889228b2c5e3d16b595e7a3942bf285dec59d35e4",
+    "docs/approval-modes.md": "add1a6fcbba83a91a2622b26765bb2f9d23ff9746515484112e35d547a5f5f75",
+    "scripts/ned-editor-branding.mjs": "e8f22b56b3ef786aab4f98508212c70391c6a56f649c3fc6d4d731cdf0e8be61",
+    "src/main/mcp-client.ts": "2d8487565a7c0ba56bafc8d7d668afb65098721fcc63fd690f96435374e021eb",
+    "vendor/skills/agent-desktop/SKILL.md": "d6518347af4648f9f2edf5ccdabc3bb9a30ac8ebe1557a2d29481d630ec0e066"
+  },
+  "nestedInstallerSha256": "f41142d5dfcfd0fe04a9ad2edfbe2f1f6f50eabf1b9f4e23e3a60effefdfbe3e",
+  "nestedInstallerMatchesAudit": true,
+  "windowsGuiAcceptance": false
+}

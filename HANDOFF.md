@@ -1,6 +1,6 @@
 # Ned 개발 인계
 
-현재 제품명은 **Ned**, 개발 버전은 0.3.3이고 배포 기준은 0.3.2이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
+현재 제품명은 **Ned**, 버전과 배포 기준은 0.3.3이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
 
 ## 유지해야 할 결정
 
@@ -129,4 +129,8 @@ Windows 사용자 후속 결과: probe-2의 파일 5개 해시 모두 일치, na
 
 작업표시줄은 GPUI Windows의 load_icon이 PE icon resource 1을 사용함을 원본에서 확인했다. ned-editor-branding.mjs로 원본 Zed.exe의 아이콘만 교체하고 비리소스 섹션과 버전 리소스가 같은지 검사한다. 원본 SHA c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a, Ned 아이콘 SHA 98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb, 현재 수정본 SHA 01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde. 공급자 원본/소스·버전 메타데이터는 보존하고 수정본은 unsigned임을 고지한다. 개인 Zed·Windows 사용자 고정 바로가기는 수정하지 않는다. 실제 작업표시줄 표시는 새 설치본으로 확인해야 한다.
 
-0.3.3 EXE 생성/7zip t(94,239 files)는 통과했으나 추출 검사 대기 세션이 중단되어 Node 부모가 종료되고 추출기만 남았다. 완성된 EXE는 유지하고 소유 추출기/임시 추출본만 정리했다. `ned-package.mjs stage`로 같은 소스의 staging을 복원한 뒤 기존 EXE와 다시 대조한다. 이후에는 sourceCommit/EXE SHA/6개 payload SHA를 체크포인트로 먼저 저장하므로 staging 정리 뒤에도 audit를 재개할 수 있다. runtime/NSIS/제품 동작 변경은 없으며 검사된 동일 bytes만 공개한다.
+0.3.3 EXE 생성/7zip t(94,239 files)는 통과했으나 추출 검사 대기 세션이 중단되어 검사 진행 상태가 미확정인 채 추출기가 남았다. 완성된 EXE는 유지하고 소유 추출기/임시 추출본만 정리했다. `ned-package.mjs stage`로 같은 소스의 staging을 복원한 뒤 기존 EXE와 다시 대조한다. 이후에는 sourceCommit/EXE SHA/6개 payload SHA를 체크포인트로 먼저 저장하므로 staging 정리 뒤에도 audit를 재개할 수 있다. runtime/NSIS/제품 동작 변경은 없으며 검사된 동일 bytes만 공개한다.
+
+## 0.3.3 audited distribution
+
+제품 실행 코드/아이콘 추가 소스는 ef58926424405bb62a1fda3a4b030bb28c5d8ee3, 재개 가능한 감사 도구를 포함한 배포 소스/tag 대상은 1bcde52758c5aa48c3d7cc957dec63283b781faa다. 같은 소스로 staging을 재생성하여 기존 EXE의 Ned.exe/ASAR/ACP/아이콘/Zed/branding 기록 6개 해시를 전부 대조했고, 추출된 구성 요소 manifest도 전부 일치했다. 원래 EXE를 재압축하거나 바꾸지 않았다. EXE 1,176,861,330 bytes / SHA f41142d5dfcfd0fe04a9ad2edfbe2f1f6f50eabf1b9f4e23e3a60effefdfbe3e. TGZ 1,173,675,928 bytes / SHA ee80dfa432f05f601185baa62316a1630554f9b9719a343471a25a8d8a399956. 실제 설치 파일 94,239개/디렉터리8,743개 ASCII, 기본 스킬36개, TGZ 내부 EXE 동일 해시를 확인했다. 공개 링크 결과는 downloads/Ned-0.3.3-public-verification.json에 후속 기록한다. 실제 Windows 계산기 조작·패널 복구·작업표시줄 표시·회사 서버/외부망 차단 전체 수용은 별도 확인 대상이다.

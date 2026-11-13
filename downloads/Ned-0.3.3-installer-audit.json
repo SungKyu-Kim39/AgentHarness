@@ -1,0 +1,54 @@
+{
+  "sourceCommit": "1bcde52758c5aa48c3d7cc957dec63283b781faa",
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.3",
+  "verifiedFrom": "installer-archive",
+  "os": "linux",
+  "createdAt": "2026-11-13T00:59:58.703Z",
+  "installer": {
+    "name": "Ned-0.3.3-win-x64.exe",
+    "bytes": 1176861330,
+    "sha256": "f41142d5dfcfd0fe04a9ad2edfbe2f1f6f50eabf1b9f4e23e3a60effefdfbe3e"
+  },
+  "paths": {
+    "encoding": "ascii",
+    "files": 94239,
+    "directories": 8743
+  },
+  "components": {
+    "openviking": {
+      "manifestSha256": "6b62b83f14351ca5450e281410070b0f443e17f0d8a4756706f658ffba339ee7",
+      "files": 63069
+    },
+    "mcp": {
+      "manifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
+      "files": 21031
+    },
+    "rea": {
+      "manifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+      "files": 9019
+    },
+    "agent-desktop": {
+      "manifestSha256": "e5f2ae573ad07e4643ffb712ba2eb65a9d315dedb0c0a40a4a1340fcd01fa6b7",
+      "files": 5
+    },
+    "skills": {
+      "manifestSha256": "22c818115afcc3447d0d8367ee7c69f45de9d24a6e25fb3f39dbd576073195e1",
+      "files": 273,
+      "count": 36
+    }
+  },
+  "editorBranding": {
+    "schemaVersion": 1,
+    "component": "Zed v1.28.1 managed editor",
+    "change": "Windows icon resources only; Ned taskbar, Alt-Tab and window-class icon",
+    "originalSha256": "c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a",
+    "modifiedSha256": "01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde",
+    "iconSha256": "98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb",
+    "nonResourceSectionsUnchanged": true,
+    "vendorVersionMetadataPreserved": true,
+    "authenticode": "modified resource image is unsigned; original vendor archive is preserved by the upstream lock"
+  },
+  "windowsAcceptance": false
+}

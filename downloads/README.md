@@ -1,3 +1,21 @@
+# Ned 0.3.3 Windows x64
+
+[GitHub 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.3) · [검사 기록](Ned-0.3.3-validation.json)
+
+- [폐쇄망 반입 TGZ · EXE/JSON/안내/진단/소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.3-windows-x64.tgz) (1,173,675,928 bytes)
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.3-win-x64.exe) (1,176,861,330 bytes)
+- [TGZ SHA-256](Ned-0.3.3-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.3-win-x64.exe.sha256) · [실제 설치기 감사](Ned-0.3.3-installer-audit.json) · [TGZ 대조](Ned-0.3.3-bundle-verification.json)
+
+최초 설치 EXE 옆 `agent-config.json` 자동 준비, **현재 대화·프로젝트의 파일 수정 자동 승인**, 데스크톱 연결 복구와 승인한 GUI 앱 실행을 추가했다. 편집기·대화창 글꼴/크기/배치·키맵·작업공간 상태를 업데이트 후에도 보존하고 Windows 편집기 창 아이콘에도 Ned 이미지를 적용한다.
+
+Ned와 개인 Zed를 완전히 종료하고 새 폴더에 압축 해제한 EXE로 업데이트한다. 기존 모델 설정·대화·지식은 보존한다. 저장 설정이 있는 PC는 EXE 옆 JSON으로 덮어쓰지 않는다. 이전 수정 패치를 추가 적용하지 않는다. 파일 수정 승인창의 **현재 대화·프로젝트 자동 승인**으로 켜고 알림 영역에서 해제한다. 앱 실행·화면 조작·빌드는 각각 별도 승인이다.
+
+전체 회귀 119개와 마지막 변경 집중 36개·설정 정책 4개 검사가 통과했다. 실제 설치 EXE의 파일/구성 요소 해시와 Ned 아이콘을 검사했고, TGZ 내부 EXE가 같은 해시임을 대조했다. 사용자 Windows 진단에서는 네이티브/감독 MCP와 창 18개 조회가 성공했으며, 새 Ned에서의 실제 계산기 조작·작업표시줄 표시는 아직 별도 확인 대상이다. 아이콘 리소스를 바꾼 관리형 Zed 이미지의 실행 코드·버전 정보는 보존했으며 수정본은 unsigned다. 원본 소스/고지/변경 스크립트와 해시를 포함한다.
+
+[설치 안내](../docs/offline-setup.md) · [승인 모드](../docs/approval-modes.md) · [데스크톱 도구](../docs/agent-desktop.md) · [검증 범위](../docs/validation-0.3.3.md) · [라이선스](../docs/license-policy.md). 1.0 수용 완료를 선언한 릴리스는 아니다.
+
+---
+
 # Ned 0.3.2 Windows x64
 
 [GitHub 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.2) · [공개 다운로드 확인](Ned-0.3.2-public-verification.json)
@@ -50,7 +68,7 @@ Windows x64 검증 후보이다. 시작 안내창, agent-desktop 승인 도구 1
 
 기존 Ned/L-Vibe에서도 실행할 수 있는 작은 도구 묶음이다. 새 폴더에 압축 해제하고 `EXPORT_PERSONAL.cmd`를 실행한다. **기존 로컬 OpenViking 서버의 키**로 인증한다. `EXPORT_PACK HTTP_500`이 벡터 내보내기에서 발생하면 `EXPORT_PERSONAL_NO_VECTORS.cmd`를 명시적으로 선택할 수 있다. 원본 자료를 변경하거나 자동 재시도하지 않는다. 자세한 내용은 [이관 안내](../docs/openviking-personal-migration.md)를 따른다.
 
-이하 0.3.0 및 L-Vibe 파일은 이전 배포 기록이다. 최신 파일은 위의 0.3.1 표에서 받는다.
+이하 0.3.0 및 L-Vibe 파일은 이전 배포 기록이다. 최신 파일은 이 문서 맨 위의 표에서 받는다.
 
 ---
 

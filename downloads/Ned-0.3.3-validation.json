@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.3",
+  "sourceCommit": "1bcde52758c5aa48c3d7cc957dec63283b781faa",
+  "installerCompilationSourceCommit": "ef58926424405bb62a1fda3a4b030bb28c5d8ee3",
+  "auditRecovery": "Fresh staging from the source commit matched the previously completed EXE; only packaging audit recovery changed since original compilation.",
+  "recordedAt": "2026-11-13T01:01:42.601546+00:00",
+  "typecheck": "passed",
+  "nedBuild": "passed",
+  "bundledSkills": 36,
+  "skillHashes": "passed",
+  "checks": [
+    {
+      "name": "full Linux regression",
+      "command": "npm test",
+      "os": "linux",
+      "modelEndpoint": "local synthetic OpenAI-compatible fixtures only",
+      "scope": "Before final editor preference/icon changes; final changed areas have separate focused checks.",
+      "tests": 119,
+      "pass": 119,
+      "fail": 0,
+      "skipped": 0,
+      "duration_ms": 544892.004592
+    },
+    {
+      "name": "final focused changes",
+      "command": "tsx --test (focused files listed in validation document)",
+      "os": "linux",
+      "modelEndpoint": "local synthetic OpenAI-compatible fixtures only",
+      "scope": "Preferences, branding, ACP, restart, desktop recovery and cancellation, conversation grants, installer audit guards.",
+      "tests": 36,
+      "pass": 36,
+      "fail": 0,
+      "skipped": 0,
+      "duration_ms": 21475.539446
+    },
+    {
+      "name": "final preference policy",
+      "command": "tsx --test (focused files listed in validation document)",
+      "os": "linux",
+      "modelEndpoint": "local synthetic OpenAI-compatible fixtures only",
+      "scope": "Final fixture also checks that fonts survive while terminal commands/tool permission overrides are excluded.",
+      "tests": 4,
+      "pass": 4,
+      "fail": 0,
+      "skipped": 0,
+      "duration_ms": 689.205015
+    }
+  ],
+  "realMcpIntegration": "all phases passed: Git, documents, SQL, Serena/clangd, both local browser backends and rejection cases",
+  "windowsComponentProbe": {
+    "nativeStatus": true,
+    "windowCount": 18,
+    "supervisedInitializeMs": 358,
+    "catalogMs": 47,
+    "toolCount": 67,
+    "statusMs": 202,
+    "stderrBytes": 0,
+    "modelsPrompted": false,
+    "desktopActions": 0,
+    "note": "User supplied deployment results. First Python import error did not reproduce; five file hashes matched. Runtime readiness does not prove GUI actions."
+  },
+  "editorBranding": {
+    "schemaVersion": 1,
+    "component": "Zed v1.28.1 managed editor",
+    "change": "Windows icon resources only; Ned taskbar, Alt-Tab and window-class icon",
+    "originalSha256": "c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a",
+    "modifiedSha256": "01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde",
+    "iconSha256": "98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb",
+    "nonResourceSectionsUnchanged": true,
+    "vendorVersionMetadataPreserved": true,
+    "authenticode": "modified resource image is unsigned; original vendor archive is preserved by the upstream lock"
+  },
+  "installer": {
+    "name": "Ned-0.3.3-win-x64.exe",
+    "bytes": 1176861330,
+    "sha256": "f41142d5dfcfd0fe04a9ad2edfbe2f1f6f50eabf1b9f4e23e3a60effefdfbe3e"
+  },
+  "archive": {
+    "name": "Ned-0.3.3-windows-x64.tgz",
+    "bytes": 1173675928,
+    "sha256": "ee80dfa432f05f601185baa62316a1630554f9b9719a343471a25a8d8a399956"
+  },
+  "windowsAcceptance": false,
+  "unverified": [
+    "New full installer execution on Win10/Win11",
+    "Actual approved Calculator GUI task",
+    "Visible Windows taskbar icon and restored editor layout on the deployment PC",
+    "External DNS/TCP observation against company model endpoints"
+  ],
+  "optionalWineInstallerTest": "not executed: cached Wine lacks kernel32.dll; compiler/archive checks are separate",
+  "releaseReady": false,
+  "packagedJsoncParserLicenseSha256": "c3a24c02d678e5f0711623dcf3ab3f243b273c2633f638a1fa8e35fb7c7f8e4d"
+}
