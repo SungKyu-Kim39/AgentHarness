@@ -1,0 +1,93 @@
+{
+  "auditSourceCommit": "319192941efc7ffc1aee783b204ccd86904b58c6",
+  "buildRevision": "rebuild1",
+  "rebuild": {
+    "schemaVersion": 1,
+    "product": "Ned",
+    "version": "0.3.6",
+    "buildRevision": "rebuild1",
+    "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d",
+    "baselineSourceCommit": "9aeb3cb66cec2be391beddf7548f558ef39aac61",
+    "baselineInstallerSha256": "c8d8aa63269118a1fa9d732dc0347631aefbf6e72992fac3c0fb2c276563c326",
+    "hostModuleSmoke": {
+      "passed": true,
+      "stoppedBeforeApplicationStartup": true,
+      "nonBuiltinImports": [
+        "electron"
+      ]
+    },
+    "compiledHostOnlyMenuLabelChanged": true,
+    "embeddedAsarIntegrityValidation": false,
+    "windowsAcceptance": false,
+    "changedFiles": [
+      "resources/app.asar",
+      "resources/ned/GETTING_STARTED.md",
+      "resources/ned/build-info.json"
+    ],
+    "generatedInstallerFiles": {
+      "$PLUGINSDIR/System.dll": "3eb38ae99653a7dbc724132ee240f6e5c4af4bfe7c01d31d23faf373f9f2eaca",
+      "$PLUGINSDIR/nsDialogs.dll": "1e40211af65923c2f4fd02ce021458a7745d28e2f383835e3015e96575632172",
+      "$PLUGINSDIR/modern-wizard.bmp": "3ad2dc318056d0a2024af1804ea741146cfc18cc404649a44610cbf8b2056cf2",
+      "Uninstall Ned.exe": "d55f05fa704ac29d66e9a1623260173b4de8d2424fe5395f6ef3ebacb08125db"
+    }
+  },
+  "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d",
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.6",
+  "verifiedFrom": "installer-archive",
+  "os": "linux",
+  "createdAt": "2026-11-13T11:27:39.439Z",
+  "installer": {
+    "name": "Ned-0.3.6-rebuild1-win-x64.exe",
+    "bytes": 1176899012,
+    "sha256": "4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252"
+  },
+  "paths": {
+    "encoding": "ascii",
+    "files": 94240,
+    "directories": 8743
+  },
+  "components": {
+    "openviking": {
+      "manifestSha256": "6b62b83f14351ca5450e281410070b0f443e17f0d8a4756706f658ffba339ee7",
+      "files": 63069
+    },
+    "mcp": {
+      "manifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
+      "files": 21031
+    },
+    "rea": {
+      "manifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+      "files": 9019
+    },
+    "agent-desktop": {
+      "manifestSha256": "e5f2ae573ad07e4643ffb712ba2eb65a9d315dedb0c0a40a4a1340fcd01fa6b7",
+      "files": 5
+    },
+    "skills": {
+      "manifestSha256": "22c818115afcc3447d0d8367ee7c69f45de9d24a6e25fb3f39dbd576073195e1",
+      "files": 273,
+      "count": 36
+    }
+  },
+  "editorBranding": {
+    "schemaVersion": 1,
+    "component": "Zed v1.28.1 managed editor",
+    "change": "Windows icon resources only; Ned taskbar, Alt-Tab and window-class icon",
+    "originalSha256": "c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a",
+    "modifiedSha256": "01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde",
+    "iconSha256": "98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb",
+    "nonResourceSectionsUnchanged": true,
+    "vendorVersionMetadataPreserved": true,
+    "authenticode": "modified resource image is unsigned; original vendor archive is preserved by the upstream lock"
+  },
+  "hostModuleSmoke": {
+    "passed": true,
+    "stoppedBeforeApplicationStartup": true,
+    "nonBuiltinImports": [
+      "electron"
+    ]
+  },
+  "windowsAcceptance": false
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.6",
+  "buildRevision": "rebuild1",
+  "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d",
+  "auditSourceCommit": "319192941efc7ffc1aee783b204ccd86904b58c6",
+  "auditSourceFilesComparedToCommit": {
+    "HANDOFF.md": "67dbb6494acf36cbda18b2977d8330332929c483014b25c4f3f3c6ac1f3c5f2b",
+    "scripts/ned-package.mjs": "78e45d47e6d63a9372b83b906d71dbd93fd024fc95cec88a79a666ea20b3b460"
+  },
+  "verifiedAt": "2026-11-13T11:30:52.771338+00:00",
+  "os": "linux",
+  "archive": "Ned-0.3.6-rebuild1-windows-x64.tgz",
+  "sha256": "ad1162f2ace1d32c685ef911c244f0f063440181128b1a3a94f04c1dcdcc730d",
+  "bytes": 1175951945,
+  "regularFiles": 28,
+  "asciiOuterPaths": true,
+  "sourceRegularFiles": 536,
+  "asciiSourcePaths": true,
+  "sourceFilesComparedToCommit": {
+    "HANDOFF.md": "4cba076ecd5307bed742ca52d5ee007aee923613fb2eb8899c251c7dd9ca3a3d",
+    "distribution/ned/installer.nsi": "27dea87f545f9cb93d990240d68d8b029a2f4e5210d5eb098d42d77513927ed6",
+    "distribution/ned/main.ts": "9d210e5e4b17421ee795ea1eec6d68889a98dbe310c734664b8a7769c1f8578f",
+    "docs/offline-setup.md": "5e07dc7fba4c24ed49dd10c4ff8d983c8758db7ceb79257b79ee3ca43b90ff38",
+    "docs/validation-0.3.6.md": "9d364a6a5fe0553f79fdc2f2fbc840c9579c7bbd4ffbf83b9335ce697cc5f07c",
+    "package.json": "5e2124b68150c9c37f8c95c302b0b57452cd4ea611ac2aee4032d8a9282258f5",
+    "scripts/ned-package.mjs": "fbed837719a9f45a60aa5b36c3d1b0c7ea9051930b99caf5dfa5b760acd47d34",
+    "scripts/ned-rebuild.mjs": "d76138fe5f24ac374c77fef1e2415d72ae9adb3c926cacf078a86289d778a752",
+    "tests/ned-installer.test.mjs": "f95a3105d2a787e06ab0ba7431e8bf26201ae368eacd0a47a17b0c2e54795872"
+  },
+  "nestedInstallerSha256": "4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252",
+  "nestedInstallerMatchesAudit": true,
+  "windowsGuiAcceptance": false
+}

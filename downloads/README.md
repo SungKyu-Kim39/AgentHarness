@@ -1,3 +1,24 @@
+# Ned 0.3.6 수정 빌드 1
+
+**앱 버전은 0.3.6 그대로다.** `rebuild1`은 수정 배포 파일을 구분하는 표시다.
+
+- [폐쇄망 반입 TGZ · EXE/설정/안내/소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-windows-x64.tgz) (1,175,951,945 bytes)
+- [수정 설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-win-x64.exe) (1,176,899,012 bytes)
+- [TGZ SHA-256](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-windows-x64.tgz.sha256) · [EXE SHA-256](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-win-x64.exe.sha256)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.6-rebuild1) · [검증 기록](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-rebuild1-validation.json)
+
+설치할 `Ned` 폴더와 상위 폴더가 없어도 설치기가 자동으로 만든다. 알림 영역 메뉴 이름은 **프로젝트 폴더 열기**로 간소화했다. 드라이브·바탕화면·즐겨찾기 등의 프로젝트 폴더를 선택할 수 있다.
+
+Ned·개인 Zed를 완전히 종료한 뒤 이 수정 EXE를 실행한다. 기존 0.3.6 위에 설치할 수 있으며 삭제·재설치가 필요하지 않다. 설정·대화·지식·편집기 환경은 사용자 데이터 폴더에 유지한다. 설치 위치를 다른 드라이브로 옮기는 경우에는 기존 제거 후 새 위치에 설치한다.
+
+현재 소스에서 호스트를 다시 컴파일하고 원본과 메뉴 이름 한 곳만 달라졌는지 확인했다. 검증된 원본 런타임을 재사용하며 새 설치기를 생성했다. EXE를 다시 해제하여 전체 앱 파일 해시·구성 요소 manifest·ASCII 경로·호스트 초기화를 검사하고, TGZ의 EXE와 대응 소스도 대조했다. 관련 검사9개와 타입 검사를 통과했으며 Windows/Wine 실행 검사1개는 제외했다. 실제 Windows 설치·폴더 생성·화면 동작은 배포 PC에서 추가 확인한다.
+
+원본 0.3.6 파일과 태그는 보존한다. 수정 빌드의 대응 소스·태그·해시는 별도로 제공한다. 제품 버전과 모델 대기 정책은 변경하지 않았다.
+
+빌드 소스: `5dab50279b91fdb0bb135793df699b57410c6e3d` · 검증 코드: `319192941efc7ffc1aee783b204ccd86904b58c6`
+
+---
+
 # Ned 0.3.6 Windows x64
 
 [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.6) · [검증 기록](Ned-0.3.6-validation.json)
