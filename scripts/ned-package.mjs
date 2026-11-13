@@ -160,9 +160,13 @@ async function audit() {
     if(revision){
       const proof=await json(path.join(cache,revision,'provenance.json'));
       if(proof.sourceCommit!==buildCommit||proof.buildRevision!==revision)throw new Error('Stale rebuild provenance');
-      const actual=await payloadInventory(extracted);delete actual['$PLUGINSDIR/System.dll'];
+      const actual=await payloadInventory(extracted),generatedInstallerFiles={};
+      for(const name of ['$PLUGINSDIR/System.dll','Uninstall Ned.exe']){
+        if(!actual[name])throw new Error('Missing generated installer file: '+name);
+        generatedInstallerFiles[name]=actual[name];delete actual[name];
+      }
       if(JSON.stringify(Object.entries(actual).sort())!==JSON.stringify(Object.entries(proof.payloadInventory).sort()))throw new Error('Installer payload differs from the rebuilt staging');
-      const {payloadInventory:_,...summary}=proof;rebuild=summary;
+      const {payloadInventory:_,...summary}=proof;rebuild={...summary,generatedInstallerFiles};
     }
     const report={buildRevision:revision||undefined,rebuild,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,hostModuleSmoke,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
