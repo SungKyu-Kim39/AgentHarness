@@ -34,3 +34,7 @@ Ned는 기존 0.2.5/0.2.6에서 제공하던 Windows asyncio 내부 TCP socketpa
 ## 모델 응답·압축 실패
 
 모델 중계의 마지막 실패는 `%APPDATA%\Ned\model-gateway-status.json`에서 확인한다. code, phase, elapsedMs, requestBytes/responseBytes, upstreamStatus/osError만 기록하며 요청·응답 본문이나 API 키는 저장하지 않는다. LV_MODEL_UPSTREAM_RESET은 사내 서버가 응답 도중 연결을 끊은 경우다. 대기 시간과 thinking 설정 및 네이티브 수정 자동 승인은 MODEL_CONTROLS.txt를 따른다. 이 실패 기록이 없는 ECONNRESET은 다른 계층의 연결 문제일 수 있다.
+
+## Desktop connection diagnosis (0.3.3)
+
+`diagnostics/desktop-status.json`은 고정 도구 이름·실패 분류·종료 확인 여부만 기록한다. 원본 오류나 창 제목은 포함하지 않는다. `CHECK_DESKTOP.cmd`는 Windows PowerShell 기반이며 번들 Python이 불완전해도 실행할 수 있다. Python 표준 라이브러리 2개·pywin32 bootstrap·Python EXE·감독기 해시를 검사하고 네이티브 CLI/MCP 상태만 확인한다. 설치 파일 누락과 UIA/MCP 응답 실패를 구분하고, 확인 없이 외부망 차단·승인·무결성 검사를 풀지 않는다.

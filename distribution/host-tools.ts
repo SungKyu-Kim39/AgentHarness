@@ -21,7 +21,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'list_files', description: 'List files inside the user-selected project. Excludes links and runtime/config directories.', inputSchema: object({}) },
   { name: 'read_file', description: 'Read a project text file. Relative path only.', inputSchema: object({ path: string }, ['path']) },
   { name: 'search_text', description: 'Literal text search inside the project. This is text-search fallback, not semantic analysis.', inputSchema: object({ query: string }, ['query']) },
-  { name: 'propose_edit', description: 'Propose complete UTF-8 file content. Native user approval, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
+  { name: 'propose_edit', description: 'Propose complete UTF-8 file content. Native host approval policy, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
   { name: 'read_methodology', description: 'Read pinned Aegis/Conductor instructions and inspect existing conductor/index.md, tracks.md and relevant spec/plan files with read_file. Track updates use propose_edit.', inputSchema: object({ name: { type: 'string', enum: ['aegis', 'conductor'] } }, ['name']) },
   { name: 'skill_catalog', description: 'List reviewed offline vibe-coding skills.', inputSchema: object({}) },
   { name: 'read_skill', description: 'Read a selected reviewed skill or its reference document. No executable plugins or online installation.', inputSchema: object({ id: string, document: string }, ['id']) },
@@ -37,7 +37,7 @@ export const hostTools: ToolSpec[] = [
   ...extensionTools,
   ...desktopTools,
 ];
-export type EditDecision = { approved: boolean; autoApproveRequest: boolean };
+export type EditDecision = { approved: boolean; autoApproveRequest: boolean; autoApproveSession?: boolean };
 const pathArg = z.string().min(1).max(4096);
 export class HostTools {
   readonly token = randomBytes(32).toString('hex');
@@ -48,6 +48,9 @@ export class HostTools {
   private runs = new Map<string, symbol>();
   private editQueue: Promise<void> = Promise.resolve();
   private editGrant?: { session: string; project: string; run: symbol; request?: string };
+  private sessionEditGrant?: { session: string; project: string };
+  private editPolicyEpoch = 0;
+  private editPolicyAbort = new AbortController();
   readonly skills: OfflineSkills;
   readonly extensions: McpExtensions;
   readonly builds: VisualStudioBuild;
@@ -112,6 +115,7 @@ export class HostTools {
     if (!hostTools.some(t => t.name === name)) throw new Error('등록되지 않은 도구입니다.');
     const run = this.runs.get(session) ?? Symbol(); this.runs.set(session, run);
     const project = await this.options.project(session), files = new ProjectFiles(project);
+    this.activateEditScope(session,project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
@@ -135,22 +139,26 @@ export class HostTools {
       await previous;
       try {
         if (!this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('중지되었거나 다른 요청으로 전환되었습니다.');
+        const policyEpoch = this.editPolicyEpoch;
+        const editSignal = signal ? AbortSignal.any([signal, this.editPolicyAbort.signal]) : this.editPolicyAbort.signal;
         const request = await this.options.request?.(session);
         const proposal = await files.propose(randomUUID(), a.path, a.content);
-        await this.options.validateEdit?.(session, project, proposal, signal);
-        const detail = `프로젝트: ${project}\n대상: ${a.path}\n\n변경 전\n${proposal.before}\n\n변경 후\n${proposal.after}`;
+        await this.options.validateEdit?.(session, project, proposal, editSignal);
+        const detail = `대화: ${session}\n프로젝트: ${project}\n대상: ${a.path}\n\n변경 전\n${proposal.before}\n\n변경 후\n${proposal.after}`;
         const granted = this.editGrant?.session === session && this.editGrant.project === project && this.editGrant.run === run && this.editGrant.request === request;
-        const decision = granted ? { approved: true, autoApproveRequest: true } : this.options.approveEdit
-          ? await this.options.approveEdit(`파일 수정 승인: ${a.path}`, detail, signal)
-          : { approved: await this.options.approve(`파일 수정 승인: ${a.path}`, detail, signal), autoApproveRequest: false };
+        const sessionGranted = this.sessionEditGrant?.session === session && this.sessionEditGrant.project === project;
+        const decision: EditDecision = (granted || sessionGranted) ? { approved: true, autoApproveRequest: granted } : this.options.approveEdit
+          ? await this.options.approveEdit(`파일 수정 승인: ${a.path}`, detail, editSignal)
+          : { approved: await this.options.approve(`파일 수정 승인: ${a.path}`, detail, editSignal), autoApproveRequest: false };
         const unchanged = !this.options.request || await this.options.request(session) === request;
-        if (!unchanged || !decision.approved || !this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
+        if (this.editPolicyEpoch !== policyEpoch || !unchanged || !decision.approved || !this.accepting || editSignal.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
+        if (decision.autoApproveSession) this.sessionEditGrant = { session, project };
         if (decision.autoApproveRequest) this.editGrant = { session, project, run, request };
-        await this.options.validateEdit?.(session, project, proposal, signal);
-        if (!this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run || (this.options.request && await this.options.request(session) !== request)) throw new Error('요청이 바뀌어 파일 수정을 보류합니다.');
+        await this.options.validateEdit?.(session, project, proposal, editSignal);
+        if (this.editPolicyEpoch !== policyEpoch || !this.accepting || editSignal.aborted || this.cancelled.has(session) || this.runs.get(session) !== run || (this.options.request && await this.options.request(session) !== request)) throw new Error('요청이 바뀌어 파일 수정을 보류합니다.');
         await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
-        try { await files.apply(proposal, signal); }
-        catch (error) { this.editGrant = undefined; throw error; }
+        try { await files.apply(proposal, editSignal); }
+        catch (error) { this.revokeEditApproval(); throw error; }
         return JSON.stringify({ status: 'applied', path: proposal.path, before: proposal.before, after: proposal.after, snapshot: proposal.id });
       } finally { release(); }
     }
@@ -242,7 +250,11 @@ export class HostTools {
       return JSON.stringify({ source: 'morluto/rea', mode: 'static-only', tool, result });
     } finally { clearTimeout(timer); child.stdin.end(); child.kill(); }
   }
+  activateEditScope(session: string, project: string) { if(this.sessionEditGrant && (this.sessionEditGrant.session!==session || this.sessionEditGrant.project!==project)) this.revokeEditApproval(); }
+  editApprovalStatus() { return this.sessionEditGrant ? { mode: 'session-project' as const, ...this.sessionEditGrant } : { mode: 'ask' as const }; }
+  revokeEditApproval() { this.sessionEditGrant = undefined; this.editGrant = undefined; this.editPolicyEpoch++; this.editPolicyAbort.abort(); this.editPolicyAbort = new AbortController(); }
   async close() {
+    this.revokeEditApproval();
     this.accepting = false; this.editGrant = undefined; this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
     try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close()]); }
@@ -254,10 +266,11 @@ export class HostTools {
     }
   }
   cancelSession(session: string) {
+    if (this.sessionEditGrant?.session === session) this.revokeEditApproval();
     void this.desktop.cancel(session).catch(() => {});
     this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
     for (const child of this.children) child.kill('SIGKILL');
   }
-  resumeSession(session: string) { this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
+  resumeSession(session: string) { if(this.sessionEditGrant && this.sessionEditGrant.session!==session)this.revokeEditApproval(); this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
 }

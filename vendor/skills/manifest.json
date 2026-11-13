@@ -10,12 +10,12 @@
       "source": "https://github.com/vercel-labs/agent-desktop/tree/2b0a7334fc111730454b726e6800aa41cdafc093/skills/agent-desktop",
       "commit": "2b0a7334fc111730454b726e6800aa41cdafc093",
       "license": "LICENSE",
-      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. Use only the Ned desktop_* host tools, never raw CLI/MCP commands. First desktop_status, then explicitly approved desktop_list_windows and desktop_snapshot of one selected window. Each observation/action needs separate native approval; project file auto-approval never applies. Use qualified refs returned in this session. Check state after each action. Do not retry uncertain delivery. Ned/Zed/approval/system/terminal windows, global input, headed coordinates, arbitrary app launch, clipboard, traces and raw batch operations are not exposed. Do not install packages or connect online. Describe unsupported actions as unavailable; never bypass with another executor.",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. Use only the Ned desktop_* host tools, never raw CLI/MCP commands. Use desktop_list_apps to discover installed apps and desktop_launch with calculator/notepad/paint or a local GUI .exe absolute path after native approval. No arbitrary argv/env, shell, URI/file association or installation. Launch dispatch is not a verified window: inventory and snapshot it afterward. User GUI apps remain open after Ned exits. First desktop_status, then explicitly approved desktop_list_windows and desktop_snapshot of one selected window. Each observation/action needs separate native approval; project file auto-approval never applies. Use qualified refs returned in this session. Check state after each action. Do not retry uncertain delivery. Ned/Zed/approval/system/terminal windows, global input, headed coordinates, clipboard, traces and raw batch operations are not exposed. Do not install packages or connect online. Describe unsupported actions as unavailable; never bypass with another executor.",
       "modifications": [
         {
           "path": "SKILL.md",
           "upstreamSha256": "941873a93fca670fc16362de192521f2b5ca27675fb55f18c2112cde86ca9089",
-          "bundledSha256": "cb377973dac8afd4981011c29d976b8993a2d427d9dfcf13ac9331cfce1c207a"
+          "bundledSha256": "d6518347af4648f9f2edf5ccdabc3bb9a30ac8ebe1557a2d29481d630ec0e066"
         },
         {
           "path": "references/commands-system.md",
@@ -26,7 +26,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "ac52d0fa1b829c429cca03cc716de095118a6d1e4a7e03eec3ef153b752bb3cb"
+          "sha256": "2782dfe49e056774ef15bfbb36a231514f38432d1dcebda7f72ddc9e55023be2"
         },
         {
           "path": "LICENSE",
@@ -50,7 +50,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "cb377973dac8afd4981011c29d976b8993a2d427d9dfcf13ac9331cfce1c207a"
+          "sha256": "d6518347af4648f9f2edf5ccdabc3bb9a30ac8ebe1557a2d29481d630ec0e066"
         }
       ]
     },
@@ -62,18 +62,18 @@
       "source": "https://github.com/vercel-labs/agent-desktop/tree/2b0a7334fc111730454b726e6800aa41cdafc093/skills/agent-desktop-windows",
       "commit": "2b0a7334fc111730454b726e6800aa41cdafc093",
       "license": "LICENSE",
-      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. The bundled native Windows UIA runtime requires an interactive desktop. UAC secure desktop, locked sessions and elevated apps are not supported. The Ned host exposes only approved window-scoped semantic tools; raw CLI examples below are reference syntax, not executable permission. No automatic headed/global-input fallback, force, terminal commands, arbitrary app launch or self-approval. Never modify managed Ned/Zed settings through desktop automation. Inspect actual capabilities and report failed/unexecuted verification accurately.",
+      "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. The bundled native Windows UIA runtime requires an interactive desktop. UAC secure desktop, locked sessions and elevated apps are not supported. The Ned host exposes only approved window-scoped semantic tools; raw CLI examples below are reference syntax, not executable permission. No automatic headed/global-input fallback, force, terminal commands, self-approval. Never modify managed Ned/Zed settings through desktop automation. Use desktop_launch to open a needed GUI app; do not require the user to open Calculator manually. A UWP broker may exit before its actual window appears, so re-observe inventory without repeating launch. For 3+4*2, standard sequential mode can produce 14; scientific mode applies precedence and should show 11. Inspect mode, operate actual observed refs and read the result. Arithmetic calculated in chat is not desktop verification. A closed MCP connection discards its refs; restart observations before another action. Inspect actual capabilities and report failed/unexecuted verification accurately.",
       "modifications": [
         {
           "path": "SKILL.md",
           "upstreamSha256": "6d1ce79a23caf84a5ef75695a4896a1b8bdde7d2b4ff55a655c20118b38e189c",
-          "bundledSha256": "775980e91d486d69341b3c9ebfd40555b64f1c4646e7ffdd2dc901e11ece0769"
+          "bundledSha256": "7ddc2c67e11670ef79f0b370fa8af403529009877a696c97257ede3905137abb"
         }
       ],
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "c0286129544c76cd95a675ea7aea0e7e4ccf68c460fdebcaa1c3468b8ff04924"
+          "sha256": "3d01b8a23c0718e0ec646b7cd8f7e9e4302200ebb609fbc988e64e5389dfa4dd"
         },
         {
           "path": "LICENSE",
@@ -97,7 +97,7 @@
         },
         {
           "path": "SKILL.md",
-          "sha256": "775980e91d486d69341b3c9ebfd40555b64f1c4646e7ffdd2dc901e11ece0769"
+          "sha256": "7ddc2c67e11670ef79f0b370fa8af403529009877a696c97257ede3905137abb"
         }
       ]
     },
@@ -463,7 +463,7 @@
       "description": "요구사항·설계·운영·검증 문서의 구조화",
       "directory": "developer-documents",
       "source": "Ned original MIT guidance",
-      "commit": "0.3.1",
+      "commit": "0.3.3",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.",
       "files": [
@@ -483,7 +483,7 @@
       "description": "키보드·포커스·상태·반응형 동작 검토",
       "directory": "ui-accessibility",
       "source": "Ned original MIT guidance",
-      "commit": "0.3.1",
+      "commit": "0.3.3",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated.",
       "files": [
@@ -1453,7 +1453,7 @@
       "description": "장기 작업의 사용자 결정·확인한 사실·변경·검증·미결 사항을 근거와 함께 인계",
       "directory": "session-handoff",
       "source": "Ned original MIT guidance",
-      "commit": "0.3.1",
+      "commit": "0.3.3",
       "license": "LICENSE",
       "adapter": "Read/Grep/Glob→read_file/search_text/list_files; Write/Edit→propose_edit (approval). No online installs, downloads, deployment, hooks, automatic Q&A, or agent spawning. Commands/browser runners require an approved bundled executor; if unavailable, report verification as not run. Project artifacts stay approval-gated. 작업 중 확인한 사실·사용자 결정·변경·검증·미결 사항을 근거와 함께 인계한다. 대화·지식 저장소·프로젝트 문서 사이의 자동 복사를 하지 않는다. 영속 문서가 필요하면 승인된 프로젝트 편집으로 제안한다.",
       "modifications": [
@@ -1466,7 +1466,7 @@
       "files": [
         {
           "path": "ADAPTATION.md",
-          "sha256": "9b6fdc4b42a33ba99108c5bd5a4a8689fa90acd731e5ae27ecc3b541b8ed99f6"
+          "sha256": "3b224d703f765a3e07bc8ccec536d00109031f6268942c1a8ff263076c1be2a9"
         },
         {
           "path": "LICENSE",

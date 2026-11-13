@@ -32,6 +32,7 @@ let trayMenu: Menu | undefined;
 const configurationRestart = new ConfigurationRestart(replaceConfiguration, () => requestEditorClose(editor), () => {
   if (!tray || tray.isDestroyed()) return;
   const pending = configurationRestart.pending;
+  if (pending) getRuntime().revokeEditApproval();
   const importing = trayMenu?.getMenuItemById('config-import');
   if (importing) importing.enabled = !configurationRestart.busy && !pending;
   const cancel = trayMenu?.getMenuItemById('config-restart-cancel');
@@ -93,9 +94,9 @@ async function start() {
     approveEdit: async (message, detail, signal) => {
       if (configurationRestart.pending || detail.length > 60000) return { approved: false, autoApproveRequest: false };
       const result = await messageBox({ type: 'question', title: 'Ned 파일 수정 승인', message, detail,
-        buttons: ['거절', '승인'], defaultId: 0, cancelId: 0, noLink: true, signal,
+        buttons: ['거절', '이번 수정 승인', '현재 대화·프로젝트 자동 승인'], defaultId: 0, cancelId: 0, noLink: true, signal,
         checkboxLabel: '이번 요청의 파일 수정 자동 승인 (새 요청·중지·재시작 시 해제)', checkboxChecked: false });
-      return { approved: !signal?.aborted && result.response === 1, autoApproveRequest: !signal?.aborted && result.response === 1 && result.checkboxChecked };
+      return { approved: !signal?.aborted && (result.response === 1 || result.response === 2), autoApproveRequest: !signal?.aborted && result.response === 1 && result.checkboxChecked, autoApproveSession: !signal?.aborted && result.response === 2 };
     },
     decide: async (message, stored) => {
       const buttons = stored ? ['다시 확인', '설정 JSON 가져와 교체', '종료'] : ['JSON 편집', '다시 확인', '설정 JSON 가져오기', '종료'];
@@ -132,6 +133,8 @@ async function start() {
   trayMenu = Menu.buildFromTemplate([
     { label: 'Ned ' + NED_VERSION + ' · Zed + OpenCode', enabled: false },
     { label: '사용 안내', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
+    { label: '파일 수정 자동 승인 상태', click: async () => { const state = runtime.editApprovalStatus(); await messageBox({ title: 'Ned 파일 수정 승인', message: state.mode === 'ask' ? '현재 대화·프로젝트 자동 승인이 꺼져 있습니다.' : '현재 대화·프로젝트의 파일 수정을 자동 승인합니다.', detail: state.mode === 'session-project' ? `대화: ${state.session}\n프로젝트: ${state.project}\n새 메시지에서도 유지합니다. 다른 대화·프로젝트 전환, 중지, 재시작 또는 수동 해제로 종료합니다. 충돌과 저장하지 않은 버퍼는 계속 검사합니다.` : '파일 수정 승인창에서 현재 대화·프로젝트 자동 승인을 선택할 수 있습니다.' }); } },
+    { label: '파일 수정 자동 승인 모두 해제', click: () => { runtime.revokeEditApproval(); } },
     { label: 'OpenViking / 기본 스킬 등록 상태', click: async () => {
       const state = runtime.status().knowledge, skills = state?.skills;
       await messageBox({ title: 'Ned 지식 서비스', message: skills ? `OpenViking 스킬 ${skills.registered}/${skills.total} · ${skills.status}` : `OpenViking ${state?.status ?? '설정 필요'}`,

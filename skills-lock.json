@@ -8,7 +8,7 @@
     ],
     "local": [
       "Ned",
-      "0.3.1",
+      "0.3.3",
       "."
     ],
     "aegis": [
@@ -87,6 +87,6 @@
     "marketing": "48a1f6187dff0eb9176e6d38906dbcb5e2581a08716c56f8cc3ee2f17f0791d6",
     "vercelInterface": "f0f61f41f0b53522eb065b268e18a617bf2cacb54d9502ed6b7411cb62de8745"
   },
-  "manifestSha256": "f964d4f80fccc57e46c23b067362b7226ec26f58e7ab410fadd56cce72c786c4",
+  "manifestSha256": "22c818115afcc3447d0d8367ee7c69f45de9d24a6e25fb3f39dbd576073195e1",
   "count": 36
 }

@@ -28,13 +28,13 @@ flowchart LR
 - Register a local custom ACP agent. Never install an agent through the online ACP registry. The bridge attaches to the already managed engine; it must not start a second engine using `opencode acp`.
 - Actual model API keys stay in the host vault. Zed and ACP receive no model keys. Runtime connection credentials expire with the application.
 - Disable editor telemetry, automatic updates, extension installation and unbundled language-server downloads. Offline assurance requires actual network observation in Windows acceptance, beyond settings alone.
-- Manual editing and saving in Zed follows normal IDE behavior. Agent edits still pass native approval, base-content checks and snapshots. Unsaved editor buffers must be checked before agent writes to avoid overwriting user changes.
+- Manual editing and saving in Zed follows normal IDE behavior. Agent edits follow native host approval, including an optional memory-only current conversation/project grant; base-content checks and snapshots remain mandatory. Unsaved editor buffers must be checked before agent writes to avoid overwriting user changes.
 - Commands remain blocked except explicitly implemented, approved build tools. Detect installed VS2017/VS2019 MSBuild, inspect solution configurations, then freeze executable, arguments, working directory and environment for approval. No automatic SDK installation or retargeting. Own child processes through Windows Job Objects and confirm cancellation.
 - LLM queue waits have no default elapsed-time deadline. Explicit user cancellation remains available. Infrastructure startup/health checks are separate from model generation waits.
 
 ## Desktop automation
 
-The user explicitly expanded the original desktop-exclusion scope. Native agent-desktop 1.2.0 is bundled, with 18 reviewed host tools. Every observation and action has separate native approval; file auto-approval does not apply. Ref ownership is bound to engine session/project/window/process identity. Global input, arbitrary app launch, clipboard, terminal/system/managed editor/approval windows, raw MCP and trace export are unavailable. See [agent-desktop](agent-desktop.md).
+The user explicitly expanded the original desktop-exclusion scope. Native agent-desktop 1.2.0 is bundled, with 20 reviewed host tools. Every observation and action has separate native approval; file auto-approval does not apply. Ref ownership is bound to engine session/project/window/process identity. Approved GUI app dispatch is available with a frozen executable and no caller arguments; user GUI apps are outside the MCP kill-on-close Job and remain open. Global input, shell/script execution, clipboard, terminal/system/managed editor/approval windows, raw MCP and trace export are unavailable. See [agent-desktop](agent-desktop.md).
 
 ## Packaging and name
 

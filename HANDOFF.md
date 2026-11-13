@@ -1,6 +1,6 @@
 # Ned 개발 인계
 
-현재 제품명은 **Ned**, 버전은 0.3.1 전환 후보이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
+현재 제품명은 **Ned**, 개발 버전은 0.3.3이고 배포 기준은 0.3.2이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
 
 ## 유지해야 할 결정
 
@@ -35,7 +35,7 @@
 | `scripts/ned-build.mjs` | Node 호환 ACP·실행기 번들 |
 | `ned-runtime-lock.json` | Zed 바이너리·원본 소스·버전·해시 |
 
-내부 `l_vibe_host` 도구 ID와 `resources/l-vibe`는 기존 중계·번들 호환을 위해 유지한다. 공개 제품명과 신규 사용자 경로는 Ned이다. 과거 다운로드·복구 패치는 대상 L-Vibe 이름을 유지한다.
+신규 공개 도구 ID와 리소스는 `ned_host_*`, `resources/ned`이다. 이전 앱 소유 리소스 경로 읽기 호환과 영속 지식 namespace만 유지한다. 공개 제품명과 신규 사용자 경로는 Ned이다. 과거 다운로드·복구 패치는 대상 L-Vibe 이름을 유지한다.
 
 기존 safeStorage 설정에는 Electron Local State의 DPAPI 보호 키도 필요하다. 이관 시 전체 앱 소유 프로필을 보존 복사하고, 준비 프로필에서 암호화 설정을 읽지 않은 채 재실행한다. 정상 실행의 Electron userData와 vault 루트는 모두 `%APPDATA%\Ned`이다. 초기 이관 준비만 별도 Ned-Launcher 프로필을 사용한다.
 
@@ -112,3 +112,13 @@ All active requests fulfilled: auto config application/relaunch + Windows ACP li
 User explicitly approved moving the released baseline to main, continuing development on work. Remote main was 1947a47 Initial commit; work was 60dc48f with the complete published 0.3.2. Local origin/work was stale because remote.origin.fetch only mapped main; explicit fetch refreshed both refs, confirming actual remote work matches HEAD. Add work fetch/upstream tracking for future development. Use fast-forward-only push to main; preserve history/artifacts. Branch policy and current approval guide added.
 
 User also asks how to reduce repeated approvals like Codex delegate approval. Verified 0.3.2 supports only per-request edit auto approval via checkbox; new request/stop/restart clears grant. OpenCode JSON or editor permission UI cannot override host approvals. Session/project edit auto approval is a proposed extension, not implemented or enabled by this branch/documentation operation. No new EXE was built and no execution permission was changed. Explain current checkbox and limitation honestly.
+
+## 2026-11-13: 0.3.3 development
+
+설치 EXE의 `$EXEDIR/agent-config.json`이 있으면 최초 설정 준비 파일로 복사하고 템플릿 편집기를 열지 않는다. 첫 앱 실행에서 검증·safeStorage 암호화 후 준비 파일만 삭제한다. 기존 암호화 설정/legacy 설정은 덮어쓰지 않으며 파일이 없으면 기존 기본 예제 편집 절차를 유지한다.
+
+파일 수정 승인창에 현재 대화·프로젝트 자동 승인 버튼을 추가했다. 새 사용자 메시지에도 유지하지만 다른 대화/프로젝트 사용·중지·재시작·설정 재시작 요청·트레이 수동 해제로 취소한다. Epoch와 AbortSignal로 지연 중인 쓰기도 차단한다. 충돌·버퍼·보호 경로·스냅샷 검사는 그대로다. ACP bind와 호스트 도구/새 요청이 다른 범위를 감지하면 해제한다. 엔진 always/JSON에 저장하지 않는다.
+
+DesktopTools는 종료된 MCP를 재사용하던 결함을 수정했다. 종료 확인 뒤 연결과 refs를 폐기하고 관찰에서 새 연결을 만든다. 전달 여부가 불명확한 동작은 자동 반복하지 않으며 새 snapshot 전 동작을 차단한다. 종료 미확인은 전체 새 실행을 차단한다. private AppData와 AGENT_DESKTOP_HOME을 생성하고 순수 표준 라이브러리 감독기는 -I -S -B로 실행한다. desktop_list_apps와 desktop_launch를 추가하여 총 20개다. GUI 실행은 고정 절대 exe/해시/빈 argv/작업 폴더를 별도 승인하며 셸·문서·URI·호출자 환경을 허용하지 않는다. 사용자 GUI는 MCP Job 밖에서 실행하고 Ned 종료 때 죽이지 않는다. 계산기 표준 순차 모드와 과학용 우선순위 모드를 구분하고 실제 결과를 관찰해야 한다.
+
+첫 Windows desktop-probe-1이 Python pathlib의 urllib 누락 및 pywin32_bootstrap 경고로 실패했다. 아직 desktop timeout의 원인으로 단정할 수 없다. Python을 쓰지 않는 desktop-probe-2(544ee25)를 work에 게시하고 사용자 결과를 기다린다. 공개 TGZ SHA256은 786311a2a676877ae6c1e244c5c517732202c834f08627846f680374bf579eff이다. 키·창 제목·원본 오류를 기록하지 않는 파일 해시/네이티브 CLI·MCP 검사다. 실제 Windows GUI 성공을 주장하지 않는다. main은 검증된 릴리스 기준으로만 갱신한다.

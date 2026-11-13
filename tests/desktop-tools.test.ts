@@ -43,3 +43,43 @@ test('real pinned agent-desktop MCP starts with a private home and reports capab
   const context=(tools as any).sessions.get('s');assert.ok(context.home.startsWith(path.join(root,'desktop')));
   await tools.cancel('s');assert.equal(existsSync(context.home),false);
 });
+test('a closed desktop client is disposed before a fresh observation; uncertain actions are never replayed',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-desktop-recover-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const tools=new DesktopTools(root,root,async()=>true);t.after(()=>tools.close());
+ let disposed=0,created=0,clicks=0;
+ const broken={available:true,call:async(name:string)=>{if(name==='desktop_list_windows')return reply([target]);clicks++;broken.available=false;throw Error('transport lost')},close:async()=>{disposed++}};
+ const oldHome=path.join(root,'old');await mkdir(oldHome);
+ (tools as any).sessions.set('s',{client:broken,home:oldHome,project:'/p',refs:new Map([['@s1:e2',{window:target}]])});
+ (tools as any).create=async(project:string)=>{created++;return{client:{available:true,call:async(name:string)=>name==='desktop_list_windows'?reply([target]):name==='desktop_snapshot'?reply({window:target,tree:{ref_id:'@fresh:e1'}}):reply({}),close:async()=>{}},home:path.join(root,'fresh'),project,refs:new Map()}};
+ await assert.rejects(tools.call('desktop_click',{ref_id:'@s1:e2'},'s','/p'),/DESKTOP_CONNECTION_CLOSED/);
+ assert.equal(clicks,1);assert.equal(disposed,1);assert.equal(existsSync(oldHome),false);
+ await assert.rejects(tools.call('desktop_focus_window',{window_id:target.id},'s','/p'),/snapshot/);
+ await tools.call('desktop_status',{},'s','/p');assert.equal(created,1);
+ await assert.rejects(tools.call('desktop_get',{ref_id:'@s1:e2'},'s','/p'),/qualified ref/);
+ await tools.call('desktop_snapshot',{window_id:target.id},'s','/p');
+ await tools.call('desktop_focus_window',{window_id:target.id},'s','/p');assert.equal(clicks,1);
+});
+test('unconfirmed desktop stop blocks replacement processes and app launch',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-desktop-stop-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const tools=new DesktopTools(root,root,async()=>true);
+ (tools as any).sessions.set('s',{client:{available:false,close:async()=>{throw Error('exit unknown')}},home:root,project:'/p',refs:new Map()});
+ await assert.rejects(tools.call('desktop_status',{},'s','/p'),/exit unknown/);
+ await assert.rejects(tools.call('desktop_launch',{app:'calculator'},'s','/p'),/종료가 불명확/);
+});
+test('GUI launch freezes a reviewed executable, needs separate native approval and never claims UI verification',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-desktop-launch-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ let allow=false,launches=0,detail='';const plan={executable:'C:\\Windows\\System32\\calc.exe',cwd:'C:\\Windows\\System32',arguments:[],sha256:'fixed'};
+ const tools=new DesktopTools(root,root,async(_title,d)=>{detail=d;return allow});
+ (tools as any).launcher={prepare:async()=>plan,launch:async(p:unknown)=>{assert.deepEqual(p,plan);launches++;return{status:'started',pid:9,windowVerified:false}}};
+ await assert.rejects(tools.call('desktop_launch',{app:'calculator',args:['/run']},'s','/p'));
+ await assert.rejects(tools.call('desktop_launch',{app:'calculator'},'s','/p'),/거절/);assert.equal(launches,0);
+ allow=true;const result=await tools.call('desktop_launch',{app:'calculator'},'s','/p');assert.equal(launches,1);assert.match(detail,/calc.exe/);assert.match(result.content[0].text!,/"windowVerified":false/);
+});
+test('cancelling during GUI preparation prevents dispatch without closing user apps',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-desktop-launch-cancel-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const tools=new DesktopTools(root,root,async()=>{throw Error('approval after cancellation')});
+ let prepared!:()=>void,release!:()=>void;const entered=new Promise<void>(r=>prepared=r),wait=new Promise<void>(r=>release=r);let launches=0;
+ (tools as any).launcher={prepare:async()=>{prepared();await wait;return{}},launch:async()=>{launches++;return{}}};
+ const work=tools.call('desktop_launch',{app:'calculator'},'s','/p');await entered;await tools.cancel('s');release();
+ await assert.rejects(work,/abort/i);assert.equal(launches,0);await tools.close();
+});

@@ -54,6 +54,7 @@ export class AgentOwner {
           if (!authorized.has(directory)) throw new Error('프로젝트 범위가 확인되지 않았습니다.');
           const previous = this.sessions.get(params.session);
           if (previous && previous !== peer) throw new Error('다른 편집기에서 사용 중인 세션입니다.');
+          await this.runtime.activateEditScope(params.session);
           this.sessions.set(params.session, peer); attached.add(params.session); return {};
         }
         if (method === 'cancel') {

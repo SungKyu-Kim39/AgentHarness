@@ -45,9 +45,12 @@ Section "Ned"
   IfFileExists "$INSTDIR\resources\zed\Zed.exe" 0 install_failed
   IfFileExists "$INSTDIR\resources\zed\bin\zed.exe" 0 install_failed
   IfFileExists "$INSTDIR\resources\app.asar" 0 install_failed
+  IfFileExists "$INSTDIR\resources\runtime\windows-x64\openviking\python\Lib\urllib\parse.py" 0 install_failed
+  IfFileExists "$INSTDIR\resources\runtime\windows-x64\openviking\python\Lib\site-packages\win32\lib\pywin32_bootstrap.py" 0 install_failed
+  IfFileExists "$INSTDIR\resources\runtime\windows-x64\agent-desktop\agent-desktop.exe" 0 install_failed
   Goto install_verified
   install_failed:
-    MessageBox MB_OK|MB_ICONSTOP "Ned install is incomplete. Check free disk space and the installation folder. The bundled editor or host is missing. User settings were retained."
+    MessageBox MB_OK|MB_ICONSTOP "Ned install is incomplete. Check free disk space and the installation folder. The bundled editor or host is missing. User settings were retained." /SD IDOK
     SetErrorLevel 1
     Abort
   install_verified:
@@ -67,14 +70,26 @@ Section "Ned"
   IfFileExists "$APPDATA\Ned\settings.enc.json" import_done
   IfFileExists "$APPDATA\L-Vibe\settings.enc.json" import_done
   IfFileExists "$APPDATA\Ned\config-import.json" open_config
+  IfFileExists "$EXEDIR\agent-config.json\*.*" config_failed
   IfFileExists "$EXEDIR\agent-config.json" 0 default_config
+    ClearErrors
     CopyFiles /SILENT "$EXEDIR\agent-config.json" "$APPDATA\Ned\config-import.json"
-    Goto open_config
+    IfErrors config_failed
+    ; User-provided distribution settings are validated/encrypted by first launch.
+    ; Do not open the template editor for this successful automatic import path.
+    Goto import_done
   default_config:
+    ClearErrors
     CopyFiles /SILENT "$INSTDIR\resources\ned\agent-config.example.json" "$APPDATA\Ned\config-import.json"
+    IfErrors config_failed
   open_config:
     IfSilent import_done
     Exec '"$SYSDIR\notepad.exe" "$APPDATA\Ned\config-import.json"'
+    Goto import_done
+  config_failed:
+    MessageBox MB_OK|MB_ICONSTOP "Ned could not prepare agent-config.json from the installer folder. Check folder permissions and retry. Existing user data was retained." /SD IDOK
+    SetErrorLevel 1
+    Abort
   import_done:
 SectionEnd
 

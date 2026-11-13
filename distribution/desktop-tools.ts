@@ -2,12 +2,16 @@ import { createHash } from 'node:crypto';
 import { readFile, mkdir, mkdtemp, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
+import { DesktopLauncher } from './desktop-launch';
+import { atomicJSON } from '../src/main/config';
 import { PrivateMcpClient, type McpToolResult } from '../src/main/mcp-client';
 const text = z.string().min(1).max(10000), ref = z.string().regex(/^@[A-Za-z0-9_-]+:e[0-9]+$/);
 const windowID = z.string().min(1).max(256);
 const schemas = {
   desktop_status: z.object({}).strict(),
   desktop_list_windows: z.object({}).strict(),
+  desktop_list_apps: z.object({}).strict(),
+  desktop_launch: z.object({ app: z.string().min(1).max(4096) }).strict(),
   desktop_snapshot: z.object({ window_id: windowID, max_depth: z.number().int().min(1).max(20).default(10) }).strict(),
   desktop_screenshot: z.object({ window_id: windowID }).strict(),
   desktop_focus_window: z.object({ window_id: windowID }).strict(),
@@ -26,16 +30,17 @@ const schemas = {
   desktop_scroll_to: z.object({ ref_id: ref }).strict(),
 };
 export const desktopToolNames = Object.keys(schemas);
-const readOnly = new Set(['desktop_status','desktop_list_windows','desktop_snapshot','desktop_screenshot','desktop_get','desktop_is']);
+const readOnly = new Set(['desktop_status','desktop_list_windows','desktop_list_apps','desktop_snapshot','desktop_screenshot','desktop_get','desktop_is']);
 export const desktopTools = desktopToolNames.map(name => {
   const properties: Record<string, unknown> = {}, required: string[] = [];
   if (['desktop_snapshot','desktop_screenshot','desktop_focus_window'].includes(name)) { properties.window_id = { type: 'string' }; required.push('window_id'); }
-  else if (!['desktop_status','desktop_list_windows'].includes(name)) { properties.ref_id = { type: 'string' }; required.push('ref_id'); }
+  else if (name === 'desktop_launch') { properties.app = { type:'string', description:'calculator, notepad, paint, or an absolute local Windows GUI .exe path from the installed app catalog. No command strings or arguments.' }; required.push('app'); }
+  else if (!['desktop_status','desktop_list_windows','desktop_list_apps'].includes(name)) { properties.ref_id = { type: 'string' }; required.push('ref_id'); }
   if (['desktop_set_value','desktop_select'].includes(name)) { properties.value = { type: 'string' }; required.push('value'); }
   if (['desktop_get','desktop_is'].includes(name)) properties.property = { type: 'string' };
   if (name === 'desktop_snapshot') properties.max_depth = { type: 'integer', minimum: 1, maximum: 20 };
   if (name === 'desktop_scroll') Object.assign(properties, { direction: { type:'string', enum:['up','down','left','right'] }, amount:{ type:'integer',minimum:1,maximum:20 } });
-  return { name, description: `Pinned offline agent-desktop: ${name.slice(8)}. ${readOnly.has(name) ? 'Desktop observation outside project files requires native approval.' : 'Each action requires separate native approval; file auto-approval never applies.'} First list windows then snapshot one approved window. Use only returned qualified refs. Ned/Zed/approval/terminal/system windows, global input, arbitrary launch, clipboard and raw MCP are unavailable. Observe after actions; never repeat uncertain delivery.`, inputSchema: { type:'object',properties,required,additionalProperties:false } };
+  return { name, description: `Pinned offline agent-desktop: ${name.slice(8)}. ${readOnly.has(name) ? 'Desktop observation outside project files requires native approval.' : 'Each action requires separate native approval; file auto-approval never applies.'} First list windows then snapshot one approved window. Use only returned qualified refs. Use desktop_list_apps to discover installed applications and desktop_launch to start an approved GUI app. Launch only confirms process dispatch, not a visible window or completed task. No shell/arguments, managed Ned/Zed, terminal/system/approval windows, global input, clipboard or raw MCP. Observe after actions; never repeat uncertain delivery.`, inputSchema: { type:'object',properties,required,additionalProperties:false } };
 });
 type Window = { id: string; pid: number; app_name: string; process_instance?: string; title?: string };
 const envelope = (reply: McpToolResult): any => reply.structuredContent ?? JSON.parse(reply.content.find(c => c.type === 'text')?.text ?? '{}');
@@ -49,6 +54,9 @@ interface DesktopSession { client: PrivateMcpClient; home: string; project: stri
 /** Native-only, semantic window-scoped surface; no executable plugins or online setup. */
 export class DesktopTools {
   private sessions = new Map<string, DesktopSession>(); private queue = Promise.resolve(); private stopped = false;
+  private launchAborts = new Map<string,AbortController>();
+  private needsObservation = new Set<string>();
+  private launcher = new DesktopLauncher();
   private blocked = new Set<string>(); private uncertain = false;
   constructor(private root: string, private resources: string, private approve: (title: string, detail: string, signal?: AbortSignal) => Promise<boolean>) {}
   async call(name: string, input: unknown, session: string, project: string, signal?: AbortSignal) {
@@ -58,9 +66,26 @@ export class DesktopTools {
       signal?.throwIfAborted();
       const schema = schemas[name as keyof typeof schemas]; if (!schema) throw new Error('지원하지 않는 Desktop 도구입니다.');
       const args: Record<string, any> = schema.parse(input);
+      if (this.needsObservation.has(session) && !readOnly.has(name)) throw new Error('이전 Desktop 동작의 전달 여부가 불명확합니다. 창 목록과 새 snapshot으로 상태를 먼저 확인하세요.');
+      if (name === 'desktop_launch') {
+        const abort = new AbortController(); this.launchAborts.set(session,abort);
+        const launchSignal = signal ? AbortSignal.any([signal,abort.signal]) : abort.signal;
+        try {
+        const plan = await this.launcher.prepare(args.app);
+        launchSignal.throwIfAborted();
+        if (!await this.approve('Desktop 앱 실행 승인', JSON.stringify({tool:name,...plan},null,2) + '\n이 프로그램을 일반 사용자 권한으로 실행합니다. 프로그램 자체의 파일·네트워크 접근은 Ned 파일 수정 승인으로 통제되지 않습니다. Ned 종료 시 이 앱을 강제 종료하지 않습니다.', launchSignal)) throw new Error('앱 실행이 거절되었습니다.');
+        launchSignal.throwIfAborted();
+        if (this.stopped || this.blocked.has(session)) throw new Error('Desktop 실행이 중지되었습니다.');
+        return {content:[{type:'text',text:JSON.stringify(await this.launcher.launch(plan,launchSignal))}]};
+        } finally { this.launchAborts.delete(session); }
+      }
       let context = this.sessions.get(session);
+      if (context && context.client.available === false) { await this.discard(session,context); context=undefined; }
       if (context && context.project !== project) throw new Error('Desktop 세션의 프로젝트가 변경되었습니다.');
-      if (!context) { context = await this.create(project); this.sessions.set(session, context); }
+      if (!context) {
+        try { context = await this.create(project); this.sessions.set(session, context); }
+        catch(error) { await this.diagnostic(name,'start-failed',!this.uncertain); throw error; }
+      }
       const ctx = context;
       const cancel = () => { void ctx.client.close().catch(() => { this.uncertain = true; }); };
       signal?.addEventListener('abort', cancel, { once:true });
@@ -86,9 +111,17 @@ export class DesktopTools {
           if (!data?.window || !selected || !same(data.window, selected) || !permittedDesktopWindow(data.window)) throw new Error('관찰된 창의 신원을 확인하지 못했습니다.');
           const refs = new Map<string, DesktopRef>();
           const walk = (node: any) => { if (!node || typeof node !== 'object') return; if (typeof node.ref_id === 'string' && ref.safeParse(node.ref_id).success) refs.set(node.ref_id, { window:selected, role:typeof node.role==='string'?node.role.slice(0,100):undefined, name:typeof node.name==='string'?node.name.slice(0,1000):undefined }); for (const c of node.children ?? []) walk(c); };
-          walk(data.tree); ctx.refs = refs;
+          walk(data.tree); ctx.refs = refs; this.needsObservation.delete(session);
         }
         return reply;
+      } catch (error) {
+        if (ctx.client.available === false) {
+          if (!readOnly.has(name)) this.needsObservation.add(session);
+          await this.discard(session,ctx);
+          await this.diagnostic(name,ctx.client.failureCode ?? 'connection-closed',true);
+          throw new Error('DESKTOP_CONNECTION_CLOSED: 데스크톱 연결이 종료되어 관찰 참조를 해제했습니다. 다음 status/창 목록 요청은 새 연결을 만듭니다. 실행을 시도한 동작은 전달 여부가 불명확하므로 자동 재시도하지 말고 먼저 화면을 다시 확인하세요.');
+        }
+        throw error;
       } finally { signal?.removeEventListener('abort', cancel); }
     } finally { release(); }
   }
@@ -112,21 +145,32 @@ export class DesktopTools {
     }
     await mkdir(path.join(this.root, 'desktop'), { recursive:true,mode:0o700 });
     const home = await mkdtemp(path.join(this.root, 'desktop/session-'));
+    let client: PrivateMcpClient | undefined;
     try {
-      const env: NodeJS.ProcessEnv = { HOME:home,USERPROFILE:home,APPDATA:home,LOCALAPPDATA:home,XDG_CONFIG_HOME:home,XDG_DATA_HOME:home,XDG_CACHE_HOME:home,TEMP:home,TMP:home,PATH:path.dirname(process.execPath),DO_NOT_TRACK:'1' };
+      for (const part of ['AppData/Local','AppData/Roaming','AppData/LocalLow','state','tmp']) await mkdir(path.join(home,part),{recursive:true,mode:0o700});
+      const env: NodeJS.ProcessEnv = { AGENT_DESKTOP_HOME:path.join(home,'state'),HOME:home,USERPROFILE:home,APPDATA:path.join(home,'AppData/Roaming'),LOCALAPPDATA:path.join(home,'AppData/Local'),XDG_CONFIG_HOME:home,XDG_DATA_HOME:home,XDG_CACHE_HOME:home,TEMP:path.join(home,'tmp'),TMP:path.join(home,'tmp'),PATH:process.platform==='win32'?path.join(process.env.SystemRoot??'C:\\Windows','System32'):path.dirname(process.execPath),DO_NOT_TRACK:'1' };
       for (const key of ['SystemRoot','SYSTEMROOT','WINDIR','DISPLAY','WAYLAND_DISPLAY','DBUS_SESSION_BUS_ADDRESS','XDG_RUNTIME_DIR','XAUTHORITY']) if (process.env[key]) env[key] = process.env[key];
       const executable = path.join(base, process.platform === 'win32' ? 'agent-desktop.exe' : 'agent-desktop');
       const python = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
       const supervisor = path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py');
-      const client = new PrivateMcpClient({ executable:process.platform === 'win32' ? python : executable, args:process.platform === 'win32' ? ['-I','-B',supervisor,executable,'mcp'] : ['mcp'],cwd:home,env,allowedTools:desktopToolNames,timeout:45000 });
+      client = new PrivateMcpClient({ executable:process.platform === 'win32' ? python : executable, args:process.platform === 'win32' ? ['-I','-S','-B',supervisor,executable,'mcp'] : ['mcp'],cwd:home,env,allowedTools:desktopToolNames.filter(n=>n!=='desktop_launch'),timeout:45000 });
       await client.start(); return { client,home,project,refs:new Map() };
-    } catch (error) { await rm(home,{recursive:true,force:true}); throw error; }
+    } catch (error) {
+      try { await client?.close(); } catch (stopError) { this.uncertain=true; throw stopError; }
+      await rm(home,{recursive:true,force:true}); throw error;
+    }
+  }
+  private async diagnostic(tool: string, code: string, stopConfirmed: boolean) {
+    await atomicJSON(path.join(this.root,'diagnostics','desktop-status.json'),{schemaVersion:1,component:'agent-desktop',recordedAt:new Date().toISOString(),tool,code,stopConfirmed}).catch(()=>{});
+  }
+  private async discard(session: string, ctx: DesktopSession) {
+    try { await ctx.client.close(); ctx.refs.clear(); await rm(ctx.home,{recursive:true,force:true}); if(this.sessions.get(session)===ctx)this.sessions.delete(session); }
+    catch(error) { this.uncertain=true; throw error; }
   }
   async cancel(session: string) {
-    this.blocked.add(session); const ctx = this.sessions.get(session); if (!ctx) return;
-    try { await ctx.client.close(); await rm(ctx.home,{recursive:true,force:true}); this.sessions.delete(session); }
-    catch(error) { this.uncertain = true; throw error; }
+    this.blocked.add(session); this.launchAborts.get(session)?.abort(); const ctx = this.sessions.get(session); if (!ctx) return;
+    await this.discard(session,ctx);
   }
   resume(session: string) { this.blocked.delete(session); }
-  async close() { this.stopped = true; await Promise.all([...this.sessions.keys()].map(id => this.cancel(id))); }
+  async close() { this.stopped = true; for(const abort of this.launchAborts.values())abort.abort(); await Promise.all([...this.sessions.keys()].map(id => this.cancel(id))); }
 }
