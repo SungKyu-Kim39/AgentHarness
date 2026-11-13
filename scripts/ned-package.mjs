@@ -9,6 +9,7 @@ import * as PE from 'pe-library';
 import { Data, Resource } from 'resedit';
 import { verifyAsciiTree, verifyAsciiTar } from './package-paths.mjs';
 import { verifyManifest, fileHash } from './installer-audit.mjs';
+import { brandEditor, verifyEditorIcon } from './ned-editor-branding.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
@@ -48,6 +49,9 @@ async function prepareZed() {
   await rm(payload,{recursive:true,force:true});await cp(path.join(destination,'app'),payload,{recursive:true});
   await cp(path.join(destination,'code$GetInstallDir'),payload,{recursive:true});
   await rm(path.join(payload,'tools/auto_update_helper.exe'),{force:true});
+  const branded=brandEditor(await readFile(path.join(payload,'Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
+  await writeFile(path.join(payload,'Zed.exe'),branded.bytes);
+  await writeFile(path.join(cache,'editor-branding.json'),JSON.stringify(branded.record,null,2)+'\n');
   await access(path.join(payload,'Zed.exe'));
   await verifyAsciiTree(payload);return payload;
 }
@@ -83,6 +87,8 @@ async function packageApp() {
       {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       {from:path.join(root,'LICENSE'),to:'ned/licenses/Ned-MIT.txt'},
+      {from:path.join(root,'node_modules/jsonc-parser/LICENSE.md'),to:'ned/licenses/jsonc-parser-MIT.txt'},
+      {from:path.join(cache,'editor-branding.json'),to:'ned/editor-branding.json'},
       {from:path.join(root,'.cache/l-vibe-desktop/source/LICENSE'),to:'ned/licenses/OpenCode-MIT.txt'},
       {from:path.join(root,'THIRD_PARTY_NOTICES.md'),to:'ned/licenses/THIRD_PARTY_NOTICES.md'},
       {from:path.join(cache,'app/agent.cjs'),to:'ned/agent.cjs'},
@@ -113,7 +119,7 @@ async function audit() {
   await rm(extracted,{recursive:true,force:true});await mkdir(extracted,{recursive:true});
   try {
     const seven=await getPath7za();run(seven,['t',installer]);
-    const compared=['Ned.exe','resources/app.asar','resources/ned/agent.cjs','resources/ned/icon.ico','resources/zed/Zed.exe'];
+    const compared=['Ned.exe','resources/app.asar','resources/ned/agent.cjs','resources/ned/icon.ico','resources/zed/Zed.exe','resources/ned/editor-branding.json'];
     const payloadHashes=Object.fromEntries(await Promise.all(compared.map(async file=>[file,await fileHash(path.join(staged,file))])));
     // Optional build-machine cleanup after archive integrity passes; retain exact payload hashes for comparison.
     if(process.env.NED_AUDIT_DISCARD_STAGE==='1') await rm(staged,{recursive:true,force:true});
@@ -123,13 +129,16 @@ async function audit() {
     if (app.name!=='ned'||app.version!==version) throw new Error('Wrong app in installer');
     for(const file of compared)
       if(await fileHash(path.join(extracted,file))!==payloadHashes[file]) throw new Error('Installer bytes differ: '+file);
+    const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
+    if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
+    verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
     const components={};
     for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }
-    const report={sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,windowsAcceptance:false};
+    const report={sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }

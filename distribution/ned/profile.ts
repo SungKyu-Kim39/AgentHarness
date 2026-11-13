@@ -1,9 +1,9 @@
 import path from 'node:path';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir } from 'node:fs/promises';
 import { createServer, type Server } from 'node:http';
-import { atomicJSON } from '../../src/main/config';
 import { agentLaunch } from './agent-launch';
 import { ensureEditorInstructions } from './editor-instructions';
+import { editorPreferences, ensureEditorKeymap, writeEditorPreferences } from './editor-preferences';
 
 /** All managed editor HTTP and CONNECT requests are denied. Agent traffic uses stdio. */
 export class EditorNetwork {
@@ -46,14 +46,9 @@ export async function prepareEditor(root: string, executable: string, resources:
   await ensureEditorInstructions(path.join(data, 'config'));
   for (const directory of ['home', 'home/AppData/Local', 'home/AppData/Roaming', 'home/AppData/LocalLow', 'home/Desktop', 'home/Documents', 'home/Downloads', 'roaming', 'local', 'config-home', 'data', 'cache', 'state', 'tmp']) await mkdir(path.join(data, directory), { recursive: true, mode: 0o700 });
   const clangd = process.platform === 'win32' ? path.join(resources, 'runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe') : undefined;
-  // Managed security/agent settings are regenerated; appearance changes have a separate allowlist.
-  const appearance = await readFile(path.join(data, 'appearance.json'), 'utf8').then(JSON.parse).catch(() => readFile(path.join(data, 'config/settings.json'), 'utf8').then(JSON.parse).catch(() => ({})));
-  const allowed: Record<string, unknown> = {};
-  for (const key of ['theme', 'buffer_font_size', 'ui_font_size', 'tab_size', 'vim_mode']) if (appearance[key] !== undefined) allowed[key] = appearance[key];
-  await atomicJSON(path.join(data, 'config/settings.json'), { ...allowed, ...editorSettings(executable, path.join(resources, 'ned/agent.cjs'), descriptor, proxy, clangd) });
-  await writeFile(path.join(data, 'config/keymap.json'), JSON.stringify([
-    { context: 'Workspace', bindings: { 'ctrl-shift-a': ['agent::NewExternalAgentThread', { agent: 'Ned' }] } },
-  ], null, 2) + '\n');
+  const settings = await editorPreferences(data,editorSettings(executable,path.join(resources,'ned/agent.cjs'),descriptor,proxy,clangd));
+  await writeEditorPreferences(path.join(data,'config/settings.json'),settings);
+  await ensureEditorKeymap(path.join(data,'config/keymap.json'));
   const env: NodeJS.ProcessEnv = {};
   for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'SystemDrive', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432', 'ProgramData', 'PATHEXT', 'LANG', 'LC_ALL', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'])
     if (process.env[key]) env[key] = process.env[key];

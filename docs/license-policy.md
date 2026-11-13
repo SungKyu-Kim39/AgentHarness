@@ -1,6 +1,6 @@
 # Ned 라이선스 정책
 
-Ned 자체 코드는 MIT를 유지한다. 번들 전체를 MIT로 재허가하지 않는다. **Zed v1.28.1은 주로 GPL-3.0-or-later이며 명시된 Apache-2.0 구성 요소가 함께 있다.** 공식 Windows 바이너리와 일치하는 고정 태그의 대응 소스, GPL·Apache 원문과 제3자 고지를 반입 묶음에 포함한다. 새 Ned 글자 아이콘을 생성하여 사용하며, 코드 라이선스를 타사 상표 사용권으로 표현하지 않는다.
+Ned 자체 코드는 MIT를 유지한다. 번들 전체를 MIT로 재허가하지 않는다. **Zed v1.28.1은 주로 GPL-3.0-or-later이며 명시된 Apache-2.0 구성 요소가 함께 있다.** 공식 Windows 원본을 기준으로 관리형 바이너리를 구성한다. 0.3.3은 Ned 작업표시줄 아이콘을 위해 Windows 아이콘 리소스만 교체하며 실행 코드·공급자 버전 정보는 보존한다. 원본/수정본 해시와 변경 스크립트·아이콘을 함께 제공하고 수정본은 원본 서명을 유지하지 않는다. 원본과 일치하는 고정 태그의 대응 소스, GPL·Apache 원문과 제3자 고지를 반입 묶음에 포함한다. 새 Ned 글자 아이콘을 생성하여 사용하며, 코드 라이선스를 타사 상표 사용권으로 표현하지 않는다.
 
 OpenCode 엔진·ACP는 MIT이며 Zed와 로컬 ACP로 연결한다. OpenViking의 AGPL, Serena·Git·DLL·브라우저 등 각자의 조건은 계속 적용된다. 외부 링크만으로 폐쇄망 수령인에게 대응 소스를 제공했다고 주장하지 않는다. 업무 프로젝트와 개인 대화가 이 도구를 사용했다는 이유만으로 공개 대상이 되는 것은 아니다. 실제 수정·결합·전달 형태를 기준으로 적용 조건을 확인한다.
 
@@ -70,3 +70,5 @@ AGPL 5조의 aggregate 규정은 별개 저작물의 단순 집합과 결합 저
 원본 [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html), [GPL-3.0](https://www.gnu.org/licenses/gpl-3.0.html), [GPL-2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.html), [LGPL-3.0](https://www.gnu.org/licenses/lgpl-3.0.html), [CC-BY-SA-4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode), [Microsoft redistribution](https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution)을 식별자로 제공한다. 판정 근거는 위 표의 **실제 고정 배포본 원문**이며 온라인 최신 버전이나 프로젝트의 대표 라이선스만으로 하위 구성을 덮어쓰지 않는다. 잠금 자료는 [python-runtime-lock.json](../python-runtime-lock.json), [mcp-runtime-lock.json](../mcp-runtime-lock.json), [rea-runtime-lock.json](../rea-runtime-lock.json), [skills-lock.json](../skills-lock.json)이다.
 
 0.2.6은 개인 OVPack 가져오기·읽기 전용 개인 검색과 로컬 내보내기 도구를 추가한다. OpenViking 가상 사용자 컨테이너의 부모 처리 어댑터는 고정 원본 helper hash를 검사하며 SDK archive/소유권/충돌 검사를 유지한다. 원본 SDK 파일은 변경하지 않고 런처에서 보완한다. 어댑터를 포함한 L-Vibe 소스와 기존 AGPL 대응 소스는 반입 묶음에 제공한다. 0.5.0 SDK는 빌드 PC의 이관 검사에만 사용하며 직원 배포 런타임은 0.5.4를 유지한다. 기존 Chrome/MSVC·copyleft 관련 미확인 항목은 그대로 남는다.
+
+0.3.3의 JSONC 설정 보존에는 Microsoft jsonc-parser 3.3.1(MIT)을 사용하며 원문을 `ned/licenses/jsonc-parser-MIT.txt`에 포함한다. 작업표시줄 아이콘 교체 스크립트는 Ned 소스 묶음의 `scripts/ned-editor-branding.mjs`, 고정 원본·수정본·아이콘 해시는 설치 리소스의 `ned/editor-branding.json`에서 확인한다.
