@@ -20,14 +20,22 @@ async function main() {
   const sessions = new Set<string>();
   const sessionOptions = new Map<string, any[]>();
   let mode: PermissionMode = 'ask';
+  let revision = 0;
+  const state = (value: any) => {
+    const next = permissionMode(value?.mode);
+    if (!Number.isSafeInteger(value.revision) || value.revision < 0) throw new Error('Invalid permission revision');
+    if (value.revision < revision) return;
+    mode = next;
+    revision = value.revision;
+  };
   let editorWriter: WritableStreamDefaultWriter<any> | undefined;
   const options = (session: string, original?: any[]) => {
     if (original) sessionOptions.set(session, original.filter(option => option.id !== permissionConfigId));
-    return [...(sessionOptions.get(session) ?? []), permissionOption(mode)];
+    return [...(sessionOptions.get(session) ?? []), permissionOption(mode, revision)];
   };
   const peer = new Peer(socket, async (method, params) => {
     if (method === 'permissionsChanged') {
-      mode = permissionMode(params?.mode);
+      state(params);
       for (const sessionId of sessions) if (editorWriter) await editorWriter.write({ jsonrpc: '2.0', method: 'session/update', params: {
         sessionId, update: { sessionUpdate: 'config_option_update', configOptions: options(sessionId) },
       } });
@@ -46,7 +54,7 @@ async function main() {
   });
   peer.onClose(() => { process.exitCode = 1; process.stdin.destroy(); });
   const endpoint = await peer.call('hello', { token: descriptor.token });
-  mode = permissionMode((await peer.call('permissions/get')).mode);
+  state(await peer.call('permissions/get'));
   if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(endpoint.url) || typeof endpoint.password !== 'string') throw new Error('Invalid managed engine endpoint');
   const stream = ndJsonStream(Writable.toWeb(process.stdout), Readable.toWeb(process.stdin));
   const writer = stream.writable.getWriter();
@@ -64,7 +72,7 @@ async function main() {
         if (request.method === 'initialize' && message.result) message.result.agentInfo = { name: 'Ned', version: NED_VERSION, title: 'Ned' };
         const session = message.result?.sessionId ?? request.session;
         if (message.result?.configOptions && session && sessions.has(session)) {
-          mode = permissionMode((await peer.call('permissions/get')).mode);
+          state(await peer.call('permissions/get'));
           message.result.configOptions = options(session, message.result.configOptions);
         }
       }
@@ -84,9 +92,11 @@ async function main() {
             const checked = await peer.call('authorize', { cwd: message.params.cwd });
             message.params.cwd = checked.cwd; message.params.mcpServers = [];
           } else if (message.params?.sessionId && !sessions.has(message.params.sessionId)) throw new Error('Session not attached');
-          if (message.method === 'session/set_config_option' && message.params.configId === permissionConfigId) {
+          if (message.method === 'session/set_config_option' && typeof message.params.configId === 'string' && (message.params.configId === permissionConfigId || message.params.configId.startsWith(permissionConfigId + '.'))) {
             if (!sessions.has(message.params.sessionId) || message.id === undefined) throw new Error('Session not attached');
-            mode = permissionMode((await peer.call('permissions/set', { session: message.params.sessionId, mode: permissionMode(message.params.value) })).mode);
+            state(await peer.call('permissions/get'));
+            if (message.params.configId !== permissionOption(mode, revision).id) throw new Error('권한 설정이 변경되었습니다. 최신 메뉴에서 다시 선택하세요.');
+            state(await peer.call('permissions/set', { session: message.params.sessionId, revision, mode: permissionMode(message.params.value) }));
             await writer.write({ jsonrpc: '2.0', id: message.id, result: { configOptions: options(message.params.sessionId) } });
             return;
           }

@@ -115,14 +115,15 @@ export class NativeRuntime {
     } catch (error) { await this.close(); throw error; }
   }
   async retryKnowledgeSkills() { if (!this.knowledge) throw new Error('OpenViking 설정이 필요합니다.'); await this.knowledge.retryBundledSkills(); }
-  permissionStatus() { return { mode: this.permissions?.mode ?? 'ask' }; }
+  permissionStatus() { return { mode: this.permissions?.mode ?? 'ask', revision: this.permissions?.revision ?? 0 }; }
   pauseApprovals(paused: boolean) { this.approvalsPaused = paused; if (paused) this.revokeEditApproval(); }
   onPermissionChange(listener: () => void) { return this.permissions?.onChange(listener) ?? (() => {}); }
-  async setPermissionMode(value: unknown) {
+  async setPermissionMode(value: unknown, expectedRevision?: number) {
     if (!this.permissions) throw new Error('Ned 권한 메뉴가 준비되지 않았습니다.');
     const mode = permissionMode(value);
-    if (mode !== this.permissions.mode || mode === 'ask') this.revokeEditApproval();
-    await this.permissions.set(mode);
+    const before = this.permissions.revision;
+    await this.permissions.set(mode, expectedRevision);
+    if (before !== this.permissions.revision || mode === 'ask') this.revokeEditApproval();
   }
   approveOperation(message: string, detail: string, signal?: AbortSignal) {
     if (this.approvalsPaused || signal?.aborted) return Promise.resolve(false);

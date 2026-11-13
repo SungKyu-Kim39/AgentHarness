@@ -108,7 +108,7 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
   await assert.rejects(request('session/prompt', { sessionId: 'forged-session', prompt: [] }), /Session not attached/);
   const created = await request('session/new', { cwd: project, mcpServers: [] });
   assert.ok(created.sessionId); assert.ok(JSON.stringify(created.configOptions).includes('wire') || JSON.stringify(created.configOptions).includes('p/'));
-  assert.equal(created.configOptions.find((option:any)=>option.id==='ned.permissions').currentValue,'ask');
+  assert.equal(created.configOptions.find((option:any)=>option.category==='_ned_permissions').currentValue,'ask');
   await assert.rejects(request('session/set_config_option',{sessionId:'forged-session',configId:'ned.permissions',value:'full'}),/Session not attached/);
   await request('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Read main.c and change the return value to 7.' }] });
   assert.equal(await readFile(path.join(project, 'main.c'), 'utf8'), 'int main() { return 7; }\n');
@@ -118,13 +118,13 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
   assert.ok(advertised.includes('ned_host_read_file'));
   assert.ok(advertised.every((name: string) => !/l[_-]vibe/i.test(name)));
 
-  const changed = await request('session/set_config_option',{sessionId:created.sessionId,configId:'ned.permissions',value:'full'});
-  assert.equal(changed.configOptions.find((option:any)=>option.id==='ned.permissions').currentValue,'full');
+  const changed = await request('session/set_config_option',{sessionId:created.sessionId,configId:created.configOptions.find((option:any)=>option.category==='_ned_permissions').id,value:'full'});
+  assert.equal(changed.configOptions.find((option:any)=>option.category==='_ned_permissions').currentValue,'full');
   assert.ok(changed.configOptions.some((option:any)=>option.category==='model'));
   assert.equal(runtime.permissionStatus().mode,'full');
   const selectedModel=changed.configOptions.find((option:any)=>option.category==='model');
   const modelResponse=await request('session/set_config_option',{sessionId:created.sessionId,configId:selectedModel.id,value:selectedModel.currentValue});
-  assert.equal(modelResponse.configOptions.find((option:any)=>option.id==='ned.permissions').currentValue,'full');
+  assert.equal(modelResponse.configOptions.find((option:any)=>option.category==='_ned_permissions').currentValue,'full');
   dirty = true; turn++; step = 0;
   await request('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Now change the return value to 9.' }] });
   assert.equal(await readFile(path.join(project, 'main.c'), 'utf8'), 'int main() { return 7; }\n');
@@ -136,8 +136,14 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
   const reloaded=new PermissionPolicy(data);await reloaded.load();assert.equal(reloaded.mode,'full');
   const beforeNativeChange=updates.length;
   await runtime.setPermissionMode('ask');
-  for (let attempt=0;attempt<100 && !updates.slice(beforeNativeChange).some(message=>message.params?.update?.configOptions?.some((option:any)=>option.id==='ned.permissions' && option.currentValue==='ask'));attempt++) await new Promise(resolve=>setTimeout(resolve,10));
-  assert.ok(updates.slice(beforeNativeChange).some(message=>message.params?.update?.sessionUpdate==='config_option_update' && message.params.update.configOptions.some((option:any)=>option.id==='ned.permissions' && option.currentValue==='ask')));
+  for (let attempt=0;attempt<100 && !updates.slice(beforeNativeChange).some(message=>message.params?.update?.configOptions?.some((option:any)=>option.category==='_ned_permissions' && option.currentValue==='ask'));attempt++) await new Promise(resolve=>setTimeout(resolve,10));
+  assert.ok(updates.slice(beforeNativeChange).some(message=>message.params?.update?.sessionUpdate==='config_option_update' && message.params.update.configOptions.some((option:any)=>option.category==='_ned_permissions' && option.currentValue==='ask')));
+  const stalePermission=changed.configOptions.find((option:any)=>option.category==='_ned_permissions');
+  await assert.rejects(request('session/set_config_option',{sessionId:created.sessionId,configId:stalePermission.id,value:'full'}),/권한 설정이 변경/);
+  assert.equal(runtime.permissionStatus().mode,'ask');
+  const another=await request('session/new',{cwd:project,mcpServers:[]});
+  const freshPermission=another.configOptions.find((option:any)=>option.category==='_ned_permissions');
+  assert.equal(freshPermission.currentValue,'ask');assert.notEqual(freshPermission.id,stalePermission.id);
   assert.ok(JSON.stringify(updates).includes('Ned verified.'));
   assert.ok(!JSON.stringify(updates).includes('synthetic-ned-secret'));
 });

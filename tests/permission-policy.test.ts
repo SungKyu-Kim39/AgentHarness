@@ -19,6 +19,7 @@ test('explicit persistent modes cover edits and effects; malformed settings neve
   await policy.set('full');
   for (const kind of ['edit','effect'] as const) assert.equal(await policy.decide(kind, undefined, true, prompt), true);
   const reloaded = new PermissionPolicy(root); await reloaded.load(); assert.equal(reloaded.mode, 'full');
+  assert.equal(reloaded.revision,policy.revision);
   assert.equal(prompts, 2);
   await assert.rejects(policy.set('anything')); assert.equal(policy.mode, 'full');
   await writeFile(policy.file, '{"schemaVersion":1,"mode":"full","plugins":["untrusted"]}');
@@ -26,6 +27,15 @@ test('explicit persistent modes cover edits and effects; malformed settings neve
   await rm(policy.file); await writeFile(path.join(root,'outside.json'), '{"schemaVersion":1,"mode":"full"}');
   await symlink(path.join(root,'outside.json'),policy.file);
   await assert.rejects(new PermissionPolicy(root).load());
+});
+
+test('stale or concurrently queued editor defaults cannot raise the global permission mode', async t => {
+  const root=await mkdtemp(path.join(tmpdir(),'ned-policy-revisions-'));t.after(()=>rm(root,{recursive:true,force:true}));
+  const policy=new PermissionPolicy(root);const old=policy.revision;
+  const first=policy.set('full',old),second=assert.rejects(policy.set('edits',old));
+  await first;await second;assert.equal(policy.mode,'full');
+  const fullRevision=policy.revision;await policy.set('ask');
+  await assert.rejects(policy.set('full',fullRevision));assert.equal(policy.mode,'ask');
 });
 
 test('full mode covers the runtime effect gate; restart suspension and failed persistence fail closed', async t => {

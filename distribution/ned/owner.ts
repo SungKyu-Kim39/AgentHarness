@@ -43,7 +43,8 @@ export class AgentOwner {
         if (method === 'permissions/get') return this.runtime.permissionStatus();
         if (method === 'permissions/set') {
           if (!attached.has(params?.session)) throw new Error('Session not attached');
-          await this.runtime.setPermissionMode(params.mode); return this.runtime.permissionStatus();
+          if (!Number.isSafeInteger(params.revision) || params.revision < 0) throw new Error('Permission revision required');
+          await this.runtime.setPermissionMode(params.mode, params.revision); return this.runtime.permissionStatus();
         }
         if (method === 'authorize') {
           if (typeof params?.cwd !== 'string' || !path.isAbsolute(params.cwd)) throw new Error('Absolute project directory required');
