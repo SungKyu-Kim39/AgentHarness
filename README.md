@@ -6,6 +6,8 @@ Ned는 사내 Qwen 모델에 **Zed 편집기, 전용 OpenCode 엔진, Aegis·Con
 
 ## 현재 상태
 
+[Ned 0.3.4 설치 EXE·폐쇄망 반입 TGZ](downloads/README.md)를 배포했다. JSONC 시작 오류 수정을 기본 포함하며 기존 0.3.3용 실행 패치는 추가 적용하지 않는다. 실제 설치본 추출·앱 번들 초기화·구성 요소 해시와 공개 다운로드 전체 SHA-256을 확인했다. [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.4)에서 받는다.
+
 0.3.4에는 JSONC 번들 시작 오류 수정과 OpenViking 내보내기 도구 수정이 기본 포함된다. 원본 0.3.3 설치본의 `Cannot find module './impl/format'` 실행 오류는 JSONC 하위 모듈 누락에 따른 배포 결함이다. [0.3.3 실행 수정 패치와 적용 순서](downloads/README.md)를 사용한다. 설정·대화·지식은 삭제하지 않는다. 원본 EXE/TGZ는 그대로 보존하며 패치가 별도로 필요하다.
 
 0.3.4는 Zed 기반 검증 후보이며 설정 JSON 가져오기 후 자동 재시작과 빈 시작 화면을 제공한다. 새 실행기·ACP·저장하지 않은 편집 내용 보호·기존 데이터 보존 이관을 구현하였으며, 실제 OpenCode 엔진을 사용하는 Linux 연동 검사에서 확인하였다. Windows 설치·편집기 화면·실제 MSBuild 실행·사내 모델과 외부망 차단 수용은 별도 확인 대상이다. [검증 상태](docs/validation-0.3.4.md)를 따른다.

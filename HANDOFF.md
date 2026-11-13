@@ -8,6 +8,8 @@
 
 실제 0.3.4 설치본 검증 완료: 빌드 소스 bfa9eb38286d6853abc28a4cb9e5838483dd275a, EXE 1,176,868,983 bytes / SHA-256 fc1eab24a0a6efd782be3b338b200aee854c51691ff0a4c9716f40968cf962ee, TGZ 1,173,699,552 bytes / SHA-256 b400faa722f7918e87a945d551a50dd20b84b1508fd4d026dda2360063859a9d. EXE에서 실제로 추출한 ASAR의 모듈 초기화가 통과했고 94,239개 파일/8,743개 디렉터리 ASCII와 런타임/기본 스킬36개 manifest를 대조했다. 별도 출력 폴더에서 재빌드한 host/ACP도 staging과 일치했다. TGZ 안의 EXE 해시와 대응 소스 커밋을 대조했으며 CHECK_EXPORT.cmd를 포함한다. 공개 다운로드 전체 바이트 확인과 GitHub 릴리스 상태는 후속 공개 검증 JSON에 기록한다.
 
+0.3.4 공개 배포 완료: 아티팩트 커밋 2633a81, 릴리스 https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.4 (공개 prerelease, draft 아님, tag/source bfa9eb38286d6853abc28a4cb9e5838483dd275a). 공개 GitHub/LFS URL에서 EXE와 TGZ를 각각 전체 스트리밍하여 HTTP200/정확한 크기/전체 SHA-256을 대조했고 검증 메타데이터·체크섬5개도 전체 일치했다. downloads/Ned-0.3.4-public-verification.json과 Ned-0.3.4-release.json에 기록했다. 설치 파일은 릴리스 본문의 직접 다운로드 링크로 제공하며 release asset 첨부를 주장하지 않는다. 실제 Windows GUI/사내망 전체 수용 완료는 여전히 별도 확인 대상이다.
+
 ## 우선 확인: 0.3.3 실행 번들 결함과 수정 패치
 
 사용자가 원본 0.3.3 첫 실행에서 `Cannot find module './impl/format'`을 보고했다. 실제 게시 EXE에서 추출한 ASAR로 동일 오류를 재현했다. jsonc-parser의 UMD factory가 require를 별칭으로 전달하므로 esbuild가 상대 하위 모듈을 묶지 못했다. ESM 진입점만 명시적으로 선택하도록 빌드를 수정했으며, 실제 번들/ASAR의 top-level import 초기화 검사를 빌드와 설치기 감사에 추가했다. Electron app.setName 직전 중단하여 사용자 프로필·서비스·모델은 시작하지 않는다. 과거 소스 테스트/해시 감사는 이 초기화 성공을 검증하지 못했음을 기록한다.

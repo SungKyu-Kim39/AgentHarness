@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.4",
+  "sourceCommit": "bfa9eb38286d6853abc28a4cb9e5838483dd275a",
+  "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.4",
+  "tagName": "v0.3.4",
+  "isDraft": false,
+  "isPrerelease": true,
+  "publishedAt": "2026-11-13T02:56:00Z",
+  "targetCommitish": "bfa9eb38286d6853abc28a4cb9e5838483dd275a",
+  "downloadDelivery": "Direct GitHub/LFS download links in the release body; no attached binary release assets claimed",
+  "fullPublicArtifactHashesVerified": true
+}
