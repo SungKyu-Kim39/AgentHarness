@@ -5,6 +5,7 @@ import { readFile, mkdir, access } from 'node:fs/promises';
 import path from 'node:path';
 import { prepareNative, getRuntime, replaceConfiguration } from '../native-control';
 import { editorLaunch } from './editor-launch';
+import { ProjectOpener, projectOpenCommand, dispatchProject } from './project-open';
 import { requestEditorClose } from './editor-close';
 import { ConfigurationRestart } from './configuration-restart';
 import { StartupWindow } from './startup-window';
@@ -147,9 +148,25 @@ async function start() {
     catch (error) { await messageBox({ type: 'error', title: 'Ned 권한 설정', message: errorMessage(error) }); }
     updatePermissionMenu();
   };
+  const projectOpener = new ProjectOpener();
+  const openProject = async () => {
+    try {
+      await projectOpener.open({
+        alive: () => !!editor && editor.exitCode === null && editor.signalCode === null && !quitting && !configurationRestart.pending,
+        choose: async () => {
+          const result = await openDialog({ title: 'Ned 프로젝트 폴더 열기', defaultPath: app.getPath('documents'), properties: ['openDirectory'] });
+          return result.canceled ? undefined : result.filePaths[0];
+        },
+        canonical: directory => runtime.canonicalProject(directory),
+        dispatch: directory => dispatchProject(projectOpenCommand(resources, profile.data, directory), profile.env),
+        selected: directory => { confirmed.add(directory); },
+      });
+    } catch (error) { await messageBox({ type: 'error', title: 'Ned 프로젝트 열기', message: errorMessage(error) }); }
+  };
   permissions.onChange(updatePermissionMenu);
   trayMenu = Menu.buildFromTemplate([
     { label: 'Ned ' + NED_VERSION + ' · Zed + OpenCode', enabled: false },
+    { label: '프로젝트 폴더 열기 · 바탕화면 / 즐겨찾기', click: openProject },
     { id: 'permissions', label: '권한', submenu: [
       ...permissionModes.map(mode => ({ id: 'permission-' + mode.value, label: mode.name, type: 'radio' as const, checked: permissions.mode === mode.value, click: () => setPermission(mode.value) })),
       { type: 'separator' },

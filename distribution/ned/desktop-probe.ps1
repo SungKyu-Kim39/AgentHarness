@@ -16,7 +16,10 @@ public sealed class NedProbeJob : IDisposable {
  public void Dispose() { if(job!=IntPtr.Zero){CloseHandle(job);job=IntPtr.Zero;} }
 }
 '@
-$resources = Join-Path $env:LOCALAPPDATA 'Programs\Ned\resources'
+$install = Join-Path $env:LOCALAPPDATA 'Programs\Ned'
+$registered = Get-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned' -ErrorAction SilentlyContinue
+if ($registered.InstallLocation) { $install = $registered.InstallLocation }
+$resources = Join-Path $install 'resources'
 $runtime = Join-Path $resources 'runtime\windows-x64\openviking'
 $native = Join-Path $resources 'runtime\windows-x64\agent-desktop\agent-desktop.exe'
 $root = Join-Path $env:APPDATA 'Ned\diagnostics'

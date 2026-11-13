@@ -17,10 +17,13 @@ export class EditorNetwork {
   }
   async close() { this.server?.closeAllConnections(); await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); }); }
 }
-export function editorSettings(executable: string, agent: string, descriptor: string, proxy: string, clangd?: string) {
+export function editorSettings(executable: string, agent: string, descriptor: string, proxy: string, clangd?: string, platform: NodeJS.Platform = process.platform) {
   return {
     telemetry: { diagnostics: false, metrics: false }, auto_update: false,
     restore_on_startup: 'launchpad',
+    // Avoid the native picker callback crash in the managed Windows editor.
+    // Ned's tray picker uses the host's real Windows shell profile instead.
+    ...(platform === 'win32' ? { use_system_path_prompts: false } : {}),
     proxy, server_url: proxy, credentials_url: 'http://127.0.0.1:1/ned-private-credentials',
     auto_install_extensions: { html: false }, suggest_extensions: false,
     granted_extension_capabilities: [], language_servers: [], format_on_save: 'off',

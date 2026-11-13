@@ -2,10 +2,12 @@ Unicode true
 !include "MUI2.nsh"
 !include "LogicLib.nsh"
 !include "x64.nsh"
+!include "FileFunc.nsh"
 
 Name "Ned"
 OutFile "${NED_OUT_FILE}"
 InstallDir "$LOCALAPPDATA\Programs\Ned"
+InstallDirRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "InstallLocation"
 RequestExecutionLevel user
 ; The pinned NSIS compiler has a 31-bit data block. Solid compression stores
 ; the entire uncompressed payload there first; six MCPs exceed that limit.
@@ -17,6 +19,8 @@ UninstallIcon "${NED_ICON}"
 ShowInstDetails show
 ShowUninstDetails show
 !define MUI_ABORTWARNING
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE VerifyInstallDirectory
+!insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -32,8 +36,68 @@ Function .onInit
   ${EndIf}
 FunctionEnd
 
+; Reject drive roots and nonempty folders that are not an existing Ned install.
+; This guard also runs for /S /D=... before any resource cleanup.
+Function CheckInstallDirectory
+  StrCpy $9 "invalid"
+  GetFullPathName $0 "$INSTDIR"
+  ${GetRoot} "$0" $1
+  ${If} $0 == "$1"
+  ${OrIf} $0 == "$1\"
+    Return
+  ${EndIf}
+  IfFileExists "$0\Ned.exe" 0 check_empty
+  IfFileExists "$0\resources\app.asar" 0 check_empty
+  IfFileExists "$0\resources\ned\agent.cjs" 0 check_empty
+    StrCpy $9 "valid"
+    Return
+  check_empty:
+  IfFileExists "$0\*.*" 0 directory_valid
+  FindFirst $2 $3 "$0\*.*"
+  check_next:
+    ${If} $3 == ""
+      FindClose $2
+      Goto directory_valid
+    ${EndIf}
+    ${If} $3 != "."
+    ${AndIf} $3 != ".."
+      FindClose $2
+      Return
+    ${EndIf}
+    FindNext $2 $3
+    Goto check_next
+  directory_valid:
+    StrCpy $9 "valid"
+FunctionEnd
+
+Function .onVerifyInstDir
+  Call CheckInstallDirectory
+  ${If} $9 != "valid"
+    Abort
+  ${EndIf}
+FunctionEnd
+
+Function VerifyInstallDirectory
+  Call CheckInstallDirectory
+  ${If} $9 != "valid"
+    MessageBox MB_OK|MB_ICONSTOP "설치할 빈 전용 폴더 또는 기존 Ned 설치 폴더를 선택하세요. 드라이브 루트나 다른 파일이 있는 폴더에는 설치할 수 없습니다." /SD IDOK
+    SetErrorLevel 1
+    Abort
+  ${EndIf}
+  ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "InstallLocation"
+  ${If} $0 != ""
+  ${AndIf} $0 != $INSTDIR
+    IfFileExists "$0\Ned.exe" 0 previous_missing
+    MessageBox MB_OK|MB_ICONSTOP "설치 위치를 옮기려면 기존 Ned를 먼저 제거한 뒤 새 경로에 설치하세요. 설정·대화·지식은 사용자 데이터 폴더에 유지됩니다." /SD IDOK
+    SetErrorLevel 1
+    Abort
+  ${EndIf}
+  previous_missing:
+FunctionEnd
+
 Section "Ned"
   SetShellVarContext current
+  Call VerifyInstallDirectory
   ; Only installed product resources are replaced; user data is outside INSTDIR.
   ; Close the app before upgrading, so runtime files are not in use.
   RMDir /r "$INSTDIR\resources"
@@ -95,9 +159,13 @@ SectionEnd
 
 Section "Uninstall"
   SetShellVarContext current
-  Delete "$DESKTOP\Ned.lnk"
-  RMDir /r "$SMPROGRAMS\Ned"
-  DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned"
+  ; A prior installation on another drive must not remove the active shortcuts.
+  ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "InstallLocation"
+  ${If} $0 == $INSTDIR
+    Delete "$DESKTOP\Ned.lnk"
+    RMDir /r "$SMPROGRAMS\Ned"
+    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned"
+  ${EndIf}
   RMDir /r "$INSTDIR"
   ; APPDATA\Ned, including encrypted settings and history, is retained.
 SectionEnd

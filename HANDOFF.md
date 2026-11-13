@@ -170,3 +170,7 @@ Windows 사용자 후속 결과: probe-2의 파일 5개 해시 모두 일치, na
 수정 검증: typecheck 통과, 개인 지식 관련 10/10 Linux 검사 통과(102.422초, skip0). 실제0.5.0 벡터 포함/미포함→0.5.4 SDK 가져오기와 두 프로젝트의 개인 검색을 확인했다. 벡터 미포함 시험은 공개 /fs/stat만 HTTP500이 되도록 주입했으며 목록 확인/export/import는 정상 성공했다. 401/403/잘못된200응답은 export를 막고 진단에는 합성 키/자료 이름/내용이 노출되지 않음을 검사했다. 실제 사용자 서버의 500 원인·자료 내보내기 성공은 새 도구로 확인해야 한다.
 
 독립 export fix 2 공개: source8cad5bba288884640a3f60346f014271a4924a3b, archive7761bytes, SHA7d83953085a695d54c145cda67fe49cc7246faa454a8e71fc1e8ac49b362717b. 7개 ASCII 파일(표준 CMD/진단 CMD/Python/안내/라이선스/manifest)을 검증하고 공개 전체 다운로드 byte/SHA도 일치했다. /ready HTTP503의 AGFS/VectorDB 등은 고정 상태만 남겨 민감 오류 메시지를 제거하며 최종 8/8 검사도 통과했다. 기존 v0.3.3 EXE/TGZ/태그는 변경하지 않고 릴리스 본문에 독립 도구를 추가한다. 사용자에게 새 폴더의 EXPORT_PERSONAL.cmd 재시도, 계속 실패하면 CHECK_EXPORT JSON만 요청했다. 실제 사용자 성공은 아직 미확인이다.
+
+## 2026-11-13: 0.3.6 fixes
+
+Desktop snapshot 1.2.0 compact response fix and original 0.3.4/0.3.5 reversible patch are implemented. The 0.3.5 user reported native folder selection crash 0xc000041d, unknown module, after about 17 minutes. Its cause remains unconfirmed. Windows editor native prompts are disabled; the host tray offers a system folder picker with real shell navigation and private-profile CLI dispatch. Installation directory selection is added; existing InstallLocation is reused, unrelated nonempty folders/roots refused, and custom-path diagnostics updated. Data remains APPDATA/Ned. See validation-0.3.6.md and release metadata for the actual build and Windows acceptance boundary.

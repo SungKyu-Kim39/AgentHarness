@@ -42,3 +42,9 @@ Ned는 기존 0.2.5/0.2.6에서 제공하던 Windows asyncio 내부 TCP socketpa
 ## Legacy export preflight 500
 
 `EXPORT_PREFLIGHT HTTP_500`은 OVPack 생성 전의 기존 서버 읽기 선확인 단계다. 벡터 제외 옵션은 이 단계에 영향을 주지 않는다. 독립 `Ned-openviking-export-fix-2.tgz`를 새 폴더에서 사용한다. 목록 선확인도 실패하면 `CHECK_EXPORT.cmd`의 JSON만 확인한다. health가 healthy여도 선택 사용자 루트/저장소가 준비됐다는 뜻은 아니다. 이 도구는 버전/인증 모드, health/ready/stat/list의 HTTP 상태와 고정 오류 코드만 보고하며 로그 원문·자료·키는 출력하지 않는다. 내보내기/모델 질문은 요청하지 않는다. 기존 v0.3.3 설치 EXE/TGZ는 유지한다.
+
+## 0.3.6 folder selection and late exits
+
+0xc000041d is a fatal Windows user-callback exception. The 0.3.5 report identifies no fault module, so it does not establish a GPU, input-method or desktop-tool cause. After a long-running session the warning now says editor exit rather than startup failure. For the reported Open Folder trigger, the Windows editor uses its internal path picker; use the Ned tray's project folder picker for actual Desktop/Favorites navigation. The host preserves its normal Windows shell environment while forwarding only the selected directory to the private editor profile. A shell-library heading or other virtual item with no filesystem directory is not itself a project folder.
+
+After a custom-location install, CHECK_AGENT, CHECK_DESKTOP, CHECK_OPENVIKING and EXPORT_PERSONAL resolve HKCU Uninstall/Ned InstallLocation instead of assuming the C-drive default. Historical patches retain their original exact target hashes and locations; do not apply them to 0.3.6.

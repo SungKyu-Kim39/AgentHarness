@@ -73,7 +73,15 @@ def probe(command, env, acp=False):
 
 def main():
     if os.name != 'nt': raise ValueError('WINDOWS_ONLY')
+    import winreg
     app = Path(os.environ['LOCALAPPDATA'])/'Programs/Ned'
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned') as key:
+            value, kind = winreg.QueryValueEx(key, 'InstallLocation')
+            if kind == winreg.REG_SZ and isinstance(value, str) and value:
+                app = Path(value)
+    except FileNotFoundError:
+        pass
     root = Path(os.environ['APPDATA'])/'Ned'
     resources = app/'resources'
     exe = app/'Ned.exe'; bridge = resources/'ned/agent.cjs'; descriptor = root/'runtime/ned-agent.json'
