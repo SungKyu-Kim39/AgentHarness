@@ -38,3 +38,7 @@ Ned는 기존 0.2.5/0.2.6에서 제공하던 Windows asyncio 내부 TCP socketpa
 ## Desktop connection diagnosis (0.3.3)
 
 `diagnostics/desktop-status.json`은 고정 도구 이름·실패 분류·종료 확인 여부만 기록한다. 원본 오류나 창 제목은 포함하지 않는다. `CHECK_DESKTOP.cmd`는 Windows PowerShell 기반이며 번들 Python이 불완전해도 실행할 수 있다. Python 표준 라이브러리 2개·pywin32 bootstrap·Python EXE·감독기 해시를 검사하고 네이티브 CLI/MCP 상태만 확인한다. 설치 파일 누락과 UIA/MCP 응답 실패를 구분하고, 확인 없이 외부망 차단·승인·무결성 검사를 풀지 않는다.
+
+## Legacy export preflight 500
+
+`EXPORT_PREFLIGHT HTTP_500`은 OVPack 생성 전의 기존 서버 읽기 선확인 단계다. 벡터 제외 옵션은 이 단계에 영향을 주지 않는다. 독립 `Ned-openviking-export-fix-2.tgz`를 새 폴더에서 사용한다. 목록 선확인도 실패하면 `CHECK_EXPORT.cmd`의 JSON만 확인한다. health가 healthy여도 선택 사용자 루트/저장소가 준비됐다는 뜻은 아니다. 이 도구는 버전/인증 모드, health/ready/stat/list의 HTTP 상태와 고정 오류 코드만 보고하며 로그 원문·자료·키는 출력하지 않는다. 내보내기/모델 질문은 요청하지 않는다. 기존 v0.3.3 설치 EXE/TGZ는 유지한다.

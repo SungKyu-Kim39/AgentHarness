@@ -107,7 +107,7 @@ test('the offline exporter only calls the selected local export API and never ov
   const f = await fixture(t); const pack = await readFile(f.archive); let calls = 0;
   const server = createServer(async (req, res) => {
     calls++;
-    if (req.method === 'GET') { assert.ok(req.url?.startsWith('/api/v1/fs/stat?')); assert.equal(req.headers.authorization, 'Bearer synthetic-local-key'); res.writeHead(200).end('{}'); return; }
+    if (req.method === 'GET') { assert.ok(req.url?.startsWith('/api/v1/fs/ls?')); assert.equal(req.headers.authorization, 'Bearer synthetic-local-key'); res.writeHead(200).end(JSON.stringify({status:'ok',result:[]})); return; }
     assert.equal(req.method, 'POST'); assert.equal(req.url, '/api/v1/pack/export');
     assert.equal(req.headers.authorization, 'Bearer synthetic-local-key');
     let text = ''; for await (const chunk of req) text += chunk;
@@ -133,7 +133,7 @@ except ValueError: print('REJECTED')
 
 test('legacy export separates auth and pack HTTP failures, supports explicit no-vector mode and removes partial output',async t=>{
  const f=await fixture(t);let failAt='auth';const calls:any[]=[];
- const server=createServer(async(req,res)=>{calls.push(req.method);if(req.method==='GET'){res.writeHead(failAt==='auth'?401:200).end('{}');return;}let raw='';for await(const b of req)raw+=b;assert.equal(JSON.parse(raw).include_vectors,false);res.writeHead(500).end('private server detail');});
+ const server=createServer(async(req,res)=>{calls.push(req.method);if(req.method==='GET'){res.writeHead(failAt==='auth'?401:200).end(JSON.stringify({status:'ok',result:[]}));return;}let raw='';for await(const b of req)raw+=b;assert.equal(JSON.parse(raw).include_vectors,false);res.writeHead(500).end('private server detail');});
  await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise<void>(r=>{server.closeAllConnections();server.close(()=>r());}));
  const base='http://127.0.0.1:'+(server.address() as any).port,out=path.join(f.root,'failed.ovpack');
  const code=`import importlib.util,sys,urllib.error,os
@@ -159,4 +159,37 @@ test('personal imports wait for actual indexing and never advertise ready when c
  while(!waiting)await new Promise(r=>setTimeout(r,5));assert.equal((await manager.status())[0].status,'importing');
  release();await assert.rejects(pending,/OV_PERSONAL_INDEX/);assert.equal((await manager.status())[0].status,'failed');
  assert.equal(JSON.parse(await manager.search('compiler',3)).results.length,0);
+});
+
+test('export diagnostic reveals only fixed metadata and the exporter uses authenticated minimal listing instead of failing stat',async t=>{
+ const f=await fixture(t),pack=await readFile(f.archive);let authFailure=false,invalidList=false,packCalls=0;const calls:string[]=[];
+ const secret='DO_NOT_REPORT_PRIVATE_KEY',privateText='PRIVATE_DOCUMENT_NAME_AND_CONTENT';
+ const server=createServer(async(req,res)=>{
+  const url=new URL(req.url!,'http://localhost');calls.push(req.method+' '+url.pathname);
+  assert.equal(req.headers.authorization,'Bearer '+secret);assert.equal(req.headers['x-openviking-account'],'default');assert.equal(req.headers['x-openviking-user'],'default');
+  res.setHeader('Content-Type','application/json');
+  if(url.pathname==='/health'){res.end(JSON.stringify({version:'0.5.0',healthy:true,auth_mode:'trusted',role:'user',account_id:'default',user_id:'default',private:privateText}));return;}
+  if(url.pathname==='/ready'){res.end(JSON.stringify({status:'ok',checks:{private:privateText}}));return;}
+  if(url.pathname==='/api/v1/fs/stat'){res.writeHead(500).end(JSON.stringify({error:{code:'INTERNAL',message:secret,details:privateText}}));return;}
+  if(url.pathname==='/api/v1/fs/ls'){
+   assert.equal(url.searchParams.get('simple'),'true');assert.equal(url.searchParams.get('node_limit'),'1');assert.equal(url.searchParams.get('include_abstract'),'false');assert.equal(url.searchParams.get('recursive'),'false');
+   res.writeHead(authFailure?403:200).end(JSON.stringify(authFailure?{error:{code:'PERMISSION_DENIED',message:secret}}:invalidList?{status:'error',error:{code:'INTERNAL',message:secret}}:{status:'ok',result:[privateText]}));return;
+  }
+  assert.equal(req.method,'POST');assert.equal(url.pathname,'/api/v1/pack/export');packCalls++;res.end(pack);
+ });
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));t.after(()=>new Promise<void>(r=>{server.closeAllConnections();server.close(()=>r())}));
+ const base='http://127.0.0.1:'+(server.address() as any).port,out=path.join(f.root,'new.ovpack');
+ const program=`import importlib.util,sys,json,urllib.error
+spec=importlib.util.spec_from_file_location('exporter',sys.argv[1]);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+if sys.argv[4]=='diagnose':print(json.dumps(m.diagnose_export(sys.argv[2],'${secret}','default','default')))
+else:
+ try:print(json.dumps(m.export_user(sys.argv[2],'${secret}','default','default',sys.argv[3])))
+ except urllib.error.HTTPError as e:print(e.export_stage,e.code)
+ except ValueError:print('REJECTED_RESPONSE')
+`;
+ const run=(mode:string)=>execute('python3',['-I','-S','-B','-c',program,path.resolve('distribution/export-openviking-personal.py'),base,out,mode]);
+ const diagnostic=(await run('diagnose')).stdout;assert.doesNotMatch(diagnostic,new RegExp(secret+'|'+privateText));const report=JSON.parse(diagnostic);assert.equal(report.exportRequested,false);assert.equal(report.results[2].httpStatus,500);assert.equal(report.results[2].serverCode,'INTERNAL');assert.equal(report.results[3].readable,true);assert.equal(packCalls,0);await assert.rejects(readFile(out));
+ calls.length=0;assert.equal(JSON.parse((await run('export')).stdout).status,'exported');assert.deepEqual(calls,['GET /api/v1/fs/ls','POST /api/v1/pack/export']);assert.deepEqual(await readFile(out),pack);
+ await rm(out);await rm(out+'.sha256');invalidList=true;assert.match((await run('export')).stdout,/REJECTED_RESPONSE/);assert.equal(packCalls,1);await assert.rejects(readFile(out));
+ invalidList=false;authFailure=true;assert.match((await run('export')).stdout,/EXPORT_PREFLIGHT 403/);assert.equal(packCalls,1);
 });

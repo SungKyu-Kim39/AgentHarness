@@ -7,7 +7,7 @@ if not exist "%NED_PY%" (
   pause
   exit /b 1
 )
-"%NED_PY%" -I -B "%~dp0export-openviking-personal.py" %*
+"%NED_PY%" -I -S -B "%~dp0export-openviking-personal.py" %*
 set "NED_EXIT=%ERRORLEVEL%"
 echo EXIT_CODE=%NED_EXIT%
 pause

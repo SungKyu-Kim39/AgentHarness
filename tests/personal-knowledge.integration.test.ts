@@ -15,7 +15,7 @@ const execute = promisify(execFile);
 const executable = path.resolve('.cache/openviking/env-linux/bin/python3');
 const legacyPackage = path.resolve('.cache/openviking-050-review/package');
 
-for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includeVectors ? 'vector' : 'no-vector'} export imports into 0.5.4 and personal knowledge is readable from two projects`,
+for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includeVectors ? 'vector' : 'no-vector with broken public stat'} export imports into 0.5.4 and personal knowledge is readable from two projects`,
   { skip: !existsSync(executable) || !existsSync(legacyPackage), timeout: 300000 }, async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-personal-live-'));
   const services:OpenVikingService[]=[];let tools:HostTools|undefined;let endpoint:ReturnType<typeof createServer>|undefined;
@@ -36,7 +36,16 @@ for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includ
   let diagnostics='';
   const launcher=await readFile('scripts/openviking-launch.py','utf8');
   const legacyLauncher=path.join(root,'launch-050.py');
-  await writeFile(legacyLauncher,launcher.replace('    from openviking.server.app import create_app',`    sys.path.insert(0, ${JSON.stringify(legacyPackage)})\n    from openviking.server.app import create_app`));
+  const statFault = includeVectors ? '' : `
+    from openviking.service.fs_service import FSService
+    original_stat = FSService.stat
+    async def faulty_public_stat(self, uri, ctx, **kwargs):
+        if kwargs.get('include_lock_status'):
+            raise RuntimeError('TEST_PUBLIC_STAT_FAILURE')
+        return await original_stat(self, uri, ctx, **kwargs)
+    FSService.stat = faulty_public_stat
+`;
+  await writeFile(legacyLauncher,launcher.replace('    from openviking.server.app import create_app',`    sys.path.insert(0, ${JSON.stringify(legacyPackage)})\n${statFault}    from openviking.server.app import create_app`));
   const currentLauncher=path.join(root,'launch-current-test.py');
   await writeFile(currentLauncher,launcher.replace('    configure_user_pack_import()',`    configure_user_pack_import()
     from openviking.storage.ovpack import operations as test_pack_operations
@@ -62,6 +71,10 @@ for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includ
   await api('/api/v1/content/write',{uri:'viking://user/default/resources/legacy-note.md',content:'The preferred compiler for Project Amber is clang. Preserve VxWorks support.',mode:'create',wait:true,processing_mode:'vectors_only'});
   await api('/api/v1/content/write',{uri:'viking://user/default/memories/preferences/compiler.md',content:'Prefer clang for Project Amber.',mode:'create',wait:true,processing_mode:'vectors_only'});
   await api('/api/v1/content/write',{uri:'viking://user/default/peers/codex.tool@local/memories/preferences/errors.md',content:'Prefer explicit error codes in legacy modules.',mode:'create',wait:true,processing_mode:'vectors_only'});
+  if (!includeVectors) {
+    const statResponse=await fetch(internals.baseUrl+'/api/v1/fs/stat?uri=viking%3A%2F%2Fuser%2Fdefault',{headers:{Authorization:'Bearer '+internals.token,'X-API-Key':internals.token,'X-OpenViking-Account':'default','X-OpenViking-User':'default'}});
+    assert.equal(statResponse.status,500,'broken public stat must be reproduced before the authenticated export');await statResponse.arrayBuffer();
+  }
   const archive=path.join(root,'legacy-personal.ovpack');
   const exportCode=`import sys,importlib.util,json
 spec=importlib.util.spec_from_file_location('exporter',sys.argv[1]);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
