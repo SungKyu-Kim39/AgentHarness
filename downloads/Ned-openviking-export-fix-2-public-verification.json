@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "tool": "Ned-openviking-export-fix-2",
+  "sourceCommit": "8cad5bba288884640a3f60346f014271a4924a3b",
+  "verifiedAt": "2026-11-13T01:35:15.859989+00:00",
+  "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-openviking-export-fix-2.tgz",
+  "httpStatus": 200,
+  "bytes": 7761,
+  "sha256": "7d83953085a695d54c145cda67fe49cc7246faa454a8e71fc1e8ac49b362717b",
+  "fullPublicDownloadMatchesLocal": true,
+  "containsUserData": false
+}
