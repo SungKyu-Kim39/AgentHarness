@@ -1,5 +1,9 @@
 # Ned 0.3.3 Windows x64
 
+## OpenViking 자료 내보내기 수정 도구 2
+
+`EXPORT_PREFLIGHT HTTP_500`이면 [독립 수정 도구 2 · 약 8KB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-openviking-export-fix-2.tgz)를 **새 폴더**에 압축 해제하고 `EXPORT_PERSONAL.cmd`를 실행한다. 재설치 없이 기존 서버를 켜 둔 채 사용한다. 같은 인증/범위의 최소 목록 조회로 선확인하며 원본 DB·인증은 바꾸지 않는다. 오류가 계속되면 `CHECK_EXPORT.cmd`의 안전한 JSON만 확인한다. preflight 오류에 벡터 옵션은 영향을 주지 않는다. [SHA-256](Ned-openviking-export-fix-2.tgz.sha256) · [검증](Ned-openviking-export-fix-2-validation.json) · [이관 안내](../docs/openviking-personal-migration.md). 기존 v0.3.3 EXE/TGZ는 그대로 보존한다.
+
 [GitHub 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.3) · [검사 기록](Ned-0.3.3-validation.json) · [공개 다운로드 확인](Ned-0.3.3-public-verification.json)
 
 - [폐쇄망 반입 TGZ · EXE/JSON/안내/진단/소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.3-windows-x64.tgz) (1,173,675,928 bytes)

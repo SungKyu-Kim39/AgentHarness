@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "tool": "Ned-openviking-export-fix-2",
+  "sourceCommit": "8cad5bba288884640a3f60346f014271a4924a3b",
+  "includesUserData": false,
+  "requiresEmployeePackageInstall": false,
+  "files": {
+    "EXPORT_PERSONAL.cmd": "910d777d9b99aaecbdd0ca1af254ac216afdad04129ab165f11b3a6e441b85ff",
+    "EXPORT_PERSONAL_NO_VECTORS.cmd": "3d13f2a915abed4995c4cd593856860c4a0498344ec3d2e3674ce18b3cfcccdf",
+    "CHECK_EXPORT.cmd": "561dcaf3d4c35c293d95afbf944856c4a760142d2a4b196ab975ca4786906101",
+    "export-openviking-personal.py": "d6ab54b2b052a4842c90549cb808bfa197450f896f352b0d5ca35f6dc9ee8bb8",
+    "README.txt": "0c50967a78bb630d821903627345c79cb8c484d62da6fbcba12e41779029bcf1",
+    "LICENSE-Ned.txt": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+  },
+  "archive": "Ned-openviking-export-fix-2.tgz",
+  "bytes": 7761,
+  "sha256": "7d83953085a695d54c145cda67fe49cc7246faa454a8e71fc1e8ac49b362717b",
+  "asciiPaths": true,
+  "verifiedArchiveFiles": 7
+}

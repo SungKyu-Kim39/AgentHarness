@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "tool": "Ned-openviking-export-fix-2",
+  "sourceCommit": "8cad5bba288884640a3f60346f014271a4924a3b",
+  "recordedAt": "2026-11-13T01:34:27.208576+00:00",
+  "os": "linux",
+  "modelEndpoint": "local synthetic OpenAI-compatible fixtures, dimension 4; no company endpoint",
+  "typecheck": "passed",
+  "tests": {
+    "roundtripAndScope": {
+      "pass": 10,
+      "fail": 0,
+      "skip": 0,
+      "durationMs": 102421.60508
+    },
+    "finalReadinessPrivacy": {
+      "pass": 8,
+      "fail": 0,
+      "skip": 0,
+      "durationMs": 2300.909968
+    }
+  },
+  "realSdkVersions": {
+    "source": "0.5.0",
+    "destination": "0.5.4"
+  },
+  "reproducedCase": "Public stat returns HTTP500; authenticated minimal listing/export and no-vector import/search still succeed on the real SDKs.",
+  "securityChecks": [
+    "Denied 401/403 and malformed 200 stop before export",
+    "Diagnostic omits synthetic key, private names, raw error messages/details",
+    "HTTP503 backend checks are reduced to fixed status categories",
+    "No source DB or auth configuration changes",
+    "No package installation or external internet used by the helper"
+  ],
+  "userReportedServer": {
+    "version": "0.5.0",
+    "healthy": true,
+    "authMode": "trusted",
+    "failure": "EXPORT_PREFLIGHT HTTP500"
+  },
+  "deploymentExportSuccessVerified": false,
+  "originalServer500CauseIdentified": false,
+  "archive": {
+    "file": "Ned-openviking-export-fix-2.tgz",
+    "bytes": 7761,
+    "sha256": "7d83953085a695d54c145cda67fe49cc7246faa454a8e71fc1e8ac49b362717b",
+    "asciiPaths": true,
+    "files": 7
+  },
+  "existingNed033InstallersChanged": false
+}
