@@ -2,6 +2,14 @@
 
 현재 제품명은 **Ned**, 버전과 배포 기준은 0.3.3이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
 
+## 우선 확인: 0.3.3 실행 번들 결함과 수정 패치
+
+사용자가 원본 0.3.3 첫 실행에서 `Cannot find module './impl/format'`을 보고했다. 실제 게시 EXE에서 추출한 ASAR로 동일 오류를 재현했다. jsonc-parser의 UMD factory가 require를 별칭으로 전달하므로 esbuild가 상대 하위 모듈을 묶지 못했다. ESM 진입점만 명시적으로 선택하도록 빌드를 수정했으며, 실제 번들/ASAR의 top-level import 초기화 검사를 빌드와 설치기 감사에 추가했다. Electron app.setName 직전 중단하여 사용자 프로필·서비스·모델은 시작하지 않는다. 과거 소스 테스트/해시 감사는 이 초기화 성공을 검증하지 못했음을 기록한다.
+
+`downloads/Ned-jsonc-startup-fix-1.tgz` (4,247,742 bytes, SHA-256 `674719d33e1e9737c86c51d2fe734d5e07eaea2a416082a5b535f641e2c717db`)는 소스 `fe5f7c32e0785c0998feca42db42273d77144200`에 연결된다. 정확한 원본 0.3.3 EXE/ASAR만 받아 main.cjs만 바꾼 ASAR로 교체하며 원본은 별도 백업한다. APPLY_FIX.cmd/ROLLBACK_FIX.cmd는 설치 Python의 `-I -S -B`를 사용한다. 실제 핀 고정 파일로 적용·멱등·복구·재적용과 설정/지식 fixture 보존을 확인했고, 집중 8개 및 타입 검사가 통과했다. 공개 URL 전체 바이트/해시도 인증 없이 확인했다. 실제 Windows 재실행 성공은 아직 사용자 확인 전이다.
+
+원본 0.3.3 EXE/TGZ 및 릴리스 태그는 덮어쓰지 않았다. 다운로드/릴리스 안내에서 위 패치를 필수로 명시한다. 향후 전체 설치본은 새 버전으로 발행하고 새 module smoke gate를 통과시켜야 한다. OpenViking 독립 내보내기 수정 도구 2는 별도로 유지하며, 실제 기존 서버에서 성공했는지는 아직 확인 전이다.
+
 ## 유지해야 할 결정
 
 - 검은 배경의 흰색 볼드 Ned 생성 아이콘: `assets/ned-icon.png`, `ned-icon.ico`.
