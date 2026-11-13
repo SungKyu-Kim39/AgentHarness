@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "fe5f7c32e0785c0998feca42db42273d77144200",
+  "targetVersion": "0.3.3",
+  "archiveSha256": "674719d33e1e9737c86c51d2fe734d5e07eaea2a416082a5b535f641e2c717db",
+  "publishedBaselineReproduced": true,
+  "actualPatchedAsarModuleSmoke": {
+    "passed": true,
+    "stoppedBeforeApplicationStartup": true,
+    "nonBuiltinImports": [
+      "electron"
+    ]
+  },
+  "allOriginalArchiveEntriesRetained": true,
+  "onlyMainCjsChanged": true,
+  "realPinnedPayloadApplyIdempotenceRollbackReapply": true,
+  "userDataFixturesUnchanged": true,
+  "focusedTests": 8,
+  "typecheck": true,
+  "windowsAcceptance": false
+}

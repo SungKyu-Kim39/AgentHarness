@@ -1,5 +1,9 @@
 # Ned 0.3.3 Windows x64
 
+## 0.3.3 실행 오류 수정 패치
+
+`Cannot find module './impl/format'`은 0.3.3 JSONC 라이브러리 번들 오류다. [실행 수정 패치 1 · 약 4.2MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-jsonc-startup-fix-1.tgz)를 새 폴더에 압축 해제한다. Ned·개인 Zed를 종료하고 `APPLY_FIX.cmd`를 실행하여 `applied` 또는 `already-applied`, `EXIT_CODE=0`을 확인한 뒤 기존 바로가기로 실행한다. 설정·대화·지식·편집기 환경을 유지하며 원래 앱 번들을 백업한다. 복구는 `ROLLBACK_FIX.cmd`이다. 원본 0.3.3 EXE/TGZ는 변경하지 않았으므로 해당 설치본에는 이 패치가 필요하다. [적용 안내](../docs/ned-jsonc-startup-fix-1.txt) · [SHA-256](Ned-jsonc-startup-fix-1.tgz.sha256) · [검증](Ned-jsonc-startup-fix-1-validation.json).
+
 ## OpenViking 자료 내보내기 수정 도구 2
 
 `EXPORT_PREFLIGHT HTTP_500`이면 [독립 수정 도구 2 · 약 8KB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-openviking-export-fix-2.tgz)를 **새 폴더**에 압축 해제하고 `EXPORT_PERSONAL.cmd`를 실행한다. 재설치 없이 기존 서버를 켜 둔 채 사용한다. 같은 인증/범위의 최소 목록 조회로 선확인하며 원본 DB·인증은 바꾸지 않는다. 오류가 계속되면 `CHECK_EXPORT.cmd`의 안전한 JSON만 확인한다. preflight 오류에 벡터 옵션은 영향을 주지 않는다. [SHA-256](Ned-openviking-export-fix-2.tgz.sha256) · [검증](Ned-openviking-export-fix-2-validation.json) · [이관 안내](../docs/openviking-personal-migration.md). 기존 v0.3.3 EXE/TGZ는 그대로 보존한다.
@@ -12,7 +16,7 @@
 
 최초 설치 EXE 옆 `agent-config.json` 자동 준비, **현재 대화·프로젝트의 파일 수정 자동 승인**, 데스크톱 연결 복구와 승인한 GUI 앱 실행을 추가했다. 편집기·대화창 글꼴/크기/배치·키맵·작업공간 상태를 업데이트 후에도 보존하고 Windows 편집기 창 아이콘에도 Ned 이미지를 적용한다.
 
-Ned와 개인 Zed를 완전히 종료하고 새 폴더에 압축 해제한 EXE로 업데이트한다. 기존 모델 설정·대화·지식은 보존한다. 저장 설정이 있는 PC는 EXE 옆 JSON으로 덮어쓰지 않는다. 이전 수정 패치를 추가 적용하지 않는다. 파일 수정 승인창의 **현재 대화·프로젝트 자동 승인**으로 켜고 알림 영역에서 해제한다. 앱 실행·화면 조작·빌드는 각각 별도 승인이다.
+Ned와 개인 Zed를 완전히 종료하고 새 폴더에 압축 해제한 EXE로 업데이트한 다음 위의 0.3.3 실행 수정 패치를 적용한다. 기존 모델 설정·대화·지식은 보존한다. 저장 설정이 있는 PC는 EXE 옆 JSON으로 덮어쓰지 않는다. 0.3.1용 이전 수정 패치는 적용하지 않는다. 파일 수정 승인창의 **현재 대화·프로젝트 자동 승인**으로 켜고 알림 영역에서 해제한다. 앱 실행·화면 조작·빌드는 각각 별도 승인이다.
 
 전체 회귀 119개와 마지막 변경 집중 36개·설정 정책 4개 검사가 통과했다. 실제 설치 EXE의 파일/구성 요소 해시와 Ned 아이콘을 검사했고, TGZ 내부 EXE가 같은 해시임을 대조했다. 사용자 Windows 진단에서는 네이티브/감독 MCP와 창 18개 조회가 성공했으며, 새 Ned에서의 실제 계산기 조작·작업표시줄 표시는 아직 별도 확인 대상이다. 아이콘 리소스를 바꾼 관리형 Zed 이미지의 실행 코드·버전 정보는 보존했으며 수정본은 unsigned다. 원본 소스/고지/변경 스크립트와 해시를 포함한다.
 

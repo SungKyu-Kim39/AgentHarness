@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "targetVersion": "0.3.3",
+  "fixId": "ned-jsonc-startup-1",
+  "sourceCommit": "fe5f7c32e0785c0998feca42db42273d77144200",
+  "exeSha256": "a183132ed243fbe91e831c62d8275f5955e2468ee3fdf97b814e231b0bf0d10e",
+  "baselineAsarSha256": [
+    "d0c7cd698f1357231d10012ca9e534588ce4b7b02adefd22d581c09a5765562e"
+  ],
+  "updatedAsarSha256": "4de57e2507ce8a9a2c67bb45f033fcc9424e3022346bcbadb1e1e12a083a8df3",
+  "integrityFuseDisabledInOriginalBinary": true,
+  "hostModuleSmoke": {
+    "passed": true,
+    "stoppedBeforeApplicationStartup": true,
+    "nonBuiltinImports": [
+      "electron"
+    ]
+  },
+  "windowsAcceptance": false,
+  "changes": [
+    "Bundle the static JSONC ESM implementation and all parser/edit/format dependencies",
+    "Run isolated module initialization against the actual ASAR before publication"
+  ],
+  "archiveBytes": 4247742,
+  "archiveSha256": "674719d33e1e9737c86c51d2fe734d5e07eaea2a416082a5b535f641e2c717db"
+}
