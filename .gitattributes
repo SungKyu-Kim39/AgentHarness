@@ -1,4 +1,5 @@
 # Preserve pinned upstream Markdown byte-for-byte, including intentional hard breaks.
 vendor/skills/** -whitespace
+.agents/skills/**/references/upstream.md -whitespace
 downloads/*.exe filter=lfs diff=lfs merge=lfs -text
 downloads/*.tgz filter=lfs diff=lfs merge=lfs -text

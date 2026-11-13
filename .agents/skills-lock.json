@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "scope": "codex-project-development",
+  "productBundle": false,
+  "upstreamExecution": "disabled",
+  "updatedAt": "2026-11-13",
+  "skills": [
+    {
+      "name": "inherit-legacy-style",
+      "directory": "skills/inherit-legacy-style",
+      "license": "MIT",
+      "source": {
+        "repository": "affaan-m/ECC",
+        "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+        "path": "skills/inherit-legacy-style/SKILL.md",
+        "url": "https://github.com/affaan-m/ECC/blob/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/inherit-legacy-style/SKILL.md",
+        "gitBlobSha1": "b43189023a965f2a51e028d4bd098ee3e6d0f135",
+        "licensePath": "LICENSE",
+        "licenseGitBlobSha1": "b832b6f642312312367c07688dc7426db40a82ed"
+      },
+      "files": {
+        "LICENSE": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
+        "SKILL.md": "e4c70ebe54e99ddea98761284d2fb524f87d1a5fcdfc92c1e01df3dcf40d0986",
+        "references/upstream.md": "ccce44b6240e346e2d564a035f45abf01842cfc03f4c0253050b8304c505f709"
+      }
+    },
+    {
+      "name": "change-impact",
+      "directory": "skills/change-impact",
+      "license": "MIT",
+      "source": {
+        "repository": "affaan-m/ECC",
+        "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+        "path": "skills/change-impact/SKILL.md",
+        "url": "https://github.com/affaan-m/ECC/blob/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/change-impact/SKILL.md",
+        "gitBlobSha1": "b220205a5cb783df3acd5bddba46624ada473637",
+        "licensePath": "LICENSE",
+        "licenseGitBlobSha1": "b832b6f642312312367c07688dc7426db40a82ed"
+      },
+      "files": {
+        "LICENSE": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
+        "SKILL.md": "b82135803cc43525614f879e9d3f75166fd5f72d463b7b66b4b46fdaf7b423d0",
+        "references/upstream.md": "b8d8a11417af8b84e93983a8eb682e3b9a16d04f926778eb635c96e90019bf18"
+      }
+    },
+    {
+      "name": "mcp-dependency-review",
+      "directory": "skills/mcp-dependency-review",
+      "license": "MIT",
+      "source": {
+        "repository": "affaan-m/ECC",
+        "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+        "path": "skills/mcp-dependency-review/SKILL.md",
+        "url": "https://github.com/affaan-m/ECC/blob/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/mcp-dependency-review/SKILL.md",
+        "gitBlobSha1": "4b08af8b05d44a0301693fc025a60ca5f4e8ee6d",
+        "licensePath": "LICENSE",
+        "licenseGitBlobSha1": "b832b6f642312312367c07688dc7426db40a82ed"
+      },
+      "files": {
+        "LICENSE": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2",
+        "SKILL.md": "525fb16a61a87a9df51e0991fc82fb1339fdac4db166c30038fb4bee1977686a",
+        "references/upstream.md": "766536baa981710a85c8f761675f6a57f58600fff42b23ccf6171606180f4c12"
+      }
+    },
+    {
+      "name": "diagnosing-bugs",
+      "directory": "skills/diagnosing-bugs",
+      "license": "MIT",
+      "source": {
+        "repository": "mattpocock/skills",
+        "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+        "path": "skills/engineering/diagnosing-bugs/SKILL.md",
+        "url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/diagnosing-bugs/SKILL.md",
+        "gitBlobSha1": "d039541ddd1c46e6ddbd662fe99d49b686fc5e12",
+        "licensePath": "LICENSE",
+        "licenseGitBlobSha1": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+      },
+      "files": {
+        "LICENSE": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+        "SKILL.md": "fee532cf7f9cd406f212e83adbd42a888e56dbbbf4d488c386d725636ca13c9f",
+        "references/upstream.md": "849198df88cdb65fd0d97236604c1fca7ff2f22d2f705f9724a800d0266b118d"
+      }
+    },
+    {
+      "name": "codebase-design",
+      "directory": "skills/codebase-design",
+      "license": "MIT",
+      "source": {
+        "repository": "mattpocock/skills",
+        "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+        "path": "skills/engineering/codebase-design/SKILL.md",
+        "url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/codebase-design/SKILL.md",
+        "gitBlobSha1": "3f63c8146dd2604b419c929e9876b90c30d410e9",
+        "licensePath": "LICENSE",
+        "licenseGitBlobSha1": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+      },
+      "files": {
+        "LICENSE": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+        "SKILL.md": "7b9fca2dcc6ab5be1e51a5631fefd74a45263817907c292e23ae131e6b6e65a9",
+        "references/upstream.md": "2c20617f87ec8af6a434859f381b2f061a69b530444e74eb39e78bb016a6d1e2"
+      }
+    },
+    {
+      "name": "code-review",
+      "directory": "skills/code-review",
+      "license": "MIT",
+      "source": {
+        "repository": "mattpocock/skills",
+        "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+        "path": "skills/engineering/code-review/SKILL.md",
+        "url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/code-review/SKILL.md",
+        "gitBlobSha1": "83183e0ad36fd0eef25d37c7e483284b7e34c1f0",
+        "licensePath": "LICENSE",
+        "licenseGitBlobSha1": "f1dd2c09108dde1a5f56097cee8461b3ea834499"
+      },
+      "files": {
+        "LICENSE": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5",
+        "SKILL.md": "1343d7ea9d1f2335f9496a9e387df39172a2ff2f5a466977cfba6fd9975ac57f",
+        "references/upstream.md": "9c921a8d88138a41401d8897ca1bb852088ab1b7b605cdd04edc13e3e8aab6dd"
+      }
+    }
+  ]
+}
