@@ -23,7 +23,9 @@ const cache = path.join(root,'.cache/ned');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
-const buildCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
+if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
 const run = (command,args,options={}) => execFileSync(command,args,{cwd:root,stdio:'inherit',...options});
 const exists = p => access(p).then(()=>true,()=>false);
 async function prepareZed() {
@@ -161,14 +163,15 @@ async function audit() {
       const proof=await json(path.join(cache,revision,'provenance.json'));
       if(proof.sourceCommit!==buildCommit||proof.buildRevision!==revision)throw new Error('Stale rebuild provenance');
       const actual=await payloadInventory(extracted),generatedInstallerFiles={};
-      for(const name of ['$PLUGINSDIR/System.dll','Uninstall Ned.exe']){
+      for(const name of ['$PLUGINSDIR/System.dll','$PLUGINSDIR/nsDialogs.dll','$PLUGINSDIR/modern-wizard.bmp','Uninstall Ned.exe']){
         if(!actual[name])throw new Error('Missing generated installer file: '+name);
         generatedInstallerFiles[name]=actual[name];delete actual[name];
       }
-      if(JSON.stringify(Object.entries(actual).sort())!==JSON.stringify(Object.entries(proof.payloadInventory).sort()))throw new Error('Installer payload differs from the rebuilt staging');
+      const differences=[...new Set([...Object.keys(actual),...Object.keys(proof.payloadInventory)])].filter(name=>actual[name]!==proof.payloadInventory[name]);
+      if(differences.length)throw new Error('Installer payload differs from staging: '+differences.slice(0,10).join(', '));
       const {payloadInventory:_,...summary}=proof;rebuild={...summary,generatedInstallerFiles};
     }
-    const report={buildRevision:revision||undefined,rebuild,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,hostModuleSmoke,windowsAcceptance:false};
+    const report={auditSourceCommit:verifierCommit,buildRevision:revision||undefined,rebuild,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,hostModuleSmoke,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }
@@ -189,11 +192,15 @@ async function bundle() {
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);
   run('git',['archive','--format=tar.gz','--output='+source,commit,':(exclude)downloads']);
+  if(report.auditSourceCommit && report.auditSourceCommit!==commit){
+    const auditSource=path.join(stage,'source',`Ned-audit-${report.auditSourceCommit.slice(0,12)}-source.tgz`);
+    run('git',['archive','--format=tar.gz','--output='+auditSource,report.auditSourceCommit,':(exclude)downloads']);verifyAsciiTar(auditSource);
+  }
   const files=await verifyAsciiTree(stage);verifyAsciiTar(source);
   const archive=path.join(output,name+'.tgz');run('tar',['-czf',archive,'-C',output,name]);
   verifyAsciiTar(archive);
   const sha=await fileHash(archive);await writeFile(archive+'.sha256',sha+'  '+path.basename(archive)+'\n');
-  await writeFile(path.join(output,'bundle-manifest.json'),JSON.stringify({product:'Ned',version,buildRevision:revision||undefined,sourceCommit:commit,archive:path.basename(archive),bytes:(await stat(archive)).size,sha256:sha,files,installer:report.installer},null,2)+'\n');
+  await writeFile(path.join(output,'bundle-manifest.json'),JSON.stringify({product:'Ned',version,buildRevision:revision||undefined,auditSourceCommit:report.auditSourceCommit,sourceCommit:commit,archive:path.basename(archive),bytes:(await stat(archive)).size,sha256:sha,files,installer:report.installer},null,2)+'\n');
 }
 if(mode==='rebuild') {
   if(!revision)throw new Error('Set NED_BUILD_REVISION for a same-version rebuild');
