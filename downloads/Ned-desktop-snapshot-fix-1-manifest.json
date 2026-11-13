@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "fixId": "ned-desktop-snapshot-1",
+  "sourceCommit": "80f558cd573d506b732ef720caadc68d0fff60e0",
+  "targets": [
+    {
+      "targetVersion": "0.3.4",
+      "payloadFile": "host-0.3.4.asar",
+      "exeSha256": "55bda2ec91e02ef08b6b801551e6ac6cfc1e832a08145dcfca8fa876259efda8",
+      "baselineAsarSha256": [
+        "a33199e61ab6f9c09f2a2b64cef65398e458d5bc90f70d4ac0749d5d1d654da5"
+      ],
+      "updatedAsarSha256": "a03dbae6c34c5629a0c247779f300bbff71b02c1370bd749e282da36376807e2",
+      "onlySnapshotBlockChanged": true,
+      "hostModuleSmoke": {
+        "passed": true,
+        "stoppedBeforeApplicationStartup": true,
+        "nonBuiltinImports": [
+          "electron"
+        ]
+      },
+      "snapshotContractSmoke": {
+        "originalCompactFailureReproduced": true,
+        "patchedCompactSnapshotAccepted": true,
+        "qualifiedMockActionDispatched": true,
+        "postCaptureProcessReplacementRefused": true,
+        "oldRefsCleared": true,
+        "nativeGuiActions": 0
+      }
+    },
+    {
+      "targetVersion": "0.3.5",
+      "payloadFile": "host-0.3.5.asar",
+      "exeSha256": "60a1564e850535d95e2e8f5b3680ba4539a2e8c2a0714d0a19e50efbfe8031b3",
+      "baselineAsarSha256": [
+        "a2e2b9c174a9bdc4963c5cfbe731b5659f4acf360ca147f04624e910fa0fc817"
+      ],
+      "updatedAsarSha256": "6c710073a6afd157e0fdcd78e4fba1cb1e8d01f6036a987c4f7b1573235da662",
+      "onlySnapshotBlockChanged": true,
+      "hostModuleSmoke": {
+        "passed": true,
+        "stoppedBeforeApplicationStartup": true,
+        "nonBuiltinImports": [
+          "electron"
+        ]
+      },
+      "snapshotContractSmoke": {
+        "originalCompactFailureReproduced": true,
+        "patchedCompactSnapshotAccepted": true,
+        "qualifiedMockActionDispatched": true,
+        "postCaptureProcessReplacementRefused": true,
+        "oldRefsCleared": true,
+        "nativeGuiActions": 0
+      }
+    }
+  ],
+  "windowsAcceptance": false,
+  "archiveBytes": 8496378,
+  "archiveSha256": "902bd9a655a26138d3e012d1d48469a776c75655f6349e203ca45b64ef93721a"
+}
