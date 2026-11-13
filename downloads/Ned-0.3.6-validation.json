@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.6",
+  "sourceCommit": "9aeb3cb66cec2be391beddf7548f558ef39aac61",
+  "os": "linux",
+  "recordedAt": "2026-11-13T06:06:55.071073+00:00",
+  "typecheck": "passed",
+  "strictMainTypecheck": "passed",
+  "nedBuild": "passed",
+  "bundledSkills": 36,
+  "skillHashes": "passed",
+  "focusedTests": {
+    "tests": 28,
+    "pass": 27,
+    "fail": 0,
+    "skipped": 1,
+    "duration_ms": 8285.468584
+  },
+  "integrationTests": {
+    "tests": 18,
+    "pass": 18,
+    "fail": 0,
+    "skipped": 0,
+    "duration_ms": 14178.676325
+  },
+  "testCommand": "tsx --test tests/desktop-tools.test.ts tests/editor-startup.test.ts tests/project-open.test.ts tests/ned-installer.test.mjs tests/editor-preferences.test.ts tests/ned-host-bundle.test.mjs tests/ned-snapshot-fix.test.mjs tests/installer-audit.test.mjs; tsx --test tests/ned.integration.test.ts tests/ned-config-restart.test.ts tests/permission-policy.test.ts tests/session-edit-approval.test.ts",
+  "actualInstallerHostModuleSmoke": {
+    "passed": true,
+    "stoppedBeforeApplicationStartup": true,
+    "nonBuiltinImports": [
+      "electron"
+    ]
+  },
+  "actualInstallerSnapshotContract": {
+    "originalCompactFailureReproduced": true,
+    "patchedCompactSnapshotAccepted": true,
+    "qualifiedMockActionDispatched": true,
+    "postCaptureProcessReplacementRefused": true,
+    "oldRefsCleared": true,
+    "nativeGuiActions": 0,
+    "actualInstallerAsarSha256": "4bde28af5f0ec7e483af68b6616b1cc0d94249f809955eeceb1828c73df5e666"
+  },
+  "editorBranding": {
+    "schemaVersion": 1,
+    "component": "Zed v1.28.1 managed editor",
+    "change": "Windows icon resources only; Ned taskbar, Alt-Tab and window-class icon",
+    "originalSha256": "c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a",
+    "modifiedSha256": "01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde",
+    "iconSha256": "98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb",
+    "nonResourceSectionsUnchanged": true,
+    "vendorVersionMetadataPreserved": true,
+    "authenticode": "modified resource image is unsigned; original vendor archive is preserved by the upstream lock"
+  },
+  "installer": {
+    "name": "Ned-0.3.6-win-x64.exe",
+    "bytes": 1176898071,
+    "sha256": "c8d8aa63269118a1fa9d732dc0347631aefbf6e72992fac3c0fb2c276563c326"
+  },
+  "archive": {
+    "name": "Ned-0.3.6-windows-x64.tgz",
+    "bytes": 1173759060,
+    "sha256": "21d03e9bf2af0a776be138a31525435e277c95fdc85882b170c07cb5cdfb297d"
+  },
+  "includedChanges": [
+    "Compact desktop snapshot contract, pre/post capture full identity and expired-ref handling",
+    "Windows editor internal path picker and separate host system project picker with literal private-profile CLI dispatch",
+    "Directory-selection installer with registered location reuse and unrelated-directory refusal",
+    "Custom-install-location diagnostics/export tools",
+    "Late Windows callback-exception classification without guessing a root cause"
+  ],
+  "nativePickerRootCauseConfirmed": false,
+  "windowsAcceptance": false,
+  "unverified": [
+    "Actual Windows 10/11 directory-page install/upgrade, ACLs and custom-drive diagnostics",
+    "Actual Desktop/Favorites selection and project dispatch, editor multi-window lifecycle",
+    "Exact cause of the native 0xc000041d callback failure",
+    "Actual Windows UIA snapshots/actions and real company LLM/embedding endpoints",
+    "Complete external DNS/TCP isolation and private knowledge migration"
+  ],
+  "optionalWineInstallerTest": "skipped: Windows loader unavailable; pinned NSIS fixture compilation passed",
+  "releaseReady": false
+}

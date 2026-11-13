@@ -1,3 +1,23 @@
+# Ned 0.3.6 Windows x64
+
+[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.6) · [검증 기록](Ned-0.3.6-validation.json)
+
+- [폐쇄망 반입 TGZ · EXE/설정/안내/소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-windows-x64.tgz) (1,173,759,060 bytes)
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.6-win-x64.exe) (1,176,898,071 bytes)
+- [TGZ SHA-256](Ned-0.3.6-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.6-win-x64.exe.sha256)
+
+설치 위치 화면에서 `D:\Programs\Ned` 같은 쓰기 가능한 전용 폴더를 선택할 수 있다. 업데이트는 기존 설치 위치를 기본으로 사용한다. 설치 드라이브를 옮길 때는 기존 Ned를 제거한 뒤 새 위치에 설치한다. 설정·대화·지식·편집기 환경은 `%APPDATA%\Ned`에 유지하며 설치 드라이브 변경으로 자동 이동하지 않는다. 관련 없는 파일이 있는 폴더와 드라이브 루트는 거절한다.
+
+Windows 폴더 선택 문제 대응: **알림 영역 Ned → 프로젝트 폴더 열기 · 바탕화면 / 즐겨찾기**를 사용한다. 실제 Windows 사용자 폴더에서 고른 경로를 전용 편집기로 전달한다. 편집기 내부 Open Folder는 내부 경로 선택창으로 전환한다. 보고된 네이티브 콜백 예외 경로를 피하는 변경이며 정확한 종료 원인은 아직 확정되지 않았다.
+
+`ned_host_desktop_snapshot`의 실제 compact 응답 형식을 처리하고 캡처 전후 창 신원을 확인한다. 이전 스냅샷 전용 패치를 추가 적용하지 않는다. 권한 선택·설정 자동 재시작·기존 환경 보존을 유지한다. 모델 응답 대기의 기본 제한은 추가하지 않았다.
+
+검사45개 통과, 선택적 Windows/Wine 실행1개 제외. 고정 NSIS 컴파일·타입·빌드·스킬36개·실제 Linux OpenCode/ACP 연동과 설치 EXE/TGZ 해시·ASCII·소스 대응 검사를 수행했다. 실제 Windows 설치·폴더 선택·데스크톱 조작·사내망 전체 수용은 별도 확인 대상이다.
+
+[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/validation-0.3.6.md) · [라이선스](../docs/license-policy.md)
+
+---
+
 # Ned 0.3.5 Windows x64
 
 [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.5) · [검증 기록](Ned-0.3.5-validation.json) · [공개 다운로드 전체 검사](Ned-0.3.5-public-verification.json)
