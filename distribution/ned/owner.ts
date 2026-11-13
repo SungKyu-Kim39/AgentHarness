@@ -16,6 +16,7 @@ export class AgentOwner {
   private endpoint = '';
   private stopping = false;
   private cancelled = new Set<Promise<void>>();
+  private unwatchPermissions?: () => void;
   constructor(private root: string, private runtime: NativeRuntime, private connection: Credentials,
     private selectProject: (directory: string) => Promise<boolean>) {
     this.descriptor = path.join(root, 'runtime', 'ned-agent.json');
@@ -39,6 +40,11 @@ export class AgentOwner {
           authenticated = true; return this.connection;
         }
         if (this.stopping) throw new Error('Ned is stopping');
+        if (method === 'permissions/get') return this.runtime.permissionStatus();
+        if (method === 'permissions/set') {
+          if (!attached.has(params?.session)) throw new Error('Session not attached');
+          await this.runtime.setPermissionMode(params.mode); return this.runtime.permissionStatus();
+        }
         if (method === 'authorize') {
           if (typeof params?.cwd !== 'string' || !path.isAbsolute(params.cwd)) throw new Error('Absolute project directory required');
           const directory = await this.runtime.canonicalProject(params.cwd);
@@ -76,6 +82,9 @@ export class AgentOwner {
     });
     await new Promise<void>((resolve, reject) => { this.server!.once('error', reject); this.server!.listen(this.endpoint, resolve); });
     if (process.platform !== 'win32') await chmod(this.endpoint, 0o600);
+    this.unwatchPermissions = this.runtime.onPermissionChange(() => {
+      for (const peer of new Set(this.sessions.values())) void peer.call('permissionsChanged', this.runtime.permissionStatus()).catch(() => {});
+    });
     await atomicJSON(this.descriptor, { schemaVersion: 1, socket: this.endpoint, token: this.token });
     return this.descriptor;
   }
@@ -89,6 +98,7 @@ export class AgentOwner {
     if (response?.matches !== true) throw new Error('저장하지 않은 편집기 변경이 있습니다. Ctrl+S로 저장한 뒤 다시 요청하세요.');
   }
   async close() {
+    this.unwatchPermissions?.();
     this.stopping = true; await rm(this.descriptor, { force: true });
     for (const peer of this.peers) peer.close();
     await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); });

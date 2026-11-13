@@ -58,6 +58,7 @@ export class HostTools {
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     request?: (session: string) => Promise<string>;
+    permissionSignal?: () => AbortSignal | undefined;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
     validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
@@ -109,6 +110,8 @@ export class HostTools {
     this.url = `http://127.0.0.1:${address.port}/mcp`;
   }
   async call(name: string, args: unknown, session: string, signal?: AbortSignal): Promise<string> {
+    const authority = this.options.permissionSignal?.();
+    if (authority) signal = signal ? AbortSignal.any([signal, authority]) : authority;
     if (!this.accepting || typeof session !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(session)) throw new Error('유효한 세션이 필요합니다.');
     if (this.cancelled.has(session)) throw new Error('중지된 작업입니다.');
     signal?.throwIfAborted();

@@ -55,3 +55,7 @@ Pin Zed v1.28.1 and its matching source. Zed is primarily GPL-3.0-or-later with 
 Windows ACP 실행은 Zed → 번들 Python 콘솔 감독 프로세스 → Electron Node 모드의 Ned ACP 순서다. 배포 PC에서 직접 초기화는 성공했지만 PowerShell 경유 GUI 실행 파일의 수명이 먼저 끝나 Zed가 서버 종료로 처리한 결과를 확인했다. 기존 Job 감독 프로세스가 표준 입출력과 자식 수명을 유지하며 별도 Node 설치를 요구하지 않는다.
 
 Editor preferences use JSONC edits: preserve current UI/font/panel settings and comments, keep keymaps byte-for-byte and retain the fixed editor/db path. Only managed connection/execution settings are regenerated. Legacy appearance is a fallback only when no live settings file exists. Malformed/duplicate settings are preserved and reported instead of reset. The bundled Windows editor icon resource 1 is replaced with the Ned ICO; non-resource sections and vendor version metadata are verified unchanged. Original Zed source/locks, the icon, modification script and before/after hashes document this unsigned resource adaptation.
+
+## 0.3.5 권한 모드
+
+호스트의 PermissionPolicy가 네이티브 승인 게이트를 통합한다. 사용자는 ACP 권한 선택 메뉴나 알림 영역에서 ask/edits/full을 직접 선택한다. 사용자 데이터의 permissions.json에 저장하며 모델 설정·프로젝트 설정과 분리한다. full은 지원 도구의 승인창을 생략하고, edits는 프로젝트 파일 수정만 자동 승인한다. 기본은 ask이다. 인증된 편집기 owner RPC만 권한 설정을 중계하며 모델의 도구 목록에는 설정 API를 제공하지 않는다. 모드 변경은 모든 연결된 대화에 반영하고 대기 중인 승인과 진행 작업에 취소 신호를 전달한다. 범위·스냅샷·편집 버퍼·대상 고정·중지 확인은 모든 모드에서 유지한다.

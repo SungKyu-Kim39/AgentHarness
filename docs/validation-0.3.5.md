@@ -1,0 +1,17 @@
+# Ned 0.3.5 permission modes
+
+This release adds an explicit user-selected persistent host permission mode: ask, automatic project file edits, or full access for supported Ned tools. The default remains ask. Full access resolves native approval gates automatically for project access, edits, builds, knowledge transfer and desktop observations/actions/GUI launch. It does not add an arbitrary shell, expand the direct file tool's project scope, enable downloads or replace product decisions with guessed answers.
+
+## User controls and authority
+
+The ACP session config-options surface adds a separate Korean permission selector while preserving the original model, reasoning and agent choices. Set requests are intercepted by the bridge and authenticated owner; unattached sessions and invalid mode IDs are rejected. The engine and model have no permission-setting tool. Native tray radio items use the same host policy and changes are broadcast to attached ACP clients. The selection is saved atomically under the existing user-data root in permissions.json, independently of model secrets and project files, and survives restarts/upgrades. No extra confirmation dialog is shown after the user selects full access.
+
+Original conversation/project edit grants remain temporary in ask mode. Changing the persistent mode clears those grants and aborts pending dialogs/operations so a delayed edit cannot use an older authority. Runtime configuration-restart suspension also applies in full mode. Existing snapshot, external-change, dirty-buffer, tool-target, registered-tool and stopped-process checks remain active. Full access grants existing GUI/build capabilities, whose effects can extend beyond direct project file edits; it is not an OS sandbox.
+
+## Verification
+
+Tests exercise persistent reload, exact mode boundaries, malformed/linked settings refusal, failed-save fallback, cancellation of pending approvals and delayed edits, runtime effect gates and restart suspension. A real Linux OpenCode/ACP integration with a synthetic model verifies the chat permission config option, rejection of an unattached setter, preservation of model options, full-mode edits without further native approval, dirty-buffer refusal, persisted reload and native-to-ACP updates. This is protocol/runtime evidence, not a Windows GUI screenshot or physical desktop automation acceptance.
+
+The JSONC ESM startup repair from 0.3.4 is retained. The build and actual installer-extraction gate initialize all imports from distributed main.cjs bytes before stopping at the Electron application entry point. Installer component hashes/ASCII paths, nested TGZ EXE bytes, matching source commit and public downloads are recorded separately in release metadata. Windows 10/11 actual menu rendering, install/upgrade, real intranet model, GUI automation and external-network isolation acceptance remain deployment checks. Queued model responses retain no newly added default deadline.
+
+Before packaging: host/ACP build, root typecheck, strict main-process typecheck and 36 skill hashes passed. The changed-area run passed 37 checks (38 discovered, no failures, one optional Wine installer-execution fixture skipped). A final real-ACP check also verifies forwarding an ordinary model selector change while retaining the permission option, and observes only fresh notifications after a native mode change. Actual installer and public artifact audits are recorded with the release.

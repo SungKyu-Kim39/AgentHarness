@@ -9,6 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { connect } from 'node:net';
 import { Peer } from './rpc';
 import { localStreamFetch } from '../../src/main/local-stream-fetch';
+import { permissionMode, permissionOption, permissionConfigId, type PermissionMode } from './permission-policy';
 
 async function main() {
   const descriptor = JSON.parse(await readFile(process.argv[2], 'utf8'));
@@ -17,7 +18,21 @@ async function main() {
   let acp: any;
   let canRead = false;
   const sessions = new Set<string>();
+  const sessionOptions = new Map<string, any[]>();
+  let mode: PermissionMode = 'ask';
+  let editorWriter: WritableStreamDefaultWriter<any> | undefined;
+  const options = (session: string, original?: any[]) => {
+    if (original) sessionOptions.set(session, original.filter(option => option.id !== permissionConfigId));
+    return [...(sessionOptions.get(session) ?? []), permissionOption(mode)];
+  };
   const peer = new Peer(socket, async (method, params) => {
+    if (method === 'permissionsChanged') {
+      mode = permissionMode(params?.mode);
+      for (const sessionId of sessions) if (editorWriter) await editorWriter.write({ jsonrpc: '2.0', method: 'session/update', params: {
+        sessionId, update: { sessionUpdate: 'config_option_update', configOptions: options(sessionId) },
+      } });
+      return {};
+    }
     if (method !== 'checkBuffer' || !sessions.has(params?.session) || !acp || !canRead) throw new Error('Editor buffer check unavailable');
     try {
       const result = await acp.client.request(methods.client.fs.readTextFile, { sessionId: params.session, path: params.path },
@@ -31,9 +46,11 @@ async function main() {
   });
   peer.onClose(() => { process.exitCode = 1; process.stdin.destroy(); });
   const endpoint = await peer.call('hello', { token: descriptor.token });
+  mode = permissionMode((await peer.call('permissions/get')).mode);
   if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(endpoint.url) || typeof endpoint.password !== 'string') throw new Error('Invalid managed engine endpoint');
   const stream = ndJsonStream(Writable.toWeb(process.stdout), Readable.toWeb(process.stdin));
   const writer = stream.writable.getWriter();
+  editorWriter = writer;
   const pending = new Map<string | number, { method: string; cwd?: string; session?: string }>();
   const output = new WritableStream<any>({
     async write(message) {
@@ -45,7 +62,14 @@ async function main() {
           catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: 'Ned session scope could not be verified' } }; }
         }
         if (request.method === 'initialize' && message.result) message.result.agentInfo = { name: 'Ned', version: NED_VERSION, title: 'Ned' };
+        const session = message.result?.sessionId ?? request.session;
+        if (message.result?.configOptions && session && sessions.has(session)) {
+          mode = permissionMode((await peer.call('permissions/get')).mode);
+          message.result.configOptions = options(session, message.result.configOptions);
+        }
       }
+      if (message.method === 'session/update' && message.params?.update?.sessionUpdate === 'config_option_update')
+        message.params.update.configOptions = options(message.params.sessionId, message.params.update.configOptions);
       await writer.write(message);
     },
     close: () => writer.close(), abort: reason => writer.abort(reason),
@@ -60,6 +84,12 @@ async function main() {
             const checked = await peer.call('authorize', { cwd: message.params.cwd });
             message.params.cwd = checked.cwd; message.params.mcpServers = [];
           } else if (message.params?.sessionId && !sessions.has(message.params.sessionId)) throw new Error('Session not attached');
+          if (message.method === 'session/set_config_option' && message.params.configId === permissionConfigId) {
+            if (!sessions.has(message.params.sessionId) || message.id === undefined) throw new Error('Session not attached');
+            mode = permissionMode((await peer.call('permissions/set', { session: message.params.sessionId, mode: permissionMode(message.params.value) })).mode);
+            await writer.write({ jsonrpc: '2.0', id: message.id, result: { configOptions: options(message.params.sessionId) } });
+            return;
+          }
           if (message.method === 'session/cancel') await peer.call('cancel', { session: message.params.sessionId });
         }
         if (message.id !== undefined && message.method) pending.set(message.id, { method: message.method, cwd: message.params?.cwd, session: message.params?.sessionId });

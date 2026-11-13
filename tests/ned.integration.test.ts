@@ -12,6 +12,7 @@ import { NativeRuntime } from '../distribution/native-control';
 import { AgentOwner } from '../distribution/ned/owner';
 import { migrateLegacy, migrationNeedsBootstrap } from '../distribution/ned/migration';
 import { editorSettings } from '../distribution/ned/profile';
+import { PermissionPolicy } from '../distribution/ned/permission-policy';
 const cli = path.resolve('.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
 const bridge = path.resolve('.cache/ned/app/agent.cjs');
 
@@ -72,7 +73,8 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
     a: { name: 'A', modelID: 'wire-a', capabilities: { tools: true } },
     b: { name: 'B', modelID: 'wire-b', capabilities: { tools: true } },
   } } } });
-  const runtime = new NativeRuntime(data, path.join(root, 'resources'), { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() }, async () => { approvals++; return true; });
+  const policy = new PermissionPolicy(data); await policy.load();
+  const runtime = new NativeRuntime(data, path.join(root, 'resources'), { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() }, async () => { approvals++; return true; }, undefined, policy);
   let owner: AgentOwner | undefined; let child: ReturnType<typeof spawn> | undefined;
   t.after(async () => { child?.kill(); await owner?.close(); await runtime.close(); model.closeAllConnections(); await new Promise<void>(r => model.close(() => r())); await rm(root, { recursive: true, force: true }); });
   await runtime.initialize(config); await runtime.authorizeProject(project);
@@ -106,6 +108,8 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
   await assert.rejects(request('session/prompt', { sessionId: 'forged-session', prompt: [] }), /Session not attached/);
   const created = await request('session/new', { cwd: project, mcpServers: [] });
   assert.ok(created.sessionId); assert.ok(JSON.stringify(created.configOptions).includes('wire') || JSON.stringify(created.configOptions).includes('p/'));
+  assert.equal(created.configOptions.find((option:any)=>option.id==='ned.permissions').currentValue,'ask');
+  await assert.rejects(request('session/set_config_option',{sessionId:'forged-session',configId:'ned.permissions',value:'full'}),/Session not attached/);
   await request('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Read main.c and change the return value to 7.' }] });
   assert.equal(await readFile(path.join(project, 'main.c'), 'utf8'), 'int main() { return 7; }\n');
   assert.equal(approvals, 1); assert.ok(bufferReads >= 2);
@@ -114,10 +118,26 @@ test('real Ned ACP attaches to one managed engine, advertises models and checks 
   assert.ok(advertised.includes('ned_host_read_file'));
   assert.ok(advertised.every((name: string) => !/l[_-]vibe/i.test(name)));
 
+  const changed = await request('session/set_config_option',{sessionId:created.sessionId,configId:'ned.permissions',value:'full'});
+  assert.equal(changed.configOptions.find((option:any)=>option.id==='ned.permissions').currentValue,'full');
+  assert.ok(changed.configOptions.some((option:any)=>option.category==='model'));
+  assert.equal(runtime.permissionStatus().mode,'full');
+  const selectedModel=changed.configOptions.find((option:any)=>option.category==='model');
+  const modelResponse=await request('session/set_config_option',{sessionId:created.sessionId,configId:selectedModel.id,value:selectedModel.currentValue});
+  assert.equal(modelResponse.configOptions.find((option:any)=>option.id==='ned.permissions').currentValue,'full');
   dirty = true; turn++; step = 0;
   await request('session/prompt', { sessionId: created.sessionId, prompt: [{ type: 'text', text: 'Now change the return value to 9.' }] });
   assert.equal(await readFile(path.join(project, 'main.c'), 'utf8'), 'int main() { return 7; }\n');
   assert.equal(approvals, 1);
+  dirty=false;turn++;step=0;
+  await request('session/prompt',{sessionId:created.sessionId,prompt:[{type:'text',text:'Change the saved file to 9.'}]});
+  assert.equal(await readFile(path.join(project,'main.c'),'utf8'),'int main() { return 9; }\n');
+  assert.equal(approvals,1);
+  const reloaded=new PermissionPolicy(data);await reloaded.load();assert.equal(reloaded.mode,'full');
+  const beforeNativeChange=updates.length;
+  await runtime.setPermissionMode('ask');
+  for (let attempt=0;attempt<100 && !updates.slice(beforeNativeChange).some(message=>message.params?.update?.configOptions?.some((option:any)=>option.id==='ned.permissions' && option.currentValue==='ask'));attempt++) await new Promise(resolve=>setTimeout(resolve,10));
+  assert.ok(updates.slice(beforeNativeChange).some(message=>message.params?.update?.sessionUpdate==='config_option_update' && message.params.update.configOptions.some((option:any)=>option.id==='ned.permissions' && option.currentValue==='ask')));
   assert.ok(JSON.stringify(updates).includes('Ned verified.'));
   assert.ok(!JSON.stringify(updates).includes('synthetic-ned-secret'));
 });

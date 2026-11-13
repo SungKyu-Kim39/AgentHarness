@@ -12,6 +12,7 @@ import { recordEditorExit, checkEditorFiles } from './editor-startup';
 import { AgentOwner } from './owner';
 import { EditorNetwork, prepareEditor } from './profile';
 import { migrateLegacy, migrationNeedsBootstrap } from './migration';
+import { PermissionPolicy, permissionModes, type PermissionMode } from './permission-policy';
 declare const NED_VERSION: string;
 app.setName('Ned');
 app.setAppUserModelId('com.lig.ned');
@@ -32,7 +33,7 @@ let trayMenu: Menu | undefined;
 const configurationRestart = new ConfigurationRestart(replaceConfiguration, () => requestEditorClose(editor), () => {
   if (!tray || tray.isDestroyed()) return;
   const pending = configurationRestart.pending;
-  if (pending) getRuntime().revokeEditApproval();
+  getRuntime().pauseApprovals(pending);
   const importing = trayMenu?.getMenuItemById('config-import');
   if (importing) importing.enabled = !configurationRestart.busy && !pending;
   const cancel = trayMenu?.getMenuItemById('config-restart-cancel');
@@ -82,6 +83,7 @@ async function start() {
     if (/"Zed.exe"/i.test(running)) throw new Error('기존 Zed를 완전히 종료한 뒤 Ned를 실행하세요. 개인 편집기 인스턴스에 연결하지 않습니다.');
   }
   await checkEditorFiles(root, resources);
+  const permissions = new PermissionPolicy(root); await permissions.load();
   const approve = async (message: string, detail: string, signal?: AbortSignal) => {
     if (configurationRestart.pending || detail.length > 60000) return false;
     const result = await messageBox({ type: 'question', title: 'Ned 승인', message, detail,
@@ -90,7 +92,7 @@ async function start() {
   };
   startup.setPhase('configuration');
   const ready = await prepareNative({
-    root, resources, cipher: safeStorage, approve,
+    root, resources, cipher: safeStorage, approve, permissions,
     approveEdit: async (message, detail, signal) => {
       if (configurationRestart.pending || detail.length > 60000) return { approved: false, autoApproveRequest: false };
       const result = await messageBox({ type: 'question', title: 'Ned 파일 수정 승인', message, detail,
@@ -119,7 +121,7 @@ async function start() {
   const confirmed = new Set<string>();
   owner = new AgentOwner(root, runtime, connection, async directory => {
     if (confirmed.has(directory)) return true;
-    if (!await approve('Ned 프로젝트 접근 승인', directory + '\n이 폴더 안의 읽기·검색을 허용합니다. AI 수정과 빌드는 별도로 승인합니다.')) return false;
+    if (!await runtime.approveOperation('Ned 프로젝트 접근 승인', directory + '\n이 폴더 안의 읽기·검색을 허용합니다. 이후 동작은 선택한 Ned 권한 모드를 따릅니다.')) return false;
     confirmed.add(directory); return true;
   });
   const descriptor = await owner.start();
@@ -130,11 +132,37 @@ async function start() {
   await access(binary);
   const icon = path.join(resources, 'ned', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
   tray = new Tray(nativeImage.createFromPath(icon)); tray.setToolTip('Ned');
+  const updatePermissionMenu = () => {
+    for (const mode of permissionModes) {
+      const item = trayMenu?.getMenuItemById('permission-' + mode.value);
+      if (item) item.checked = permissions.mode === mode.value;
+    }
+    const item = trayMenu?.getMenuItemById('permissions');
+    if (item) item.label = '권한 · ' + permissionModes.find(mode => mode.value === permissions.mode)!.name;
+    tray?.setToolTip('Ned · ' + permissionModes.find(mode => mode.value === permissions.mode)!.name);
+    if (trayMenu) tray?.setContextMenu(trayMenu);
+  };
+  const setPermission = async (mode: PermissionMode) => {
+    try { await runtime.setPermissionMode(mode); }
+    catch (error) { await messageBox({ type: 'error', title: 'Ned 권한 설정', message: errorMessage(error) }); }
+    updatePermissionMenu();
+  };
+  permissions.onChange(updatePermissionMenu);
   trayMenu = Menu.buildFromTemplate([
     { label: 'Ned ' + NED_VERSION + ' · Zed + OpenCode', enabled: false },
+    { id: 'permissions', label: '권한', submenu: [
+      ...permissionModes.map(mode => ({ id: 'permission-' + mode.value, label: mode.name, type: 'radio' as const, checked: permissions.mode === mode.value, click: () => setPermission(mode.value) })),
+      { type: 'separator' },
+      { label: '선택한 모드는 업데이트·재시작 후에도 유지됩니다.', enabled: false },
+      { label: '전체 권한: 지원 도구의 승인창 생략', enabled: false },
+    ] },
     { label: '사용 안내', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
-    { label: '파일 수정 자동 승인 상태', click: async () => { const state = runtime.editApprovalStatus(); await messageBox({ title: 'Ned 파일 수정 승인', message: state.mode === 'ask' ? '현재 대화·프로젝트 자동 승인이 꺼져 있습니다.' : '현재 대화·프로젝트의 파일 수정을 자동 승인합니다.', detail: state.mode === 'session-project' ? `대화: ${state.session}\n프로젝트: ${state.project}\n새 메시지에서도 유지합니다. 다른 대화·프로젝트 전환, 중지, 재시작 또는 수동 해제로 종료합니다. 충돌과 저장하지 않은 버퍼는 계속 검사합니다.` : '파일 수정 승인창에서 현재 대화·프로젝트 자동 승인을 선택할 수 있습니다.' }); } },
-    { label: '파일 수정 자동 승인 모두 해제', click: () => { runtime.revokeEditApproval(); } },
+    { label: '권한 및 자동 승인 상태', click: async () => {
+      const selected=permissionModes.find(mode=>mode.value===permissions.mode)!;
+      const state=runtime.editApprovalStatus();
+      await messageBox({title:'Ned 권한',message:'권한 모드: '+selected.name,detail:selected.description+'\n선택한 권한 모드는 재시작·업데이트 후에도 유지됩니다.\n프로젝트 범위·충돌·저장하지 않은 편집 내용·중지는 계속 검사합니다.'+(state.mode==='session-project'?'\n현재 대화·프로젝트의 임시 파일 수정 승인도 활성화되어 있습니다.':'')});
+    } },
+    { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: () => setPermission('ask') },
     { label: 'OpenViking / 기본 스킬 등록 상태', click: async () => {
       const state = runtime.status().knowledge, skills = state?.skills;
       await messageBox({ title: 'Ned 지식 서비스', message: skills ? `OpenViking 스킬 ${skills.registered}/${skills.total} · ${skills.status}` : `OpenViking ${state?.status ?? '설정 필요'}`,
@@ -160,6 +188,7 @@ async function start() {
     { label: '종료 안내', click: () => { void messageBox({ title: 'Ned 종료', message: 'Zed 편집기에서 파일을 저장하고 모든 창을 닫으면 OpenCode·OpenViking과 함께 종료됩니다.' }); } },
   ]);
   tray.setContextMenu(trayMenu);
+  updatePermissionMenu();
   startup.setPhase('editor');
   const launch = editorLaunch(profile.data);
   editor = spawn(binary, launch.args, { cwd: launch.cwd, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
