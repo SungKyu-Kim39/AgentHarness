@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.5",
+  "sourceCommit": "909f2abd4d7126bcc772fe15f2b86c3fe524d36e",
+  "os": "linux",
+  "recordedAt": "2026-11-13T03:57:17.114225+00:00",
+  "typecheck": "passed",
+  "nedBuild": "passed",
+  "bundledSkills": 36,
+  "skillHashes": "passed",
+  "focusedTests": {
+    "tests": 40,
+    "pass": 39,
+    "fail": 0,
+    "skipped": 1,
+    "duration_ms": 8554.211684
+  },
+  "testCommand": "tsx --test tests/permission-policy.test.ts tests/session-edit-approval.test.ts tests/ned-host-bundle.test.mjs tests/ned.integration.test.ts tests/ned-config-restart.test.ts tests/editor-preferences.test.ts tests/desktop-tools.test.ts tests/desktop-launch.test.ts tests/vs-build.test.ts tests/ned-installer.test.mjs tests/installer-audit.test.mjs tests/ned-names.test.ts",
+  "actualInstallerHostModuleSmoke": {
+    "passed": true,
+    "stoppedBeforeApplicationStartup": true,
+    "nonBuiltinImports": [
+      "electron"
+    ]
+  },
+  "independentBuildComparison": {
+    "version": "0.3.5",
+    "mainSha256": "f58caca53dcec451c52f1a127f0e14a0a6d70d37a398c53c5183748f5579fe6d",
+    "agentSha256": "cd6ddcff7eca8c26f46df2aaec41e10b30165d4cd7ca271564c02d007dfc026f",
+    "independentRebuildMatchesStaged": true
+  },
+  "editorBranding": {
+    "schemaVersion": 1,
+    "component": "Zed v1.28.1 managed editor",
+    "change": "Windows icon resources only; Ned taskbar, Alt-Tab and window-class icon",
+    "originalSha256": "c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a",
+    "modifiedSha256": "01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde",
+    "iconSha256": "98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb",
+    "nonResourceSectionsUnchanged": true,
+    "vendorVersionMetadataPreserved": true,
+    "authenticode": "modified resource image is unsigned; original vendor archive is preserved by the upstream lock"
+  },
+  "installer": {
+    "name": "Ned-0.3.5-win-x64.exe",
+    "bytes": 1176894920,
+    "sha256": "5eef7de82a725dcc5344818ec43864f8485ea236b1c183652ea1a32ab32c5d82"
+  },
+  "archive": {
+    "name": "Ned-0.3.5-windows-x64.tgz",
+    "bytes": 1173739258,
+    "sha256": "9aa40341d26a8133838643cf5ea6b07a81126c07af5f63be16aa5fdd1f9662a3"
+  },
+  "includedFixes": [
+    "Persistent ask/edits/full permission selection in the chat input and native tray; shared approval gate and live synchronization",
+    "JSONC ESM host bundle; no separate 0.3.3 startup patch required",
+    "Minimal authenticated OpenViking export preflight and safe CHECK_EXPORT.cmd"
+  ],
+  "windowsAcceptance": false,
+  "unverified": [
+    "Actual Windows rendering and user selection of the new chat/tray permission controls",
+    "Actual 0.3.5 install/upgrade and editor GUI launch on Windows 10/11",
+    "Actual company model endpoint and external DNS/TCP isolation",
+    "Complete desktop GUI actions and knowledge migration on the deployment PC"
+  ],
+  "optionalWineInstallerTest": "skipped: Windows loader unavailable; compiler/archive/import checks are separate",
+  "releaseReady": false,
+  "strictMainTypecheck": "passed",
+  "permissionModes": [
+    "ask",
+    "edits",
+    "full"
+  ],
+  "persistentUserPreference": "%APPDATA%/Ned/permissions.json; default ask; survives restart/upgrade"
+}

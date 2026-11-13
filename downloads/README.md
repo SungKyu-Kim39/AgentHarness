@@ -1,3 +1,21 @@
+# Ned 0.3.5 Windows x64
+
+[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.5) · [검증 기록](Ned-0.3.5-validation.json)
+
+- [폐쇄망 반입 TGZ · EXE/설정/안내/소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.5-windows-x64.tgz) (1,173,739,258 bytes)
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.5-win-x64.exe) (1,176,894,920 bytes)
+- [TGZ SHA-256](Ned-0.3.5-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.5-win-x64.exe.sha256)
+
+대화 입력창의 권한 선택 항목 또는 **알림 영역 Ned 우클릭 → 권한 → 전체 권한**을 선택한다. 지원하는 파일 수정·빌드·지식 전달·데스크톱 관찰/조작·앱 실행의 반복 승인창을 생략한다. **프로젝트 파일 자동 승인**, **승인 요청**도 선택할 수 있다. 선택 즉시 적용되며 새 대화·프로젝트·재시작·업데이트 후에도 유지한다. 별도의 확인창이나 모델 JSON 편집은 필요 없다. 원래 모델·추론 선택 메뉴는 유지한다.
+
+Ned·개인 Zed를 종료하고 EXE로 업데이트한다. 기존 모델 설정·대화·지식·편집기 환경을 보존한다. 권한 모드의 첫 기본값은 승인 요청이며 전체 권한은 사용자가 직접 선택한다. 파일 도구의 범위·충돌·저장하지 않은 버퍼·중지 확인은 계속 적용한다. 이전 기본값이나 오래된 UI가 해제한 전체 권한을 다시 적용하지 못하도록 정책 버전을 검사한다. 상세 범위는 [권한 안내](../docs/approval-modes.md)를 따른다.
+
+빌드·타입·기본 스킬36개 검증, 집중 검사39개(실패0/선택적 Wine 실행1개 제외), 실제 Linux OpenCode/ACP의 메뉴 설정·자동 수정·모델 선택 유지·해제 동기화·이전 선택 거절 검사를 통과했다. 실제 설치 EXE의 앱 번들 초기화/구성 요소 해시/ASCII 경로와 TGZ 내부 EXE/소스를 대조했다. Windows 실제 메뉴 렌더링과 사내망 전체 수용은 별도 배포 확인 대상이다. 0.3.4의 시작 오류/내보내기 수정도 포함하며 이전 패치를 추가 적용하지 않는다.
+
+[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/validation-0.3.5.md) · [라이선스](../docs/license-policy.md)
+
+---
+
 # Ned 0.3.4 Windows x64
 
 [GitHub 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.4) · [검사 기록](Ned-0.3.4-validation.json) · [공개 다운로드 전체 검증](Ned-0.3.4-public-verification.json)
