@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.3",
+  "verifiedAt": "2026-11-13T01:07:59.174174+00:00",
+  "artifactCommit": "0c0e2edcc54f4b05baabaf9a609e240b238fcc17",
+  "sourceCommit": "1bcde52758c5aa48c3d7cc957dec63283b781faa",
+  "unauthenticatedPublicRequests": true,
+  "files": [
+    {
+      "file": "Ned-0.3.3-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.3-win-x64.exe",
+      "status": 206,
+      "wholeBytes": 1176861330,
+      "range": "bytes 0-4095/1176861330",
+      "prefixBytesCompared": 4096,
+      "prefixSha256": "4e54682acbdcf355c6e8331aecaf1b05e1e3f74caa8a8c750b3830b99c06b8b6",
+      "matchesLocalPrefix": true,
+      "fullRemoteChecksumStreamed": false
+    },
+    {
+      "file": "Ned-0.3.3-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.3-windows-x64.tgz",
+      "status": 206,
+      "wholeBytes": 1173675928,
+      "range": "bytes 0-4095/1173675928",
+      "prefixBytesCompared": 4096,
+      "prefixSha256": "b1c80d39f501d0a579ec228375653f278a46769882787ab3054f68b5d56001bd",
+      "matchesLocalPrefix": true,
+      "fullRemoteChecksumStreamed": false
+    }
+  ],
+  "publicValidationJsonMatchesLocal": true,
+  "windowsGuiAcceptance": false,
+  "release": {
+    "isDraft": false,
+    "isPrerelease": true,
+    "tagName": "v0.3.3",
+    "targetCommitish": "1bcde52758c5aa48c3d7cc957dec63283b781faa",
+    "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.3"
+  }
+}
