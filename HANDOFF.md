@@ -1,6 +1,6 @@
 # Ned 개발 인계
 
-현재 제품명은 **Ned**, 새 배포 대상 버전은 0.3.5이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
+현재 제품명은 **Ned**, 새 배포 대상 버전은 0.3.7이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
 
 ## 0.3.5 persistent permission controls
 
@@ -199,3 +199,5 @@ Rebuild1 audit: NSIS also generates nsDialogs.dll and modern-wizard.bmp under $P
 빌드 방식: 원본 0.3.6-rebuild1 EXE SHA 4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252에서 고정 런타임을 추출하고 SDK 139개/37,876 소스 파일의 바이트를 검증한 ZIP으로 묶는다. 원문 소스가 있는 bytecode cache만 제거하며, 별도 대응 소스 5개는 TGZ/source로 옮겨 함께 전달한다. release-runtime-lock.json이 준비 결과를 고정한다. 호스트/ACP는 현재 소스에서 다시 빌드하고 호스트 ASAR의 불필요한 의존성을 제외한다. scripts/prepare-acp.mjs와 scripts/acp-build/package-lock.json은 빌드 PC 전용이다. 직원 PC 설치 경로가 아니다.
 
 검증: Linux 전체 147개 중 132 pass/15 skip/0 fail, 최신 대상 검사 21 pass. 설치 준비에서 38,605 파일 쓰기와 312,699,583 bytes를 줄였다(호스트 ASAR 절감 전). 새 .github/workflows/windows-offline-smoke.yml은 work의 0.3.7 EXE 게시 때 동일 Windows Server runner에서 이전/새 설치 시간과 Python/OpenViking/tokenizer/Node를 확인한다. 원격 Actions 성공·실제 Win10/11 GUI·사내 모델 결과는 아직 주장하지 않는다. 다음은 소스 커밋/푸시 → npm run ned:release → 감사/반입 TGZ → 아티팩트 게시/Windows CI → 0.3.7 prerelease와 공개 해시 검증이다. 상세 상태는 docs/validation-0.3.7.md를 따른다.
+
+0.3.7 설치기 검토 추가: 사용자 자료 루트(Ned/L-Vibe) 안의 설치와 해당 경로에서의 재귀 제거를 차단한다. 기존 전용 경로 자동 생성은 유지한다. NSIS 컴파일 검사 통과, Windows CI에 거부 경로 검사를 추가했다. 런타임 준비는 유지하고 최종 소스 커밋에서 설치기를 다시 생성한다.

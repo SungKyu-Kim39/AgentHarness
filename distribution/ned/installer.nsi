@@ -28,6 +28,34 @@ ShowUninstDetails show
 !insertmacro MUI_LANGUAGE "Korean"
 !insertmacro MUI_LANGUAGE "English"
 
+; User data must remain outside the removable installation tree.
+!macro NedMarkPrivatePath DIRECTORY
+  StrCpy $2 "${DIRECTORY}"
+  StrLen $3 $2
+  StrCpy $4 $0 $3
+  ${If} $4 == $2
+    StrCpy $4 $0 1 $3
+    ${If} $4 == ""
+    ${OrIf} $4 == "\"
+      StrCpy $5 "yes"
+    ${EndIf}
+  ${EndIf}
+!macroend
+
+!macro NedPrivatePathBody
+  StrCpy $5 "no"
+  !insertmacro NedMarkPrivatePath "$APPDATA\Ned"
+  !insertmacro NedMarkPrivatePath "$APPDATA\L-Vibe"
+  !insertmacro NedMarkPrivatePath "$LOCALAPPDATA\Ned-Launcher"
+!macroend
+
+Function IsPrivateDataDirectory
+  !insertmacro NedPrivatePathBody
+FunctionEnd
+Function un.IsPrivateDataDirectory
+  !insertmacro NedPrivatePathBody
+FunctionEnd
+
 Function .onInit
   SetShellVarContext current
   ${IfNot} ${RunningX64}
@@ -52,6 +80,10 @@ Function CheckInstallDirectory
   ${GetRoot} "$0" $1
   ${If} $0 == "$1"
   ${OrIf} $0 == "$1\"
+    Return
+  ${EndIf}
+  Call IsPrivateDataDirectory
+  ${If} $5 == "yes"
     Return
   ${EndIf}
   IfFileExists "$0\Ned.exe" 0 check_empty
@@ -81,6 +113,7 @@ FunctionEnd
 Function .onVerifyInstDir
   Call CheckInstallDirectory
   ${If} $9 != "valid"
+    SetErrorLevel 1
     Abort
   ${EndIf}
 FunctionEnd
@@ -88,7 +121,7 @@ FunctionEnd
 Function VerifyInstallDirectory
   Call CheckInstallDirectory
   ${If} $9 != "valid"
-    MessageBox MB_OK|MB_ICONSTOP "설치할 빈 전용 폴더 또는 기존 Ned 설치 폴더를 선택하세요. 드라이브 루트나 다른 파일이 있는 폴더에는 설치할 수 없습니다." /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "설치할 빈 전용 폴더 또는 기존 Ned 설치 폴더를 선택하세요. 드라이브 루트, 사용자 데이터 폴더 내부, 다른 파일이 있는 폴더에는 설치할 수 없습니다." /SD IDOK
     SetErrorLevel 1
     Abort
   ${EndIf}
@@ -97,6 +130,12 @@ Function VerifyInstallDirectory
   ${If} $0 != ""
   ${AndIf} $0 != $INSTDIR
     IfFileExists "$0\Ned.exe" 0 previous_missing
+    Call IsPrivateDataDirectory
+    ${If} $5 == "yes"
+      MessageBox MB_OK|MB_ICONSTOP "기존 설치 위치가 사용자 데이터 폴더와 겹칩니다. 기존 제거 프로그램을 실행하기 전에 설정·대화·지식을 별도 위치에 백업하고 설치 파일과 사용자 자료를 분리하세요." /SD IDOK
+      SetErrorLevel 1
+      Abort
+    ${EndIf}
     MessageBox MB_OK|MB_ICONSTOP "설치 위치를 옮기려면 기존 Ned를 먼저 제거한 뒤 새 경로에 설치하세요. 설정·대화·지식은 사용자 데이터 폴더에 유지됩니다." /SD IDOK
     SetErrorLevel 1
     Abort
@@ -175,6 +214,13 @@ SectionEnd
 
 Section "Uninstall"
   SetShellVarContext current
+  StrCpy $0 "$INSTDIR"
+  Call un.IsPrivateDataDirectory
+  ${If} $5 == "yes"
+    MessageBox MB_OK|MB_ICONSTOP "설치 위치가 사용자 데이터 폴더와 겹쳐 자동 제거를 중단했습니다. 설정·대화·지식을 백업한 뒤 프로그램 파일을 별도로 정리하세요." /SD IDOK
+    SetErrorLevel 1
+    Abort
+  ${EndIf}
   ; A prior installation on another drive must not remove the active shortcuts.
   ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "InstallLocation"
   ${If} $0 == $INSTDIR
