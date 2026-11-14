@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.7",
+  "sourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
+  "recordedAt": "2026-11-14T01:56:04.980364+00:00",
+  "archive": "Ned-0.3.7-windows-x64.tgz",
+  "bytes": 1169734854,
+  "sha256": "8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a",
+  "pathEncoding": "ascii",
+  "files": 34,
+  "installer": {
+    "name": "Ned-0.3.7-win-x64.exe",
+    "bytes": 1040612708,
+    "sha256": "9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b"
+  },
+  "identicalEmbeddedInstaller": true,
+  "exactProducerSourceArchive": true,
+  "correspondingSources": [
+    "openviking-openviking-0.5.4-source.tar.gz",
+    "mcp-git-for-windows-2.56.0.windows.4-source.tar.gz",
+    "mcp-proxy-tools-0.1.0-source.tar.gz",
+    "mcp-serena-agent-2.1.0-source.tar.gz",
+    "agent-desktop-source.tar.gz"
+  ],
+  "completePayloadManifestFiles": 55925,
+  "configMatchesPlaceholderExample": true,
+  "releaseReady": false
+}

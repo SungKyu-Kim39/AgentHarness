@@ -4,7 +4,7 @@
   "version": "0.3.7",
   "sourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
   "auditSourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
-  "recordedAt": "2026-11-14T01:54:03.778790+00:00",
+  "recordedAt": "2026-11-14T01:57:21.032592+00:00",
   "os": "linux",
   "modelEndpointKind": "synthetic-loopback-openai-compatible; no intranet models prompted",
   "typecheck": "passed",
@@ -351,5 +351,10 @@
     "sourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
     "artifactCommit": "ad9135b10d4a0e646e0b907f7f2c2637387093b3",
     "reportSource": "GitHub decoded job log JSON summary"
+  },
+  "archive": {
+    "archive": "Ned-0.3.7-windows-x64.tgz",
+    "bytes": 1169734854,
+    "sha256": "8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a"
   }
 }

@@ -1,3 +1,31 @@
+# Ned 0.3.7
+
+- [폐쇄망 반입 TGZ · EXE/설정/안내/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.7-windows-x64.tgz) (1,169,734,854 bytes)
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.7-win-x64.exe) (1,040,612,708 bytes)
+- [TGZ SHA-256](Ned-0.3.7-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.7-win-x64.exe.sha256)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7) · [검증 기록](Ned-0.3.7-validation.json) · [Windows 실측](Ned-0.3.7-windows-offline-smoke.json) · [스킬 안내](../docs/skills-0.3.7.md)
+
+| 항목 | 0.3.6 수정 빌드 1 | 0.3.7 |
+| --- | ---: | ---: |
+| 설치 EXE | 1,176,899,012 bytes | 1,040,612,708 bytes (11.58% 감소) |
+| 설치된 파일 수 | 94,237 | 55,926 (40.65% 감소) |
+| 논리 설치 용량 | 3,375,883,034 bytes | 3,024,551,545 bytes (10.41% 감소) |
+| Windows 설치 시간 | 50.497초 | 38.935초 (22.90% 감소) |
+
+설치 시간은 동일 Windows Server 2022 실행기에서 이전/새 버전을 차례로 설치한 1회 비교다. 모든 직원 PC의 Windows 10/11 성능을 보장하는 수치는 아니다. [실행 기록](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638)에서 새 폴더 자동 생성·사용자 자료 폴더 설치 거부·OpenViking import·토크나이저7종·번들 Node 성공을 확인했다. 실제 Win10/11 편집기 GUI·사내 모델·전체 외부 DNS/TCP 차단 수용은 별도로 남는다.
+
+기본 스킬 30개를 추가해 66개를 제공한다. 요청·대화 문맥으로 관련 지침을 자동 선택하며 별도 분류 모델 호출이나 온라인 설치를 추가하지 않는다. Modern Web Guidance의 웹 문서204개와 코드 리뷰·디버깅·UI·문서·게임 지침을 로컬로 제공한다. 스킬은 검토한 정적 어댑터이며 원본 실행 플러그인 전체를 설치한 것으로 표현하지 않는다.
+
+생성형 Python SDK를 원문 바이트가 같은 ZIP으로 묶고, 호스트 ASAR의 불필요한 의존성을 제외했다. 네이티브/자산/경로 의존 패키지와 기존 MCP·REA·Graphify 기능은 유지한다. 실행에 불필요한 대응 소스는 TGZ source/에 함께 보관하므로 반입 묶음 전체를 유지한다. 설치 속도가 느려진 LZMA 후보는 채택하지 않았으며 [비교 기록](Ned-0.3.7-lzma-benchmark.json)을 남겼다.
+
+Ned·개인 Zed를 종료하고 TGZ를 새 폴더에 해제한 뒤 EXE로 업데이트한다. 설정·대화·지식·편집기 환경은 사용자 데이터 폴더에 유지한다. 설치 위치를 옮길 때는 기존 앱 제거 후 새 전용 폴더에 설치한다. 최초 설치는 EXE 옆 agent-config.json을 자동 복사하며, 설치 후 처음 편집할 파일은 %APPDATA%\Ned\config-import.json이다. 기존 암호화 설정 변경은 Ned의 설정 가져오기 메뉴를 사용한다. [설치 안내](../docs/offline-setup.md)를 따른다.
+
+전체 앱 파일55,925개의 staged/추출 바이트·구성 요소 manifest·스킬66개·ASCII 경로·호스트 초기화와 TGZ 내 동일 EXE/고정 소스/대응 소스를 대조했다. EXE SHA-256: 9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b. TGZ SHA-256: 8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a.
+
+빌드 소스: 448b2e648e89f6c8001c508eaf121a4fc0c2c236. 소스·라이선스·해시·검증 기록을 함께 제공하며 정식 1.0 전체 수용 완료로 표시하지 않는다.
+
+---
+
 # Ned 0.3.6 수정 빌드 1
 
 **앱 버전은 0.3.6 그대로다.** `rebuild1`은 수정 배포 파일을 구분하는 표시다.
