@@ -1,0 +1,294 @@
+{
+  "auditSourceCommit": "3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0",
+  "runtimeOptimization": {
+    "schemaVersion": 1,
+    "method": "lossless pure-Python ZIP import and offline source handover",
+    "windowsExecutionVerified": false,
+    "sourceArchives": [
+      {
+        "component": "openviking",
+        "originalPath": "runtime/windows-x64/openviking/licenses/openviking-0.5.4-source.tar.gz",
+        "handoverFile": "openviking-openviking-0.5.4-source.tar.gz",
+        "sha256": "97e6ac2a7f6c5522206c3a1e1e2ed59cbfa62d7ec890451ee726376dea321147",
+        "bytes": 68790897
+      },
+      {
+        "component": "mcp",
+        "originalPath": "runtime/windows-x64/mcp/licenses/git-for-windows-2.56.0.windows.4-source.tar.gz",
+        "handoverFile": "mcp-git-for-windows-2.56.0.windows.4-source.tar.gz",
+        "sha256": "34f83d6af52f09b997e295db337ede5bbd1613db4405c4b32a05fc9c5363758c",
+        "bytes": 12871354
+      },
+      {
+        "component": "mcp",
+        "originalPath": "runtime/windows-x64/mcp/licenses/proxy-tools-0.1.0-source.tar.gz",
+        "handoverFile": "mcp-proxy-tools-0.1.0-source.tar.gz",
+        "sha256": "ccb3751f529c047e2d8a58440d86b205303cf0fe8146f784d1cbcd94f0a28010",
+        "bytes": 2978
+      },
+      {
+        "component": "mcp",
+        "originalPath": "runtime/windows-x64/mcp/licenses/serena-agent-2.1.0-source.tar.gz",
+        "handoverFile": "mcp-serena-agent-2.1.0-source.tar.gz",
+        "sha256": "312c8c7cb3fa70e3fa7fe4685e09594e31e9a9d7d090d59136a0faf2fa939a91",
+        "bytes": 2484904
+      },
+      {
+        "component": "agent-desktop",
+        "originalPath": "runtime/windows-x64/agent-desktop/source.tar.gz",
+        "handoverFile": "agent-desktop-source.tar.gz",
+        "sha256": "b8e5c536ba6e66f2e82b6863c198e06f1d11fcdfc100d44de0a871a38a82dc7f",
+        "bytes": 42932690
+      }
+    ],
+    "components": {
+      "openviking": {
+        "originalManifestSha256": "6b62b83f14351ca5450e281410070b0f443e17f0d8a4756706f658ffba339ee7",
+        "manifestSha256": "c912cce64e3456c6a12f8c3c2810afc838c6145f03c37cb9e865a85b8d9acd23",
+        "files": 25196
+      },
+      "mcp": {
+        "originalManifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
+        "manifestSha256": "1803eb81043d8910ce3422ccd7b4f84e7355237095f523b519960449d14367e8",
+        "files": 21028
+      },
+      "rea": {
+        "originalManifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+        "manifestSha256": "96b22a192568d40c14a7a0563b3af9b9f2c03b29e9bab255a42e0af7b6a89523",
+        "files": 9012
+      },
+      "agent-desktop": {
+        "originalManifestSha256": "e5f2ae573ad07e4643ffb712ba2eb65a9d315dedb0c0a40a4a1340fcd01fa6b7",
+        "manifestSha256": "5e20ba52fc353efa79e8e551ebd29b31d8499d09f859c1b2e0988999577a4685",
+        "files": 4
+      }
+    },
+    "sourceCacheRemoval": {
+      "files": 731,
+      "bytes": 13215037,
+      "canonicalSourcePreserved": true
+    },
+    "sdkPacking": {
+      "packages": [
+        "lark_oapi",
+        "volcenginesdkacep",
+        "volcenginesdkadvdefence",
+        "volcenginesdkadvdefence20230308",
+        "volcenginesdkaidap",
+        "volcenginesdkaiotvideo",
+        "volcenginesdkaiotvideo20231001",
+        "volcenginesdkalb",
+        "volcenginesdkapig",
+        "volcenginesdkapig20221112",
+        "volcenginesdkapmplusserver",
+        "volcenginesdkark",
+        "volcenginesdkarkclaw",
+        "volcenginesdkarkruntime",
+        "volcenginesdkautoscaling",
+        "volcenginesdkbilling",
+        "volcenginesdkbio",
+        "volcenginesdkbmq",
+        "volcenginesdkbmq20240901",
+        "volcenginesdkbytehousece20240831",
+        "volcenginesdkcbr",
+        "volcenginesdkcdn",
+        "volcenginesdkcen",
+        "volcenginesdkcertificateservice",
+        "volcenginesdkcfs",
+        "volcenginesdkclawsentry",
+        "volcenginesdkclb",
+        "volcenginesdkcloudcontrol",
+        "volcenginesdkclouddetect",
+        "volcenginesdkclouddetect20251031",
+        "volcenginesdkcloudidentity",
+        "volcenginesdkcloudmonitor",
+        "volcenginesdkcloudmonitor20251201",
+        "volcenginesdkcloudtrail",
+        "volcenginesdkcloudtrail20180101",
+        "volcenginesdkconfig",
+        "volcenginesdkcore",
+        "volcenginesdkcoze20250601",
+        "volcenginesdkcp",
+        "volcenginesdkcpaas",
+        "volcenginesdkcr",
+        "volcenginesdkcv20240606",
+        "volcenginesdkdataleap",
+        "volcenginesdkdataleap20260301",
+        "volcenginesdkdbw",
+        "volcenginesdkdirectconnect",
+        "volcenginesdkdms",
+        "volcenginesdkdms20250101",
+        "volcenginesdkdns",
+        "volcenginesdkdramart",
+        "volcenginesdkdts",
+        "volcenginesdkdts20180101",
+        "volcenginesdkecs",
+        "volcenginesdkedx",
+        "volcenginesdkefs",
+        "volcenginesdkemr",
+        "volcenginesdkescloud",
+        "volcenginesdkfasttrack",
+        "volcenginesdkfilenas",
+        "volcenginesdkflink20250101",
+        "volcenginesdkfwcenter",
+        "volcenginesdkga",
+        "volcenginesdkgraph",
+        "volcenginesdkgraph20250815",
+        "volcenginesdkgtm",
+        "volcenginesdkhbase",
+        "volcenginesdkhttpdns",
+        "volcenginesdki18nopenapi",
+        "volcenginesdkiam",
+        "volcenginesdkiam20210801",
+        "volcenginesdkid",
+        "volcenginesdkinframanager",
+        "volcenginesdkinsight",
+        "volcenginesdkkafka",
+        "volcenginesdkkms",
+        "volcenginesdklivesaas",
+        "volcenginesdklivesaas20230801",
+        "volcenginesdkllmscan",
+        "volcenginesdkmcdn",
+        "volcenginesdkmcs",
+        "volcenginesdkmem0",
+        "volcenginesdkmetakms",
+        "volcenginesdkmilvus",
+        "volcenginesdkmlplatform20240701",
+        "volcenginesdkmongodb",
+        "volcenginesdkna",
+        "volcenginesdknatgateway",
+        "volcenginesdknta",
+        "volcenginesdkorganization",
+        "volcenginesdkorigindefence",
+        "volcenginesdkpartner",
+        "volcenginesdkpca",
+        "volcenginesdkpca20251001",
+        "volcenginesdkprivatelink",
+        "volcenginesdkprivatezone",
+        "volcenginesdkquota",
+        "volcenginesdkrabbitmq",
+        "volcenginesdkrcs5g",
+        "volcenginesdkrdsmssql",
+        "volcenginesdkrdsmysql",
+        "volcenginesdkrdsmysqlv2",
+        "volcenginesdkrdspostgresql",
+        "volcenginesdkredis",
+        "volcenginesdkresourcecenter",
+        "volcenginesdkresourceshare",
+        "volcenginesdkrocketmq",
+        "volcenginesdksecagent",
+        "volcenginesdkseccenter",
+        "volcenginesdkseccenter20240508",
+        "volcenginesdksmc",
+        "volcenginesdkspark",
+        "volcenginesdkspeechsaasprod",
+        "volcenginesdkspeechsaasprod20250521",
+        "volcenginesdksqs",
+        "volcenginesdkstorageebs",
+        "volcenginesdksts",
+        "volcenginesdktag",
+        "volcenginesdktidb",
+        "volcenginesdktis",
+        "volcenginesdktransitrouter",
+        "volcenginesdktranslate20250301",
+        "volcenginesdkvedbm",
+        "volcenginesdkveenedge",
+        "volcenginesdkvefaas",
+        "volcenginesdkvefaasdev",
+        "volcenginesdkveiapi",
+        "volcenginesdkvepfs",
+        "volcenginesdkvikingdb",
+        "volcenginesdkvke",
+        "volcenginesdkvmp",
+        "volcenginesdkvms",
+        "volcenginesdkvod20250101",
+        "volcenginesdkvod20260101",
+        "volcenginesdkvolcobserve",
+        "volcenginesdkvolcsms",
+        "volcenginesdkvpc",
+        "volcenginesdkvpn",
+        "volcenginesdkwaf",
+        "volcenginesdkwafruntime"
+      ],
+      "files": 37876,
+      "originalBytes": 222954311,
+      "archiveBytes": 50552588,
+      "archiveSha256": "537c7bb41ece75a8b4cdad00eee78c2e704ca6f1014ea830cb8372344d561978",
+      "everySourceByteVerified": true,
+      "nativeAndAssetPackagesUnchanged": true
+    },
+    "sourceArchivesRetainedInOfflineHandover": true,
+    "payloadFilesAvoided": 38605,
+    "installedBytesAvoided": 312699583
+  },
+  "payloadComparison": {
+    "files": 55925,
+    "allStagedBytesVerified": true,
+    "manifestSha256": "84ddd3872c4e739ea8a43931f8e6e6ef99c544e2a565cb4e4dd99004c950f728",
+    "generatedInstallerFiles": {
+      "$PLUGINSDIR/System.dll": "3eb38ae99653a7dbc724132ee240f6e5c4af4bfe7c01d31d23faf373f9f2eaca",
+      "$PLUGINSDIR/nsDialogs.dll": "1e40211af65923c2f4fd02ce021458a7745d28e2f383835e3015e96575632172",
+      "$PLUGINSDIR/modern-wizard.bmp": "3ad2dc318056d0a2024af1804ea741146cfc18cc404649a44610cbf8b2056cf2",
+      "Uninstall Ned.exe": "05754f4ec1e665651f05e969fe237c1df81814b8c945cc9f223fc447748dbc8d"
+    }
+  },
+  "sourceCommit": "3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0",
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.7",
+  "verifiedFrom": "installer-archive",
+  "os": "linux",
+  "createdAt": "2026-11-14T01:27:24.420Z",
+  "installer": {
+    "name": "Ned-0.3.7-win-x64.exe",
+    "bytes": 811344026,
+    "sha256": "4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c"
+  },
+  "paths": {
+    "encoding": "ascii",
+    "files": 55929,
+    "directories": 7934
+  },
+  "components": {
+    "openviking": {
+      "manifestSha256": "c912cce64e3456c6a12f8c3c2810afc838c6145f03c37cb9e865a85b8d9acd23",
+      "files": 25196
+    },
+    "mcp": {
+      "manifestSha256": "1803eb81043d8910ce3422ccd7b4f84e7355237095f523b519960449d14367e8",
+      "files": 21028
+    },
+    "rea": {
+      "manifestSha256": "96b22a192568d40c14a7a0563b3af9b9f2c03b29e9bab255a42e0af7b6a89523",
+      "files": 9012
+    },
+    "agent-desktop": {
+      "manifestSha256": "5e20ba52fc353efa79e8e551ebd29b31d8499d09f859c1b2e0988999577a4685",
+      "files": 4
+    },
+    "skills": {
+      "manifestSha256": "028284610f7acc41e1c9929e51d35b3764d44dc731b0a13f31ca6b43b1e95579",
+      "files": 569,
+      "count": 66
+    }
+  },
+  "editorBranding": {
+    "schemaVersion": 1,
+    "component": "Zed v1.28.1 managed editor",
+    "change": "Windows icon resources only; Ned taskbar, Alt-Tab and window-class icon",
+    "originalSha256": "c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a",
+    "modifiedSha256": "01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde",
+    "iconSha256": "98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb",
+    "nonResourceSectionsUnchanged": true,
+    "vendorVersionMetadataPreserved": true,
+    "authenticode": "modified resource image is unsigned; original vendor archive is preserved by the upstream lock"
+  },
+  "hostModuleSmoke": {
+    "passed": true,
+    "stoppedBeforeApplicationStartup": true,
+    "nonBuiltinImports": [
+      "electron"
+    ]
+  },
+  "windowsAcceptance": false
+}
