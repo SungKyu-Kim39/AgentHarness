@@ -49,3 +49,9 @@ Environment: Linux Cloud executor; Node 24.22.1; fixed OpenCode v2.2.6 Linux bas
 - The handover contains the exact audited EXE, matching frozen producer source and retained corresponding sources. Bundle/public download verification is stored separately in downloads/Ned-0.3.7-bundle-verification.json and Ned-0.3.7-public-verification.json after publication; no self-referential archive hash is claimed inside this report.
 
 Keep releaseReady false until the existing real Win10/Win11 GUI/intranet/offline-network acceptance criteria are met. Windows Server CI, when completed, is reported separately from those criteria.
+
+## Published artifacts
+
+Public prerelease: https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7 (draft=false, source/tag 448b2e648e89f6c8001c508eaf121a4fc0c2c236). Handover artifact commit: f0e7b9b0132e46aef406657689a99e8b542b8517. TGZ: 1,169,734,854 bytes / SHA-256 8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a.
+
+The complete public EXE/TGZ plus eight checksum/metadata files were streamed without client authentication and matched exact local byte counts and SHA-256 hashes. The public release page returns HTTP 200 and exposes both download links. Files are provided through immutable Git LFS URLs in the release body; no uploaded release attachments are claimed. See downloads/Ned-0.3.7-public-verification.json and Ned-0.3.7-release-state.json. Previous versions/tags remain unchanged.

@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.7",
+  "sourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
+  "artifactCommit": "f0e7b9b0132e46aef406657689a99e8b542b8517",
+  "installerVerifiedCommit": "ad9135b10d4a0e646e0b907f7f2c2637387093b3",
+  "verifiedAt": "2026-11-14T02:07:43.322195+00:00",
+  "clientAuthenticationSupplied": false,
+  "files": [
+    {
+      "name": "Ned-0.3.7-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/ad9135b10d4a0e646e0b907f7f2c2637387093b3/downloads/Ned-0.3.7-win-x64.exe",
+      "httpStatus": 200,
+      "bytes": 1040612708,
+      "sha256": "9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b",
+      "fullRemoteSha256Verified": true,
+      "seconds": 198.119
+    },
+    {
+      "name": "Ned-0.3.7-installer-audit.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/ad9135b10d4a0e646e0b907f7f2c2637387093b3/downloads/Ned-0.3.7-installer-audit.json",
+      "httpStatus": 200,
+      "bytes": 10652,
+      "sha256": "acd5912d340a5f95380d30869759ce7456c17288908be522f02d0155a8c72595",
+      "fullRemoteSha256Verified": true,
+      "seconds": 2.008
+    },
+    {
+      "name": "Ned-0.3.7-win-x64.exe.sha256",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/ad9135b10d4a0e646e0b907f7f2c2637387093b3/downloads/Ned-0.3.7-win-x64.exe.sha256",
+      "httpStatus": 200,
+      "bytes": 88,
+      "sha256": "398e1e350d52b2f6fb7c5785985460a3e18d2e4691205ab9b2671b3804ce9c3b",
+      "fullRemoteSha256Verified": true,
+      "seconds": 1.689
+    },
+    {
+      "name": "Ned-0.3.7-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/f0e7b9b0132e46aef406657689a99e8b542b8517/downloads/Ned-0.3.7-windows-x64.tgz",
+      "httpStatus": 200,
+      "bytes": 1169734854,
+      "sha256": "8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a",
+      "fullRemoteSha256Verified": true,
+      "seconds": 265.908
+    },
+    {
+      "name": "Ned-0.3.7-windows-x64.tgz.sha256",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/f0e7b9b0132e46aef406657689a99e8b542b8517/downloads/Ned-0.3.7-windows-x64.tgz.sha256",
+      "httpStatus": 200,
+      "bytes": 92,
+      "sha256": "1e8064c395addbf6bce700999727747a6cfc00cfc8e65e2f35ada47de98e0053",
+      "fullRemoteSha256Verified": true,
+      "seconds": 3.577
+    },
+    {
+      "name": "Ned-0.3.7-manifest.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/f0e7b9b0132e46aef406657689a99e8b542b8517/downloads/Ned-0.3.7-manifest.json",
+      "httpStatus": 200,
+      "bytes": 565,
+      "sha256": "8660da7c6ec87c9f9c20d1adbb6619df09f318e67a8bc3ea0eb41dd9cba509ae",
+      "fullRemoteSha256Verified": true,
+      "seconds": 2.053
+    },
+    {
+      "name": "Ned-0.3.7-bundle-verification.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/f0e7b9b0132e46aef406657689a99e8b542b8517/downloads/Ned-0.3.7-bundle-verification.json",
+      "httpStatus": 200,
+      "bytes": 979,
+      "sha256": "957300523c3d98df2cc8532dd4b16548aeee8585d2524595a792ddcdab94b765",
+      "fullRemoteSha256Verified": true,
+      "seconds": 1.689
+    },
+    {
+      "name": "Ned-0.3.7-windows-offline-smoke.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/f0e7b9b0132e46aef406657689a99e8b542b8517/downloads/Ned-0.3.7-windows-offline-smoke.json",
+      "httpStatus": 200,
+      "bytes": 1016,
+      "sha256": "3b861b1e9c64358396fbcf99bf2b2376929da077e622f153fb4226a71ed41407",
+      "fullRemoteSha256Verified": true,
+      "seconds": 1.075
+    },
+    {
+      "name": "Ned-0.3.7-payload-manifest.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/f0e7b9b0132e46aef406657689a99e8b542b8517/downloads/Ned-0.3.7-payload-manifest.json",
+      "httpStatus": 200,
+      "bytes": 9320264,
+      "sha256": "bd765de086d6003bf2747f51bce1c67c5d974656c8f4163da9d99ea691d85a63",
+      "fullRemoteSha256Verified": true,
+      "seconds": 6.425
+    },
+    {
+      "name": "Ned-0.3.7-validation.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/raw/f0e7b9b0132e46aef406657689a99e8b542b8517/downloads/Ned-0.3.7-validation.json",
+      "httpStatus": 200,
+      "bytes": 12550,
+      "sha256": "ef1b8276a3808dbbddecef557b9a2fea0a19b50a06d7af04bec84529c117c1c6",
+      "fullRemoteSha256Verified": true,
+      "seconds": 0.942
+    }
+  ]
+}

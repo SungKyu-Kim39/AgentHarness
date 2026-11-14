@@ -3,7 +3,7 @@
 - [폐쇄망 반입 TGZ · EXE/설정/안내/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.7-windows-x64.tgz) (1,169,734,854 bytes)
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.7-win-x64.exe) (1,040,612,708 bytes)
 - [TGZ SHA-256](Ned-0.3.7-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.7-win-x64.exe.sha256)
-- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7) · [검증 기록](Ned-0.3.7-validation.json) · [Windows 실측](Ned-0.3.7-windows-offline-smoke.json) · [스킬 안내](../docs/skills-0.3.7.md)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7) · [검증 기록](Ned-0.3.7-validation.json) · [Windows 실측](Ned-0.3.7-windows-offline-smoke.json) · [공개 전체 파일 확인](Ned-0.3.7-public-verification.json) · [릴리스 상태](Ned-0.3.7-release-state.json) · [스킬 안내](../docs/skills-0.3.7.md)
 
 | 항목 | 0.3.6 수정 빌드 1 | 0.3.7 |
 | --- | ---: | ---: |
