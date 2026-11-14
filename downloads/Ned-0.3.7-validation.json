@@ -4,7 +4,7 @@
   "version": "0.3.7",
   "sourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
   "auditSourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
-  "recordedAt": "2026-11-14T01:46:55.212842+00:00",
+  "recordedAt": "2026-11-14T01:54:03.778790+00:00",
   "os": "linux",
   "modelEndpointKind": "synthetic-loopback-openai-compatible; no intranet models prompted",
   "typecheck": "passed",
@@ -325,5 +325,31 @@
     "Employee Windows 10/11 actual editor GUI, upgrade and layout preservation acceptance",
     "Actual company Qwen/embedding model, knowledge retrieval and external DNS/TCP isolation acceptance",
     "Actual VS2017/2019 builds, Serena and approved desktop application manipulation"
-  ]
+  ],
+  "windowsServerSmoke": {
+    "schemaVersion": 1,
+    "product": "Ned",
+    "version": "0.3.7",
+    "os": "10.0.20348.0",
+    "installerMilliseconds": 38935,
+    "baselineInstallerMilliseconds": 50497,
+    "baselineInstalledFiles": 94237,
+    "baselineInstalledBytes": 3375883034,
+    "comparisonOrder": "baseline then candidate; single Windows Server runner, not a Win10/11 acceptance benchmark",
+    "installedFiles": 55926,
+    "installedBytes": 3024551545,
+    "openVikingImport": true,
+    "tokenizerEncodings": 7,
+    "bundledNode": true,
+    "privateDataInstallRejected": true,
+    "modelsPrompted": false,
+    "desktopActions": 0,
+    "realWin10Win11GuiAcceptance": false,
+    "workflowRun": "https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638",
+    "workflowJob": 132286648057,
+    "installerSha256": "9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b",
+    "sourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
+    "artifactCommit": "ad9135b10d4a0e646e0b907f7f2c2637387093b3",
+    "reportSource": "GitHub decoded job log JSON summary"
+  }
 }

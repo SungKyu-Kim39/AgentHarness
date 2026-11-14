@@ -1,6 +1,6 @@
 # Ned 0.3.7 validation and review
 
-Status: the first complete installer passed Windows import checks but LZMA regressed installation time. The final zlib installer is being rebuilt and remeasured before publication. This file does not establish employee Windows 10/11 GUI or intranet-model acceptance.
+Status: final zlib installer built, complete payload verified and Windows Server installation/import checks passed. Full employee Windows 10/11 GUI/intranet acceptance remains separate. Public archive hashes are recorded after publication. This file does not establish employee Windows 10/11 GUI or intranet-model acceptance.
 
 ## Authorized scope
 
@@ -43,6 +43,9 @@ Environment: Linux Cloud executor; Node 24.22.1; fixed OpenCode v2.2.6 Linux bas
 - Complete installer extraction audit: all 55,925 staged application files match byte-for-byte. Four generated installer/plugin files are accounted for separately. All 55,929 archive files/7,934 directories use ASCII paths; the installed catalog has 66 skills/569 verified documents. Archive file count decreases 40.65%.
 - The fully bundled host initializes through the smoke boundary with only Electron/Node imports. Every component manifest, the runtime transformation report, editor icon and complete payload manifest are verified from the EXE.
 - Windows experiment (run 43540857847, Server 2022/10.0.20348): missing directory creation, private-data path refusal, OpenViking import, all seven tokenizer encodings and bundled Node passed. However, LZMA installation took 90,792 ms versus the baseline 54,182 ms, so this candidate is not selected for the release. The raw summary is Ned-0.3.7-lzma-benchmark.json.
-- Use zlib with the lossless SDK packing/host shrink to prioritize both installation time and a smaller payload. Final installer metrics, Windows remeasurement, handover TGZ and complete public download hashes are pending.
+- Final zlib producer: 448b2e648e89f6c8001c508eaf121a4fc0c2c236. EXE: 1,040,612,708 bytes / SHA-256 9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b; 11.58% smaller than baseline. The same complete staged/extracted comparison and 66-skill audit passed again.
+- Windows Server 2022 run 43542694638: baseline installation 50,497 ms; final installation 38,935 ms (22.90% reduction). Installed files: 94,237 -> 55,926; logical installed bytes: 3,375,883,034 -> 3,024,551,545 (10.41% reduction). Missing-directory creation, refusal of a private-data install directory, OpenViking import, seven tokenizer encodings and bundled Node passed. No company models or desktop actions were used.
+- The comparison is one sequential baseline-then-candidate run on one Windows Server runner. It is not a general Windows 10/11 performance or GUI acceptance benchmark. Raw summary: downloads/Ned-0.3.7-windows-offline-smoke.json; workflow: https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638.
+- The handover contains the exact audited EXE, matching frozen producer source and retained corresponding sources. Bundle/public download verification is stored separately in downloads/Ned-0.3.7-bundle-verification.json and Ned-0.3.7-public-verification.json after publication; no self-referential archive hash is claimed inside this report.
 
 Keep releaseReady false until the existing real Win10/Win11 GUI/intranet/offline-network acceptance criteria are met. Windows Server CI, when completed, is reported separately from those criteria.
