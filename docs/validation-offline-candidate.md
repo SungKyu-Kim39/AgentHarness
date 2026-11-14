@@ -1,8 +1,8 @@
-> 과거 L-Vibe 배포·검토 기록이다. 당시 이름·경로·해시를 보존한다. 현재 Ned 구성은 [0.3.0 검증 상태](validation-0.3.0.md)를 따른다.
+> 이 문서는 당시 L-Vibe의 배포·검토 기록입니다. 버전·경로·해시는 당시 값을 유지합니다. 최신 구성은 [Ned 0.3.7 검증 기록](validation-0.3.7.md)을 참고하세요.
 
 # Windows 오프라인 설치 후보 검증 — 2026-11-10 UTC
 
-대상은 L-Vibe 0.2.0 검증 후보입니다. 런타임 코드 체크포인트는 `137db3d`이며 OpenCode Desktop/CLI는 v2.2.6, upstream 커밋 `dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`으로 고정했습니다. 아래 결과는 Windows 실환경 수용 검증을 대체하지 않습니다.
+대상은 L-Vibe 0.2.0 검증 후보입니다. 런타임 코드 체크포인트는 `137db3d`이며 OpenCode Desktop/CLI는 v2.2.6, upstream 커밋 `dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`으로 고정했습니다. 아래 결과는 Windows 실환경 검증을 대체하지 않습니다.
 
 ## 환경과 명령
 
@@ -35,8 +35,8 @@
 - REA가 사용할 Electron RunAsNode fuse는 앱 바이너리에서 enabled로 확인했습니다.
 - 실제 키·모델 가중치·개인 설정·개발 캐시는 설치 입력에 포함하지 않습니다. 검토 목록에 없는 과거 스킬 사본은 소스 묶음에서도 제거했습니다.
 
-## 남은 수용 검증
+## 남은 실환경 검증
 
-Windows 10/11 일반 사용자 설치·첫 실행·업데이트·제거·ACL·DPAPI·자식 프로세스 종료·DNS/TCP 관찰 및 실제 사내 Qwen 서버 검증은 미실행입니다. Wine 런타임 검사는 kernel32.dll 로더 오류로 완료하지 못했습니다.
+Windows 10/11 일반 사용자 설치·첫 실행·업데이트·제거·ACL·DPAPI·자식 프로세스 종료·DNS/TCP 관찰 및 실제 사내 Qwen 서버 검증은 아직 수행하지 않았습니다. Wine 런타임 검사는 kernel32.dll 로더 오류로 완료하지 못했습니다.
 
 Serena/clangd 의미 분석, 승인된 명령 실행, 새 Desktop의 반복 감지·도구 없는 답변 재출력, 호스트 스냅샷의 세션 비교 UI는 후속 구현입니다. `distribution/readiness.json`의 releaseReady는 false로 유지합니다. 이 설치 후보를 1.0 완료본 또는 폐쇄망 실환경 인증 완료본으로 취급하지 않습니다.

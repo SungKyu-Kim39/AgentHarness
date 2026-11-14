@@ -1,213 +1,121 @@
 # Ned 개발 인계
 
-현재 제품명은 **Ned**, 새 배포 대상 버전은 0.3.7이다. 사용자 목표는 비개발자를 포함한 직원에게 Zed·OpenCode·Aegis·Conductor·OpenViking·기본 도구를 한 번에 설치·설정하는 폐쇄망 프로그램을 제공하는 것이다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포 버전은 **Ned 0.3.7**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-## 0.3.5 persistent permission controls
+## 현재 배포 기준
 
-공개 배포 완료: 아티팩트 커밋 4c9ba6d, 릴리스 https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.5 (공개 prerelease, draft 아님, tag/source 909f2abd4d7126bcc772fe15f2b86c3fe524d36e). 공개 GitHub/LFS의 EXE/TGZ를 전체 스트리밍해 HTTP200/정확한 크기/전체 SHA-256을 대조했고 메타데이터·체크섬5개도 일치했다. downloads/Ned-0.3.5-public-verification.json과 Ned-0.3.5-release.json에 기록했다. 설치 파일은 릴리스 본문의 직접 다운로드 링크로 제공한다. Windows 실제 메뉴 렌더링·사내망 수용은 아직 배포 확인 대상이다.
+[0.3.7 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7)는 공개 prerelease입니다. 소스·태그는 `448b2e648e89f6c8001c508eaf121a4fc0c2c236`, 반입 파일 커밋은 `f0e7b9b0132e46aef406657689a99e8b542b8517`입니다. 릴리스 본문의 고정 Git LFS 링크에서 파일을 받습니다.
 
-0.3.5 실제 설치본·TGZ 검증 완료: 소스 909f2abd4d7126bcc772fe15f2b86c3fe524d36e, EXE 1,176,894,920 bytes / SHA-256 5eef7de82a725dcc5344818ec43864f8485ea236b1c183652ea1a32ab32c5d82, TGZ 1,173,739,258 bytes / SHA-256 9aa40341d26a8133838643cf5ea6b07a81126c07af5f63be16aa5fdd1f9662a3. 실제 EXE의 ASAR 초기화, 파일94,239개/디렉터리8,743개 ASCII, 구성 요소 manifest·스킬36개, 별도 host/ACP 재빌드 일치, TGZ 내부 EXE·대응 소스를 대조했다. 최종 집중 검사40개 중39개 통과/실패0/선택적 Wine 실행1개 제외와 두 타입 검사를 통과했다. 자세한 범위는 downloads/Ned-0.3.5-*.json이다. Windows 메뉴 렌더링과 실제 사내망 전체 수용은 별도 확인 대상으로 유지한다.
+| 파일 | 크기 | SHA-256 |
+| --- | ---: | --- |
+| 설치 EXE | 1,040,612,708 bytes | `9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b` |
+| 반입 TGZ | 1,169,734,854 bytes | `8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a` |
 
-사용자가 반복 승인창 대신 Codex와 같은 전체 권한 선택 메뉴를 요청했다. ACP 입력창의 별도 권한 선택 옵션과 알림 영역의 동일한 3개 라디오 모드(승인 요청/프로젝트 파일 자동 승인/전체 권한)를 구현했다. permissions.json은 모델 JSON과 분리해 사용자 데이터에 원자 저장하며 새 대화·프로젝트·재시작·업데이트 후에도 유지한다. 기본은 ask, full은 지원하는 프로젝트 접근·파일 수정·빌드·지식 전달·데스크톱 도구의 native 승인창을 생략한다. 도구별 자동 동의와 제품 결정 질문은 구분하며 임의 shell/플러그인/다운로드 기능을 추가하지 않는다.
+공개 EXE·TGZ와 체크섬·메타데이터 여덟 개를 인증 없이 전체 다운로드해 크기·해시를 대조했습니다. 릴리스 페이지 HTTP 200과 두 링크도 확인했습니다. [다운로드 안내](downloads/README.md), [공개 검증](downloads/Ned-0.3.7-public-verification.json), [릴리스 상태](downloads/Ned-0.3.7-release-state.json)에 기록이 있습니다.
 
-중앙 권한 정책은 권한 변경 때 대기 중인 승인과 진행 작업에 취소 신호를 전달하고, 임시 파일 수정 grant를 해제한다. 전체 권한도 설정 재시작 대기/중지/경로/충돌/저장하지 않은 버퍼/고정 대상 검사를 우회하지 않는다. ACP 선택은 연결·세션을 확인한 owner RPC를 통해 처리하며 원래 모델/추론 옵션을 보존한다. native 메뉴 변경은 연결된 ACP 대화에 동기화한다. 파일/엔진 도구에 권한 변경 기능을 노출하지 않는다. 실제 Windows UI는 배포 확인 대상이며 Linux 실엔진 프로토콜 검증과 구분한다. Zed가 선택값을 기본값으로 저장하는 동작에 대응해 권한 선택 ID에 단조 증가 정책 revision을 넣고, owner의 직렬 저장 큐 안에서 예상 revision을 검사한다. native 해제 뒤 이전 full 선택이나 동시의 오래된 요청이 권한을 다시 올릴 수 없으며 실제 ACP의 새 대화/재전송 검사로 확인했다. 최종 집중 검사는 40개 중 39개 통과, 실패0, 선택적 Wine 설치 실행1개 제외다.
+`main`은 검증한 배포 기준, `work`는 개발 브랜치입니다. 사용자는 이 공개 저장소 `SungKyu-Kim39/AgentHarness`에 작업 단위 커밋·푸시와 배포 기준의 main 반영을 승인했습니다. 새 세션에서는 원격 두 브랜치와 로컬 변경부터 확인하고 이력을 보존해 진행합니다. 이미 게시한 EXE·TGZ·태그는 덮어쓰지 않습니다.
 
-## 0.3.4 full installer
+## 구현에서 유지할 사항
 
-0.3.3 JSONC 실행 수정 패치를 기본 포함한 전체 Windows EXE/TGZ를 새 버전으로 배포한다. OpenViking 내보내기 수정과 CHECK_EXPORT.cmd도 함께 포함한다. 이전 배포 파일과 태그는 덮어쓰지 않으며 0.3.3용 실행 패치를 0.3.4에 적용하지 않는다. 빌드·타입·스킬36개 검사와 집중20개 검사(선택적 Wine 설치 실행 1개 제외)를 통과한 상태에서 설치기를 생성한다. 실제 EXE에서 추출한 main.cjs 초기화, 구성 요소 해시, ASCII 경로와 TGZ 내부 EXE/대응 소스를 대조한 결과는 downloads/Ned-0.3.4-*.json에 기록한다. 실제 Windows/사내 모델 전체 수용 여부와 혼동하지 않는다.
+- 편집기는 Zed v1.28.1, 엔진은 OpenCode 2.2.6입니다. 개인 Zed·OpenCode 설정을 읽거나 기존 엔진에 연결하지 않습니다. 별도 서버를 만드는 기본 `opencode acp`도 사용하지 않습니다.
+- 모델 요청은 기본 시간 제한 없이 기다립니다. 서버 대기열이 길다는 사용자 요구를 반영한 정책입니다. 서비스 준비·종료 확인 시간과 모델 생성 대기는 구분합니다.
+- 중앙 JSON에는 여러 LLM과 thinking·토큰 한도를 등록하며 임베딩은 한 개만 지정합니다. 실제 키·사용자 자료·개발 캐시는 커밋하지 않습니다.
+- 사용자 직접 편집·저장은 일반 IDE 동작입니다. AI 쓰기는 호스트 권한, 프로젝트 범위, 외부 변경, 미저장 버퍼와 스냅샷을 확인합니다. 고정 명령과 자식 프로세스 종료도 호스트가 관리합니다.
+- `ask`·`edits`·`full`은 `permissions.json`에 별도로 저장합니다. 전체 권한에서도 충돌·버퍼·범위·중지 확인을 유지합니다. 임시 대화·프로젝트 허용과 지속 권한을 혼동하지 않습니다.
+- 새 도구는 `ned_host_*`, 리소스는 `resources/ned`를 사용합니다. 과거 대화와 OpenViking 내부 namespace는 자료 보존을 위해 유지합니다. 옛 패치 이름과 대상 경로도 바꾸지 않습니다.
+- 실행기·설치기·트레이는 `assets/ned-icon.png`와 `ned-icon.ico`를 씁니다. 번들 Zed는 아이콘 리소스만 교체하며 실행 코드·공급자 버전 정보는 보존합니다.
 
-실제 0.3.4 설치본 검증 완료: 빌드 소스 bfa9eb38286d6853abc28a4cb9e5838483dd275a, EXE 1,176,868,983 bytes / SHA-256 fc1eab24a0a6efd782be3b338b200aee854c51691ff0a4c9716f40968cf962ee, TGZ 1,173,699,552 bytes / SHA-256 b400faa722f7918e87a945d551a50dd20b84b1508fd4d026dda2360063859a9d. EXE에서 실제로 추출한 ASAR의 모듈 초기화가 통과했고 94,239개 파일/8,743개 디렉터리 ASCII와 런타임/기본 스킬36개 manifest를 대조했다. 별도 출력 폴더에서 재빌드한 host/ACP도 staging과 일치했다. TGZ 안의 EXE 해시와 대응 소스 커밋을 대조했으며 CHECK_EXPORT.cmd를 포함한다. 공개 다운로드 전체 바이트 확인과 GitHub 릴리스 상태는 후속 공개 검증 JSON에 기록한다.
+## 코드 위치
 
-0.3.4 공개 배포 완료: 아티팩트 커밋 2633a81, 릴리스 https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.4 (공개 prerelease, draft 아님, tag/source bfa9eb38286d6853abc28a4cb9e5838483dd275a). 공개 GitHub/LFS URL에서 EXE와 TGZ를 각각 전체 스트리밍하여 HTTP200/정확한 크기/전체 SHA-256을 대조했고 검증 메타데이터·체크섬5개도 전체 일치했다. downloads/Ned-0.3.4-public-verification.json과 Ned-0.3.4-release.json에 기록했다. 설치 파일은 릴리스 본문의 직접 다운로드 링크로 제공하며 release asset 첨부를 주장하지 않는다. 실제 Windows GUI/사내망 전체 수용 완료는 여전히 별도 확인 대상이다.
+| 경로 | 담당 기능 |
+| --- | --- |
+| `distribution/ned/main.ts` | 실행기, 설정 창, 트레이, 편집기 실행·종료 |
+| `distribution/ned/agent.ts` | ACP와 기존 호스트 엔진 연결 |
+| `distribution/ned/owner.ts`, `rpc.ts` | 로컬 인증, 세션·프로젝트 연결, 편집 버퍼 확인 |
+| `distribution/ned/profile.ts` | 전용 Zed 설정·프로필과 HTTP 차단 프록시 |
+| `distribution/ned/editor-preferences.ts` | JSONC 설정·주석·글꼴·배치 보존 |
+| `distribution/ned/migration.ts` | L-Vibe 원본을 보존하는 데이터 복사 |
+| `distribution/ned/startup-window.ts`, `startup-view.ts` | Ned 아이콘과 준비 단계를 보여 주는 시작 창 |
+| `distribution/native-control.ts` | 설정 저장소, 모델 게이트웨이, 엔진·OpenViking 관리 |
+| `distribution/host-tools.ts`, `vs-build.ts` | 도구 중계, 수정 승인과 VS2017/2019 MSBuild |
+| `src/main/skills.ts`, `skill-routing.ts` | 스킬 무결성, 긴 문서 읽기, 문맥별 지침 선택 |
+| `src/main/runtime-pins.ts` | 원본·최적화 런타임 manifest 고정값 검사 |
+| `scripts/ned-build.mjs` | 호스트와 Node 호환 ACP 번들 |
+| `scripts/ned-package.mjs`, `ned-release.mjs` | 설치기·반입 묶음 생성과 감사 |
+| `scripts/optimize-runtime.py` | 검토한 SDK의 무손실 ZIP 배치 |
 
-## 우선 확인: 0.3.3 실행 번들 결함과 수정 패치
+루트 `AGENTS.md`와 `.agents/skills/`는 Ned를 개발하는 Codex 지침입니다. 제품에 포함하는 `skills/`, `vendor/skills/`, 루트 `skills-lock.json`과 구분합니다. 개발 스킬은 ECC의 inherit-legacy-style·change-impact·mcp-dependency-review와 Matt Pocock의 diagnosing-bugs·codebase-design·code-review 여섯 개입니다. 출처와 원문·라이선스·해시는 [.agents/README.md](.agents/README.md)에 있습니다.
 
-사용자가 원본 0.3.3 첫 실행에서 `Cannot find module './impl/format'`을 보고했다. 실제 게시 EXE에서 추출한 ASAR로 동일 오류를 재현했다. jsonc-parser의 UMD factory가 require를 별칭으로 전달하므로 esbuild가 상대 하위 모듈을 묶지 못했다. ESM 진입점만 명시적으로 선택하도록 빌드를 수정했으며, 실제 번들/ASAR의 top-level import 초기화 검사를 빌드와 설치기 감사에 추가했다. Electron app.setName 직전 중단하여 사용자 프로필·서비스·모델은 시작하지 않는다. 과거 소스 테스트/해시 감사는 이 초기화 성공을 검증하지 못했음을 기록한다.
+## 0.3.7에서 바뀐 배포 구성
 
-`downloads/Ned-jsonc-startup-fix-1.tgz` (4,247,742 bytes, SHA-256 `674719d33e1e9737c86c51d2fe734d5e07eaea2a416082a5b535f641e2c717db`)는 소스 `fe5f7c32e0785c0998feca42db42273d77144200`에 연결된다. 정확한 원본 0.3.3 EXE/ASAR만 받아 main.cjs만 바꾼 ASAR로 교체하며 원본은 별도 백업한다. APPLY_FIX.cmd/ROLLBACK_FIX.cmd는 설치 Python의 `-I -S -B`를 사용한다. 실제 핀 고정 파일로 적용·멱등·복구·재적용과 설정/지식 fixture 보존을 확인했고, 집중 8개 및 타입 검사가 통과했다. 공개 URL 전체 바이트/해시도 인증 없이 확인했다. 실제 Windows 재실행 성공은 아직 사용자 확인 전이다.
+기본 스킬 30개를 더해 66개가 됐습니다. Modern Web Guidance는 AI 모델 다운로드 문서 다섯 개를 제외한 웹 문서 204개를 고정했습니다. 요청과 최근 대화에서 최대 세 후보를 불러오고, 모델이 실제 목적과 프로젝트 결과를 보고 선택을 조정합니다. 별도 분류 모델은 호출하지 않습니다. context·output 여유가 적으면 엔진의 선택 지침과 `read_skill`을 쓰고, 압축·도구 없는 재출력에는 작업 지침을 넣지 않습니다.
 
-원본 0.3.3 EXE/TGZ 및 릴리스 태그는 덮어쓰지 않았다. 다운로드/릴리스 안내에서 위 패치를 필수로 명시한다. 향후 전체 설치본은 새 버전으로 발행하고 새 module smoke gate를 통과시켜야 한다. OpenViking 독립 내보내기 수정 도구 2는 별도로 유지하며, 실제 기존 서버에서 성공했는지는 아직 확인 전이다.
+설치 최적화는 0.3.6-rebuild1 EXE의 고정 런타임을 재사용합니다. 기준 SHA-256은 `4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252`입니다. SDK 139개·37,876개 소스를 모든 바이트가 같은 ZIP으로 묶고, 원본 `.py`가 있는 bytecode 캐시만 제거했습니다. 실행에 불필요한 대응 소스 다섯 개는 TGZ의 `source/`로 옮겼습니다. 네이티브·자산·경로 의존 패키지는 유지합니다.
 
-## 유지해야 할 결정
+준비 결과는 `release-runtime-lock.json`에 고정합니다. MCP와 데스크톱의 검사도 정확히 대응하는 원본·최적화 manifest만 허용합니다. 호스트·ACP는 소스에서 다시 빌드하고 호스트 ASAR에는 사용하지 않는 의존성을 넣지 않습니다. 빌드 의존성은 `scripts/prepare-acp.mjs`와 `scripts/acp-build/package-lock.json`으로 따로 준비합니다.
 
-- 검은 배경의 흰색 볼드 Ned 생성 아이콘: `assets/ned-icon.png`, `ned-icon.ico`.
-- 편집기는 고정 Zed v1.28.1, 엔진은 OpenCode 2.2.6이다. 개인 설정을 읽지 않는다. 기본 `opencode acp`는 별도 서버를 시작하므로 사용하지 않는다.
-- 모델 요청 대기는 기본 시간 제한이 없다. 사내 대기열이 길다는 사용자의 명시적 요구이다.
-- 여러 LLM과 thinking·토큰 한도는 중앙 JSON, 임베딩은 한 개이다. API 키·사용자 자료·개발 캐시는 커밋하지 않는다.
-- 사용자 직접 저장은 일반 IDE 동작이다. AI 쓰기·명령은 호스트 승인·범위·충돌·종료 확인을 거친다.
-- 현재 `work` 브랜치의 공개 origin `SungKyu-Kim39/AgentHarness`에 중간 커밋·푸시하는 권한을 사용자가 이미 승인하였다.
+Windows 비교에서는 LZMA가 용량은 줄였지만 설치를 54,182ms에서 90,792ms로 늦춰 채택하지 않았습니다. 최종 zlib는 같은 실행기의 기준 50,497ms에서 38,935ms로 줄었습니다. 설치 파일 수는 94,237개에서 55,926개, 논리 크기는 3,375,883,034에서 3,024,551,545 bytes로 줄었습니다. 실험과 최종 결과는 [0.3.7 검증 기록](docs/validation-0.3.7.md)에 있습니다.
 
-## 0.3.1 작업 기록
+## 빌드 PC 준비
 
-사용자는 agent-desktop 기본 탑재와 최초 실행·OpenViking 등록·기존 자료 내보내기 실패 수정을 요청하였다. agent-desktop 1.2.0/Apache-2.0, 정적 스킬 2개를 추가하였다. 실제 Windows UI 자동화 수용은 아직 필요하다. [변경 검증](docs/validation-0.3.1.md)을 따른다.
+직원 PC에는 아래 작업을 요구하지 않습니다. 빌드 PC에서 Node 24, Python 3.12, 고정 OpenCode 소스와 Windows 런타임·도구를 준비합니다. source와 런타임의 실제 크기·SHA-256은 각 lock 파일과 대조해야 합니다.
 
-초기 사용자 진단: Windows 10.0.19044, 기본 Ned 경로의 Zed 로그 및 Zed/CLI 파일 없음. 후속 레지스트리·파일 검사에서 Ned는 미설치이며 L-Vibe 0.2.7만 등록되어 있음을 확인했다. 새 Ned 설치가 필요하며 이 결과만으로 기존 오류창의 DLL/GPU·파일 삭제 원인을 단정하지 않는다. 종료 코드를 버리고 개인 Zed를 원인으로 단정하던 메시지와 실행 환경 누락, 설치 후 핵심 파일 검사를 보완했다. 등록 오류는 단계·코드·HTTP와 모델 상태를 남긴다. 401/500은 기존 OpenViking 서버의 내보내기 중 발생했으며 인증 선확인과 벡터 없는 내보내기를 추가했다.
+```bash
+npm ci
+npm run ned:prepare:acp
+npm run build
+npm run typecheck
+npm run skills:verify
+```
 
-로딩창은 `distribution/ned/startup-window.ts`와 `startup-view.ts`다. 전용 sandbox BrowserWindow, IPC/preload 없음, 아이콘/단계 문구만 표시하며 native dialog 중 숨긴다. 모든 모델 서비스 전에 표시한다. 실제 Chromium 렌더링으로 아이콘·문구·넘침을 확인했다. 전체 88개 검사와 추가 UI/보호 검사를 통과했다.
+ACP 준비에는 `ned-acp-lock.json`과 일치하는 OpenCode 소스가 먼저 있어야 합니다. helper는 고정 파일 192개와 별도 npm lock을 검사합니다. 전체 upstream Bun 개발 환경과 직원용 런타임은 별도 구성입니다.
 
-최종 추가: 벡터 없는 OVPack은 import API 성공 뒤에도 임베딩 큐가 진행 중이어서 검색이 비는 결함을 재현했다. `PersonalKnowledge.verifyIndex`에서 시간 제한 없는 system/wait와 검색 영역별 system/consistency를 확인한 뒤 ready로 갱신한다. 실제 벡터 재사용·재계산 양쪽을 포함한 이관 9개 검사를 통과했다. agent-desktop의 PE import 의존성 VCRUNTIME140.dll도 기존 고정 CPython DLL과 원문 고지로 함께 묶는다.
+Cloud Linux에서 전체 검사를 실행할 때는 NSIS가 쓸 수 있는 캐시를 지정합니다.
 
-## 소스 진입점
+```bash
+export ELECTRON_BUILDER_CACHE="$PWD/.cache/ned/builder-cache"
+npm test
+```
 
-| 경로 | 역할 |
-|---|---|
-| `distribution/ned/main.ts` | Ned Electron 실행기·설정 대화상자·트레이·Zed 수명 |
-| `distribution/ned/agent.ts` | 공식 ACP를 기존 호스트 엔진에 연결 |
-| `distribution/ned/owner.ts`, `rpc.ts` | 실행별 로컬 인증·프로젝트/세션 귀속·버퍼 확인 |
-| `distribution/ned/profile.ts` | 전용 Zed 설정·프로필·편집기 HTTP 차단 프록시 |
-| `distribution/ned/migration.ts` | 원본 보존·덮어쓰기 없는 L-Vibe 데이터 복사 |
-| `distribution/native-control.ts` | 설정 vault·모델 게이트웨이·OpenViking·엔진 소유 |
-| `distribution/host-tools.ts`, `vs-build.ts` | 수정 승인·MCP·설치된 VS2017/2019 MSBuild |
-| `scripts/ned-build.mjs` | Node 호환 ACP·실행기 번들 |
-| `ned-runtime-lock.json` | Zed 바이너리·원본 소스·버전·해시 |
+0.3.7 재현은 기존 EXE의 LFS 실파일을 준비한 뒤 다음 순서로 진행합니다. 작은 LFS pointer를 EXE로 사용하면 안 됩니다.
 
-신규 공개 도구 ID와 리소스는 `ned_host_*`, `resources/ned`이다. 이전 앱 소유 리소스 경로 읽기 호환과 영속 지식 namespace만 유지한다. 공개 제품명과 신규 사용자 경로는 Ned이다. 과거 다운로드·복구 패치는 대상 L-Vibe 이름을 유지한다.
+```bash
+npm run ned:release:prepare
+# 새 release-runtime-lock.json을 검토하고 빌드 입력을 커밋합니다.
+npm run ned:release
+npm run bundle:offline
+```
 
-기존 safeStorage 설정에는 Electron Local State의 DPAPI 보호 키도 필요하다. 이관 시 전체 앱 소유 프로필을 보존 복사하고, 준비 프로필에서 암호화 설정을 읽지 않은 채 재실행한다. 정상 실행의 Electron userData와 vault 루트는 모두 `%APPDATA%\Ned`이다. 초기 이관 준비만 별도 Ned-Launcher 프로필을 사용한다.
+`ned:release:prepare`는 기준 런타임을 추출·최적화해 lock을 만들고, `ned:release`는 검토한 준비본을 확인한 뒤 호스트·ACP와 설치기를 생성합니다. 버전이나 기준 런타임을 바꾸면 해당 고정값과 검사도 다시 검토해야 합니다. `NED_VERBOSE_INSTALLER=1`로 상세 압축 로그를 남길 수 있습니다.
 
-## 빌드 PC와 검사
+새 Zed 원본을 직접 준비하는 경로는 `npm run ned:prepare`입니다. Linux에서는 Inno Setup 6.4.3을 지원하는 추출기가 필요합니다. `ned-build-tools-lock.json`의 고정 소스와 검토한 PR 197을 CMake·Boost·LZMA로 빌드하고 `NED_INNOEXTRACT`에 경로를 지정하거나 `.cache/ned/tools/innoextract-build/innoextract`에 둡니다. 빌드 스크립트가 추출본의 `app`과 `code$GetInstallDir`를 합칩니다. 직원 배포본에는 추출기와 CMake를 넣지 않습니다.
 
-Node 24·Python 3.12와 기존 고정 Bun/OpenCode 의존성·런타임이 필요하다. `npm ci`, 기존 `desktop:prepare`와 `scripts/desktop-dependencies.py`로 고정 소스/의존성을 준비한다. Python·REA·MCP·토크나이저 런타임은 기존 고정 번들 스크립트와 manifest로 준비·검증한다. 직원 PC에는 이 작업을 요구하지 않는다.
+## 검증 결과를 읽는 기준
 
-Windows 패키지에는 `npm run ned:prepare`, `npm run package:win`, `npm run bundle:offline`을 사용한다. `ned:prepare`는 고정 Zed 아카이브를 빌드 PC에서만 다운로드·검증한다. Linux에서는 Inno Setup 6.4.3 지원 추출기가 필요하다. `ned-build-tools-lock.json`의 고정 소스(기본 upstream + 검토한 PR 197)를 CMake·Boost·LZMA로 빌드하고 `NED_INNOEXTRACT`에 절대 경로를 지정하거나 `.cache/ned/tools/innoextract-build/innoextract`에 둔다. 추출 산출물의 `app`과 `code$GetInstallDir`를 빌드 스크립트가 병합한다. 직원 PC에는 추출기나 CMake를 넣지 않는다.
+0.3.7 전체 Linux 검사는 147개 중 132 통과·15 제외·실패 0이었습니다. 이후 전송·라우팅·스킬 집중 검사 21개, 런타임 해시·경계 검사 11개도 통과했습니다. 제외된 구형 런타임·Wine·네이티브 검사를 통과로 합산하지 않습니다. 실제 엔진 경로가 없는 연동 테스트의 skip 여부도 확인해야 합니다.
 
-`npm run build` 후 `npm run typecheck`, `npm test`를 실행한다. ACP 실제 연동은 `tests/ned.integration.test.ts`, 빌드 승인 제어는 `tests/vs-build.test.ts`에서 확인한다. 테스트에 실제 엔진 경로가 없으면 skip이므로 완료로 오인하지 않는다.
+실제 EXE에서 추출한 앱 파일 55,925개를 준비본과 전부 대조했습니다. Windows Server [실행 43542694638](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638)에서는 새 폴더 생성, 자료 폴더 설치 거절, OpenViking·토크나이저 7종·Node 로딩을 확인했습니다. 공개 다운로드는 원격 전체 바이트와 해시를 확인했습니다.
 
-[현재 검증](docs/validation-0.3.1.md)·[Windows 수용](docs/windows-acceptance.md)·[라이선스](docs/license-policy.md)를 읽고 남은 설치·UI·실제 모델·MSBuild·DNS/TCP 검증을 이어간다. EXE 생성만으로 출시 완료 처리하지 않는다.
+아직 필요한 검사는 직원 PC의 Win10·Win11 GUI, 실제 사내 Qwen·BGE 대기열과 응답, VS2017/2019 빌드·취소, C++ SDK, OpenViking 등록·실제 자료 검색·이관, UIA 동작과 DNS·TCP 관찰입니다. [Windows 확인 목록](docs/windows-acceptance.md)과 [라이선스 정책](docs/license-policy.md)을 기준으로 이어갑니다. `releaseReady: false`는 전체 1.0 검증을 마치기 전까지 유지합니다.
 
-이전 L-Vibe 0.2.7의 상세 인계·해시·Windows 런타임 이력은 [당시 인계서](https://github.com/SungKyu-Kim39/AgentHarness/blob/31748467fcbd0639f70db923ac9d9aea8c268b9f/HANDOFF.md)와 버전별 검증 문서를 보존하여 참고한다.
+## 기존 오류를 다시 다룰 때
 
-## 0.3.1 최종 배포
+| 증상 | 확인한 원인과 현재 처리 | 기록 |
+| --- | --- | --- |
+| 편집기 조기 panic·로그 없음 | 전용 프로필의 표준 AppData 폴더 누락. 0.3.2에 시작 화면과 함께 반영 | [시작 수정](docs/ned-startup-fix-1.md) |
+| ACP가 exit code 0으로 종료 | PowerShell 실행 수명이 먼저 종료. 번들 Python 콘솔 감독기로 표준 입출력 유지 | [ACP·설정 수정](docs/ned-config-restart-fix-1.md) |
+| `Cannot find module './impl/format'` | jsonc-parser UMD 상대 모듈 누락. 0.3.4부터 ESM과 실제 번들 초기화 검사 | [0.3.4 기록](docs/validation-0.3.4.md) |
+| 업데이트 뒤 글꼴·배치 초기화 | 현재 JSONC 대신 일부 키·오래된 appearance 사용. 현재 설정·키맵·DB 경로 보존 | [0.3.3 기록](docs/validation-0.3.3.md) |
+| 스냅샷 창 신원 오류 | agent-desktop 축약 응답과 호스트 요구 불일치. 0.3.6에서 캡처 전후 목록으로 검사 | [0.3.6 기록](docs/validation-0.3.6.md) |
+| Open Folder 뒤 `0xc000041d` | 정확한 원인 미확정. 내부 선택창과 호스트의 시스템 선택창으로 분리 | [진단](docs/windows-diagnostics.md) |
+| 내보내기 선확인 HTTP 500 | 기존 서버 `fs/stat` 단계 실패. 최소 `fs/ls`와 안전한 진단 도구 제공 | [개인 지식 이관](docs/openviking-personal-migration.md) |
 
-빌드 소스: `38f174d12ef91679138a46e29be562b326e6f8d0`. 바이너리·감사·manifest 게시: `fbf2882`. [공개 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.1), [직접 다운로드](downloads/README.md), [공개 다운로드 검사](downloads/Ned-0.3.1-public-verification.json)를 따른다. EXE는 1,176,902,415 bytes, TGZ는 1,173,624,892 bytes이다. 실제 설치기에서 ASCII 94,237개 파일/8,744개 디렉터리와 런타임·스킬 해시를 검증했고, TGZ 내부 EXE도 동일하다.
+배포 PC에서는 시작 수정 뒤 Ned 실행, 누적 패치 뒤 모델 대화와 JSON 자동 적용을 확인했습니다. 데스크톱 진단은 창 18개와 MCP 67개 도구·상태를 읽었지만 실제 계산기 조작 성공까지 확인한 결과는 아닙니다. 기존 OpenViking의 사용자 자료 내보내기 성공도 아직 별도 확인이 필요합니다.
 
-GitHub 릴리스 작성·공개는 성공했다. 현재 연결의 `uploads.github.com` 첨부 요청은 HTTP 401로 거절되어 릴리스 본문에 정상 업로드한 Git LFS 파일의 직접 다운로드 링크를 제공했다. 공개 EXE와 TGZ는 HTTP 206, 정확한 전체 크기, MZ/gzip 형식과 로컬 접두부 일치를 확인했다. 실제 Windows·사내 모델 수용은 여전히 사용자 설치 결과로 확인해야 한다.
+## 사용자 자료와 과거 기록
 
-추가로 모델 endpoint가 응답하지 않는 합성 서버를 두고 실제 OpenViking 로컬 시작을 검사했다. 약 16초 만에 ready였고 ready 전 모델 요청은 0개였다. 기본 스킬 등록은 비동기이며 편집기 시작을 막지 않는다. 임베딩/LLM 응답 대기에는 기본 제한이 없다.
+Ned 데이터는 `%APPDATA%\Ned`에 있습니다. `safeStorage` 설정 이관에는 Electron `Local State`의 DPAPI 키도 필요합니다. 앱 소유 프로필을 원본 보존 방식으로 복사하고, 이관 준비 프로필에서 복호화하지 않은 채 Ned 프로필로 재실행합니다. 처음 준비할 때만 `%LOCALAPPDATA%\Ned-Launcher`를 사용합니다.
 
-## 시작 실패 후속 조사와 빈 시작 화면
+설치 위치를 바꿔도 사용자 자료는 자동 이동하지 않습니다. 다른 Windows 계정의 복호화 실패나 손상 기록을 자동 초기화하지 마세요. 사용자 DB·지식을 제거하거나 무결성 검사를 끄는 방식으로 오류를 해결하지 않습니다.
 
-사용자 0.3.1 Windows에서 405ms 후 exit 101, panic, loaderProbe passed, 앱 소유 Zed.log 없음. 공개 진단 도구 `Ned-editor-probe-1.tgz`를 사용해 current layout에서 Local/Roaming Known Folder가 0x80070003, Rust panic이 crates/paths/src/paths.rs:204:18임을 확인했다. standard USERPROFILE/AppData/Local,Roaming 구성에서는 두 API가 성공하고 private home 안으로 해석됐다. Profile Known Folder 자체는 실제 OS 프로필을 반환하므로 환경 변수만으로 모든 OS 경로가 격리됐다고 주장하지 않는다. --system-specs는 standard에서도 0xc0000005로 끝나 정상 GUI 추가 확인이 필요하다.
-
-시작 수정 패치 1 소스는 표준 AppData 생성/환경 정렬, 강제 폴더 선택 제거, restore_on_startup launchpad, 안전한 panic 소스 위치 기록을 포함한다. `scripts/ned-startup-fix.mjs`는 기존 0.3.1 staging의 app.asar를 추출해 main만 교체하고 모든 기존 Node 의존성/고지를 유지한다. exe+asar 원본 해시를 고정하고 기존 fuse가 0임을 확인하며 어떤 fuse도 변경하지 않는다. 설치 EXE를 다시 빌드하기 전 이 작은 패치로 사용자 PC의 정상 GUI를 검증한다.
-
-시작 수정 패치 소스 커밋은 21e0cea, 게시 커밋은 7545551이다. `downloads/Ned-startup-fix-1.tgz`는 4,219,995 bytes, SHA-256 23354b572fa7eead31df52c1cc72db67658730127ca8eaa2fdab26bd59a9cc87. 기존 app.asar SHA fb10ba3a99479c22a24dbefc40f3b83d156ad1112d0e2ab15c023b5d2660d558, 수정 SHA 43478862038e45935aa805c2f8ffaf26fe2971d2e15202c2f2521f6486c2a753. 기존 exe SHA 208c6c7754a2d95ebc053f91f4354052b3bf12b67df6aa230b1c299b1840d354. 원본 0.3.1 staging에서 실제 적용/중복/복구를 검사했고, 새 아카이브는 main.cjs 외 4,199개 파일/6개 고지 파일 바이트가 동일하다(멤버 순서는 재포장으로 바뀜). 공개 다운로드 전체 SHA도 확인했다.
-
-사용자에게 APPLY_FIX 후 Ned 시작 화면 또는 diagnosticRevision 2 진단을 요청한 상태다. 결과 전에는 GUI 성공을 주장하지 않는다. 정상 시작 확인 후 0.3.2 전체 설치 EXE/TGZ를 만들며 현재 published 0.3.1 EXE/TGZ는 덮어쓰지 않는다. source state는 빈 시작 화면까지 구현돼 있으나 package version은 아직 0.3.1로 유지했다. small patch와 전체 설치 버전을 구분한다.
-
-## 2026-11-12: confirmed startup and configuration auto restart
-
-User confirmed Ned starts after startup-fix-1, then requested that successful JSON import automatically restart/apply. Implementing 0.3.2: validate/encrypt before normal WM_CLOSE to exact owned editor PID; respect save/cancel, serialize imports, wait for service shutdown, schedule one Electron relaunch. Invalid imports leave editor live. Native Windows auto-restart verification remains pending; startup success on the deployment PC is now confirmed. Preserve no-default model deadlines.
-
-ACP follow-up: user can launch Ned but selecting Ned in New Agent Thread exits status 0. Two PowerShell Node-mode probes returned only exit 1, with no version/recognized stderr; first --eval probe may have native-argument quoting ambiguity. Do not claim a root cause yet. Actual Linux Electron (not only Node) ACP integration passed 3/3. New stdlib/bundled-Python agent-probe compares direct node, direct ACP initialize, and PowerShell ACP with bounded sanitized diagnostics, no sessions/prompts/config edits.
-
-ACP root-cause evidence received: direct-node exit0 with version; direct-acp initialize ok/alive; PowerShell-acp exit0/not alive with 540 stdout bytes. Shell lifetime differs; do not misclassify intentional direct-probe cleanup exit1. Windows profile now uses existing bundled Python console sidecar-supervisor.py -> Electron Node ACP with fixed argv. Need deployment thread/chat confirmation after cumulative patch.
-
-Published cumulative patch: downloads/Ned-config-restart-fix-1.tgz, 4,204,178 bytes; SHA256 6f546f125f3e7b15d023efd2e24f5d367f72c22642cf6e975036a71b7a80ba2f; updated ASAR 2759e192f297446123fbda4a130d7a1b054f856fa6566d7f60289143c3e35e78. Source e766c333513cb3ce02c2c79e4bbe8cf1b034b82a. Actual original + startup-patched archives apply/idempotence/rollback passed; archive retained all 4,253 entries, 4,199 unchanged files and six unchanged license files, only main.cjs differs. 16/16 focused tests with actual Electron Node via console supervisor passed; packaged/source sidecar-supervisor.py files are identical. Windows patch chat + automatic restart result still pending.
-
-Full 0.3.2 packaging: pin build-start source commit; source TGZ uses the audit commit, not a moving HEAD. NED_AUDIT_DISCARD_STAGE=1 records the five comparison hashes after installer integrity passes, removes only generated win-unpacked to make extraction fit disk, then verifies extracted bytes and all component manifests. No customer data involved. Existing original baseline files preserved in .cache/ned/host-baseline-0.3.1 for small-patch reproducibility.
-
-## Active: public tool namespace rename requested after patch confirmation
-
-User confirmed cumulative patch 1 succeeds on Windows for (1) Ned model list/chat and (2) JSON import -> automatic restart -> new settings applied. Record evidence in downloads/Ned-config-restart-fix-1-validation.json; full Windows acceptance remains false. Then user requested every agent-visible l_vibe tool name be renamed to Ned.
-
-Stopped own in-progress pre-rename 0.3.2 NSIS PID 106674 with TERM at ~12 min because its source was obsolete. Session 75876 exited 1 as expected; this was intentional, not a new product build defect. No 0.3.2 installer was published. Source currently uncommitted rename work: ned_host server, every host permission/tool ID, fallback provider ned_, prototype MCP ned, private Git helper ned_snapshot_tracked_paths, MCP labels/errors and skill reader text Ned. 19 adapted static skill docs and their ADAPTATION/manifest hashes updated; adapter generator updated for reproducibility. resources/ned replaces current resources/l-vibe; pure managedResource helper retains legacy resource fallback for existing installations. Persisted OpenViking account/package/source keys intentionally retain their internal legacy namespaces to preserve knowledge, without exposing legacy tool aliases. Current full build only for the rename: the published host-only patch 1 must not be regenerated with refreshed runtime/skill locks. Historical patch builders now pin original host hashes/commits and refuse new code.
-
-MCP runtime refreshed via scripts/bundle-mcp.py refresh: 21,031 files complete. Python refresh mode added to update reviewed launchers and manifest without package installation. First command used -I and could not import build-local tokenizer_assets; corrected to normal build invocation. Refresh then found optional rea-supervisor.py source absent; corrected with the existing fetch-mode optional-file guard. Session 13514 currently running proper refresh/typecheck/build. Earlier 9/9 naming/ACP/skill focused checks passed, including real model request naming ned_host_read_file and all exposed Markdown without old branding. Need final refresh completion, full tests and live MCP verification, coherent source commit/push, then restart full 0.3.2 packaging with NED_AUDIT_DISCARD_STAGE=1, audit, bundle, artifacts/LFS push, prerelease with direct links.
-
-Disk ~3.9GB free; original 0.3.1 baseline host saved .cache/ned/host-baseline-0.3.1. Old source-frozen pre-rename package log at .cache/ned/package-0.3.2.log (rename it before retry). Current source/app version remains 0.3.2, no public tag yet. New Windows namespace execution not yet tested; previous Windows ACP/restart is confirmed. Preserve no-default model deadlines, all private knowledge/data and existing immutable binary artifacts.
-
-Latest user steering: add exact Speak Korean block to %APPDATA%/Ned/editor/config/AGENTS.md by default. Added editor-instructions.ts append-once/preserve-existing/refuse-symlink helper, called by prepareEditor, and same constant appended to managed engine system text. Tests being added. Runtime refresh/typecheck/build session 13514 finished successfully, 63,069 Python files; updated bundles differ only launch.py/analysis-worker.py and mcp-python-worker.py against preserved pre-rename stage. No native package files changed. Commit attempt failed because vendor/runtime is gitignored/untracked, so remove that pathspec; source scripts and top-level locks capture the changes, no force-add runtime binaries. Full naming suite running session 37248 and live MCP session 45376 started before Korean helper edits; run dedicated fresh Korean/profile/ACP tests afterward.
-
-Latest coherent source HEAD 4c2d55e (full SHA in .cache/ned/proof-0.3.2.json), pushed, after rename commit 6bb361a. Korean directive helper now recognizes CRLF without duplication; 2/2 focused tests passed. Naming/ACP/skill checks 9/9, Korean/profile/naming checks 10/10, full suite 110/110 (644.0 sec, no skip), live MCP all phase passed. The full suite started before Korean test file existed; dedicated fresh checks cover that last change. Test runtime versions recorded in .cache/ned/proof-0.3.2.json. New full package build session 25238 active, source pinned at 4c2d55e, NSIS PID 111425. Old obsolete build was intentionally stopped; do not stop this healthy build absent real new source requirements. NED_AUDIT_DISCARD_STAGE=1 deletes generated win-unpacked only after integrity passes, retaining comparison hashes; audit extracts and verifies all runtime manifests then removes extracted temp. Source TGZ uses report.sourceCommit (not moving HEAD).
-
-Remaining: finish package/audit, npm run bundle:offline, stage downloads EXE/TGZ via hardlinks to avoid duplicates and git LFS pointers; publish validation/hash/audit metadata, public download checks, GitHub prerelease v0.3.2 targeting full source SHA, direct LFS links (release attachment upload previously 401; do not bypass credentials). Existing 0.3.1 artifacts and both published repair TGZs immutable. New namespace needs full installer because runtime/skill hashes changed; host-only config patch is frozen. Current .cache/ned/release-notes-0.3.2.md updated with 110 tests, naming and Korean defaults. Current .cache/ned/rename-runtime-diff.json proves only mcp-python-worker.py / OpenViking launch.py + analysis-worker.py changed from previous runtime, no native packages changed. Verify ASCII TGZ and actual extracted installer. Update final current docs/downloads entry and Handoff with real artifact hashes/URLs. Preserve releaseReady false until full Win10/11/offline acceptance; earlier user's Windows ACP/restart success applies to the published cumulative patch.
-
-## 0.3.2 artifacts ready for publication
-
-Package/audit session 25238 completed successfully. Installer: Ned-0.3.2-win-x64.exe, 1,176,920,431 bytes, SHA256 10b104a14d7e850d2e923e679c23735686b830a582dc7ec81bc224f8de0d0458. Extracted 94,237 ASCII files / 8,743 directories; component hashes all passed; audited source 4c2d55e54bef1bdba577cda3833d1bc402e0299b. Bundle session 61501 completed, stream verification session 50024 passed: Ned-0.3.2-windows-x64.tgz 1,173,693,834 bytes, SHA256 ff4feabaa2d3d6c6c9a317bbe9cde46fc09601a502fdde841c74faed4b3703b2; 22 regular ASCII files, actual nested EXE hash equals audited EXE, source includes Korean defaults + Ned tools, CHECK_AGENT included. Generated bundle assembly directory removed after verification to free disk. Artifact files in downloads are hardlinks to release originals; do not overwrite immutable files. Metadata under downloads/Ned-0.3.2-*.json, hashes alongside. Next: LFS add/push, public ranged download verification, publish GitHub prerelease v0.3.2 targeting full source SHA with .cache/ned/release-notes-0.3.2.md, final documentation/record commit and concise Korean reply. Release attachments upload previously 401; direct Git LFS links are supported.
-
-## Publication complete: Ned 0.3.2
-
-Artifact commit 73235ef uploaded both LFS objects (2.4GB), pushed to work. Public unauthenticated Range downloads returned HTTP206 with exact whole sizes and MZ/gzip signatures for both files. Full remote checksums were not streamed; local whole hashes, nested installer stream hash, LFS pointer OIDs and actual installer extraction were verified. Public proof: downloads/Ned-0.3.2-public-verification.json. Prerelease v0.3.2 is public (not draft), https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.2, target source 4c2d55e54bef1bdba577cda3833d1bc402e0299b. Body has direct EXE/TGZ links; uploads.github.com attachments previously 401, so no attachment upload was retried/bypassed.
-
-All active requests fulfilled: auto config application/relaunch + Windows ACP lifetime fix (user confirmed earlier cumulative patch); all public tool/MCP/policy/guide names Ned; resources/ned current layout with legacy data compatibility; default exact Speak Korean block at %APPDATA%/Ned/editor/config/AGENTS.md, append once, preserve existing content incl CRLF, same engine default. Full 0.3.2 EXE/TGZ built/audited/published. New full Windows execution and broad Win10/11/offline acceptance still not claimed; releaseReady remains false per 1.0 criteria. No running build/test sessions remain. Current artifact hashes/size are in the previous section and downloads metadata. Ignore the obsolete intentionally aborted pre-rename log as historical; the final build succeeded. Final response should give direct TGZ/EXE links and note close Ned/Zed before installing; existing settings/knowledge are preserved and prior patches are already included.
-
-## 2026-11-13 KST: release baseline on main and approval guidance
-
-User explicitly approved moving the released baseline to main, continuing development on work. Remote main was 1947a47 Initial commit; work was 60dc48f with the complete published 0.3.2. Local origin/work was stale because remote.origin.fetch only mapped main; explicit fetch refreshed both refs, confirming actual remote work matches HEAD. Add work fetch/upstream tracking for future development. Use fast-forward-only push to main; preserve history/artifacts. Branch policy and current approval guide added.
-
-User also asks how to reduce repeated approvals like Codex delegate approval. Verified 0.3.2 supports only per-request edit auto approval via checkbox; new request/stop/restart clears grant. OpenCode JSON or editor permission UI cannot override host approvals. Session/project edit auto approval is a proposed extension, not implemented or enabled by this branch/documentation operation. No new EXE was built and no execution permission was changed. Explain current checkbox and limitation honestly.
-
-## 2026-11-13: 0.3.3 development
-
-설치 EXE의 `$EXEDIR/agent-config.json`이 있으면 최초 설정 준비 파일로 복사하고 템플릿 편집기를 열지 않는다. 첫 앱 실행에서 검증·safeStorage 암호화 후 준비 파일만 삭제한다. 기존 암호화 설정/legacy 설정은 덮어쓰지 않으며 파일이 없으면 기존 기본 예제 편집 절차를 유지한다.
-
-파일 수정 승인창에 현재 대화·프로젝트 자동 승인 버튼을 추가했다. 새 사용자 메시지에도 유지하지만 다른 대화/프로젝트 사용·중지·재시작·설정 재시작 요청·트레이 수동 해제로 취소한다. Epoch와 AbortSignal로 지연 중인 쓰기도 차단한다. 충돌·버퍼·보호 경로·스냅샷 검사는 그대로다. ACP bind와 호스트 도구/새 요청이 다른 범위를 감지하면 해제한다. 엔진 always/JSON에 저장하지 않는다.
-
-DesktopTools는 종료된 MCP를 재사용하던 결함을 수정했다. 종료 확인 뒤 연결과 refs를 폐기하고 관찰에서 새 연결을 만든다. 전달 여부가 불명확한 동작은 자동 반복하지 않으며 새 snapshot 전 동작을 차단한다. 종료 미확인은 전체 새 실행을 차단한다. private AppData와 AGENT_DESKTOP_HOME을 생성하고 순수 표준 라이브러리 감독기는 -I -S -B로 실행한다. desktop_list_apps와 desktop_launch를 추가하여 총 20개다. GUI 실행은 고정 절대 exe/해시/빈 argv/작업 폴더를 별도 승인하며 셸·문서·URI·호출자 환경을 허용하지 않는다. 사용자 GUI는 MCP Job 밖에서 실행하고 Ned 종료 때 죽이지 않는다. 계산기 표준 순차 모드와 과학용 우선순위 모드를 구분하고 실제 결과를 관찰해야 한다.
-
-첫 Windows desktop-probe-1이 Python pathlib의 urllib 누락 및 pywin32_bootstrap 경고로 실패했다. 아직 desktop timeout의 원인으로 단정할 수 없다. Python을 쓰지 않는 desktop-probe-2(544ee25)를 work에 게시하고 사용자 결과를 기다린다. 공개 TGZ SHA256은 786311a2a676877ae6c1e244c5c517732202c834f08627846f680374bf579eff이다. 키·창 제목·원본 오류를 기록하지 않는 파일 해시/네이티브 CLI·MCP 검사다. 실제 Windows GUI 성공을 주장하지 않는다. main은 검증된 릴리스 기준으로만 갱신한다.
-
-Windows 사용자 후속 결과: probe-2의 파일 5개 해시 모두 일치, native status/직접 MCP status 성공. list-windows invalidEnvelope는 PowerShell 판독 결과이며 네이티브 실패로 단정하지 않는다. 이어 probe-1 재실행이 정상 성공하여 창 18개, Python 감독 MCP initialize 358ms / tools-list 47ms(67개) / status 202ms, stderr0을 확인했다. 최초 Python import 오류는 재현되지 않았고 파일 누락을 주장하지 않는다. 성공한 진단의 표준 private AppData/state 환경을 호스트에 맞추고 죽은 연결 재사용을 고쳤다. 원래 timeout의 단일 원인은 미확정이나 네이티브/감독기 실행 가능성은 실제 Windows에서 확인됐다. 실제 앱 실행·클릭·결과는 새 설치본으로 확인해야 한다.
-
-사용자 추가 요청: 업데이트 시 창/대화 패널 배치·폰트 유지, 실행 후 작업표시줄 Ned 아이콘. 첫 0.3.3 압축 작업은 중단하고 같은 버전에 포함한다. profile.ts의 5개 키 필터·appearance 우선·JSON.parse가 초기화 원인이었다. editor-preferences.ts는 고정 jsonc-parser 3.3.1(MIT)로 실제 settings.json을 우선하고 UI/nested panel/font 옵션·주석·BOM/끝 쉼표·사용자 restore_on_startup을 보존한다. keymap은 최초에만 생성하며 editor/db를 변경하지 않는다. 관리 연결/실행 필드만 갱신하며 최초 원본 백업을 남긴다. JSONC 오류/중복은 보존 후 안내한다.
-
-작업표시줄은 GPUI Windows의 load_icon이 PE icon resource 1을 사용함을 원본에서 확인했다. ned-editor-branding.mjs로 원본 Zed.exe의 아이콘만 교체하고 비리소스 섹션과 버전 리소스가 같은지 검사한다. 원본 SHA c9348b84ff3a2632bdec30912e069a584ef31bd23a5ce35afbce76d70975601a, Ned 아이콘 SHA 98b6ebe6829e4b969400960a7cbcb9e23c7b7ac299255ea527d5e4e0ce4ef1fb, 현재 수정본 SHA 01a443f99564e7020aa91b8fd621c2874bb3699681a3d0caf220dc5abc115cde. 공급자 원본/소스·버전 메타데이터는 보존하고 수정본은 unsigned임을 고지한다. 개인 Zed·Windows 사용자 고정 바로가기는 수정하지 않는다. 실제 작업표시줄 표시는 새 설치본으로 확인해야 한다.
-
-0.3.3 EXE 생성/7zip t(94,239 files)는 통과했으나 추출 검사 대기 세션이 중단되어 검사 진행 상태가 미확정인 채 추출기가 남았다. 완성된 EXE는 유지하고 소유 추출기/임시 추출본만 정리했다. `ned-package.mjs stage`로 같은 소스의 staging을 복원한 뒤 기존 EXE와 다시 대조한다. 이후에는 sourceCommit/EXE SHA/6개 payload SHA를 체크포인트로 먼저 저장하므로 staging 정리 뒤에도 audit를 재개할 수 있다. runtime/NSIS/제품 동작 변경은 없으며 검사된 동일 bytes만 공개한다.
-
-## 0.3.3 audited distribution
-
-제품 실행 코드/아이콘 추가 소스는 ef58926424405bb62a1fda3a4b030bb28c5d8ee3, 재개 가능한 감사 도구를 포함한 배포 소스/tag 대상은 1bcde52758c5aa48c3d7cc957dec63283b781faa다. 같은 소스로 staging을 재생성하여 기존 EXE의 Ned.exe/ASAR/ACP/아이콘/Zed/branding 기록 6개 해시를 전부 대조했고, 추출된 구성 요소 manifest도 전부 일치했다. 원래 EXE를 재압축하거나 바꾸지 않았다. EXE 1,176,861,330 bytes / SHA f41142d5dfcfd0fe04a9ad2edfbe2f1f6f50eabf1b9f4e23e3a60effefdfbe3e. TGZ 1,173,675,928 bytes / SHA ee80dfa432f05f601185baa62316a1630554f9b9719a343471a25a8d8a399956. 실제 설치 파일 94,239개/디렉터리8,743개 ASCII, 기본 스킬36개, TGZ 내부 EXE 동일 해시를 확인했다. 공개 링크 결과는 downloads/Ned-0.3.3-public-verification.json에 후속 기록한다. 실제 Windows 계산기 조작·패널 복구·작업표시줄 표시·회사 서버/외부망 차단 전체 수용은 별도 확인 대상이다.
-
-0.3.3 게시 확인: https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.3 (공개 prerelease, draft 아님, source/tag 1bcde52758c5aa48c3d7cc957dec63283b781faa). 아티팩트 commit 0c0e2edcc54f4b05baabaf9a609e240b238fcc17의 EXE/TGZ를 인증 없는 공개 요청으로 HTTP206/정확한 전체 크기/MZ·gzip/4,096byte 접두부 로컬 일치를 확인했다. 원격 전체 파일의 SHA를 다시 스트리밍한 검사는 아니며 그 한계를 JSON에 기록했다. 공개 validation JSON은 로컬과 전체 bytes 일치한다. main은 이 검증 후보의 배포 기준으로 fast-forward하며 work에서 후속 개발한다. 실제 Windows GUI/패널/회사 모델 수용 상태는 미검증으로 유지한다.
-
-## 2026-11-13: export preflight HTTP 500
-
-사용자 기존 서버 /health 결과: version0.5.0, healthy=True, auth_mode=trusted. 기존 EXPORT_PREFLIGHT는 /api/v1/fs/stat에서 실패하여 pack 요청은 시작되지 않았다. 벡터 옵션은 이 단계와 무관하다. exporter를 같은 인증/URI의 fs/ls(simple=true, node_limit=1, 비재귀/본문 미포함) 선확인으로 바꾸고 응답 스키마를 검사한다. 목록 오류는 중단하고 pack API의 원래 인증/범위를 그대로 따른다. 진단 전용 CHECK_EXPORT.cmd는 health/ready/stat/list GET 및 안전한 메타데이터만 출력하며 원본 오류/키/파일 이름·내용을 출력하지 않는다. 직원 추가 설치 없이 Python 표준 라이브러리만 사용한다. 독립 Ned-openviking-export-fix-2.tgz를 source-bound builder로 제공하고 기존 0.3.3 EXE/TGZ는 변경하지 않는다. 실제 사용자 stat 500의 내부 원인은 아직 미확정이다.
-
-수정 검증: typecheck 통과, 개인 지식 관련 10/10 Linux 검사 통과(102.422초, skip0). 실제0.5.0 벡터 포함/미포함→0.5.4 SDK 가져오기와 두 프로젝트의 개인 검색을 확인했다. 벡터 미포함 시험은 공개 /fs/stat만 HTTP500이 되도록 주입했으며 목록 확인/export/import는 정상 성공했다. 401/403/잘못된200응답은 export를 막고 진단에는 합성 키/자료 이름/내용이 노출되지 않음을 검사했다. 실제 사용자 서버의 500 원인·자료 내보내기 성공은 새 도구로 확인해야 한다.
-
-독립 export fix 2 공개: source8cad5bba288884640a3f60346f014271a4924a3b, archive7761bytes, SHA7d83953085a695d54c145cda67fe49cc7246faa454a8e71fc1e8ac49b362717b. 7개 ASCII 파일(표준 CMD/진단 CMD/Python/안내/라이선스/manifest)을 검증하고 공개 전체 다운로드 byte/SHA도 일치했다. /ready HTTP503의 AGFS/VectorDB 등은 고정 상태만 남겨 민감 오류 메시지를 제거하며 최종 8/8 검사도 통과했다. 기존 v0.3.3 EXE/TGZ/태그는 변경하지 않고 릴리스 본문에 독립 도구를 추가한다. 사용자에게 새 폴더의 EXPORT_PERSONAL.cmd 재시도, 계속 실패하면 CHECK_EXPORT JSON만 요청했다. 실제 사용자 성공은 아직 미확인이다.
-
-## 2026-11-13: 0.3.6 fixes
-
-Desktop snapshot 1.2.0 compact response fix and original 0.3.4/0.3.5 reversible patch are implemented. The 0.3.5 user reported native folder selection crash 0xc000041d, unknown module, after about 17 minutes. Its cause remains unconfirmed. Windows editor native prompts are disabled; the host tray offers a system folder picker with real shell navigation and private-profile CLI dispatch. Installation directory selection is added; existing InstallLocation is reused, unrelated nonempty folders/roots refused, and custom-path diagnostics updated. Data remains APPDATA/Ned. See validation-0.3.6.md and release metadata for the actual build and Windows acceptance boundary.
-
-## Post-0.3.6: installation folder creation and project menu wording
-
-- Resolve the proposed install path with Win32 GetFullPathNameW, which accepts a nonexistent target, rather than depending on NSIS GetFullPathName's existence-sensitive conversion. Retain root/unrelated-directory guards. Normalize the accepted path and explicitly CreateDirectory before resource cleanup/copy; report creation failure. Do not create directories while the user types in the directory page.
-- Change the live tray item to `프로젝트 폴더 열기` and update the setup/introduction/comparison guides. Project selection remains available for normal project directories on other drives as well as Desktop/Favorites.
-- Extend the optional Windows/Wine installer fixture to use a missing parent/child/Ned hierarchy and assert that the executable is installed without precreating it.
-- Verification: fixture installer compiled successfully with a separately downloaded Debian NSIS 3.13-1 compiler and produced a PE executable. This is syntax/package-generation evidence, not the pinned release-toolchain or Windows installation acceptance. Full npm dependency restoration failed in this fresh environment; Windows/Wine runtime is unavailable.
-- The user subsequently authorized a same-version repaired build. Keep product version 0.3.6, preserve the original binaries/tag, and publish separate rebuild1 filenames with their own source/provenance/hashes. The repair packaging entry point is NED_BUILD_REVISION=rebuild1 node scripts/ned-package.mjs rebuild; it reuses the original SHA-pinned runtime and rebuilds the host from current source. A compiled-byte comparison allows only the expected menu literal change; all ASAR dependency bytes and other runtime files must remain identical.
-
-Rebuild1 audit: NSIS also generates nsDialogs.dll and modern-wizard.bmp under $PLUGINSDIR. These and System.dll plus the generated uninstaller are hashed separately from app payload files. A verifier-only correction does not require regenerating a valid EXE. Resume audit/bundle with NED_REBUILT_SOURCE_COMMIT set to the actual producer commit; checkpoint/provenance/output hashes must still match. Record auditSourceCommit separately and include both producer and verifier source archives when they differ.
-
-## 2026-11-13: Codex project development skills
-
-사용자는 추천 스킬을 Ned 설치본이 아니라 Ned를 개발하는 Codex 프로젝트에 먼저 적용하도록 명확히 했다. 저장소의 `.agents/skills/`에 ECC의 inherit-legacy-style/change-impact/mcp-dependency-review와 Matt Pocock의 diagnosing-bugs/codebase-design/code-review를 프로젝트 어댑터로 추가했다. 루트 AGENTS.md에서 작업별로 연결하고 출처·고정 커밋·MIT 라이선스·원문·파일 해시는 `.agents/skills-lock.json`과 `.agents/README.md`에 기록한다. 반복 승인/Q&A, 전역 훅 설치, 자동 병렬 에이전트, 외부 이슈 트래커 의존은 적용하지 않는다. 참조 원문은 감사 자료이며 실행 지침은 어댑터 SKILL.md다. 제품용 skills/, vendor/skills/, 루트 skills-lock.json, 설치 코드·버전·배포물은 이 작업에서 변경하지 않는다. 런타임 스킬 목록의 자동 재탐색은 다음 Codex 프로젝트 세션에서 확인하며 현재 세션에서는 파일을 직접 읽어 적용할 수 있다.
-
-검증: 원문·라이선스 12개의 Git blob SHA가 고정 upstream tree와 일치했고, 6개 스킬/18개 파일의 SHA-256·frontmatter·라우팅 링크 6개·ASCII 경로·실행 코드 및 심볼릭 링크 없음 검사를 통과했다. package.json, 제품용 skills-lock.json과 vendor/skills/manifest.json, 현재 빌드·패키징 스크립트의 bytes는 HEAD와 동일함을 확인했다. 지침/문서만 수정하여 제품 빌드·Windows 실행·모델 호출은 하지 않았다.
-
-
-## 2026-11-14: Ned 0.3.7 implementation and release preparation
-
-사용자는 Codex 스킬을 적용한 전체 검토·설치 최적화, 추천 기본 스킬 추가, 문맥 자동 선택, 0.3.7 빌드·배포를 명시적으로 승인했다. 30개 정적 어댑터를 추가해 66개이며 Modern Web Guidance의 AI 다운로드 문서 5개를 제외한 웹 가이드 204개를 고정했다. 별도 분류 모델 없이 동일 응답 요청에서 지침을 제공하고, context/output 여유가 부족하면 엔진의 의미 기반 선택·read_skill을 사용한다. 압축/도구 없는 재출력에는 지침을 주입하지 않는다. 스킬 원문 해시·경로를 시작과 읽기 때 검증하며 긴 문서의 offset을 지원한다.
-
-빌드 방식: 원본 0.3.6-rebuild1 EXE SHA 4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252에서 고정 런타임을 추출하고 SDK 139개/37,876 소스 파일의 바이트를 검증한 ZIP으로 묶는다. 원문 소스가 있는 bytecode cache만 제거하며, 별도 대응 소스 5개는 TGZ/source로 옮겨 함께 전달한다. release-runtime-lock.json이 준비 결과를 고정한다. 호스트/ACP는 현재 소스에서 다시 빌드하고 호스트 ASAR의 불필요한 의존성을 제외한다. scripts/prepare-acp.mjs와 scripts/acp-build/package-lock.json은 빌드 PC 전용이다. 직원 PC 설치 경로가 아니다.
-
-검증: Linux 전체 147개 중 132 pass/15 skip/0 fail, 최신 대상 검사 21 pass. 설치 준비에서 38,605 파일 쓰기와 312,699,583 bytes를 줄였다(호스트 ASAR 절감 전). 새 .github/workflows/windows-offline-smoke.yml은 work의 0.3.7 EXE 게시 때 동일 Windows Server runner에서 이전/새 설치 시간과 Python/OpenViking/tokenizer/Node를 확인한다. 원격 Actions 성공·실제 Win10/11 GUI·사내 모델 결과는 아직 주장하지 않는다. 다음은 소스 커밋/푸시 → npm run ned:release → 감사/반입 TGZ → 아티팩트 게시/Windows CI → 0.3.7 prerelease와 공개 해시 검증이다. 상세 상태는 docs/validation-0.3.7.md를 따른다.
-
-0.3.7 설치기 검토 추가: 사용자 자료 루트(Ned/L-Vibe) 안의 설치와 해당 경로에서의 재귀 제거를 차단한다. 기존 전용 경로 자동 생성은 유지한다. NSIS 컴파일 검사 통과, Windows CI에 거부 경로 검사를 추가했다. 런타임 준비는 유지하고 최종 소스 커밋에서 설치기를 다시 생성한다.
-
-최종 실행 경로 검토에서 MCP·desktop의 manifest 원본 고정값과 최적화 manifest가 충돌함을 발견해 배포 전 수정했다. runtime-pins.ts는 원본 해시와 정확히 대응하는 검토된 최적화 해시만 정적 허용한다. 실제 최적화 payload 전체의 production MCP 검사(우회 옵션 없음)를 포함한 11 pass/1 skip/0 fail과 타입 검사를 통과했다. 설치기 압축 상세 추적은 NED_VERBOSE_INSTALLER=1로 빌드 로그에만 남길 수 있다. 이 수정 소스에서 EXE를 다시 생성한다.
-
-0.3.7 EXE 감사 통과: producer 3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0, EXE 811,344,026 bytes / SHA 4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c. 55,925 앱 파일 전체 staged/추출 bytes 일치, 생성된 4개 파일 별도 기록, 스킬66/문서569와 ASCII 경로 확인. 아티팩트 커밋3fd230b에서 EXE를 게시해 Windows CI를 시작한다. 아직 TGZ·Windows·공개 전체 해시 검증과 릴리스는 완료 전이다.
-
-Windows CI 43540857847 통과(실행/가져오기/토크나이저7/Node/폴더거부), 하지만 LZMA 설치시간90,792ms > 원본54,182ms여서 기본 배포로 채택하지 않았다. downloads/Ned-0.3.7-lzma-benchmark.json에 기록했다. zlib로 변경하고 SDK/ASAR 최적화를 유지해 설치 속도를 다시 측정한다. 811MB 후보는 아직 0.3.7 공식 릴리스로 게시하지 않았으며 최종 후보로 교체할 예정이다. 이전 버전 파일/태그는 유지한다.
-
-0.3.7 최종 zlib 후보: source448b2e648e89f6c8001c508eaf121a4fc0c2c236, EXE1,040,612,708 bytes/SHA9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b. 아티팩트ad9135b. Windows Server CI43542694638 통과, 같은 실행기에서 50,497ms→38,935ms(22.90% 감소), 파일94,237→55,926, 논리크기3,375,883,034→3,024,551,545. OV import/토크나이저7/Node/새 폴더/자료 경로 거부 통과. Win10/11 GUI·실제 사내 모델·외부 DNS/TCP 전체 수용은 별도다. docs/validation-0.3.7.md와 downloads/Ned-0.3.7-windows-offline-smoke.json에 기록했다. 다음은 TGZ 조립/전체 대조·공개 전체 해시·v0.3.7 게시·main fast-forward다.
-
-0.3.7 공개 배포 완료: https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7 (공개 prerelease, draft=false, tag/source448b2e648e89f6c8001c508eaf121a4fc0c2c236). TGZ 아티팩트f0e7b9b0132e46aef406657689a99e8b542b8517, 1,169,734,854 bytes/SHA8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a. 공개 EXE/TGZ와 메타데이터·체크섬8개를 인증 없는 전체 스트리밍으로 byte/SHA 대조했다. 릴리스 페이지HTTP200/두 다운로드 링크를 직접 확인했다. 첨부 asset 업로드가 아니라 본문의 고정 LFS 링크다. 최종 공개 기록을 work에 푸시하고 main에 fast-forward해 배포 기준으로 반영한다. 다음 개발은 work에서 이어가며 실제 Win10/11 GUI·사내 모델·DNS/TCP 전체 수용은 미확인으로 유지한다.
+이 문서는 현재 개발에 필요한 정보로 정리했습니다. 이전 단계의 임시 프로세스·실행 세션·상세 해시는 [0.3.7 배포 직후 인계 원문](https://github.com/SungKyu-Kim39/AgentHarness/blob/c940cda42c6d98a8828ccdeac963e67e31ec9a5c/HANDOFF.md)과 버전별 `docs/validation-*`, `downloads/*-validation.json`에서 확인할 수 있습니다. L-Vibe 0.2.7 이전 이력은 [당시 인계서](https://github.com/SungKyu-Kim39/AgentHarness/blob/31748467fcbd0639f70db923ac9d9aea8c268b9f/HANDOFF.md)에 보관합니다.
