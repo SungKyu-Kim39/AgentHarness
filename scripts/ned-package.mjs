@@ -240,7 +240,7 @@ else if(mode==='release') {
   await prepareRelease(root,cache,staged,version,await getPath7za());
   await refreshReleaseHost(root,cache,staged,version,buildCommit);await stamp();await verifyAsciiTree(staged);
   const nsis=await getMakeNsisPath('0.0.0');
-  run(nsis.path,['-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
+  run(nsis.path,[process.env.NED_VERBOSE_INSTALLER==='1'?'-V4':'-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
   await audit();
 }
 else if(mode==='rebuild') {

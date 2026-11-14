@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { DesktopLauncher } from './desktop-launch';
 import { atomicJSON } from '../src/main/config';
 import { PrivateMcpClient, type McpToolResult } from '../src/main/mcp-client';
+import { matchesPinnedRuntimeManifest } from '../src/main/runtime-pins';
 const text = z.string().min(1).max(10000), ref = z.string().regex(/^@[A-Za-z0-9_-]+:e[0-9]+$/);
 const windowID = z.string().min(1).max(256);
 const schemas = {
@@ -145,7 +146,7 @@ export class DesktopTools {
     const base = path.join(this.resources, 'runtime', platform, 'agent-desktop');
     const lock = JSON.parse(await readFile(path.join(this.resources, 'ned/locks/agent-desktop.json'), 'utf8'));
     const manifestBytes = await readFile(path.join(base, 'manifest.json'));
-    if (createHash('sha256').update(manifestBytes).digest('hex') !== lock.manifests?.[platform]) throw new Error('Desktop 번들 목록 무결성 오류');
+    if (!matchesPinnedRuntimeManifest('agent-desktop', createHash('sha256').update(manifestBytes).digest('hex'), lock.manifests?.[platform])) throw new Error('Desktop 번들 목록 무결성 오류');
     const manifest = JSON.parse(manifestBytes.toString());
     if (manifest.version !== '1.2.0' || !Array.isArray(manifest.files)) throw new Error('Desktop 고정 번들이 없습니다.');
     for (const file of manifest.files) {

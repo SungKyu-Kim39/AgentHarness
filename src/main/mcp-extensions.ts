@@ -8,6 +8,7 @@ import { ProjectFiles } from './files';
 import { PrivateMcpClient, type McpToolResult } from './mcp-client';
 import { BrowserProxy } from './browser-proxy';
 import runtimeLock from '../../mcp-runtime-lock.json';
+import { matchesPinnedRuntimeManifest } from './runtime-pins';
 
 export interface ExtensionTool { name: string; description: string; inputSchema: Record<string, unknown> }
 const str = { type: 'string' };
@@ -37,7 +38,7 @@ export class McpExtensions {
     return this.verified ??= (async () => {
       const base = path.join(this.resources, 'runtime/windows-x64/mcp');
       const bytes = await readFile(path.join(base, 'manifest.json'));
-      if (createHash('sha256').update(bytes).digest('hex') !== runtimeLock.manifestSha256) throw new Error('MCP 번들 manifest가 고정된 빌드와 다릅니다.');
+      if (!matchesPinnedRuntimeManifest('mcp', createHash('sha256').update(bytes).digest('hex'), runtimeLock.manifestSha256)) throw new Error('MCP 번들 manifest가 고정된 빌드와 다릅니다.');
       const manifest = JSON.parse(bytes.toString());
       if (!manifest.complete) throw new Error('MCP 런타임 번들이 완성되지 않았습니다.');
       const expected = new Set<string>(['manifest.json', ...manifest.files.map((f: { path: string }) => f.path)]);

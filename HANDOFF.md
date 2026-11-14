@@ -201,3 +201,5 @@ Rebuild1 audit: NSIS also generates nsDialogs.dll and modern-wizard.bmp under $P
 검증: Linux 전체 147개 중 132 pass/15 skip/0 fail, 최신 대상 검사 21 pass. 설치 준비에서 38,605 파일 쓰기와 312,699,583 bytes를 줄였다(호스트 ASAR 절감 전). 새 .github/workflows/windows-offline-smoke.yml은 work의 0.3.7 EXE 게시 때 동일 Windows Server runner에서 이전/새 설치 시간과 Python/OpenViking/tokenizer/Node를 확인한다. 원격 Actions 성공·실제 Win10/11 GUI·사내 모델 결과는 아직 주장하지 않는다. 다음은 소스 커밋/푸시 → npm run ned:release → 감사/반입 TGZ → 아티팩트 게시/Windows CI → 0.3.7 prerelease와 공개 해시 검증이다. 상세 상태는 docs/validation-0.3.7.md를 따른다.
 
 0.3.7 설치기 검토 추가: 사용자 자료 루트(Ned/L-Vibe) 안의 설치와 해당 경로에서의 재귀 제거를 차단한다. 기존 전용 경로 자동 생성은 유지한다. NSIS 컴파일 검사 통과, Windows CI에 거부 경로 검사를 추가했다. 런타임 준비는 유지하고 최종 소스 커밋에서 설치기를 다시 생성한다.
+
+최종 실행 경로 검토에서 MCP·desktop의 manifest 원본 고정값과 최적화 manifest가 충돌함을 발견해 배포 전 수정했다. runtime-pins.ts는 원본 해시와 정확히 대응하는 검토된 최적화 해시만 정적 허용한다. 실제 최적화 payload 전체의 production MCP 검사(우회 옵션 없음)를 포함한 11 pass/1 skip/0 fail과 타입 검사를 통과했다. 설치기 압축 상세 추적은 NED_VERBOSE_INSTALLER=1로 빌드 로그에만 남길 수 있다. 이 수정 소스에서 EXE를 다시 생성한다.
