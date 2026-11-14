@@ -1,5 +1,5 @@
 {
-  "auditSourceCommit": "3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0",
+  "auditSourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
   "runtimeOptimization": {
     "schemaVersion": 1,
     "method": "lossless pure-Python ZIP import and offline source handover",
@@ -224,25 +224,25 @@
   "payloadComparison": {
     "files": 55925,
     "allStagedBytesVerified": true,
-    "manifestSha256": "84ddd3872c4e739ea8a43931f8e6e6ef99c544e2a565cb4e4dd99004c950f728",
+    "manifestSha256": "bd765de086d6003bf2747f51bce1c67c5d974656c8f4163da9d99ea691d85a63",
     "generatedInstallerFiles": {
       "$PLUGINSDIR/System.dll": "3eb38ae99653a7dbc724132ee240f6e5c4af4bfe7c01d31d23faf373f9f2eaca",
       "$PLUGINSDIR/nsDialogs.dll": "1e40211af65923c2f4fd02ce021458a7745d28e2f383835e3015e96575632172",
       "$PLUGINSDIR/modern-wizard.bmp": "3ad2dc318056d0a2024af1804ea741146cfc18cc404649a44610cbf8b2056cf2",
-      "Uninstall Ned.exe": "05754f4ec1e665651f05e969fe237c1df81814b8c945cc9f223fc447748dbc8d"
+      "Uninstall Ned.exe": "81441bbebcb6b35682cf266b8892b9b9c2c08053b10ca52dd2e0a00101b28b6d"
     }
   },
-  "sourceCommit": "3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0",
+  "sourceCommit": "448b2e648e89f6c8001c508eaf121a4fc0c2c236",
   "schemaVersion": 1,
   "product": "Ned",
   "version": "0.3.7",
   "verifiedFrom": "installer-archive",
   "os": "linux",
-  "createdAt": "2026-11-14T01:27:24.420Z",
+  "createdAt": "2026-11-14T01:46:37.156Z",
   "installer": {
     "name": "Ned-0.3.7-win-x64.exe",
-    "bytes": 811344026,
-    "sha256": "4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c"
+    "bytes": 1040612708,
+    "sha256": "9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b"
   },
   "paths": {
     "encoding": "ascii",
