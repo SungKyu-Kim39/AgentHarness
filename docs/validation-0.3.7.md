@@ -1,6 +1,6 @@
 # Ned 0.3.7 validation and review
 
-Status: implementation and verification in progress. This file does not establish Windows installation or intranet-model acceptance.
+Status: the first complete installer passed Windows import checks but LZMA regressed installation time. The final zlib installer is being rebuilt and remeasured before publication. This file does not establish employee Windows 10/11 GUI or intranet-model acceptance.
 
 ## Authorized scope
 
@@ -39,6 +39,10 @@ Environment: Linux Cloud executor; Node 24.22.1; fixed OpenCode v2.2.6 Linux bas
 - Post-review runtime pin/boundary checks: 11 passed, zero failures, one unavailable native desktop fixture skipped (20.8 seconds); includes full production MCP file verification. Typecheck passed again.
 - NSIS fixture compiles with the cached pinned toolchain; optional Windows/Wine execution remains skipped locally.
 - The real v2 queue fixture waited beyond the former 180-second response deadline and then verified explicit cancellation (187.7 seconds); no default model-response timeout is added.
-- Full installer generation, complete staged-vs-extracted byte comparison, ASCII path checks, public download hashes and the Windows installer/import comparison are pending at this checkpoint.
+- Rejected LZMA experiment producer: 3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0. Installer: 811,344,026 bytes / SHA-256 4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c (31.06% below the 0.3.6-rebuild1 installer).
+- Complete installer extraction audit: all 55,925 staged application files match byte-for-byte. Four generated installer/plugin files are accounted for separately. All 55,929 archive files/7,934 directories use ASCII paths; the installed catalog has 66 skills/569 verified documents. Archive file count decreases 40.65%.
+- The fully bundled host initializes through the smoke boundary with only Electron/Node imports. Every component manifest, the runtime transformation report, editor icon and complete payload manifest are verified from the EXE.
+- Windows experiment (run 43540857847, Server 2022/10.0.20348): missing directory creation, private-data path refusal, OpenViking import, all seven tokenizer encodings and bundled Node passed. However, LZMA installation took 90,792 ms versus the baseline 54,182 ms, so this candidate is not selected for the release. The raw summary is Ned-0.3.7-lzma-benchmark.json.
+- Use zlib with the lossless SDK packing/host shrink to prioritize both installation time and a smaller payload. Final installer metrics, Windows remeasurement, handover TGZ and complete public download hashes are pending.
 
 Keep releaseReady false until the existing real Win10/Win11 GUI/intranet/offline-network acceptance criteria are met. Windows Server CI, when completed, is reported separately from those criteria.

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.7",
+  "os": "10.0.20348.0",
+  "installerMilliseconds": 90792,
+  "baselineInstallerMilliseconds": 54182,
+  "baselineInstalledFiles": 94237,
+  "baselineInstalledBytes": 3375883034,
+  "comparisonOrder": "baseline then candidate; single Windows Server runner, not a Win10/11 acceptance benchmark",
+  "installedFiles": 55926,
+  "installedBytes": 3024549318,
+  "openVikingImport": true,
+  "tokenizerEncodings": 7,
+  "bundledNode": true,
+  "privateDataInstallRejected": true,
+  "modelsPrompted": false,
+  "desktopActions": 0,
+  "realWin10Win11GuiAcceptance": false,
+  "workflowRun": "https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43540857847",
+  "candidate": "LZMA size experiment; rejected as default because installation regressed",
+  "installerSha256": "4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c"
+}

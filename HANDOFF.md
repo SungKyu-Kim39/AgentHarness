@@ -203,3 +203,7 @@ Rebuild1 audit: NSIS also generates nsDialogs.dll and modern-wizard.bmp under $P
 0.3.7 설치기 검토 추가: 사용자 자료 루트(Ned/L-Vibe) 안의 설치와 해당 경로에서의 재귀 제거를 차단한다. 기존 전용 경로 자동 생성은 유지한다. NSIS 컴파일 검사 통과, Windows CI에 거부 경로 검사를 추가했다. 런타임 준비는 유지하고 최종 소스 커밋에서 설치기를 다시 생성한다.
 
 최종 실행 경로 검토에서 MCP·desktop의 manifest 원본 고정값과 최적화 manifest가 충돌함을 발견해 배포 전 수정했다. runtime-pins.ts는 원본 해시와 정확히 대응하는 검토된 최적화 해시만 정적 허용한다. 실제 최적화 payload 전체의 production MCP 검사(우회 옵션 없음)를 포함한 11 pass/1 skip/0 fail과 타입 검사를 통과했다. 설치기 압축 상세 추적은 NED_VERBOSE_INSTALLER=1로 빌드 로그에만 남길 수 있다. 이 수정 소스에서 EXE를 다시 생성한다.
+
+0.3.7 EXE 감사 통과: producer 3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0, EXE 811,344,026 bytes / SHA 4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c. 55,925 앱 파일 전체 staged/추출 bytes 일치, 생성된 4개 파일 별도 기록, 스킬66/문서569와 ASCII 경로 확인. 아티팩트 커밋3fd230b에서 EXE를 게시해 Windows CI를 시작한다. 아직 TGZ·Windows·공개 전체 해시 검증과 릴리스는 완료 전이다.
+
+Windows CI 43540857847 통과(실행/가져오기/토크나이저7/Node/폴더거부), 하지만 LZMA 설치시간90,792ms > 원본54,182ms여서 기본 배포로 채택하지 않았다. downloads/Ned-0.3.7-lzma-benchmark.json에 기록했다. zlib로 변경하고 SDK/ASAR 최적화를 유지해 설치 속도를 다시 측정한다. 811MB 후보는 아직 0.3.7 공식 릴리스로 게시하지 않았으며 최종 후보로 교체할 예정이다. 이전 버전 파일/태그는 유지한다.

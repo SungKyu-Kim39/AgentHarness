@@ -12,7 +12,9 @@ RequestExecutionLevel user
 ; The pinned NSIS compiler has a 31-bit data block. Solid compression stores
 ; the entire uncompressed payload there first; six MCPs exceed that limit.
 ; Compress each file before adding it, retaining one complete offline EXE.
-SetCompressor lzma
+; Windows measurement: LZMA reduced size but regressed installation 54s -> 91s.
+; Use fast-to-decode zlib with the packed SDKs and smaller host instead.
+SetCompressor zlib
 SetDatablockOptimize on
 Icon "${NED_ICON}"
 UninstallIcon "${NED_ICON}"
