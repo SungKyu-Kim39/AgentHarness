@@ -1,7 +1,7 @@
 {
   "name": "ned",
   "productName": "Ned",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "private": true,
   "description": "Offline managed Zed IDE and OpenCode vibe coding workspace",
   "license": "MIT",
@@ -14,7 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx --test tests/*.test.ts tests/*.test.mjs",
     "verify": "npm run build && npm run typecheck && npm run skills:verify && npm test",
-    "skills:bundle": "node scripts/bundle-skills.mjs fetch",
+    "skills:bundle": "node scripts/bundle-skills.mjs fetch && node scripts/bundle-reviewed-skills.mjs",
     "skills:verify": "node scripts/bundle-skills.mjs verify",
     "start": "node scripts/ned-package.mjs dev",
     "vendor:fetch": "node scripts/vendor.mjs fetch",
@@ -39,7 +39,10 @@
     "ned:build": "node scripts/ned-build.mjs",
     "desktop:build:legacy": "node scripts/desktop.mjs build",
     "desktop:package:legacy": "node scripts/desktop.mjs package",
-    "ned:prepare": "node scripts/ned-package.mjs prepare"
+    "ned:prepare": "node scripts/ned-package.mjs prepare",
+    "ned:prepare:acp": "node scripts/prepare-acp.mjs",
+    "ned:release:prepare": "node scripts/ned-package.mjs release-prepare",
+    "ned:release": "node scripts/ned-package.mjs release"
   },
   "dependencies": {
     "diff": "8.0.2",

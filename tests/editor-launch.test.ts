@@ -18,7 +18,7 @@ test('blank startup uses the launchpad and passes no project path to the editor'
 test('blank editor ownership does not authorize app data; real project access needs a user decision before binding',async t=>{
  const root=await mkdtemp(path.join(tmpdir(),'ned-blank-'));let approvals=0,allow=false;const authorized:string[]=[];
  const project=path.join(root,'project');
- const runtime={canonicalProject:async(p:string)=>{if(p===root)throw new Error('Open a project folder first');return p;},authorizeProject:async(p:string)=>{authorized.push(p);}} as unknown as NativeRuntime;
+ const runtime={onPermissionChange:()=>()=>{},canonicalProject:async(p:string)=>{if(p===root)throw new Error('Open a project folder first');return p;},authorizeProject:async(p:string)=>{authorized.push(p);}} as unknown as NativeRuntime;
  const owner=new AgentOwner(root,runtime,{url:'http://127.0.0.1:1',password:'test-only'},async()=>{approvals++;return allow;});
  const descriptor=JSON.parse(await readFile(await owner.start(),'utf8'));const socket=connect(descriptor.socket);const peer=new Peer(socket,async()=>{throw new Error('No client callback');});
  t.after(async()=>{peer.close();await owner.close();await rm(root,{recursive:true,force:true});});

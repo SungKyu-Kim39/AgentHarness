@@ -1,0 +1,98 @@
+name: Windows offline installer smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [work]
+    paths:
+      - downloads/Ned-0.3.7-win-x64.exe
+permissions:
+  contents: read
+jobs:
+  offline-install:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          lfs: false
+          persist-credentials: false
+      - name: Measure the previous installer on the same Windows runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Join-Path $env:RUNNER_TEMP 'Ned-baseline.exe'
+          $url = 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/1392b93209ac9c9ba764eab52f099da1129bcbcc/downloads/Ned-0.3.6-rebuild1-win-x64.exe'
+          & curl.exe --fail --location --retry 2 --output $exe $url
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252') { throw 'Baseline download/hash failed' }
+          $install = Join-Path $env:RUNNER_TEMP 'ned-baseline\missing-parent\Ned'
+          $watch = [Diagnostics.Stopwatch]::StartNew()
+          $process = Start-Process -FilePath $exe -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          $process.Refresh()
+          if ($process.ExitCode -ne 0) { throw 'Baseline installation failed' }
+          $watch.Stop()
+          $files = @(Get-ChildItem $install -Recurse -File)
+          [ordered]@{ version='0.3.6-rebuild1'; installerMilliseconds=$watch.ElapsedMilliseconds; installedFiles=$files.Count; installedBytes=($files | Measure-Object Length -Sum).Sum } | ConvertTo-Json | Set-Content baseline-smoke.json -Encoding utf8
+          $uninstall = Start-Process -FilePath (Join-Path $install 'Uninstall Ned.exe') -ArgumentList @('/S', "_?=$install") -Wait -PassThru
+          $uninstall.Refresh()
+          if ($uninstall.ExitCode -ne 0) { throw 'Baseline uninstall failed' }
+          Remove-Item (Split-Path (Split-Path $install)) -Recurse -Force -ErrorAction SilentlyContinue
+          Remove-Item $exe -Force
+      - name: Download and verify the exact published installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $audit = Get-Content downloads/Ned-0.3.7-installer-audit.json -Raw | ConvertFrom-Json
+          $exe = Join-Path $env:RUNNER_TEMP 'Ned-0.3.7-win-x64.exe'
+          $url = "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/Ned-0.3.7-win-x64.exe"
+          & curl.exe --fail --location --retry 2 --output $exe $url
+          if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
+          if ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $audit.installer.sha256) { throw 'Installer SHA-256 mismatch' }
+          "NED_SMOKE_EXE=$exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Install into a missing directory and test bundled Python offline
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
+          $watch = [Diagnostics.Stopwatch]::StartNew()
+          $process = Start-Process -FilePath $env:NED_SMOKE_EXE -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          $process.Refresh()
+          if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
+          $watch.Stop()
+          $python = Join-Path $install 'resources\runtime\windows-x64\openviking\python\python.exe'
+          if (!(Test-Path $python)) { throw 'Installed Python missing' }
+          $result = @(& $python -I -B distribution/openviking-import-check.py 2>&1)
+          $exit = $LASTEXITCODE
+          $result | ForEach-Object { Write-Host "$_" }
+          if ($exit -ne 0 -or !($result -match 'OPENVIKING_IMPORT_OK') -or !($result -match 'TOKENIZERS_OK 7')) { throw 'Offline OpenViking/tokenizer import failed' }
+          $sdk = Join-Path $install 'resources\runtime\windows-x64\openviking\python\Lib\site-packages\ned-sdk-code.zip'
+          if (!(Test-Path $sdk)) { throw 'Packed SDK archive missing' }
+          $stdout = Join-Path $env:RUNNER_TEMP 'ned-node.stdout.txt'
+          $stderr = Join-Path $env:RUNNER_TEMP 'ned-node.stderr.txt'
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $node = Start-Process -FilePath (Join-Path $install 'Ned.exe') -ArgumentList @('-p','process.versions.node') -RedirectStandardOutput $stdout -RedirectStandardError $stderr -Wait -PassThru
+          $node.Refresh()
+          if ($node.ExitCode -ne 0 -or (Get-Content $stdout -Raw).Trim() -notmatch '^\d+\.\d+\.\d+$') { throw 'Bundled Node launch failed' }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
+          $files = @(Get-ChildItem $install -Recurse -File)
+          $baseline = Get-Content baseline-smoke.json -Raw | ConvertFrom-Json
+          [ordered]@{
+            schemaVersion=1; product='Ned'; version='0.3.7'
+            os=[Environment]::OSVersion.Version.ToString()
+            installerMilliseconds=$watch.ElapsedMilliseconds
+            baselineInstallerMilliseconds=$baseline.installerMilliseconds
+            baselineInstalledFiles=$baseline.installedFiles
+            baselineInstalledBytes=$baseline.installedBytes
+            comparisonOrder='baseline then candidate; single Windows Server runner, not a Win10/11 acceptance benchmark'
+            installedFiles=$files.Count
+            installedBytes=($files | Measure-Object Length -Sum).Sum
+            openVikingImport=$true; tokenizerEncodings=7; bundledNode=$true
+            modelsPrompted=$false; desktopActions=0
+            realWin10Win11GuiAcceptance=$false
+          } | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
+          Get-Content windows-offline-smoke.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: windows-offline-smoke-0.3.7
+          path: windows-offline-smoke.json
+          if-no-files-found: ignore

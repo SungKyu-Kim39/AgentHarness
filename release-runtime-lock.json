@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "version": "0.3.7",
+  "baseline": {
+    "name": "Ned-0.3.6-rebuild1-win-x64.exe",
+    "bytes": 1176899012,
+    "sha256": "4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252",
+    "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d"
+  },
+  "optimizerSha256": "1bcb92cd4ff0ef6604d3a3bc79a6fbf67d724484e337feac97744170d4cfffb1",
+  "reportSha256": "64557f21cdbed3f710caa0f5ab46e4b11dc6c46c39af7733637e7a56a64bc7c3",
+  "components": {
+    "openviking": {
+      "originalManifestSha256": "6b62b83f14351ca5450e281410070b0f443e17f0d8a4756706f658ffba339ee7",
+      "manifestSha256": "c912cce64e3456c6a12f8c3c2810afc838c6145f03c37cb9e865a85b8d9acd23",
+      "files": 25196
+    },
+    "mcp": {
+      "originalManifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
+      "manifestSha256": "1803eb81043d8910ce3422ccd7b4f84e7355237095f523b519960449d14367e8",
+      "files": 21028
+    },
+    "rea": {
+      "originalManifestSha256": "abee46b2136c20c176d5c495cff0ef1c2675fa618c3ed4daaecba957756b6f28",
+      "manifestSha256": "96b22a192568d40c14a7a0563b3af9b9f2c03b29e9bab255a42e0af7b6a89523",
+      "files": 9012
+    },
+    "agent-desktop": {
+      "originalManifestSha256": "e5f2ae573ad07e4643ffb712ba2eb65a9d315dedb0c0a40a4a1340fcd01fa6b7",
+      "manifestSha256": "5e20ba52fc353efa79e8e551ebd29b31d8499d09f859c1b2e0988999577a4685",
+      "files": 4
+    }
+  }
+}

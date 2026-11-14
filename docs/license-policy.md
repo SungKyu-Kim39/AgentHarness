@@ -4,7 +4,7 @@ Ned 자체 코드는 MIT를 유지한다. 번들 전체를 MIT로 재허가하�
 
 OpenCode 엔진·ACP는 MIT이며 Zed와 로컬 ACP로 연결한다. OpenViking의 AGPL, Serena·Git·DLL·브라우저 등 각자의 조건은 계속 적용된다. 외부 링크만으로 폐쇄망 수령인에게 대응 소스를 제공했다고 주장하지 않는다. 업무 프로젝트와 개인 대화가 이 도구를 사용했다는 이유만으로 공개 대상이 되는 것은 아니다. 실제 수정·결합·전달 형태를 기준으로 적용 조건을 확인한다.
 
-**agent-desktop 1.2.0은 Apache-2.0**이다. 이 바이너리의 MSVC 의존성을 위해 기존에 고정한 CPython 배포본의 `vcruntime140.dll`과 원문 `LICENSE.CPython-Windows.txt`도 같은 폴더에 포함한다. DLL은 Apache 라이선스로 바꾸지 않으며 기존 Microsoft 재배포 검토 항목은 계속 적용한다. 고정 Windows 바이너리와 일치하는 커밋의 소스 archive·원문 라이선스를 설치 리소스에 포함한다. 기본 추가 스킬 2개에도 출처·라이선스·변경 고지를 유지하며 외부 설치를 요구하지 않는 호스트 어댑터를 제공한다.
+**agent-desktop 1.2.0은 Apache-2.0**이다. 이 바이너리의 MSVC 의존성을 위해 기존에 고정한 CPython 배포본의 `vcruntime140.dll`과 원문 `LICENSE.CPython-Windows.txt`도 같은 폴더에 포함한다. DLL은 Apache 라이선스로 바꾸지 않으며 기존 Microsoft 재배포 검토 항목은 계속 적용한다. 고정 Windows 바이너리와 일치하는 커밋의 원문 라이선스와 대응 소스 archive를 반입 묶음에 포함한다. 0.3.7에서는 실행에 필요하지 않은 소스 archive를 설치 리소스 대신 TGZ의 source/에 함께 제공하고, 원래 경로·해시를 runtime-optimization.json에 기록한다. 기본 추가 스킬 2개에도 출처·라이선스·변경 고지를 유지하며 외부 설치를 요구하지 않는 호스트 어댑터를 제공한다.
 
 아래는 기존 런타임에 대한 상세 검토 기록이다. Zed 추가는 위 조건을 함께 적용한다. 기존 Chrome 바이너리 재배포 조건, MSVC DLL 배포 주체의 자격 등 미확인 항목은 해결된 것으로 바꾸지 않는다.
 
@@ -72,3 +72,10 @@ AGPL 5조의 aggregate 규정은 별개 저작물의 단순 집합과 결합 저
 0.2.6은 개인 OVPack 가져오기·읽기 전용 개인 검색과 로컬 내보내기 도구를 추가한다. OpenViking 가상 사용자 컨테이너의 부모 처리 어댑터는 고정 원본 helper hash를 검사하며 SDK archive/소유권/충돌 검사를 유지한다. 원본 SDK 파일은 변경하지 않고 런처에서 보완한다. 어댑터를 포함한 L-Vibe 소스와 기존 AGPL 대응 소스는 반입 묶음에 제공한다. 0.5.0 SDK는 빌드 PC의 이관 검사에만 사용하며 직원 배포 런타임은 0.5.4를 유지한다. 기존 Chrome/MSVC·copyleft 관련 미확인 항목은 그대로 남는다.
 
 0.3.3의 JSONC 설정 보존에는 Microsoft jsonc-parser 3.3.1(MIT)을 사용하며 원문을 `ned/licenses/jsonc-parser-MIT.txt`에 포함한다. 작업표시줄 아이콘 교체 스크립트는 Ned 소스 묶음의 `scripts/ned-editor-branding.mjs`, 고정 원본·수정본·아이콘 해시는 설치 리소스의 `ned/editor-branding.json`에서 확인한다.
+
+
+## 0.3.7 추가 스킬과 소스 배치
+
+정적 어댑터 30개를 추가하여 총 66개를 제공한다. ECC·Matt Pocock·gstack·Humanizer·im-not-ai·Marketing Skills는 고정 원본 MIT 고지를 보존한다. Unslop은 Damir Sokolovsky(@heydamir)의 CC-BY-4.0 저작자·출처·변경 고지를 유지한다. Modern Web Guidance 선별 문서에는 CC-BY-4.0, 코드 원본 고지에는 Apache-2.0을 구분해 제공한다. OpenAI Game Studio는 플러그인 매니페스트의 명시적 MIT 선언을 근거로 출처·저자와 MIT 조건을 함께 제공한다. 전체 실행 플러그인·CLI·외부 모델 서비스를 설치한 것으로 표현하지 않는다. 각 스킬의 LICENSE·ADAPTATION.md와 reviewed-skills-lock.json에서 고정 커밋·원문 및 변경 해시를 확인할 수 있다.
+
+생성형 API SDK는 원문 Python 파일의 모든 바이트를 검증한 로컬 ZIP으로 묶으며, 별도 라이선스와 배포 메타데이터는 보존한다. 네이티브 라이브러리·자산·경로 의존 패키지는 그대로 둔다. 원본 런타임과 대응 소스의 적용 조건은 바꾸지 않는다. EXE를 별도로 전달할 때도 같은 릴리스의 반입 TGZ와 source/ 대응 자료를 함께 제공한다.

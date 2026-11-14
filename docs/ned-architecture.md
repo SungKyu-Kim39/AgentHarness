@@ -4,7 +4,7 @@ Status: Windows acceptance candidate; first-launch and skill-registration diagno
 
 ## Purpose
 
-Ned provides one offline installation and one settings import for employees who need an AI coding assistant without assembling an IDE, agent, knowledge server and skills themselves. Zed supplies direct editing, navigation and language assistance. A private OpenCode engine supplies agent sessions. The native Ned host owns configuration, approvals, lifecycle and intranet model connections. Aegis, Conductor, the 36 reviewed skills, OpenViking, Serena, Graphify, REA and the selected MCP integrations remain managed components.
+Ned provides one offline installation and one settings import for employees who need an AI coding assistant without assembling an IDE, agent, knowledge server and skills themselves. Zed supplies direct editing, navigation and language assistance. A private OpenCode engine supplies agent sessions. The native Ned host owns configuration, approvals, lifecycle and intranet model connections. Aegis, Conductor, the 66 reviewed skills, OpenViking, Serena, Graphify, REA and the selected MCP integrations remain managed components.
 
 ```mermaid
 flowchart LR

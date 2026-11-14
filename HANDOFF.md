@@ -190,3 +190,12 @@ Rebuild1 audit: NSIS also generates nsDialogs.dll and modern-wizard.bmp under $P
 사용자는 추천 스킬을 Ned 설치본이 아니라 Ned를 개발하는 Codex 프로젝트에 먼저 적용하도록 명확히 했다. 저장소의 `.agents/skills/`에 ECC의 inherit-legacy-style/change-impact/mcp-dependency-review와 Matt Pocock의 diagnosing-bugs/codebase-design/code-review를 프로젝트 어댑터로 추가했다. 루트 AGENTS.md에서 작업별로 연결하고 출처·고정 커밋·MIT 라이선스·원문·파일 해시는 `.agents/skills-lock.json`과 `.agents/README.md`에 기록한다. 반복 승인/Q&A, 전역 훅 설치, 자동 병렬 에이전트, 외부 이슈 트래커 의존은 적용하지 않는다. 참조 원문은 감사 자료이며 실행 지침은 어댑터 SKILL.md다. 제품용 skills/, vendor/skills/, 루트 skills-lock.json, 설치 코드·버전·배포물은 이 작업에서 변경하지 않는다. 런타임 스킬 목록의 자동 재탐색은 다음 Codex 프로젝트 세션에서 확인하며 현재 세션에서는 파일을 직접 읽어 적용할 수 있다.
 
 검증: 원문·라이선스 12개의 Git blob SHA가 고정 upstream tree와 일치했고, 6개 스킬/18개 파일의 SHA-256·frontmatter·라우팅 링크 6개·ASCII 경로·실행 코드 및 심볼릭 링크 없음 검사를 통과했다. package.json, 제품용 skills-lock.json과 vendor/skills/manifest.json, 현재 빌드·패키징 스크립트의 bytes는 HEAD와 동일함을 확인했다. 지침/문서만 수정하여 제품 빌드·Windows 실행·모델 호출은 하지 않았다.
+
+
+## 2026-11-14: Ned 0.3.7 implementation and release preparation
+
+사용자는 Codex 스킬을 적용한 전체 검토·설치 최적화, 추천 기본 스킬 추가, 문맥 자동 선택, 0.3.7 빌드·배포를 명시적으로 승인했다. 30개 정적 어댑터를 추가해 66개이며 Modern Web Guidance의 AI 다운로드 문서 5개를 제외한 웹 가이드 204개를 고정했다. 별도 분류 모델 없이 동일 응답 요청에서 지침을 제공하고, context/output 여유가 부족하면 엔진의 의미 기반 선택·read_skill을 사용한다. 압축/도구 없는 재출력에는 지침을 주입하지 않는다. 스킬 원문 해시·경로를 시작과 읽기 때 검증하며 긴 문서의 offset을 지원한다.
+
+빌드 방식: 원본 0.3.6-rebuild1 EXE SHA 4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252에서 고정 런타임을 추출하고 SDK 139개/37,876 소스 파일의 바이트를 검증한 ZIP으로 묶는다. 원문 소스가 있는 bytecode cache만 제거하며, 별도 대응 소스 5개는 TGZ/source로 옮겨 함께 전달한다. release-runtime-lock.json이 준비 결과를 고정한다. 호스트/ACP는 현재 소스에서 다시 빌드하고 호스트 ASAR의 불필요한 의존성을 제외한다. scripts/prepare-acp.mjs와 scripts/acp-build/package-lock.json은 빌드 PC 전용이다. 직원 PC 설치 경로가 아니다.
+
+검증: Linux 전체 147개 중 132 pass/15 skip/0 fail, 최신 대상 검사 21 pass. 설치 준비에서 38,605 파일 쓰기와 312,699,583 bytes를 줄였다(호스트 ASAR 절감 전). 새 .github/workflows/windows-offline-smoke.yml은 work의 0.3.7 EXE 게시 때 동일 Windows Server runner에서 이전/새 설치 시간과 Python/OpenViking/tokenizer/Node를 확인한다. 원격 Actions 성공·실제 Win10/11 GUI·사내 모델 결과는 아직 주장하지 않는다. 다음은 소스 커밋/푸시 → npm run ned:release → 감사/반입 TGZ → 아티팩트 게시/Windows CI → 0.3.7 prerelease와 공개 해시 검증이다. 상세 상태는 docs/validation-0.3.7.md를 따른다.

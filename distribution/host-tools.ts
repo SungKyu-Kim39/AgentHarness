@@ -24,7 +24,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'propose_edit', description: 'Propose complete UTF-8 file content. Native host approval policy, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
   { name: 'read_methodology', description: 'Read pinned Aegis/Conductor instructions and inspect existing conductor/index.md, tracks.md and relevant spec/plan files with read_file. Track updates use propose_edit.', inputSchema: object({ name: { type: 'string', enum: ['aegis', 'conductor'] } }, ['name']) },
   { name: 'skill_catalog', description: 'List reviewed offline vibe-coding skills.', inputSchema: object({}) },
-  { name: 'read_skill', description: 'Read a selected reviewed skill or its reference document. No executable plugins or online installation.', inputSchema: object({ id: string, document: string }, ['id']) },
+  { name: 'read_skill', description: 'Read a reviewed skill or local reference. Continue a long document with the returned offset. No plugins or online installation.', inputSchema: object({ id: string, document: string, offset: { type: 'integer', minimum: 0, maximum: 8388608 } }, ['id']) },
   { name: 'knowledge_search', description: 'Search only this project’s explicitly indexed OpenViking knowledge.', inputSchema: object({ query: string, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['query']) },
   { name: 'knowledge_read', description: 'Read a returned Viking URI within this project.', inputSchema: object({ uri: string }, ['uri']) },
   { name: 'knowledge_index', description: 'Index one project text file in local OpenViking after explicit native approval. Never upload conversations.', inputSchema: object({ path: string }, ['path']) },
@@ -72,7 +72,7 @@ export class HostTools {
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
   }
   async start() {
-    await this.skills.load().catch(() => {});
+    await this.skills.load();
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== 'Bearer ' + this.token) { res.writeHead(401).end(); return; }
       if (req.url !== '/mcp' || req.method !== 'POST' || !this.accepting) { res.writeHead(405).end(); return; }
@@ -170,7 +170,7 @@ export class HostTools {
       return readFile(path.join(managedResource(this.resources, 'methodology'), a.name + '.md'), 'utf8');
     }
     if (name === 'skill_catalog') { z.object({}).strict().parse(args); return JSON.stringify(this.skills.catalog()); }
-    if (name === 'read_skill') { const a = z.object({ id: z.string().max(128), document: z.string().max(512).optional() }).strict().parse(args); return this.skills.read(a.id, a.document); }
+    if (name === 'read_skill') { const a = z.object({ id: z.string().max(128), document: z.string().max(512).optional(), offset: z.number().int().min(0).max(8388608).optional() }).strict().parse(args); return this.skills.read(a.id, a.document, a.offset); }
     const knowledge = this.options.knowledge();
     if (name === 'personal_knowledge_search') {
       const a = z.object({ query: z.string().min(1).max(2000), limit: z.number().int().min(1).max(10).default(5) }).strict().parse(args);

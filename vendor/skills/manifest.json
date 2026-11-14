@@ -1682,6 +1682,2780 @@
           "sha256": "3a676d568e7d36f3816eb271806a17d9db7475e07b5e170ee226f3e6ddce4ebc"
         }
       ]
+    },
+    {
+      "id": "inherit-legacy-style",
+      "name": "기존 코드 관례 유지",
+      "description": "기존 프로젝트를 수정하면서 이름·구조·오류 처리·상태 관례를 유지하고 스타일 이탈을 줄인다.",
+      "directory": "inherit-legacy-style",
+      "source": "https://github.com/affaan-m/ECC/blob/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/inherit-legacy-style/SKILL.md",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "ccce44b6240e346e2d564a035f45abf01842cfc03f4c0253050b8304c505f709",
+          "bundledSha256": "fefdd4582f2c6efb0ee72460272223cf5f077dff500cfd597967cdb2317fecce"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "5ebc40bbadf558b93eb46c5f1bc3fdce5e90adaf17c7579e83e004de2c93fcf7"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "fefdd4582f2c6efb0ee72460272223cf5f077dff500cfd597967cdb2317fecce"
+        }
+      ]
+    },
+    {
+      "id": "change-impact",
+      "name": "변경 영향 분석",
+      "description": "여러 파일·플랫폼·설정·데이터·API 변경 전후에 실제 의존성과 회귀·복구 범위를 확인한다.",
+      "directory": "change-impact",
+      "source": "https://github.com/affaan-m/ECC/blob/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/change-impact/SKILL.md",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "b8d8a11417af8b84e93983a8eb682e3b9a16d04f926778eb635c96e90019bf18",
+          "bundledSha256": "2eafa932383794936dd98858ce984999f3652a89f5c9ea6e7fee83659b23db56"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "c7eae560bf889b9153b7f4c8dc4dea88b4d6bbc6fd261627e10a0134f46041c9"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "2eafa932383794936dd98858ce984999f3652a89f5c9ea6e7fee83659b23db56"
+        }
+      ]
+    },
+    {
+      "id": "cpp-coding-standards",
+      "name": "C++ 코드 품질",
+      "description": "C/C++ 수명·소유권·오류·경계·동시성 품질을 기존 컴파일러와 SDK 제약에 맞춰 검토한다.",
+      "directory": "cpp-coding-standards",
+      "source": "https://github.com/affaan-m/ECC/blob/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/cpp-coding-standards/SKILL.md",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "f870b47d3493b0ad0b6e3808a679ac3c429b60f03193af6c9dc0e0d9e6981436",
+          "bundledSha256": "86ce9edb015d25b140842eee20b71ebb378098c6df26d6d652803f7ed856b4e9"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "927c284357cbdea546172d46b49d9d24670a33635b8cad20875ab85e5077edde"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "86ce9edb015d25b140842eee20b71ebb378098c6df26d6d652803f7ed856b4e9"
+        }
+      ]
+    },
+    {
+      "id": "mcp-dependency-review",
+      "name": "MCP 의존성 검토",
+      "description": "MCP 구성의 가변 패키지·원격 다운로드·실행 경계를 서버 실행 없이 정적으로 검토한다.",
+      "directory": "mcp-dependency-review",
+      "source": "https://github.com/affaan-m/ECC/blob/d2ef2680594f9a17526a6e1a2e18b3d242c5d17b/skills/mcp-dependency-review/SKILL.md",
+      "commit": "d2ef2680594f9a17526a6e1a2e18b3d242c5d17b",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "766536baa981710a85c8f761675f6a57f58600fff42b23ccf6171606180f4c12",
+          "bundledSha256": "a2ad8694b723df8c8dd45f9aeaca1b2ba2b9b9a71e937e3b3ee58e6274cf9562"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "664a9428eb62e21f5b4ace781d2031f5fb2bc633d03a1e3e04ebc7399f8161b7"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "326146379f01bb137c0a5d3c54770c1aa31076705c8b88a7f6b26a460f6221b2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a2ad8694b723df8c8dd45f9aeaca1b2ba2b9b9a71e937e3b3ee58e6274cf9562"
+        }
+      ]
+    },
+    {
+      "id": "codebase-design",
+      "name": "모듈·인터페이스 설계",
+      "description": "작은 호출 계약 뒤에 복잡성을 모으고 변경·테스트·자원 소유권을 명확히 한다.",
+      "directory": "codebase-design",
+      "source": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/codebase-design/SKILL.md",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "2c20617f87ec8af6a434859f381b2f061a69b530444e74eb39e78bb016a6d1e2",
+          "bundledSha256": "b8184b97eaa3ec6b722e25b6697baed002f4a366bc319e18ab20ce33cd1136a5"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "325d964a7cc594b1b87db39ef2d5313b99a1524d06a699d3fa797c6499f4da3d"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "b8184b97eaa3ec6b722e25b6697baed002f4a366bc319e18ab20ce33cd1136a5"
+        }
+      ]
+    },
+    {
+      "id": "domain-modeling",
+      "name": "도메인 모델링",
+      "description": "업무 용어·상태·규칙·데이터의 관계를 정리하고 코드와 팀의 언어를 일치시킨다.",
+      "directory": "domain-modeling",
+      "source": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/domain-modeling/SKILL.md",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "7b925d7b1e341a2eeae33ad68a8a8c0ab889a38ddd22a7598e4c240e5a7556a3",
+          "bundledSha256": "65867826b5f963dd21011f234d0b7ea75459a2c3aa53bc162efc2e5f9634ea70"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "a95f99b85ec67d28652c7a3095cf0a1c675975ee88b43f165b65b17f23b53c67"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "65867826b5f963dd21011f234d0b7ea75459a2c3aa53bc162efc2e5f9634ea70"
+        }
+      ]
+    },
+    {
+      "id": "diagnosing-bugs",
+      "name": "재현 중심 디버깅",
+      "description": "오류·성능 저하를 정확한 증상·재현·가설별 관찰로 조사하고 최소 수정한다.",
+      "directory": "diagnosing-bugs",
+      "source": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/diagnosing-bugs/SKILL.md",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "849198df88cdb65fd0d97236604c1fca7ff2f22d2f705f9724a800d0266b118d",
+          "bundledSha256": "a82fe973eb5d541e5001b306506f0f329d742e4183343ffd8c10f7b84fe29ea4"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "7cc5870914d2983cbcfa10598e161c16608abc199491fb2a492d8635f1e932bc"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a82fe973eb5d541e5001b306506f0f329d742e4183343ffd8c10f7b84fe29ea4"
+        }
+      ]
+    },
+    {
+      "id": "tdd",
+      "name": "행동 중심 TDD",
+      "description": "필요한 동작을 관찰 가능한 테스트로 정의하고 실패·최소 구현·정리 순서로 개발한다.",
+      "directory": "tdd",
+      "source": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/tdd/SKILL.md",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "5505d25bbaa8fc14a79e4d20163936958992a2995b7f1dd1d6197edc9ed722e0",
+          "bundledSha256": "df6cf21fe4977637278855b068071ce618bb53cd8a66f634cfe093f07993578d"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "95c2bd4003408f381514e9d73c2961a60f19df8dd27bee1ee082eefbc2d081e2"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "df6cf21fe4977637278855b068071ce618bb53cd8a66f634cfe093f07993578d"
+        }
+      ]
+    },
+    {
+      "id": "code-review",
+      "name": "요구사항·규칙 코드 리뷰",
+      "description": "변경을 요구사항 충족과 코드·안전·검증 품질의 두 관점에서 검토한다.",
+      "directory": "code-review",
+      "source": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/code-review/SKILL.md",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "9c921a8d88138a41401d8897ca1bb852088ab1b7b605cdd04edc13e3e8aab6dd",
+          "bundledSha256": "e7206ffd6b0142fe8153d61cf34d73e2b7d846063c8dcb75db088ec77e7e18ce"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "139d9e8e208f5f2a8617366eb9f057ab0f534d89b49bc6280eb47c9b3acf92b6"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "0e7ac423bf2c6e223b7c5b156f8cf72da49d748e56a1641402c31f22ad07dbb5"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "e7206ffd6b0142fe8153d61cf34d73e2b7d846063c8dcb75db088ec77e7e18ce"
+        }
+      ]
+    },
+    {
+      "id": "plan-eng-review",
+      "name": "구현 전 엔지니어링 검토",
+      "description": "넓은 작업의 설계·경계·실패·테스트·운영 위험을 구현 전에 정리한다.",
+      "directory": "plan-eng-review",
+      "source": "https://github.com/garrytan/gstack/blob/1d3c63c53d17faf0456c564bc5950f18b370d0ef/plan-eng-review/SKILL.md",
+      "commit": "1d3c63c53d17faf0456c564bc5950f18b370d0ef",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "58d96f6f3e296ccc2942e2e1a5732810b18f9f8bcd6ed9338115c99c91a88524",
+          "bundledSha256": "ddeda730956619eb662f25e95f99e1289e53fc8116077db607213aac652f74c9"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "f7fe4f0c9f1d1d63868a590f794cce015392f57b092dbc5a5e1e63c83dc74618"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e56fbb5b3d95756f3fa1cfefa24732ec79f18ece1ad08a4e79e00df57e8b198c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "ddeda730956619eb662f25e95f99e1289e53fc8116077db607213aac652f74c9"
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "name": "변경 회귀 리뷰",
+      "description": "diff의 논리·데이터·보안·성능 회귀를 실제 호출과 경계 조건으로 찾는다.",
+      "directory": "review",
+      "source": "https://github.com/garrytan/gstack/blob/1d3c63c53d17faf0456c564bc5950f18b370d0ef/review/SKILL.md",
+      "commit": "1d3c63c53d17faf0456c564bc5950f18b370d0ef",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "205ec3e52663cc918ad20e084bb70c3fd2b2d7a1eb60d3b63365483a9d6e9546",
+          "bundledSha256": "979019ff56a4f174d1f145ee1aa59df98f22d19fe1266a975180965889afcdb6"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "20461814a656e924038d5fc50250fe5ee751b0cf1a1ab985a6fe08f59d5c654e"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e56fbb5b3d95756f3fa1cfefa24732ec79f18ece1ad08a4e79e00df57e8b198c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "979019ff56a4f174d1f145ee1aa59df98f22d19fe1266a975180965889afcdb6"
+        }
+      ]
+    },
+    {
+      "id": "qa-only",
+      "name": "독립 관점 QA",
+      "description": "수정과 구분하여 실제 사용자 흐름·시각 상태·실패·회귀를 검증한다.",
+      "directory": "qa-only",
+      "source": "https://github.com/garrytan/gstack/blob/1d3c63c53d17faf0456c564bc5950f18b370d0ef/qa-only/SKILL.md",
+      "commit": "1d3c63c53d17faf0456c564bc5950f18b370d0ef",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "1130fd5a80b02eea003d5cd8370e8eab524f2a6bf14a8caf262650ce64606c26",
+          "bundledSha256": "4079d02072783a136bb651e47e2b0a15e0df764a9ee86963d179179ba8db751d"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "6bbb9ea78c3a9943d7e287db22be7f57b2ef254fb364d1f11fb5dbe3750f9dd9"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e56fbb5b3d95756f3fa1cfefa24732ec79f18ece1ad08a4e79e00df57e8b198c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "4079d02072783a136bb651e47e2b0a15e0df764a9ee86963d179179ba8db751d"
+        }
+      ]
+    },
+    {
+      "id": "retro",
+      "name": "작업 회고",
+      "description": "완료한 긴 작업의 결과·실패 원인·반복 낭비와 다음 개선을 정리한다.",
+      "directory": "retro",
+      "source": "https://github.com/garrytan/gstack/blob/1d3c63c53d17faf0456c564bc5950f18b370d0ef/retro/SKILL.md",
+      "commit": "1d3c63c53d17faf0456c564bc5950f18b370d0ef",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "8ce54989b9633e8bf6c79d9a3ddd8c2ddb3dc30e90c352858304a3ee844171ca",
+          "bundledSha256": "da947b8c1b0093e92e75384761b405c4507f0e1d3378b2338fee013ed60dab7a"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "a35ea24a68f12b292696eeb06fd7429951be4fcced066a41f3cb89d56d9ccfb1"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "e56fbb5b3d95756f3fa1cfefa24732ec79f18ece1ad08a4e79e00df57e8b198c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "da947b8c1b0093e92e75384761b405c4507f0e1d3378b2338fee013ed60dab7a"
+        }
+      ]
+    },
+    {
+      "id": "humanize-korean",
+      "name": "한국어 문서 윤문",
+      "description": "보고서·소개문·가이드의 번역투와 기계적인 표현을 의미와 장르를 보존하며 다듬는다.",
+      "directory": "humanize-korean",
+      "source": "https://github.com/epoko77-ai/im-not-ai/blob/b37e0206d31fffd9149bf57168d4d62eb2086bee/codex/skills/humanize-korean/SKILL.md",
+      "commit": "b37e0206d31fffd9149bf57168d4d62eb2086bee",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "bd3494baca18a1a911372a257a6c993b169b4b0bc51ec589f3a24912770caeab",
+          "bundledSha256": "a94dfe72f279856748fb2190a91dd85f959e1bad4a795e40d7f21a2e7ca35923"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "2fbb14fbc9390c5edabfb7fe71c6a8fd9603934fe10f2fed194deb6e5cdf2742"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "4cc7e8c439fe42f09d98457599c129ea6df9e5d0e622750d75952b441a38343f"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a94dfe72f279856748fb2190a91dd85f959e1bad4a795e40d7f21a2e7ca35923"
+        }
+      ]
+    },
+    {
+      "id": "humanizer",
+      "name": "영문 문서 윤문",
+      "description": "영문 글의 상투적 전개·과장·반복·불필요한 수사를 줄이고 작성자의 뜻을 보존한다.",
+      "directory": "humanizer",
+      "source": "https://github.com/blader/humanizer/blob/b48c832f0f809c1b5658edbb838c2521b72f2413/SKILL.md",
+      "commit": "b48c832f0f809c1b5658edbb838c2521b72f2413",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "804a119e924ac30295b298213e0b71b3e38b2667b8ef4fb7b69e9246369b9045",
+          "bundledSha256": "b3b89e761f059efc9b188528f957d98e5c825cf1fdc0989889a6be7d5679035f"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "c9570509bd0800b9a6a5be511fe18d99d72aadcbaf160eab8cbbc5d038227865"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "4ac4810254ab36d45419141aeb8e69bf50652cfafe5b2dab947d06d44e5cbf96"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "b3b89e761f059efc9b188528f957d98e5c825cf1fdc0989889a6be7d5679035f"
+        }
+      ]
+    },
+    {
+      "id": "unslop",
+      "name": "UI 완성도 개선",
+      "description": "이미 만든 화면의 간격·색상·타이포그래피·구성·내용 밀도와 상호작용을 개선한다.",
+      "directory": "unslop",
+      "source": "https://github.com/heydamir/unslop/blob/97daa3eb365670ea3f87ed85356cbfcee18105a5/skills/unslop/SKILL.md",
+      "commit": "97daa3eb365670ea3f87ed85356cbfcee18105a5",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "19afd7f1841316ddff3f854ea8ead675c738e08b30c41e51a8f1822fa0111947",
+          "bundledSha256": "94b244e58c1a88ab3d4d015ffdfc8ac34c15bd485a54a0a5586a2024946f6fce"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "7493761f1e8c2ffe9ac8bb2684a8913e16ac8aa0787852213897122c0e1c81ea"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "94b244e58c1a88ab3d4d015ffdfc8ac34c15bd485a54a0a5586a2024946f6fce"
+        }
+      ]
+    },
+    {
+      "id": "copywriting",
+      "name": "소개·안내 문안 작성",
+      "description": "제품 소개·공지·랜딩 문구를 독자와 근거에 맞춰 작성한다.",
+      "directory": "copywriting",
+      "source": "https://github.com/coreyhaines31/marketingskills/blob/1f837447b20bb6f0e72d87b80ece1c221c362c7d/skills/copywriting/SKILL.md",
+      "commit": "1f837447b20bb6f0e72d87b80ece1c221c362c7d",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "1db2f6e51f0492f5efc646b74576721852720dec388e58d0facd2b790c01bb4e",
+          "bundledSha256": "c60b87cc231b8f5bf65102190774b80de5110d93d9e596e14c9bc3341ddee5b5"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "4a45980b1897f006902ed80899989f55fbeb5d8a6e58a6cb7900d743fe244b94"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "c60b87cc231b8f5bf65102190774b80de5110d93d9e596e14c9bc3341ddee5b5"
+        }
+      ]
+    },
+    {
+      "id": "copy-editing",
+      "name": "문안 편집",
+      "description": "기존 소개문·안내·홍보 글의 명확성·근거·흐름·독자 적합성을 개선한다.",
+      "directory": "copy-editing",
+      "source": "https://github.com/coreyhaines31/marketingskills/blob/1f837447b20bb6f0e72d87b80ece1c221c362c7d/skills/copy-editing/SKILL.md",
+      "commit": "1f837447b20bb6f0e72d87b80ece1c221c362c7d",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "ef6bf9e792edac9ff524576a7eea6980fd13e605e5561736b045136341cde63e",
+          "bundledSha256": "b469d8e3cacf2d2b95abf63463a5b31c04d74b6085c8572daec7fa595f6c1e5a"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "88eac09e878d8ba7a0b705e468dae64b0facc10a430a6f7df81050d6ba82a5d3"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "b469d8e3cacf2d2b95abf63463a5b31c04d74b6085c8572daec7fa595f6c1e5a"
+        }
+      ]
+    },
+    {
+      "id": "product-marketing",
+      "name": "제품 메시지·대상 정리",
+      "description": "제품 목적·대상·문제·효용·차별점과 근거를 정리한다.",
+      "directory": "product-marketing",
+      "source": "https://github.com/coreyhaines31/marketingskills/blob/1f837447b20bb6f0e72d87b80ece1c221c362c7d/skills/product-marketing/SKILL.md",
+      "commit": "1f837447b20bb6f0e72d87b80ece1c221c362c7d",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "8dbccc22998b3cac194c3509fa93d119163b82c9b0a1ce573e6737e5a5ccf555",
+          "bundledSha256": "43a6bbcbb442ee23706de56c0f9a2947599e77ebef29b4b032f7173f7af728cd"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "6b1786d0a82a8a3611868f08c7be6898a3fd027768022cc54893141edfe44d11"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "43a6bbcbb442ee23706de56c0f9a2947599e77ebef29b4b032f7173f7af728cd"
+        }
+      ]
+    },
+    {
+      "id": "onboarding",
+      "name": "최초 사용 흐름 개선",
+      "description": "비개발자가 설치·설정·첫 성과에 도달하는 단계와 안내를 단순화한다.",
+      "directory": "onboarding",
+      "source": "https://github.com/coreyhaines31/marketingskills/blob/1f837447b20bb6f0e72d87b80ece1c221c362c7d/skills/onboarding/SKILL.md",
+      "commit": "1f837447b20bb6f0e72d87b80ece1c221c362c7d",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "3118533cd06066715b6fa3c000e5d2994ad1c36b73cbf82501a9711381514880",
+          "bundledSha256": "0814c42ac42e6fa6d718f9b23f1139eb2d47c14de83c23de51cd3b86e5c8adc8"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "aefaa76359aa9564a14508693747deb36d7bfcd4ab8945be5cf818340a8829a8"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "b70d71e24e40fce5da8f4b6f9cd862096a048e433db7f3c8cac5e348e6d34591"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "0814c42ac42e6fa6d718f9b23f1139eb2d47c14de83c23de51cd3b86e5c8adc8"
+        }
+      ]
+    },
+    {
+      "id": "game-studio",
+      "name": "브라우저 게임 설계",
+      "description": "게임·교육용 시뮬레이션의 핵심 동작·스택·자산·테스트 경로를 정한다.",
+      "directory": "game-studio",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/game-studio/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "87c32773f787b338064e3b7cf5e237a46b5c12e9ffe082927349ebb9584fd15b",
+          "bundledSha256": "5c3930aa8062e9e94736e4e249ccfe32614354f1da6a008aec5f45a4e42fcc76"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "340f2f051800f13e67c6ec6dee077def7004c5c7a563664b21e5799602788828"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "5c3930aa8062e9e94736e4e249ccfe32614354f1da6a008aec5f45a4e42fcc76"
+        }
+      ]
+    },
+    {
+      "id": "web-game-foundations",
+      "name": "웹 게임 구조",
+      "description": "게임 루프·상태·입력·저장·성능·HUD의 경계를 설계한다.",
+      "directory": "web-game-foundations",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/web-game-foundations/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "ef35c1954fa07d10673c1a5a7749656319494fd0675dd2be9671e2dd3cbd7e1b",
+          "bundledSha256": "742abf0ffc56c53ff1fa80de71cc7a8d1bd932265dbef598c248dcd5650bcd95"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "9519d8e09d88b9f0b7722b23c4f1e7cb7b4cbc74f0d340195e3a894dfe913d3c"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "742abf0ffc56c53ff1fa80de71cc7a8d1bd932265dbef598c248dcd5650bcd95"
+        }
+      ]
+    },
+    {
+      "id": "phaser-2d-game",
+      "name": "Phaser 2D 구현",
+      "description": "기존 Phaser 프로젝트의 장면·충돌·입력·애니메이션·자원을 구현한다.",
+      "directory": "phaser-2d-game",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/phaser-2d-game/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "f740df62cb4c6c0f7f5457be4f860d9d163f4cd1df78326c5a61de03d9d7efb8",
+          "bundledSha256": "a88257a6d344485f78ae75dc46a7fe16b8f5f27854c3889d3840e2e7212315f9"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "278e02d09aa14d6a662a81cac7536e91e55c82c34cbaccbbf9580acef01d446e"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a88257a6d344485f78ae75dc46a7fe16b8f5f27854c3889d3840e2e7212315f9"
+        }
+      ]
+    },
+    {
+      "id": "three-webgl-game",
+      "name": "Three.js 3D 구현",
+      "description": "로컬 Three.js 프로젝트의 장면·카메라·렌더 루프·자산·해제를 구현한다.",
+      "directory": "three-webgl-game",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/three-webgl-game/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "0e7dabddb98442387c29a8c1269c12b69430addca8d47df0fa9f1ee2e7a3dd7f",
+          "bundledSha256": "7acf238fb33c99b7ef9fd5711573c173261ce389e405ca086f95453e49a7be9c"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "09a1f4a7ec88e73b6a9a27f9488fe696cf74e86629c42df6021b89395dd1a1e9"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "7acf238fb33c99b7ef9fd5711573c173261ce389e405ca086f95453e49a7be9c"
+        }
+      ]
+    },
+    {
+      "id": "react-three-fiber-game",
+      "name": "React 3D 구성",
+      "description": "React와 React Three Fiber의 장면·상태·DOM UI를 구분해 구현한다.",
+      "directory": "react-three-fiber-game",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/react-three-fiber-game/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "45e5aa86ff3a6a71d1f3f2ab6f0267ce4ca4d35d9e1883a483c16bc9b201db4d",
+          "bundledSha256": "4fb2b09ad12aaf6cf8dba6d5d0558ecac5695a9ea4e97ae8c923231f6dec23de"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "175bd8b5580d6e54a4d95299927aade4463f1c794175bd67d24c032ffe3b5372"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "4fb2b09ad12aaf6cf8dba6d5d0558ecac5695a9ea4e97ae8c923231f6dec23de"
+        }
+      ]
+    },
+    {
+      "id": "web-3d-asset-pipeline",
+      "name": "3D 자산 최적화",
+      "description": "GLB/glTF와 텍스처·LOD·메모리·로딩 크기를 검토한다.",
+      "directory": "web-3d-asset-pipeline",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/web-3d-asset-pipeline/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "22f39ea4eaabd9e9771a90957ed7f3a52c6837ee37b054962675c689ba8ef630",
+          "bundledSha256": "44aa79b55b0cf0f87bf1d30878a87c8f9bf44d11324e5ffb4d0771737591ee8c"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "6b317a1ed54d481a5706563b67968b3276ca4c97d199578659e64ffb26adbdc9"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "44aa79b55b0cf0f87bf1d30878a87c8f9bf44d11324e5ffb4d0771737591ee8c"
+        }
+      ]
+    },
+    {
+      "id": "game-ui-frontend",
+      "name": "게임 HUD·메뉴",
+      "description": "플레이 화면을 가리지 않는 HUD·메뉴·상태·키보드 UX를 만든다.",
+      "directory": "game-ui-frontend",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/game-ui-frontend/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "cd017fe0761207dcfd801f236490896cbf1cd6627ee267c801a19c7c780b7a01",
+          "bundledSha256": "fa67ed884f346b9608fbc94a3e375f2051ba19aa21dd6d53aba9439d26d2a4ff"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "736bff67b6b9621d0c78db0425e6048cbdbeb24a15e546e369c05621778258ad"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "fa67ed884f346b9608fbc94a3e375f2051ba19aa21dd6d53aba9439d26d2a4ff"
+        }
+      ]
+    },
+    {
+      "id": "sprite-pipeline",
+      "name": "2D 스프라이트 정리",
+      "description": "반입된 스프라이트의 크기·앵커·프레임·애니메이션 일관성을 정리한다.",
+      "directory": "sprite-pipeline",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/sprite-pipeline/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "eaaca5ef3faef575164e0775394980318b5561ba54fe7552dbe41971717cc7fc",
+          "bundledSha256": "9410e911f58102f4e4ebf014a393b2ecb15d2c81856e19caf7b1173f00b37a9a"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "cfa1d73b07f929c0356208d06509fe7f4306367c35036b12683dd10be606c975"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "9410e911f58102f4e4ebf014a393b2ecb15d2c81856e19caf7b1173f00b37a9a"
+        }
+      ]
+    },
+    {
+      "id": "game-playtest",
+      "name": "게임 플레이 검증",
+      "description": "시작·입력·장면 전환·HUD·충돌·성능을 실제 사용자 관점으로 확인한다.",
+      "directory": "game-playtest",
+      "source": "https://github.com/openai/plugins/blob/d420d13051bffe4543ed39e30fa46b87148e47dd/plugins/game-studio/skills/game-playtest/SKILL.md",
+      "commit": "d420d13051bffe4543ed39e30fa46b87148e47dd",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "413f2453c602678962fab62446144f2929fcd5b9239f209c7889cc592d2b5be8",
+          "bundledSha256": "2b4825ce9e2f2a190bdcf7ebcdea898debd25b97ba27e453a654d35802c9d03a"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "cfdd64c6441f48abf2cfcb323cb9c9ce7fe0b8759a2b1a47449915b81f508aa7"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "8a3d7738519109971745f92bee6b907985984c55291b949836ac3c5392a202a2"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "2b4825ce9e2f2a190bdcf7ebcdea898debd25b97ba27e453a654d35802c9d03a"
+        }
+      ]
+    },
+    {
+      "id": "modern-web-guidance",
+      "name": "웹 표준·성능·호환성",
+      "description": "웹 UI와 HTML/CSS/브라우저 API 구현에 선별 반입한 표준·접근성·성능 가이드를 적용한다.",
+      "directory": "modern-web-guidance",
+      "source": "https://github.com/GoogleChrome/modern-web-guidance/blob/4dd968349e54ca45a05dd5c818fb035c9054b022/skills/modern-web-guidance/SKILL.md",
+      "commit": "4dd968349e54ca45a05dd5c818fb035c9054b022",
+      "license": "LICENSE",
+      "adapter": "Use only reviewed local Ned host tools. Project reads/searches are automatic; edits, builds, knowledge and desktop actions follow the user-selected host permission mode. Preserve source conflicts, project scope, unsaved editor buffers, frozen execution targets and verified cancellation. Guidance does not grant permissions. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, spawn agents or send messages. Local guidance needs no external Internet. Commands, Python validators, image generation, game engines and browser runners are not installed by a static skill; use an approved local executor if available; otherwise report verification as not run. User decisions and host policy take precedence. Avoid forced Q&A and extra model calls. Read only references relevant to the current task.",
+      "modifications": [
+        {
+          "path": "SKILL.md",
+          "upstreamSha256": "37d68a514c25066840299356e5857b750bec3cc27c0cf57dbe88369b051b573e",
+          "bundledSha256": "20fa7c888d27d4922112c77f487869e173a6d82a9fe50b7770d42ceebcdd4b39"
+        },
+        {
+          "path": "references/accessibility/accessibility.md",
+          "upstreamSha256": "752d3998044bbcdd2736262906ba0951fd6e334efeb52ebf1f8f54cbb6e21217",
+          "bundledSha256": "04d75a5e0dc844554a2dc4683da92dcc86f706523b873941f34bd0ce35240a3b"
+        },
+        {
+          "path": "references/accessibility/accessible-error-announcement.md",
+          "upstreamSha256": "82b0bc7b4a67cc1aa7d9ddfbbc5c1289560e851bad7597f3fff6db5964ace3c7",
+          "bundledSha256": "415e1d30c66742a6d8936282698ac4395c4a07357dcd0ad1eaef1e803b75faf3"
+        },
+        {
+          "path": "references/accessibility/accessible-generated-content.md",
+          "upstreamSha256": "41f549013461d609d9077250527515422c72acfc8a8743b45442797426baad4b",
+          "bundledSha256": "4a82cfc22d587550b6b6fc8a035cb1f3b92f33bac98e31260e9a9954ebd56c85"
+        },
+        {
+          "path": "references/accessibility/respect-os-text-scale.md",
+          "upstreamSha256": "c6bc60d7b68cb2723dee1ac1cc6b5801bf2fec1b1957c7751a36e05030e38904",
+          "bundledSha256": "c3e4861eef3c0138aa379b8d085f34763eedfce8b909527d6482eef305d348d3"
+        },
+        {
+          "path": "references/css/animate-to-intrinsic-sizes.md",
+          "upstreamSha256": "aec9a5b2ef6dbd742d94f0d39c173c9586d25c87410d54d97217acfd218886c7",
+          "bundledSha256": "b44de28d59074daf649abbd9000c14de070e2d2f6d0e1360f46ca6b1d68b61ca"
+        },
+        {
+          "path": "references/css/atrule-support-conditionals.md",
+          "upstreamSha256": "ec27ce4152550f5bdecf49ec759ce761f6398f705ef40d179114d1007c189627",
+          "bundledSha256": "3ba96fea642f2c9495338ae35eb3fa2f6246e19390917349db5c4573be953e85"
+        },
+        {
+          "path": "references/css/calculate-with-intrinsic-sizes.md",
+          "upstreamSha256": "f5f951be8a6a3199048e67bb8ace9abaebaf8d82287b0eee2a4e20d162bf8d23",
+          "bundledSha256": "2567cdbf0463668dd58f308e4ced6cc63a8697659d2b0a976dfd2020d81a7fcc"
+        },
+        {
+          "path": "references/css/child-state-based-styling.md",
+          "upstreamSha256": "003e92ac56029dbf40925e5dc01a6b0362ebaaebae6996755d2c35a6b5dafd3e",
+          "bundledSha256": "d677537d2273f0b2355c933b5dfb8dca974941c90bc7eb69266b8fb068d43911"
+        },
+        {
+          "path": "references/css/content-based-styling.md",
+          "upstreamSha256": "e2f89c713bf0959898ff9d3d83f606a69b248abf572da25f47ba68db02aac3e1",
+          "bundledSha256": "9d090a2da7d0dd998b8d57a4250c495c498b4821dc34e2f9a667242c9f693e2a"
+        },
+        {
+          "path": "references/css/css-layout.md",
+          "upstreamSha256": "c5c8cd89b7fa3a6030b0775bbc8c120efc07aa7a603dc850c73214cc8e8468fe",
+          "bundledSha256": "f9c963fc0bb1b9efad41d9a7c2f9c7ff9e77c18088a7cd641f197a588218a625"
+        },
+        {
+          "path": "references/css/css.md",
+          "upstreamSha256": "1a32fb79887417cb93874ff03d02f2e00deff1e88a531c140bb2c61186aaae79",
+          "bundledSha256": "a5bb950933e12e85d4b18ba7b82f9904476116a10a42d1eb4f10adb4520ff42a"
+        },
+        {
+          "path": "references/css/design-token-reactivity.md",
+          "upstreamSha256": "b01a7c7f3acbe3dac8ecb0e5f46301cc4ca13a6e5cb25d93ca96a59a798fa906",
+          "bundledSha256": "d050748d961d7b9c6dcedf4bf3b0475a5b34cff9e068bf942c8becb09b7d0834"
+        },
+        {
+          "path": "references/css/dynamic-sibling-styling.md",
+          "upstreamSha256": "2aeec9f0bc264365b952180594780a3e9e5d8263232791e8220f0d7f7876d712",
+          "bundledSha256": "cf38f898b4085e17f4367512f7621e38270773e3f219e810c2c950478c4cf468"
+        },
+        {
+          "path": "references/css/fluid-scaling.md",
+          "upstreamSha256": "8b86dfa13f3b8971ed345b758d488c2130b4ff0a6d05f8b71a9308610f962509",
+          "bundledSha256": "e7e96a7bca2ecb0456951b9f97b4e5f0e8f7dfddbebefe34d640a87463819f39"
+        },
+        {
+          "path": "references/css/individual-transform-properties.md",
+          "upstreamSha256": "5dea4d563fe07b39b820feda8683fa25bfa7948a1c6d1ce9de417fb050e2d374",
+          "bundledSha256": "b1e7c89fa52cce32742905739ba1ac704b7137ed740a9a76c60ea26fbffeaab6"
+        },
+        {
+          "path": "references/css/overflow-clipping-control.md",
+          "upstreamSha256": "db3cb3c57960e7ce4c170b5719ea877c8fc41c07fe79a730ff7838e18da1ce2e",
+          "bundledSha256": "2ae2bc0b99ca6bc3e59b1028b21b60e3fb6df055f930399e0417e84f2447474a"
+        },
+        {
+          "path": "references/css/reduce-style-repetition.md",
+          "upstreamSha256": "08250d9f19b128548e317ea95e63f8ed967916e2ffac99edcb161e3002660814",
+          "bundledSha256": "10261863fe4bf4ae3706383220cfe1c89232d553d192b6d298f8aa81e7c978d1"
+        },
+        {
+          "path": "references/css/responsive-design.md",
+          "upstreamSha256": "4bd7f40d677cbaeaebddac90aa2b23a81701ef6c2215b689148906f8d4d2da8f",
+          "bundledSha256": "fef7966ac6ba9bdd0fe035ab33c6da1d417ae7ffff75bce05f41517e958757f5"
+        },
+        {
+          "path": "references/css/selector-atrule-combinations.md",
+          "upstreamSha256": "e26e044839fdf4c62b430438378e27bbac9e91c4527fcb6a4b3d5fa505c11a14",
+          "bundledSha256": "14ef70197dcf4541f855e0d55ee00c2dbfdee2f41ae821f499cd522af8f1042d"
+        },
+        {
+          "path": "references/css/size-aware-styling.md",
+          "upstreamSha256": "18605ef97e5cd22604ce07be958176ad700c17ac7387790ddeff78ddbce1b7b1",
+          "bundledSha256": "2eb788db82fdf31b0b95ac24d734e4f5402ea36bc07e1ab79b8e19d3df39319e"
+        },
+        {
+          "path": "references/css/style-parent-with-has.md",
+          "upstreamSha256": "ae79167408e3b708c7c75b67922329e6ffbb7913b8b34185535c585946d27275",
+          "bundledSha256": "124413a286672d8a4d28978ef5d6e7688072c9fd526d4b83e8768e1170d085cc"
+        },
+        {
+          "path": "references/css/usage-aware-component-variations.md",
+          "upstreamSha256": "515b34e7a6f9174fb4a6bbcc6a9af39d1e78d10adecdceb22f56b6b9bc1516d6",
+          "bundledSha256": "663124c91009c40fe2d674cf36972a50132688a27b207506bcbadcb902bfadb4"
+        },
+        {
+          "path": "references/forms/animated-select-picker.md",
+          "upstreamSha256": "ece2590624c8e3e4ef8e3142adfa0e49df7e4face93a299066971f2d473dd2e4",
+          "bundledSha256": "299a8119d423ba2d54fb6010f12d6532406d42f8555841d4ce74c9c390d71ed2"
+        },
+        {
+          "path": "references/forms/autofill-address-form.md",
+          "upstreamSha256": "e815c4090a0492773536581db3f4592beba42c8a902596df24d0327cf50e6759",
+          "bundledSha256": "f88c87ae1698a85f00037dcd54b92a16b6b86aa10543998997fba0d2ab08ff41"
+        },
+        {
+          "path": "references/forms/autofill-highlight-inputs.md",
+          "upstreamSha256": "2bb8fe8ea0028bcc5fe38b0932c57415d294f94036b8d769d1afe9344be29c55",
+          "bundledSha256": "fb0d135270bc02972dd599151cabfe8dee2aacab92b57229a874218ed3f59916"
+        },
+        {
+          "path": "references/forms/autofill-payment-form.md",
+          "upstreamSha256": "67a7bb1c11b4d92384d8ab3fb65386bb02507682243ad5d8e16761314222789f",
+          "bundledSha256": "be3fe3e4e294b257ba60b7a3f37d6af18ff918fcfd0ebb0ba3a23631f7a44c92"
+        },
+        {
+          "path": "references/forms/autofill-sign-in-form.md",
+          "upstreamSha256": "c5a0dffe9ea99f3aa4798e40f2bc5df6d6b89b149ebe39f9900bf285f2b1000b",
+          "bundledSha256": "e6230d233535b32dd929924e5bec1d8b37e1a4d80bcd1ef7dc70e05e92a32956"
+        },
+        {
+          "path": "references/forms/autofill-sign-up-form.md",
+          "upstreamSha256": "851e3947e64fd12b68c65b4e27a0f4487e9f70042d1a5605271fa73889b646ec",
+          "bundledSha256": "3267f8c6250500d0cdbbda77b94161b122523bd62469c22015f46b86b448c954"
+        },
+        {
+          "path": "references/forms/brand-consistent-forms.md",
+          "upstreamSha256": "3ef632f3834b42f3289a1afd7947494c9ba631c9eae6192c0dd24d1d7d6a463d",
+          "bundledSha256": "1063bab062fdc075ba8d4a79f21b7198876ce73d44c5c42db14bc03aeebbbc17"
+        },
+        {
+          "path": "references/forms/branded-select-styling.md",
+          "upstreamSha256": "668c499fd8ff48c6b758e1995caf21468a8b832d71e41055dd0922db7787dcd5",
+          "bundledSha256": "33f5fd3fcf83d1cd19ebc559c7a1155ea7d40d40c89354d2f48f978d8e2d12e1"
+        },
+        {
+          "path": "references/forms/custom-select-picker-layouts.md",
+          "upstreamSha256": "698a394e930ff5402e303849f110f3b827a7712ed766521f96850e87f92c8837",
+          "bundledSha256": "36d47ef2a8eec424cdf6e69afefa337ebb363fccc38f19c817dec2fdaef8015d"
+        },
+        {
+          "path": "references/forms/form-fields-automatically-fit-contents.md",
+          "upstreamSha256": "34f5d124e79b3c438a3ae8541e9974186c628f03ece91a588d19506d1865b502",
+          "bundledSha256": "07f84f98f94b490258f1a053626d13c2cc50f8cf01bd180d3cd9c20e90592c21"
+        },
+        {
+          "path": "references/forms/forms.md",
+          "upstreamSha256": "520189142652662313fd4107ee20232cddc89f33a9e99dedb8d789275367f9c3",
+          "bundledSha256": "f5e3f7ce7098072229be9959c63a7f7bdd60afdfc1d20ba9cb6a62e985078691"
+        },
+        {
+          "path": "references/forms/ime-safe-enter-submit.md",
+          "upstreamSha256": "aa23bca5b8217e00fe1033741d473e1548e140ba4863a5ae7ac7f2c02132430c",
+          "bundledSha256": "711cb6a0da5e8492c39085f1a7a861eab19eaa05fda64fc39cbcad4fc3c9af99"
+        },
+        {
+          "path": "references/forms/required-field-feedback.md",
+          "upstreamSha256": "ca405c5cd6f67740d92701780c3967c4d27b7bba41f2ff5a6361350feaefecab",
+          "bundledSha256": "8d8aa401014a92c6227429294ffcb037c565442da977ccc1179672b25d897eff"
+        },
+        {
+          "path": "references/forms/rich-media-picker.md",
+          "upstreamSha256": "a1bc156f539a4537a2c1c9a185d65c7eb9bae55f0a1fe670e0f68aa779ad36ae",
+          "bundledSha256": "64f04e60090d22774f2ef3320bfae86fa80fb1e61d79ea4c0f8d9ab9eafc4978"
+        },
+        {
+          "path": "references/forms/select-menu-interaction.md",
+          "upstreamSha256": "9a1ee8b7111daaf6dc17bec3c6e7c27397d3616e9c5309d64dcefd11c876e83a",
+          "bundledSha256": "cf9e40772ab68aa89f0403b37c9bf8fbade0cb119b1e75b049f2a148dbe1419b"
+        },
+        {
+          "path": "references/forms/slider.md",
+          "upstreamSha256": "1c27649b2088661ac67ba5206ac40b197160f2c19a20b714b78f1a9b68784b0b",
+          "bundledSha256": "cd26b2c37991c1518d2556f748b70fac43cccae195bce6740bbcc110ed887e30"
+        },
+        {
+          "path": "references/forms/sms-otp-form.md",
+          "upstreamSha256": "fb464bcddd10e89b3fead8fa54cadc911f3f64dc6bc2d4491756f11d301767c9",
+          "bundledSha256": "81953bcf2a187155a161a4c7062fc9c3030f8ef81b7d22333e8fc5c60573de19"
+        },
+        {
+          "path": "references/forms/switch.md",
+          "upstreamSha256": "9251d982dfae5599c5ceb84787af6bebf341e14ca8ef232cb44c17c5a75d060d",
+          "bundledSha256": "54ac9afbf10e1016dbb85e8051e95464bbe10ea014c8c16135d4bc018c171ec4"
+        },
+        {
+          "path": "references/forms/validate-input-after-interaction.md",
+          "upstreamSha256": "82a6c3f553225e8d4122ef7d2dba83f0254224943420722ec38032c13b19d6d7",
+          "bundledSha256": "0f3dc0c2aa892c8ae3f08db8ba114d11d819c80220ee9d47ae7fffd45e139b71"
+        },
+        {
+          "path": "references/html/accessible-web-components.md",
+          "upstreamSha256": "352e79a510212b4c1db3b15f1c0c0622d3b9ccd046b5344661e0a4ff49970b10",
+          "bundledSha256": "06f45b69eb15bb56122ef34b42691123edbba05e9d54074d83ed350f1ad6b2d8"
+        },
+        {
+          "path": "references/html/custom-elements.md",
+          "upstreamSha256": "164a51a2ec0c5ee15595ce12b71a4b326e84e17992d02b4cc34a7fe00b9f59d5",
+          "bundledSha256": "88c89ba5f7be19736d1707ce87913cb64571c32ae82b2010165a58b2a93b3a36"
+        },
+        {
+          "path": "references/html/form-associated-custom-elements.md",
+          "upstreamSha256": "fcd42a21af01cbbe9fcd39130715c13f2bde96267b2face085cfa23259771748",
+          "bundledSha256": "eefdf519d75bdb662d013b10ab5eb3d991a52a7ec27c60348ae93cd14fbeef1c"
+        },
+        {
+          "path": "references/html/html.md",
+          "upstreamSha256": "dc036032af7cb0d3e9869722fa143708539b90893ff83efdbaff43541be652b4",
+          "bundledSha256": "3c10b9e56e9892092e498653a3b7e974fe61cdf4bed48a0bdec1cfc48a11ff77"
+        },
+        {
+          "path": "references/html/prerendering-custom-elements.md",
+          "upstreamSha256": "f2ca79f7f06265f8ac0cbdcb63301dc6b844c113a45e2f3f26c0411bcc49c06b",
+          "bundledSha256": "3ef49cd8584e5c4402b0d7c4bf7f49fa58ea552ad4decd45fb4b2fcde3ecb590"
+        },
+        {
+          "path": "references/html/shadow-dom.md",
+          "upstreamSha256": "d1fc2affdc23b2747735b0a0c5d4cdc0539d35e9ae25b8aa35deb9bb457746f6",
+          "bundledSha256": "14f83bd41ff9e21a6b9f11b01ae4394ab61e539b353551d93a2b98b91f8ad033"
+        },
+        {
+          "path": "references/html/styling-web-components.md",
+          "upstreamSha256": "4f7091c06baafc5121bcc384e129a7dad9ba705f58c87ae2903dd769d555d8a7",
+          "bundledSha256": "7332705152ff5489d659dcc857e93843bda4e7e9f349743304dc5dff5d0e1f37"
+        },
+        {
+          "path": "references/html/web-components.md",
+          "upstreamSha256": "461bda02f56ff44a855180aca8780869b82c3eb9d47cab3efd86a1c3bdfe015e",
+          "bundledSha256": "7ff95461096d07ae8427e1d2af187309e99b308535d44533c40e8d063f79db5e"
+        },
+        {
+          "path": "references/js/calculate-event-differentials.md",
+          "upstreamSha256": "866733a5e75eb70bfbf57b3529c22f0b27c63bdd6f9a6f3a2b8714d139b61ec7",
+          "bundledSha256": "6170fc605ae0b9af7dfa24280e44e3f6780a5d510a3d4fa83171ea95225c7fc2"
+        },
+        {
+          "path": "references/js/capture-location-agnostic-data.md",
+          "upstreamSha256": "3a1039daa207f3192a530e609a08a5aa575528178160f75c7dc20de9e906db53",
+          "bundledSha256": "2b691c90c5586c8a81e8d44faf9e83cb41d4067af0674ac824ffa4dab1fc27ae"
+        },
+        {
+          "path": "references/js/coordinate-global-events.md",
+          "upstreamSha256": "9cd071b748235939c90490752555df5a8c14ac9a3f9f9820b7f15ab060e1ce9a",
+          "bundledSha256": "6ef6624ebf1dab13f24c8da4aa3df3e3ad75243de376d948bd4916122ef54b4f"
+        },
+        {
+          "path": "references/js/sort-high-precision-timestamps.md",
+          "upstreamSha256": "d3ce6cd029606786c215fb19c4971858a03c2c57fa269fcea5598c6cbaa66f2d",
+          "bundledSha256": "186848cf3290825bf19cb1f8708400834f7075eada09b8e17457d6cafd43ec98"
+        },
+        {
+          "path": "references/js/support-global-calendar-systems.md",
+          "upstreamSha256": "439a247067bef99f4ce760359ad45ac0cdcfa95791d1946eb748913af8ea6470",
+          "bundledSha256": "063da74703e548f6d4d21b92a4f26443a986575968710f3b8cc6b45cff19cf81"
+        },
+        {
+          "path": "references/performance/batch-analytics-events.md",
+          "upstreamSha256": "4233400a2e90fdb93ecc5de90a947b561fac0cf16eb1284007ed7c2e23117c72",
+          "bundledSha256": "ba035c642c66377297a001e4d24c7ea376f3c43eef72f493e131d171b83d4641"
+        },
+        {
+          "path": "references/performance/break-up-long-tasks.md",
+          "upstreamSha256": "98c4326c7dd895e7f90db4eeb2ea6dad2daeb25e8171bd2795d74bdabf27189b",
+          "bundledSha256": "91915f648d5419b8332b42050ba62e4301a2cb183bce656de1927244c0eeefb1"
+        },
+        {
+          "path": "references/performance/calculate-total-foreground-time.md",
+          "upstreamSha256": "867b01937c2c2734a5165174e712e2d6fcf8f40895e0b8ba752aea4c53654e4d",
+          "bundledSha256": "29aab1d43f84aedd226449fd8db7cdeede54c2453400c86a032db65655f29abd"
+        },
+        {
+          "path": "references/performance/conditional-async-dependencies.md",
+          "upstreamSha256": "e591b8f7c8bd0d02db56576755b2dd263e62465a8b50d4b37c339ee18878ad87",
+          "bundledSha256": "219d16cf96bd4ff97d3def0d898f7799860d20a1ad1dbe4c402a07e1f21fb6cf"
+        },
+        {
+          "path": "references/performance/defer-rendering-heavy-content.md",
+          "upstreamSha256": "99f4e9b7b376b7be9c9acd22c04ec66d8bb8b50677a31d212c394d84f74adae9",
+          "bundledSha256": "ee84079e480b7808fc9105bc000813167fff7c98563d1046aaf06b03364adc2a"
+        },
+        {
+          "path": "references/performance/defer-work-until-scroll-ends.md",
+          "upstreamSha256": "3e69a3fb9e3e8a748bec61392e013839c690322424ea8e84a42b6e1cf178f758",
+          "bundledSha256": "f0b54ca91c44fdd3360bd0d875d07981e08a3d62b3c514a6be7d250effc4919a"
+        },
+        {
+          "path": "references/performance/deliver-optimized-decorative-images.md",
+          "upstreamSha256": "5537b241966ff8a8e9ce99232ed715d887aad8db72965ca77965a328ebc41ab1",
+          "bundledSha256": "af39d36e4223b0cab5eff8b3228a7ee96fac5be1e75f997757c6aed8b76969bb"
+        },
+        {
+          "path": "references/performance/deprioritize-background-fetches.md",
+          "upstreamSha256": "14836fc6fc94567c2451ef427c11c381a71b1d348ae57f23b4082eceb9773b12",
+          "bundledSha256": "5362445e8b2d9f5c01b3a44190335ee82e6cff2c9cc4e798c40e0f4414010f22"
+        },
+        {
+          "path": "references/performance/detect-initial-visibility-state.md",
+          "upstreamSha256": "0b25ee2c2c22ea9de9122ec7dada3374573bc0f91c002ef74129e44eedb2aa8c",
+          "bundledSha256": "91ba9a2b5fd6e32fd6b248af28cfa020ad5b6c92a5303c33880534420bd711b4"
+        },
+        {
+          "path": "references/performance/efficient-background-processing.md",
+          "upstreamSha256": "81b62df212b562faa35210d8e05a64265ae0a58ac10f16d52dc854408de0cb42",
+          "bundledSha256": "f9bf96cd25b495302ed6f8dfade8fd4ac5e186b6535fc0c363e7f526f4979284"
+        },
+        {
+          "path": "references/performance/faster-spa-view-transitions.md",
+          "upstreamSha256": "c8a397c7fb5c41a09e3d52ad8af1988b7c89ee45795a6f45df00efe3ade91a85",
+          "bundledSha256": "cc4cc2009b056775e59fb91e8b3aab40abdd8faac7142ef5137c7b1012418e0a"
+        },
+        {
+          "path": "references/performance/flicker-free-client-side-ab-testing.md",
+          "upstreamSha256": "6b12c61733a35960a52c3a16e35d634f991e5ec1e9117f1d41bff8c2caf173db",
+          "bundledSha256": "f37281e9b2bb3b215718dc3d8241558b7eb2158cc648422c35f0cc5cb54910c6"
+        },
+        {
+          "path": "references/performance/full-session-analytics.md",
+          "upstreamSha256": "d0867403f262e8eabd35452a49321b451ea84e6200d236be5cc957168021d172",
+          "bundledSha256": "11d47ca11836b45b5e108e72e9aa2c187d272914f57cce0193fd988ffd786306"
+        },
+        {
+          "path": "references/performance/identify-heavy-scripts.md",
+          "upstreamSha256": "7b70e9b8e3bcd1cbf142b9242388888888fc922eee9bcad85a01d1a035d70620",
+          "bundledSha256": "25806b41ca10e2b527e685400cf5b7a1a560a3b7cb366776c66c417855b747b8"
+        },
+        {
+          "path": "references/performance/identify-inp-causes.md",
+          "upstreamSha256": "2a2a4c8ce12872a62de18690022b00655cc89ca201dd8d2058b65d81b95fa138",
+          "bundledSha256": "618b37e43be65f2405ce50c82498cd12633dabf5dd2ae293ed82db59cf532b1b"
+        },
+        {
+          "path": "references/performance/improve-next-page-load-performance.md",
+          "upstreamSha256": "64747264bc23cf01e46c542097b2975cf94c2aabc2c878147297b7ea01d07b55",
+          "bundledSha256": "383068ed677ea6d84e95dca818a877a43c918ba30de61e970b0ffc0465fe1148"
+        },
+        {
+          "path": "references/performance/interaction-paint-timing.md",
+          "upstreamSha256": "65c00b9da9b93482a2bb7f09c165693e655493e846b2fb3de0c806b3773b203f",
+          "bundledSha256": "37a1f394f1da2e1a51f490c374de5d8f983310ce6c1f0ce848274c75c4e5a329"
+        },
+        {
+          "path": "references/performance/interactions-in-complex-layouts.md",
+          "upstreamSha256": "32519cb50656ec3188565cf934826f483c1f1ef3075547dc04414f1908deafc3",
+          "bundledSha256": "6b6253e4b18f0fd29552ee09672562770f115d8ee80a67626edce7b441a76130"
+        },
+        {
+          "path": "references/performance/lazy-load-video-and-audio.md",
+          "upstreamSha256": "b794c32132b0a14306d1fff07645a563a89a652ea8887ef06f46203c958ff754",
+          "bundledSha256": "7ed0ac56b735cb30e17338c666d63516676f246cc08c01fef9cb55113736d020"
+        },
+        {
+          "path": "references/performance/optimize-image-priority.md",
+          "upstreamSha256": "4f1345b87b2e96b3e97185082cd1f38b8fc06f5a2e98f5c66062aa88ed00bc46",
+          "bundledSha256": "6f35fd8d967a69eac0640920ec8415699f339ebab8f7ed33d84620d92b6bd738"
+        },
+        {
+          "path": "references/performance/optimize-preload-priority.md",
+          "upstreamSha256": "5239d1bb2718a2698a5288b069018af1cf40385c2a2d997e7ab9d7b49c892bf1",
+          "bundledSha256": "86232f45460eb0e29802ff953264ad57fbe4279e726b2dc98b81c944abd2d74c"
+        },
+        {
+          "path": "references/performance/optimize-script-priority.md",
+          "upstreamSha256": "a3b6af33195d56febe9ca9490af06e420b0d3c62f37d9cf3594f89233d5ab41a",
+          "bundledSha256": "6d188fffb9a6bda34926c65e30d8fd35ad6c6b622f3692516591d3156722472b"
+        },
+        {
+          "path": "references/performance/out-of-order-html-streaming.md",
+          "upstreamSha256": "f4e437706652abe391fee3105a4f585015fed0cf370a16eeb2de12a5d0b038ab",
+          "bundledSha256": "d7aeb8896ed11cfaa85cc54e85ed93851a6131b191adef118bb3238825de9d82"
+        },
+        {
+          "path": "references/performance/performance.md",
+          "upstreamSha256": "7db68366e739251d715c894d747da7e44c2138146308a289a1f4d8c42ea53dae",
+          "bundledSha256": "d899267dafe82ce03d5ebf444683874a882907d3ef4d0521f35fcfecb8654999"
+        },
+        {
+          "path": "references/performance/resolution-optimized-pseudo-elements.md",
+          "upstreamSha256": "05375d370b54f814e07ce0232f0909ee2a937e03d1a53f7004620dc9e9916fb8",
+          "bundledSha256": "0f22654bb7ea34aa37eecf6f661226cce75407c34b9d2f46acec94beccc584bb"
+        },
+        {
+          "path": "references/performance/schedule-tasks-by-priority.md",
+          "upstreamSha256": "3a059a8614821195346ba5e757246866e7467fdf46efb668c2aa455ceaaccdfb",
+          "bundledSha256": "63ef19a9390ee39219cc2c0913ff732b8e788a5587e6f451657788eae038ce94"
+        },
+        {
+          "path": "references/privacy/privacy.md",
+          "upstreamSha256": "0abfb8bbaa1766cd9a986cdf925b05dda21fd7b0d5cf46d52335572cc481e28d",
+          "bundledSha256": "657bf13a9b291fee0dc43079604d5e9445ddf5e05bbbe7a0da0a5aa1330e3088"
+        },
+        {
+          "path": "references/pwa/install-web-app.md",
+          "upstreamSha256": "b9045822a9ba5b62f56035f3a5978b4f3fd8b296d88b3630607c1a71652b86db",
+          "bundledSha256": "021bd73827c136e44048ee1bfaa9a19f71a89b8ce3fb3858f254aad0fe7e1e81"
+        },
+        {
+          "path": "references/pwa/migrate-web-app-origin.md",
+          "upstreamSha256": "39419f5c9d856f61bd7690b523233107fb4d6c56288b334e15f2ac64b54c54e9",
+          "bundledSha256": "c722ff340d819230782de3b19fc58f1c0388d44f2fe48433c732db22832d38e0"
+        },
+        {
+          "path": "references/security/client-side-encryption.md",
+          "upstreamSha256": "1a086e41d3ebde97688db8ccd1184ca93b7b2d22140fdeb7fd199b7edc357c4a",
+          "bundledSha256": "e014710958087283ab8df75745ab3155a0eba879121bed2b200ec8c3126bfe6f"
+        },
+        {
+          "path": "references/security/digital-signatures.md",
+          "upstreamSha256": "70a97e0adc0c6b6edd3633538b31d145b2107eeb263900de4f91c83e272bdca0",
+          "bundledSha256": "0b89b44c7ea33e0fbb68c8670f2fab23f22e246f8410c5c313f8a78678038edc"
+        },
+        {
+          "path": "references/security/local-network-access.md",
+          "upstreamSha256": "be2f670b85f5ff246671f7b22f1afe9b18c8f0cfb01af0c407e86a1b12687db8",
+          "bundledSha256": "613f03090186871569d9fecef9c2e6b57e46f7029bf05cb817636f105c152a04"
+        },
+        {
+          "path": "references/security/passkey-authentication.md",
+          "upstreamSha256": "8b8e1c551c2b5d7370da843287109632bcd8061ce86a9ab387844552fc311b2d",
+          "bundledSha256": "72c3a34b3e23d659acec00435f7a0ee366a2307fcb4a22a43856ca7efff88ce5"
+        },
+        {
+          "path": "references/security/passkey-conditional-create.md",
+          "upstreamSha256": "9f2b1008c469129de63899ef33ce1864d220fdf25e2e6688883a1474f457cc2b",
+          "bundledSha256": "f78fc4a5f261edab4a2352b78f0bb8f3fb7669d988f70d57a5176a64e2a620a1"
+        },
+        {
+          "path": "references/security/passkey-management.md",
+          "upstreamSha256": "f2e48785a414f495ae1227a3772783e36f86529d03c828ca0fedd6fd3c7cd5e1",
+          "bundledSha256": "9f26b1bab36eecfaaeea972e61104636c35aeafa6cc5a950d3f89459fe38df76"
+        },
+        {
+          "path": "references/security/passkey-reauthentication.md",
+          "upstreamSha256": "8f3216220c08732f0b3eeb607d9b3e185c7b07500f3ea7ab272fae4d2be8e7db",
+          "bundledSha256": "f328c3af9d35f604d215df9f1eee4a900639c3a95e573daeb3372c7b722bd559"
+        },
+        {
+          "path": "references/security/passkey-registration.md",
+          "upstreamSha256": "d1036912a432a7678c3887eab871eda4406a564c501490de9e115809945e07ca",
+          "bundledSha256": "e1c52f6cd9fae61f583ce769786a86d3d40b68aebc4b36d4388e9c2449008447"
+        },
+        {
+          "path": "references/security/passkeys.md",
+          "upstreamSha256": "a6535a72edf617fac23d2bbee66a28ccbd130a1d35fa90bfc6686de1e31843fb",
+          "bundledSha256": "aba604f2ac2b5b720cc44069b91aea80d1de83266c2da5df44f4ec9789fa2c24"
+        },
+        {
+          "path": "references/security/quick-sign-ins.md",
+          "upstreamSha256": "c701ca886234ec43f91a24fbee450a9a3f5dae2b9581f89e48246f4baa82f909",
+          "bundledSha256": "cf6f524e91f14c44673800ffef54a8c7d13e1bf9ae29c2929329f2245fa3db92"
+        },
+        {
+          "path": "references/security/restrict-outbound-connections.md",
+          "upstreamSha256": "9d857d904cf35040ebaa369c5eb98bf1726a88bea4e319d2562415ddabd17165",
+          "bundledSha256": "78d8cec79113ea93b898c005d0a631bc5e127cf78a4cda02d264665e4c22e5ef"
+        },
+        {
+          "path": "references/security/sanitize-untrusted-html.md",
+          "upstreamSha256": "e5fe91dd410e4df88c7fb229b132e33407ef412ed26a05894b51cfcd8a4ae5ef",
+          "bundledSha256": "147f0004e685d2676a1b35e498ec0eab8003a74def80cc6edc914da8af4dfc35"
+        },
+        {
+          "path": "references/security/secure-external-subresources.md",
+          "upstreamSha256": "fb62fe3352ee0bb72d73bb8c0e47f251d6d2e676ce359fa56a90212cedb99f71",
+          "bundledSha256": "f3d95b887b167a595a8d311de7597218ed54d986209c40f805ec94c5dae797ce"
+        },
+        {
+          "path": "references/security/security.md",
+          "upstreamSha256": "0856fcb72419329397605700895414536cf0d00f1b697afeee5d4aac5fcf80ff",
+          "bundledSha256": "bf73ed119b17d1e6d86fb29a009626535462e01c74abda256be6a1ae71aa6af0"
+        },
+        {
+          "path": "references/security/trusted-types.md",
+          "upstreamSha256": "3b3268a10597554e3f4235cd49bc850d07b8a8e7c19fbfffb290736e512b8af5",
+          "bundledSha256": "8eee16ed3ca94589c091a28c884f9c24e4b2fa260ae3423fdf8ed32d46497c2e"
+        },
+        {
+          "path": "references/security/validate-origins.md",
+          "upstreamSha256": "26fdd6e817eb891f60750400c574c34a946ba8330c4e2a83820d0f9ee32111f7",
+          "bundledSha256": "f299133b77dbbd9d512d8447be0b98c1ef0f7fe9382cd70a477258f83c25a817"
+        },
+        {
+          "path": "references/security/verify-email-ownership.md",
+          "upstreamSha256": "215ea066291eddc6c0fcd3846c08596ea85df6761000dac46e0c1a52048fb058",
+          "bundledSha256": "93bbc1bcc01d309333a5b6f7b560e7af16520d2995d5fc3d359422db97e616ad"
+        },
+        {
+          "path": "references/ui-atoms/carousel-slide-effects.md",
+          "upstreamSha256": "40d50d25208732d99ed46ebd632a058544b01504131a64716a0f9ff9a7a1621a",
+          "bundledSha256": "e0ee48bfd206cb6880dcf1e7d5d22cef08b26c4813e4add3f07b07d4589c5c2e"
+        },
+        {
+          "path": "references/ui-atoms/component-specific-light-dark-theme.md",
+          "upstreamSha256": "ef4217e0d0bba4fa5c986543d8c8b4fe5c8997f15ec24373ca1157b2a70b2d3f",
+          "bundledSha256": "c3b857e89e5c5091884b75fc9b1e5ee240972a2f74f39ccd26ecee414afa9beb"
+        },
+        {
+          "path": "references/ui-atoms/icons.md",
+          "upstreamSha256": "2a2af02010b388de90e707b5ecf8f70fa78b5ea67e2c9c063183222515de0eee",
+          "bundledSha256": "b9848bb1ac53fd5e8d28f988bc4fef5940ef3334d194e819b029d4dd651d3153"
+        },
+        {
+          "path": "references/ui-atoms/position-aware-tooltips.md",
+          "upstreamSha256": "9bc5546a7ca0eec2b76a3ea59ba99ca90287ba12ea7a63d410a0dbdd3092f717",
+          "bundledSha256": "7119d370cc0cab7408581f91ff08df36ef3c974edd58d6f22a8c8133b3906906"
+        },
+        {
+          "path": "references/ui-atoms/pull-to-reveal.md",
+          "upstreamSha256": "b5e707afc815a9db02dadd343c1e436fee55bd77cfd1304af9a6335b67e28ce8",
+          "bundledSha256": "685cf98baf72f995decf8320396ce16c1bbb9d28cf80807b74f64cf9a66469c4"
+        },
+        {
+          "path": "references/ui-atoms/responsive-table.md",
+          "upstreamSha256": "b1b1c84034398b83cda29a04fbd152c94aced38b11151791b3eb1c9d05af7666",
+          "bundledSha256": "a62e307eb420b6b998ca3305b7735fe38c19d74d79296d3d0f1baeffb8bdd11b"
+        },
+        {
+          "path": "references/ui-atoms/scroll-position-aware-elements.md",
+          "upstreamSha256": "dbe940c9693f31524dff7bda5c0027be520af47bc7b3389a89c60d068ace557a",
+          "bundledSha256": "7e0e42938a6abf45f6023d964d00a9ce2e0ea8be743f4f0be5c2b374b87b6a66"
+        },
+        {
+          "path": "references/ui-atoms/scroll-progress-indicator.md",
+          "upstreamSha256": "9dd9ed62c88f99c930671dd5ec1a8aaf42ab509adc21d9d57bf16cf7dacd0faa",
+          "bundledSha256": "005ccabd4ab54c59223b76d607bd3567714ced23286f552ddc0d3d5255d3c5b1"
+        },
+        {
+          "path": "references/ui-atoms/scrollability-affordance-hints.md",
+          "upstreamSha256": "bb1c84eeeed46024bfff8bdaae60797e283f565c2f38970cfaaca727e4b20357",
+          "bundledSha256": "f7a51431cb3a6bdf179d6c7c3568323683982db409e521aced43db8c357f5dd5"
+        },
+        {
+          "path": "references/ui-atoms/shrinking-header-on-scroll.md",
+          "upstreamSha256": "e5e78dae57b0ff09ced03fa348b2f79dd026dd6dec41915c501446afd0820031",
+          "bundledSha256": "88bd4459538ef89561fd54e556e03addedde4f028aca99431e20b992c4890e6a"
+        },
+        {
+          "path": "references/ui-atoms/single-line-overflow.md",
+          "upstreamSha256": "498cb6dd8f5d5a2dfaf2e0b5076cf314834228d6ef98d04e86ed3c229f8f796c",
+          "bundledSha256": "d51fbc7160bff54a16db1441c87335bb5444966440f64d1b861e05a9217f0f2a"
+        },
+        {
+          "path": "references/ui-atoms/state-aware-sticky-headers.md",
+          "upstreamSha256": "712fc6c6902c89161518eda7fbf2846ccc2826f133fcfb4d32312547a188d4b3",
+          "bundledSha256": "36625592db587fd4a64a6a9d52905e4f75e13e937dbf05d2d6a70739eef19072"
+        },
+        {
+          "path": "references/ui-atoms/viewport-aware-dropdowns.md",
+          "upstreamSha256": "61b5fad08d3ab539fd3c9e63bf28d2ec058f7606500f34f5418c12e5563a3860",
+          "bundledSha256": "d1302dda1d1ab10d0b74a7b2a3419462293605b51c21e081c898ce15b65111e4"
+        },
+        {
+          "path": "references/ui-behaviors/2d-panning.md",
+          "upstreamSha256": "c1bf693ba5eb1ac7a912be1d46f921d5ba38ea9b79011121661a12cd6841f9d5",
+          "bundledSha256": "aacd970e237993a449864f9afe3e906792a04b6f5365fc92da29ed66132594d6"
+        },
+        {
+          "path": "references/ui-behaviors/anchor-positioning-tab-underline.md",
+          "upstreamSha256": "705ee8bff658a5f12c2904ecf1e31618bcc1bed17d9a8d161ed60b8d55794e98",
+          "bundledSha256": "15c201b0e174560a5d991ec8ccec15dc1299d3ca74a7f944ed65076b4a61443d"
+        },
+        {
+          "path": "references/ui-behaviors/animate-element-entry-exit.md",
+          "upstreamSha256": "2bf30ba88fa7d1fbdc3f7c2e3898bb0d37ea0a938912b8e34ed04de5ac485948",
+          "bundledSha256": "429e7ed3f66dea929299fd633600b36f3b15f9887ec0eced92926666966d91e8"
+        },
+        {
+          "path": "references/ui-behaviors/animate-to-from-top-layer.md",
+          "upstreamSha256": "50e794695584d7571d9e2cd11951ad47854ba8e183926fe35fa1ba6694ea3ce8",
+          "bundledSha256": "760403bb055a6fabf37cc2e13c09dae491c11db8207460675a18f4bfdcf30312"
+        },
+        {
+          "path": "references/ui-behaviors/carousel-snap-highlights.md",
+          "upstreamSha256": "b5fb101bb1ccb6aad294014e4aaa074f3bcdf9131ce22a1f7b83a3a2184896f7",
+          "bundledSha256": "92c525db3e081467687053aa68ae4e769cc276328b7f90f510a1bd9578b05299"
+        },
+        {
+          "path": "references/ui-behaviors/consistent-cross-document-transitions.md",
+          "upstreamSha256": "44d41ffd57747c9195eff4bdead8284cde55fe606a49d4a29268dd7fce8d9f4d",
+          "bundledSha256": "3d10430ab3a8096fdb2218c048cee8e275f8e3899f11554695054dc92214a7e3"
+        },
+        {
+          "path": "references/ui-behaviors/cross-document-transitions.md",
+          "upstreamSha256": "139ebe0cdf97343631b5cc1ab5f4b29a22c65f94f2d6f794e4646dddef1f077b",
+          "bundledSha256": "13977b35c9d9d2ab99a7dadcdabb9d3edbe75b3c8a6e76f7e316208eb88fadb3"
+        },
+        {
+          "path": "references/ui-behaviors/custom-button-actions.md",
+          "upstreamSha256": "12bd1141c4059a2a52313c9720e545c55efa6993ae72457192a6887caaa6a9b4",
+          "bundledSha256": "46c12006ad5cf97d9e3251eceddf8fc838ff8907f0a30d7f457a2125377ef81f"
+        },
+        {
+          "path": "references/ui-behaviors/declarative-dialog-popover-control.md",
+          "upstreamSha256": "80292b68811216186dd30312133249079006df8c8e3f9d676f38a7a62cde9fea",
+          "bundledSha256": "6fb7b82b6dde4995c3b303313d233ab2a0cf6b833fe493f3d621c8ef57c30b14"
+        },
+        {
+          "path": "references/ui-behaviors/directional-navigation-transitions.md",
+          "upstreamSha256": "0a584ec619b1688a7245b688c54f682c8acc93009a9376dc9281636c8f381e8f",
+          "bundledSha256": "26f93a3725607333bfc81a1d54ae09947e14fdd9cedc5baeae1f1c95e6da9ae7"
+        },
+        {
+          "path": "references/ui-behaviors/drag-and-drop.md",
+          "upstreamSha256": "2c01591b2d98b68c961eba4c73b1d7d6650bba7323b14277b607ae0fb12b0df5",
+          "bundledSha256": "a1c44a903b97a345389f878ecdc9b80a00318d7f8a8046f6c49b72246ef4f930"
+        },
+        {
+          "path": "references/ui-behaviors/drag.md",
+          "upstreamSha256": "ecc3e794629952ab9e1f1435970da0cd5bd5f75919581853b207ae72ac8f3b2c",
+          "bundledSha256": "00df2bbdad1e2dd8960d3d82a91f54ef3c98838a0b83efa95bcdc81e95fb8acc"
+        },
+        {
+          "path": "references/ui-behaviors/dynamic-sibling-animations.md",
+          "upstreamSha256": "cbe8b5078c2b5450af5fb405ea037a733a8fa0e471c8e4fa4a4123e897cd19d8",
+          "bundledSha256": "2f12bf179cecec3addc4d0e9f9e8ddbe6442234b97de9aa11b4a2a1326dee3a1"
+        },
+        {
+          "path": "references/ui-behaviors/dynamic-sort.md",
+          "upstreamSha256": "ed8db7fda22262a60fa8e5658ab7fe813bef049508a4af9c35498aa811550f9d",
+          "bundledSha256": "769bf18f48dd74b016ae9ab0fa3a2652373682df80151c9032b6c044dead962f"
+        },
+        {
+          "path": "references/ui-behaviors/group-element-transitions.md",
+          "upstreamSha256": "a559459cf88a35382775f2c80f61701687639fb531ad4ac02ba6b51d46b451df",
+          "bundledSha256": "ef96b5551ca49d60432a1928031de1e3c8fd9ccd47211d66014e7e3cc3007965"
+        },
+        {
+          "path": "references/ui-behaviors/highlight-text-ranges.md",
+          "upstreamSha256": "5d769ceba3ede009799820c5a2fed9656ca06c6ed7038ef85afbf40fcb3d402d",
+          "bundledSha256": "9f94937d7d0ae6fac3c5fe6f5bcc3bc8e185577a99d365d46a8d32991a25155f"
+        },
+        {
+          "path": "references/ui-behaviors/interactive-content-reveal.md",
+          "upstreamSha256": "370ce4169b73a5bc745786dbb2455456c86d43421464a6f7e29cc9135cc730d0",
+          "bundledSha256": "4817a222a9158bb5ea0aa3e8d303d2e53a596ac71f9c1fa801afb233ff7146b8"
+        },
+        {
+          "path": "references/ui-behaviors/interest-triggered-action-previews.md",
+          "upstreamSha256": "166ecb2a90752b9b1c9d5e9eec0fc497b319a5df5f64c06558b9a97f70345295",
+          "bundledSha256": "c93c63b93b50bf464a51b853c950c11165189dcd5f7fdc0af35ae7733a03fe24"
+        },
+        {
+          "path": "references/ui-behaviors/interest-triggered-tooltips.md",
+          "upstreamSha256": "0cd448e40c24d18f2f396875bfd62d73b1a2cad46550273010cb9b23b84b81fc",
+          "bundledSha256": "d18fa8eb95db123dcc16bca3779f413a0014790ba76c7d177397a6db7b75d0ad"
+        },
+        {
+          "path": "references/ui-behaviors/light-dismiss-a-dialog.md",
+          "upstreamSha256": "7e0a059f72fd761aa2173f13cda52e3e3a6d624e586ebf27b9b0cf5be4ac2e44",
+          "bundledSha256": "7ef0e4cac0a1e55e8f00a03756ab00c5eb3372896f4c1125f35e62e060ec0d20"
+        },
+        {
+          "path": "references/ui-behaviors/motion.md",
+          "upstreamSha256": "332a13a46a95bcea8f20385f95c19c0eda49aeeb613c29acdde4f11a9ce76824",
+          "bundledSha256": "d5ecc5fad50d8b717750f9337371ca9276e19990d91fcd2ba66bad8a5a6e9913"
+        },
+        {
+          "path": "references/ui-behaviors/move-dom-element-without-losing-state.md",
+          "upstreamSha256": "4cad5bc992b3a0deeb3706850f57d12f2e5b83d5ff4fdb6ca2e72c9b4f0355e6",
+          "bundledSha256": "1988ad2ea547815908bcb2edf299d7010905d1b48c3113ea46616a7cd42cc37d"
+        },
+        {
+          "path": "references/ui-behaviors/parallax-scroll-effects.md",
+          "upstreamSha256": "2f464df489cf7289c980c3ade5ff620afb5afecf546e0d8be093ff791067b9a1",
+          "bundledSha256": "9ed8f2b40acd93f24edf3267c5305565ec4670d4acbee3cc27fc3ed18e591358"
+        },
+        {
+          "path": "references/ui-behaviors/persistent-top-layer-ui.md",
+          "upstreamSha256": "bb1610227b1098fc30a4ee28adfc1e943a6f2ade9b97ff991aed2ffcef3a27e6",
+          "bundledSha256": "a8a15a9e8a65c35530f8c1026cd35ca476d2d3be782901dea1d813b7191106d9"
+        },
+        {
+          "path": "references/ui-behaviors/physics-based-easing.md",
+          "upstreamSha256": "b1bbe494a75fdf31e36af25d7f37b7af01250394e2b317c3f0f8b517ef51f040",
+          "bundledSha256": "3f958a71eea9f84a6b0d1be30005fe47f77c2a9825fbc7a27ba9d70c54ecca49"
+        },
+        {
+          "path": "references/ui-behaviors/platform-controls-dismiss-dialog.md",
+          "upstreamSha256": "8dbdbf38a7d6ef02f829a06b708529153e5ce7fc73578db1bab4eb0f2ef3bc51",
+          "bundledSha256": "ae7622d0411c652bbe8bbef1d3428d29b0107d8efa5bd89aa4160aae6b939dc1"
+        },
+        {
+          "path": "references/ui-behaviors/prevent-page-scroll-under-modal-dialog.md",
+          "upstreamSha256": "33ef136d35c34a4fc1b6ab3e1f64dd523910cb734e3cd0e4790d135b106c5d2c",
+          "bundledSha256": "a8bcba12c8350ae15ecd8d0f5168c8fe24519b9ec1a16a15a4b322e8eb236a42"
+        },
+        {
+          "path": "references/ui-behaviors/same-document-transitions.md",
+          "upstreamSha256": "2bc5e0af24ad534d4b3ae336aa2afd229da1eb3951101c19ad6c08ac09a974b5",
+          "bundledSha256": "6fc280ea892cf93f7420125b39a73184236958da552441849b890034d60373ce"
+        },
+        {
+          "path": "references/ui-behaviors/scoped-component-transitions.md",
+          "upstreamSha256": "44352258d7b5e0852f78367045d771d270e733246a7732bb7aa56a29d8924744",
+          "bundledSha256": "18dbbbe1aa83d7315b5e88d3b6647f0a96d024df654bd9f9e4eaa3c027842822"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-completion-effects.md",
+          "upstreamSha256": "82dbce83a4618efd43bc1be822cc1350fac6f7805b5c9a5bab5995e350fb8d12",
+          "bundledSha256": "06081dd76b0b21f2fb33e18b3fcadb6be4bd2582be71041b9dee5caf1f77f646"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-entry-exit-effects.md",
+          "upstreamSha256": "b33f4197dd98525635e6ecb652a405415658db361001aa421743cea311a0cdb4",
+          "bundledSha256": "fcaaafa3058131dd302a618fa3b12b9d2dc306ff9ef23bc52cfd886942ea5fc3"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-snap-realtime-feedback.md",
+          "upstreamSha256": "67730e2bec02f6ce27ac7641bce5688f17d48cbde95f1f3aeeb8a737fade598f",
+          "bundledSha256": "1386920ccdc1ee8a7079b3b1192e791dcba85159634a64d7aedddbb94d6f1f58"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-snap-state-sync.md",
+          "upstreamSha256": "c6a72cf3bfc4b4ad0d0fbc102f0cf379ac458d111add0d9033026980c77cb7a0",
+          "bundledSha256": "83209220e6e08f28042e4ffbaa244dd7f0baa25e9cf98e2a57bc8a6d7ad26288"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-target-on-load.md",
+          "upstreamSha256": "bec608e66898110683dceaeedcdf1cecb16d1dce9495fec4842c5ad016d7c4fe",
+          "bundledSha256": "4fd7639058b9bc34b47adf8542dbe7ace5fc9b4aee206b3582f8836fb35f4e98"
+        },
+        {
+          "path": "references/ui-behaviors/scrollytelling.md",
+          "upstreamSha256": "7f3a25a84f74a1e31f5a3d9fc1fb93d4b80a24b4e822b59614ed9433f114032d",
+          "bundledSha256": "5af890bcb2127426fac64d56ab5be0eee5cc81644d920d1cba9a4aa40cf67686"
+        },
+        {
+          "path": "references/ui-behaviors/search-hidden-content.md",
+          "upstreamSha256": "d0f1c0d1e354a485c076d210f3164c97d7e4db9dc4e1bbd8ce9ca45d667a8734",
+          "bundledSha256": "1afb5c2f1191bc1db59bcef68008d9df700efeafd766cd731456bf9de46ecd92"
+        },
+        {
+          "path": "references/ui-behaviors/sortable-table.md",
+          "upstreamSha256": "61f402c7b4b409ae0a2b6eee6a208e3723b09138381c3995e179c9bb1bb3558a",
+          "bundledSha256": "88f3a9fce2626be5c70025e90a8b9385709e83e9058aa64fe86ba8816c5de945"
+        },
+        {
+          "path": "references/ui-behaviors/spatial-navigation.md",
+          "upstreamSha256": "edbc7cc716299a9acc810ebfc3fa9607e82aa9ca0d2b832c87890173a612fc67",
+          "bundledSha256": "d7fd8382b24f1e7be90f62f65724deeaad73152762886c605a3e08f777c27d21"
+        },
+        {
+          "path": "references/ui-behaviors/swipe-to-remove.md",
+          "upstreamSha256": "9b258a1f9f1233fc88266b512d7bae7048ccc6eff94422762878b49a166511ad",
+          "bundledSha256": "c2eeeb52918db66e69d5059ebf6bb469d8c56bbc348df1fd0f8f3b368b0ab079"
+        },
+        {
+          "path": "references/ui-behaviors/swipe-to-reveal.md",
+          "upstreamSha256": "65d3df7c32c33c3891aaef887b4f72e5eb2cdb19c7ecb47dad17549ac559055e",
+          "bundledSha256": "3bfaeb09b186feaa7af20a81381182a7df97c76a845fdf92d3083fcd9e86c306"
+        },
+        {
+          "path": "references/ui-components/accordion.md",
+          "upstreamSha256": "3c0bcd860dd992e7ce41877572d061e3b40d846fa2c98b07fecb2624916cde98",
+          "bundledSha256": "63fe5e0d88923cc44f6a6d625f867639907d55829d56d3f975e5652a5a73cc8b"
+        },
+        {
+          "path": "references/ui-components/app-menus.md",
+          "upstreamSha256": "6b5eecffdeaf727a5a8f69bec56e31959ddffd0361a52c22222479bde76326a1",
+          "bundledSha256": "9a1cb8cb8d99c44a9fd02609d00ea304dbf8d6080acfef4675b9405f56f702cd"
+        },
+        {
+          "path": "references/ui-components/breadcrumbs.md",
+          "upstreamSha256": "13fda9a780e85f3bfc3e5922f5f6ec4938eaa16bbdda4b8b0c45a6f0ad2347f7",
+          "bundledSha256": "f833abb8ded6675bd7b225876d3dc8ca9efc311e9b7dd8a74a69fe1ab64680ce"
+        },
+        {
+          "path": "references/ui-components/card.md",
+          "upstreamSha256": "18099aaca072463e69ad356a1bc4840002d566d4c13e3fa615e0bb899924d3e5",
+          "bundledSha256": "d76f668f40e4c5e15fcc119f115d70be4cd2f3cfd9c7d2a3e00e8a7b66e09d9a"
+        },
+        {
+          "path": "references/ui-components/carousel.md",
+          "upstreamSha256": "90aa7c0a2b6f9b77bf7548f65eef37e1246f0af38f263076c8b95517bc5142c5",
+          "bundledSha256": "63146dc6f8cfd2b9dd09646a51f28daaee7796bbac20b73edd2eee00bbb55566"
+        },
+        {
+          "path": "references/ui-components/checkbox.md",
+          "upstreamSha256": "fd04484f6aef1fd550488d6d6bc9473f09bfc29aa30a37ff10a809b4950c5a76",
+          "bundledSha256": "88106914e39be8ef12ca7370422a1ce8023ebf436156bbf246b2ea7258939ac8"
+        },
+        {
+          "path": "references/ui-components/copy-button.md",
+          "upstreamSha256": "e50baf93460ba3465cd40cbc9417e6528c8b61b41bd50485020203b34af726e9",
+          "bundledSha256": "88ce918c9d484a780ea36fd5739b0d7d1adaa32b2e80b9936089f29278ce818e"
+        },
+        {
+          "path": "references/ui-components/dark-mode-toggle.md",
+          "upstreamSha256": "2a99ef825c4a67a75c2b48f8c1e364bdcc59e5ab2ef0345688a8515b44856211",
+          "bundledSha256": "e709dd660b44cca7aecbc2e15b59d1f41b0905e6b24597fcc66a93c42fddb418"
+        },
+        {
+          "path": "references/ui-components/dialog.md",
+          "upstreamSha256": "f9d64f0e0f8788834a9bb1a0f674115b141b44f4f6b76d773d349199a972824b",
+          "bundledSha256": "f3aff8b8afc686d863bf00115282674fd069fb0ee5b63da927e8e3b98f358048"
+        },
+        {
+          "path": "references/ui-components/hovercard.md",
+          "upstreamSha256": "54957125b29b582d205f1fb610cc0664faebf14ea15cc740ef93c4961aee341a",
+          "bundledSha256": "cdb842a8e77dccb8b77d5e46e1f339ec7aad974c2f61ecfb06f82cb3c9c3b05b"
+        },
+        {
+          "path": "references/ui-components/menu.md",
+          "upstreamSha256": "9d634b87d91ed72c632c664b7caa8d00d5554ee1d60f24f5bafbe45b3125c10b",
+          "bundledSha256": "97ddf384df6d38e7b3304df37a1244697bc79acb6283d0ef51644963a8add829"
+        },
+        {
+          "path": "references/ui-components/navbar.md",
+          "upstreamSha256": "92415e200441f316748103244af8d786ed9a6f939353d46501dffa7f16675750",
+          "bundledSha256": "02a949dcfae04073c0987d0e89fbfb5bf19bfb043ab229cf43f1373f563669f9"
+        },
+        {
+          "path": "references/ui-components/navigation-drawer.md",
+          "upstreamSha256": "94597ab44b89e25feb43be3696bca5e420334c25bc236b3f2eed7f39d614dc56",
+          "bundledSha256": "92248ef3b4fe2f4162c81a7e9796c7ce3ea43f3da57b74cc49ad56b98c70cfd0"
+        },
+        {
+          "path": "references/ui-components/persistent-app-tours.md",
+          "upstreamSha256": "e5281c7227956fbf6c3cd850ca3aa980304bc51fddb3451b39e2f1f2b3cba996",
+          "bundledSha256": "cba06dd1b4808e9381a668ee39c7276dcaed97fca8fbf4950411119908a4bc0d"
+        },
+        {
+          "path": "references/ui-components/persistent-toast-notifications.md",
+          "upstreamSha256": "ddd1a92094f674db9fd2370d3f258d0d53142be13f5f587abe237b43f8a06ff3",
+          "bundledSha256": "1c7387dfaf105a45961984797af04d4f0588d2473351e6786417018290f74419"
+        },
+        {
+          "path": "references/ui-components/progress-ring.md",
+          "upstreamSha256": "15a2a4a12ffc9d5f77a5d5d2ac373953c17e1bb390dbf69ef26abcdefe0d1ff8",
+          "bundledSha256": "b877df48985cdac63b5ea88b2b9a199665ac2d0e7f17383997ebb83a372fdfd6"
+        },
+        {
+          "path": "references/ui-components/progress.md",
+          "upstreamSha256": "50e3067565662bd56f75b36704982c0c122d5759b00878e502334935a995fc54",
+          "bundledSha256": "9508c6c7438bf61d00e14f81721ec133af10a6adad43dd4115d8ad6ba83ea945"
+        },
+        {
+          "path": "references/ui-components/scrollspy.md",
+          "upstreamSha256": "a83db4a958107003caf33d95ffb041e5003855560e7339215526f3120c7f2b19",
+          "bundledSha256": "2654bcf5ba427bec77859e0c245f202193be9ebda205d512f0a93a7aa8e97089"
+        },
+        {
+          "path": "references/ui-components/spinner.md",
+          "upstreamSha256": "f138ff2df179d3f6e89b48cb75a4724ce853ecd2b874101190f635b64d24c0a8",
+          "bundledSha256": "6cdc940b1ee47d0153feb319e6c96caea731b07671b2a76ec3fb9c85d5736215"
+        },
+        {
+          "path": "references/ui-components/stack-drill-down.md",
+          "upstreamSha256": "7f85fed871903386daca946372d60f34e413a13a4e1f1bd6c8b3a2337dda26fc",
+          "bundledSha256": "85b08d3a00ef30408384da64d5fc6fd3cc71fe6141008a34381bb2fdbb621f60"
+        },
+        {
+          "path": "references/ui-components/tabs.md",
+          "upstreamSha256": "9621168dd25f18a89e2018d18de4af5ef7658f8074d0b3247415bc28b4470ae8",
+          "bundledSha256": "36edacb1117bf6fe17fade4330044ae7427f001d42b38ea1ba4f14d1272e3af8"
+        },
+        {
+          "path": "references/ui-components/toolbar.md",
+          "upstreamSha256": "bb24a1383ef899b586804831b9fb299bcf991408a4f2d07996c75e6ea5a45f88",
+          "bundledSha256": "53b32a62d6d00782a34cfd513acbbf89d40d00a036ba49eb25fd8ce7d8d86b72"
+        },
+        {
+          "path": "references/user-experience/content-first-noise-reduction.md",
+          "upstreamSha256": "1ddba28c487c7071d2d013d2c7c9f3b4a17604ba43d5115145e865c625775915",
+          "bundledSha256": "730397540392fd3d1be82f8f3ca7ffe75dda2ee07b478c8180aadee6bceac0f5"
+        },
+        {
+          "path": "references/user-experience/form-factor-adaptation.md",
+          "upstreamSha256": "41c566c3d88dac28cc7cf552c290c67fc01d733cb60600de790403a892ee7cc1",
+          "bundledSha256": "d3e048452b13537260a53f5a2e2de94d5627799183c0271f7963824985186ec8"
+        },
+        {
+          "path": "references/user-experience/natural-interactions.md",
+          "upstreamSha256": "0bcfc962459dee7865ac16ac2056aee7c7a510934bcaf355900fcbb4a2ff5dcd",
+          "bundledSha256": "a39c6d6ccc461b1ef57aeb827cce19d8a919333d9e2f49d67fc01d1b045760f5"
+        },
+        {
+          "path": "references/visual-design/adapt-scrollbar-to-contrast-preferences.md",
+          "upstreamSha256": "5442cdedc522ba1cc8f398449dcbaf2d6d3e1a2c2eb8082623e11fd63fee2421",
+          "bundledSha256": "8e7836883c3922b1e472ba10a339740c85d6e4569d1eed01a583564564a119e3"
+        },
+        {
+          "path": "references/visual-design/apply-webgl-shaders.md",
+          "upstreamSha256": "235cb9db64d8857cd70285e6c0139597556d4f6f578ea6a10f32591a11387b2e",
+          "bundledSha256": "465a8c7bbe8b12b8446138accbc4a6ee79a2f30ec125681b314ce651849c1d40"
+        },
+        {
+          "path": "references/visual-design/browser-ui-theming.md",
+          "upstreamSha256": "1276ba601bb6c69f2197bb0d50e645017f6cd5825ac63bd579a528944eebd845",
+          "bundledSha256": "c01b76cab57e190f886fea10c65ee27f92056194e73b6241aec20cfa01035ac4"
+        },
+        {
+          "path": "references/visual-design/color.md",
+          "upstreamSha256": "6fd4045e552d04b1881bce444cd0306339cb561d18df03da464035ce309b1e7b",
+          "bundledSha256": "9d63db703a5f06148188f3d35a44c613dcf104e34f84fa52addd414ea4da8e5b"
+        },
+        {
+          "path": "references/visual-design/complex-shapes.md",
+          "upstreamSha256": "dad784ec45a78656fe6eb3f4be32132f50d6517dd25b087ece2b7b9dcaa6de36",
+          "bundledSha256": "e6489c83e91f72685d528a8d3794c65ea506a766d3120dc81d74f70d07f09465"
+        },
+        {
+          "path": "references/visual-design/contrast-color.md",
+          "upstreamSha256": "85a8d26a47550aa89cd62809dd3e1a84d360adc69fe246d81a10a86f86499927",
+          "bundledSha256": "ea4624cae77eecaf755c024ede4fa3c84dd3af060b7e38215f1303dd193936ab"
+        },
+        {
+          "path": "references/visual-design/custom-text-decorations.md",
+          "upstreamSha256": "8cbd1811e61cba144b013c7dc6197d2c518378996aab4595904ae7837c47e82c",
+          "bundledSha256": "ce087fd5ca225334f376ddd5db725fb5107e376bf92a99113887cf58179036c0"
+        },
+        {
+          "path": "references/visual-design/customize-scrollbar-color-and-thickness.md",
+          "upstreamSha256": "c83c679e4aafe20f63dd0901b87e02bd3862c1863826ca345294d0104c9a8b57",
+          "bundledSha256": "7a7e16ebd816db11621753c02903db0c1a8a4f81ae63d66648586649097eb13d"
+        },
+        {
+          "path": "references/visual-design/dark-mode.md",
+          "upstreamSha256": "6398deca0a4596e614ef73f463db4459921531e2869f1ee60010ad3e7a351ab4",
+          "bundledSha256": "d6c5565ec1066ede7996b2df151e829a4cc13fd81d24435919b6198b8d229bc6"
+        },
+        {
+          "path": "references/visual-design/equal-width-text-lines.md",
+          "upstreamSha256": "fa9f42daf7fb423d51c8e957c41aab2f05805d219788788e313a24601a197539",
+          "bundledSha256": "b91dfa3433db06cadc512c623c947af74021536287cdef1c23dd205a6ab2ae90"
+        },
+        {
+          "path": "references/visual-design/export-html-media-from-canvas.md",
+          "upstreamSha256": "ed64d5e1ce25f5f071691edacfc5a334ef74df59c9eadbd32b5b9e535a867a0d",
+          "bundledSha256": "1f4a052a6f73702db573f2debc856e927631ba40e4df0bd95e050d4056232dd6"
+        },
+        {
+          "path": "references/visual-design/expose-canvas-content-to-browser-features.md",
+          "upstreamSha256": "dc399df120a3650f55c98842652994059aad56a4b33c5c7f1a1fd2c42ec20b37",
+          "bundledSha256": "0ef1b8ec7c77279fece8d12f2f6580faa8f808501974f84e1f185ec860fde7f5"
+        },
+        {
+          "path": "references/visual-design/improve-text-layout-and-legibility.md",
+          "upstreamSha256": "dbcab13d1498b7790694953939db201468034ce67bcb9826f9c9b6536d74a9ae",
+          "bundledSha256": "a490ea4669ab78147e0860af573636affa28734fe8da6ff182a7cedf8095fe8b"
+        },
+        {
+          "path": "references/visual-design/interactive-content-in-3d-scenes.md",
+          "upstreamSha256": "137337e016db7ebe35ba8263f0dc18c4a191e89a2f5087bd3f34fa4a89d16f31",
+          "bundledSha256": "6a68509202660b6080337d99e42f5d57a780690b871a643824eb37604b4f10b2"
+        },
+        {
+          "path": "references/visual-design/precise-text-alignment.md",
+          "upstreamSha256": "c7061a6c41065d52c26b9ad29d1ec4a48edde43e70af2f97a24252840efa56b4",
+          "bundledSha256": "db2c0aa4fb3c0df7174c64640a983c878ed085d698e8842bb119b6cce051a661"
+        },
+        {
+          "path": "references/visual-design/shaped-cutouts.md",
+          "upstreamSha256": "6de1c4d19bb48b2eb9b14c7708cdf69ab51e33203b41fef7bae90c1b0ee7a569",
+          "bundledSha256": "f447159d8d5aafc39aeac3a882a629b2abc69c0be5159456b808fc6f6047d80f"
+        },
+        {
+          "path": "references/visual-design/soft-edge-content-fade.md",
+          "upstreamSha256": "f9a4607b1e34c271afe47085bea7d0d6fdc00a85fa7b93bb123cd4a99286b17b",
+          "bundledSha256": "665642a5a26c39ea338524d1c66f18c48c995be8cf1567e62dbf5157acb15da6"
+        },
+        {
+          "path": "references/visual-design/typography.md",
+          "upstreamSha256": "f72047c1af0828ba0def676c58900bdc8ba3f9f3205507852172af00eadfc828",
+          "bundledSha256": "db2edfaf073922154c6f317045b07a9e81e9165c4a1b75355ae84c5c88b235fa"
+        },
+        {
+          "path": "references/visual-design/visual-effects.md",
+          "upstreamSha256": "d31952014d77634aaf62dec245991ff92299d61f0de3c96d6548939f418859c1",
+          "bundledSha256": "1d8ff7f1f4bf578f36e392788c026dcd66b0dffc5fb552e60f97729bcac6f69b"
+        },
+        {
+          "path": "references/visual-design/visually-stable-font-fallbacks.md",
+          "upstreamSha256": "5abff774ec3f29204e47fa64c29923a7ecaf33968ed8df4d644ccccf85f0369e",
+          "bundledSha256": "725c2e616311da3caff7d84d4fd97c934688bd13e2b1834ca8f00e7b0f37fb3d"
+        },
+        {
+          "path": "references/visual-design/visually-stable-mixed-fonts.md",
+          "upstreamSha256": "be0e8769f8da79e5ba7758354fbd5ddbda4996fe9240bb25808fbfab1bb36f1e",
+          "bundledSha256": "8af63ff6f7c2152bbdbece2396cf33b0b6d7517770b7e3cd3645c2b4f2d86700"
+        },
+        {
+          "path": "references/visual-design/visually-texture-content.md",
+          "upstreamSha256": "a7607a7d1144fd2883898219e96a13e6276305fecac26a66df9e9f7eb134a39b",
+          "bundledSha256": "ee3c4a02603c33697b6939ac232a3b2cacbbcab82c4919a62602531d05a3ac72"
+        },
+        {
+          "path": "references/wasm/cpp-on-the-web.md",
+          "upstreamSha256": "9ba5e21faea9a9eb80b7620ea2779ed3ff313976bd0ad31659506b6989f5c97a",
+          "bundledSha256": "b7b6a435938fe0426bfab69a363354baa71a901096d8b89665e6168be5b5c532"
+        },
+        {
+          "path": "references/webmcp/agentic-forms.md",
+          "upstreamSha256": "85e2320343299cd20ed511be1b9dc9fa4d44b9fcf822e3351f2ef24f62d49b05",
+          "bundledSha256": "8c54f3893fdd93397f55487d393ccb383977abfcce9c209e5434cfd3f1a5e165"
+        },
+        {
+          "path": "references/webmcp/agentic-javascript-tools.md",
+          "upstreamSha256": "cb5500844c63ee8cf869c33493d3965515a6236df6482daf449abfa74cdcb22d",
+          "bundledSha256": "4bd8b80d2da164bfed4750188602c4936d7da85838377068ca0c820951480f82"
+        },
+        {
+          "path": "references/webmcp/webmcp.md",
+          "upstreamSha256": "ed20a7cb5bb400b186e234ec0f4ffa0d923ded078447777ff42499cce902afa9",
+          "bundledSha256": "807fa4fe68fdf50326cd28cba6ac16ce38b64265ff2c9eff9f6fc064a85285b4"
+        }
+      ],
+      "files": [
+        {
+          "path": "ADAPTATION.md",
+          "sha256": "62b092e676b2ee83418d6e6648586da26708b2494440ea77c5d34ea374d66dcd"
+        },
+        {
+          "path": "CODE-LICENSE.txt",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+        },
+        {
+          "path": "LICENSE",
+          "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411"
+        },
+        {
+          "path": "REFERENCES.md",
+          "sha256": "3c5ebfa0af77f8186c2c9b37fa99e1173fb284041720a8d113d603eaa6e6b807"
+        },
+        {
+          "path": "references/accessibility/accessibility.md",
+          "sha256": "04d75a5e0dc844554a2dc4683da92dcc86f706523b873941f34bd0ce35240a3b"
+        },
+        {
+          "path": "references/accessibility/accessible-error-announcement.md",
+          "sha256": "415e1d30c66742a6d8936282698ac4395c4a07357dcd0ad1eaef1e803b75faf3"
+        },
+        {
+          "path": "references/accessibility/accessible-generated-content.md",
+          "sha256": "4a82cfc22d587550b6b6fc8a035cb1f3b92f33bac98e31260e9a9954ebd56c85"
+        },
+        {
+          "path": "references/accessibility/respect-os-text-scale.md",
+          "sha256": "c3e4861eef3c0138aa379b8d085f34763eedfce8b909527d6482eef305d348d3"
+        },
+        {
+          "path": "references/css/animate-to-intrinsic-sizes.md",
+          "sha256": "b44de28d59074daf649abbd9000c14de070e2d2f6d0e1360f46ca6b1d68b61ca"
+        },
+        {
+          "path": "references/css/atrule-support-conditionals.md",
+          "sha256": "3ba96fea642f2c9495338ae35eb3fa2f6246e19390917349db5c4573be953e85"
+        },
+        {
+          "path": "references/css/calculate-with-intrinsic-sizes.md",
+          "sha256": "2567cdbf0463668dd58f308e4ced6cc63a8697659d2b0a976dfd2020d81a7fcc"
+        },
+        {
+          "path": "references/css/child-state-based-styling.md",
+          "sha256": "d677537d2273f0b2355c933b5dfb8dca974941c90bc7eb69266b8fb068d43911"
+        },
+        {
+          "path": "references/css/content-based-styling.md",
+          "sha256": "9d090a2da7d0dd998b8d57a4250c495c498b4821dc34e2f9a667242c9f693e2a"
+        },
+        {
+          "path": "references/css/css-layout.md",
+          "sha256": "f9c963fc0bb1b9efad41d9a7c2f9c7ff9e77c18088a7cd641f197a588218a625"
+        },
+        {
+          "path": "references/css/css.md",
+          "sha256": "a5bb950933e12e85d4b18ba7b82f9904476116a10a42d1eb4f10adb4520ff42a"
+        },
+        {
+          "path": "references/css/design-token-reactivity.md",
+          "sha256": "d050748d961d7b9c6dcedf4bf3b0475a5b34cff9e068bf942c8becb09b7d0834"
+        },
+        {
+          "path": "references/css/dynamic-sibling-styling.md",
+          "sha256": "cf38f898b4085e17f4367512f7621e38270773e3f219e810c2c950478c4cf468"
+        },
+        {
+          "path": "references/css/fluid-scaling.md",
+          "sha256": "e7e96a7bca2ecb0456951b9f97b4e5f0e8f7dfddbebefe34d640a87463819f39"
+        },
+        {
+          "path": "references/css/individual-transform-properties.md",
+          "sha256": "b1e7c89fa52cce32742905739ba1ac704b7137ed740a9a76c60ea26fbffeaab6"
+        },
+        {
+          "path": "references/css/overflow-clipping-control.md",
+          "sha256": "2ae2bc0b99ca6bc3e59b1028b21b60e3fb6df055f930399e0417e84f2447474a"
+        },
+        {
+          "path": "references/css/reduce-style-repetition.md",
+          "sha256": "10261863fe4bf4ae3706383220cfe1c89232d553d192b6d298f8aa81e7c978d1"
+        },
+        {
+          "path": "references/css/responsive-design.md",
+          "sha256": "fef7966ac6ba9bdd0fe035ab33c6da1d417ae7ffff75bce05f41517e958757f5"
+        },
+        {
+          "path": "references/css/selector-atrule-combinations.md",
+          "sha256": "14ef70197dcf4541f855e0d55ee00c2dbfdee2f41ae821f499cd522af8f1042d"
+        },
+        {
+          "path": "references/css/size-aware-styling.md",
+          "sha256": "2eb788db82fdf31b0b95ac24d734e4f5402ea36bc07e1ab79b8e19d3df39319e"
+        },
+        {
+          "path": "references/css/style-parent-with-has.md",
+          "sha256": "124413a286672d8a4d28978ef5d6e7688072c9fd526d4b83e8768e1170d085cc"
+        },
+        {
+          "path": "references/css/usage-aware-component-variations.md",
+          "sha256": "663124c91009c40fe2d674cf36972a50132688a27b207506bcbadcb902bfadb4"
+        },
+        {
+          "path": "references/forms/animated-select-picker.md",
+          "sha256": "299a8119d423ba2d54fb6010f12d6532406d42f8555841d4ce74c9c390d71ed2"
+        },
+        {
+          "path": "references/forms/autofill-address-form.md",
+          "sha256": "f88c87ae1698a85f00037dcd54b92a16b6b86aa10543998997fba0d2ab08ff41"
+        },
+        {
+          "path": "references/forms/autofill-highlight-inputs.md",
+          "sha256": "fb0d135270bc02972dd599151cabfe8dee2aacab92b57229a874218ed3f59916"
+        },
+        {
+          "path": "references/forms/autofill-payment-form.md",
+          "sha256": "be3fe3e4e294b257ba60b7a3f37d6af18ff918fcfd0ebb0ba3a23631f7a44c92"
+        },
+        {
+          "path": "references/forms/autofill-sign-in-form.md",
+          "sha256": "e6230d233535b32dd929924e5bec1d8b37e1a4d80bcd1ef7dc70e05e92a32956"
+        },
+        {
+          "path": "references/forms/autofill-sign-up-form.md",
+          "sha256": "3267f8c6250500d0cdbbda77b94161b122523bd62469c22015f46b86b448c954"
+        },
+        {
+          "path": "references/forms/brand-consistent-forms.md",
+          "sha256": "1063bab062fdc075ba8d4a79f21b7198876ce73d44c5c42db14bc03aeebbbc17"
+        },
+        {
+          "path": "references/forms/branded-select-styling.md",
+          "sha256": "33f5fd3fcf83d1cd19ebc559c7a1155ea7d40d40c89354d2f48f978d8e2d12e1"
+        },
+        {
+          "path": "references/forms/custom-select-picker-layouts.md",
+          "sha256": "36d47ef2a8eec424cdf6e69afefa337ebb363fccc38f19c817dec2fdaef8015d"
+        },
+        {
+          "path": "references/forms/form-fields-automatically-fit-contents.md",
+          "sha256": "07f84f98f94b490258f1a053626d13c2cc50f8cf01bd180d3cd9c20e90592c21"
+        },
+        {
+          "path": "references/forms/forms.md",
+          "sha256": "f5e3f7ce7098072229be9959c63a7f7bdd60afdfc1d20ba9cb6a62e985078691"
+        },
+        {
+          "path": "references/forms/ime-safe-enter-submit.md",
+          "sha256": "711cb6a0da5e8492c39085f1a7a861eab19eaa05fda64fc39cbcad4fc3c9af99"
+        },
+        {
+          "path": "references/forms/required-field-feedback.md",
+          "sha256": "8d8aa401014a92c6227429294ffcb037c565442da977ccc1179672b25d897eff"
+        },
+        {
+          "path": "references/forms/rich-media-picker.md",
+          "sha256": "64f04e60090d22774f2ef3320bfae86fa80fb1e61d79ea4c0f8d9ab9eafc4978"
+        },
+        {
+          "path": "references/forms/select-menu-interaction.md",
+          "sha256": "cf9e40772ab68aa89f0403b37c9bf8fbade0cb119b1e75b049f2a148dbe1419b"
+        },
+        {
+          "path": "references/forms/slider.md",
+          "sha256": "cd26b2c37991c1518d2556f748b70fac43cccae195bce6740bbcc110ed887e30"
+        },
+        {
+          "path": "references/forms/sms-otp-form.md",
+          "sha256": "81953bcf2a187155a161a4c7062fc9c3030f8ef81b7d22333e8fc5c60573de19"
+        },
+        {
+          "path": "references/forms/switch.md",
+          "sha256": "54ac9afbf10e1016dbb85e8051e95464bbe10ea014c8c16135d4bc018c171ec4"
+        },
+        {
+          "path": "references/forms/validate-input-after-interaction.md",
+          "sha256": "0f3dc0c2aa892c8ae3f08db8ba114d11d819c80220ee9d47ae7fffd45e139b71"
+        },
+        {
+          "path": "references/html/accessible-web-components.md",
+          "sha256": "06f45b69eb15bb56122ef34b42691123edbba05e9d54074d83ed350f1ad6b2d8"
+        },
+        {
+          "path": "references/html/custom-elements.md",
+          "sha256": "88c89ba5f7be19736d1707ce87913cb64571c32ae82b2010165a58b2a93b3a36"
+        },
+        {
+          "path": "references/html/form-associated-custom-elements.md",
+          "sha256": "eefdf519d75bdb662d013b10ab5eb3d991a52a7ec27c60348ae93cd14fbeef1c"
+        },
+        {
+          "path": "references/html/html.md",
+          "sha256": "3c10b9e56e9892092e498653a3b7e974fe61cdf4bed48a0bdec1cfc48a11ff77"
+        },
+        {
+          "path": "references/html/prerendering-custom-elements.md",
+          "sha256": "3ef49cd8584e5c4402b0d7c4bf7f49fa58ea552ad4decd45fb4b2fcde3ecb590"
+        },
+        {
+          "path": "references/html/shadow-dom.md",
+          "sha256": "14f83bd41ff9e21a6b9f11b01ae4394ab61e539b353551d93a2b98b91f8ad033"
+        },
+        {
+          "path": "references/html/styling-web-components.md",
+          "sha256": "7332705152ff5489d659dcc857e93843bda4e7e9f349743304dc5dff5d0e1f37"
+        },
+        {
+          "path": "references/html/web-components.md",
+          "sha256": "7ff95461096d07ae8427e1d2af187309e99b308535d44533c40e8d063f79db5e"
+        },
+        {
+          "path": "references/js/calculate-event-differentials.md",
+          "sha256": "6170fc605ae0b9af7dfa24280e44e3f6780a5d510a3d4fa83171ea95225c7fc2"
+        },
+        {
+          "path": "references/js/capture-location-agnostic-data.md",
+          "sha256": "2b691c90c5586c8a81e8d44faf9e83cb41d4067af0674ac824ffa4dab1fc27ae"
+        },
+        {
+          "path": "references/js/coordinate-global-events.md",
+          "sha256": "6ef6624ebf1dab13f24c8da4aa3df3e3ad75243de376d948bd4916122ef54b4f"
+        },
+        {
+          "path": "references/js/sort-high-precision-timestamps.md",
+          "sha256": "186848cf3290825bf19cb1f8708400834f7075eada09b8e17457d6cafd43ec98"
+        },
+        {
+          "path": "references/js/support-global-calendar-systems.md",
+          "sha256": "063da74703e548f6d4d21b92a4f26443a986575968710f3b8cc6b45cff19cf81"
+        },
+        {
+          "path": "references/performance/batch-analytics-events.md",
+          "sha256": "ba035c642c66377297a001e4d24c7ea376f3c43eef72f493e131d171b83d4641"
+        },
+        {
+          "path": "references/performance/break-up-long-tasks.md",
+          "sha256": "91915f648d5419b8332b42050ba62e4301a2cb183bce656de1927244c0eeefb1"
+        },
+        {
+          "path": "references/performance/calculate-total-foreground-time.md",
+          "sha256": "29aab1d43f84aedd226449fd8db7cdeede54c2453400c86a032db65655f29abd"
+        },
+        {
+          "path": "references/performance/conditional-async-dependencies.md",
+          "sha256": "219d16cf96bd4ff97d3def0d898f7799860d20a1ad1dbe4c402a07e1f21fb6cf"
+        },
+        {
+          "path": "references/performance/defer-rendering-heavy-content.md",
+          "sha256": "ee84079e480b7808fc9105bc000813167fff7c98563d1046aaf06b03364adc2a"
+        },
+        {
+          "path": "references/performance/defer-work-until-scroll-ends.md",
+          "sha256": "f0b54ca91c44fdd3360bd0d875d07981e08a3d62b3c514a6be7d250effc4919a"
+        },
+        {
+          "path": "references/performance/deliver-optimized-decorative-images.md",
+          "sha256": "af39d36e4223b0cab5eff8b3228a7ee96fac5be1e75f997757c6aed8b76969bb"
+        },
+        {
+          "path": "references/performance/deprioritize-background-fetches.md",
+          "sha256": "5362445e8b2d9f5c01b3a44190335ee82e6cff2c9cc4e798c40e0f4414010f22"
+        },
+        {
+          "path": "references/performance/detect-initial-visibility-state.md",
+          "sha256": "91ba9a2b5fd6e32fd6b248af28cfa020ad5b6c92a5303c33880534420bd711b4"
+        },
+        {
+          "path": "references/performance/efficient-background-processing.md",
+          "sha256": "f9bf96cd25b495302ed6f8dfade8fd4ac5e186b6535fc0c363e7f526f4979284"
+        },
+        {
+          "path": "references/performance/faster-spa-view-transitions.md",
+          "sha256": "cc4cc2009b056775e59fb91e8b3aab40abdd8faac7142ef5137c7b1012418e0a"
+        },
+        {
+          "path": "references/performance/flicker-free-client-side-ab-testing.md",
+          "sha256": "f37281e9b2bb3b215718dc3d8241558b7eb2158cc648422c35f0cc5cb54910c6"
+        },
+        {
+          "path": "references/performance/full-session-analytics.md",
+          "sha256": "11d47ca11836b45b5e108e72e9aa2c187d272914f57cce0193fd988ffd786306"
+        },
+        {
+          "path": "references/performance/identify-heavy-scripts.md",
+          "sha256": "25806b41ca10e2b527e685400cf5b7a1a560a3b7cb366776c66c417855b747b8"
+        },
+        {
+          "path": "references/performance/identify-inp-causes.md",
+          "sha256": "618b37e43be65f2405ce50c82498cd12633dabf5dd2ae293ed82db59cf532b1b"
+        },
+        {
+          "path": "references/performance/improve-next-page-load-performance.md",
+          "sha256": "383068ed677ea6d84e95dca818a877a43c918ba30de61e970b0ffc0465fe1148"
+        },
+        {
+          "path": "references/performance/interaction-paint-timing.md",
+          "sha256": "37a1f394f1da2e1a51f490c374de5d8f983310ce6c1f0ce848274c75c4e5a329"
+        },
+        {
+          "path": "references/performance/interactions-in-complex-layouts.md",
+          "sha256": "6b6253e4b18f0fd29552ee09672562770f115d8ee80a67626edce7b441a76130"
+        },
+        {
+          "path": "references/performance/lazy-load-video-and-audio.md",
+          "sha256": "7ed0ac56b735cb30e17338c666d63516676f246cc08c01fef9cb55113736d020"
+        },
+        {
+          "path": "references/performance/optimize-image-priority.md",
+          "sha256": "6f35fd8d967a69eac0640920ec8415699f339ebab8f7ed33d84620d92b6bd738"
+        },
+        {
+          "path": "references/performance/optimize-preload-priority.md",
+          "sha256": "86232f45460eb0e29802ff953264ad57fbe4279e726b2dc98b81c944abd2d74c"
+        },
+        {
+          "path": "references/performance/optimize-script-priority.md",
+          "sha256": "6d188fffb9a6bda34926c65e30d8fd35ad6c6b622f3692516591d3156722472b"
+        },
+        {
+          "path": "references/performance/out-of-order-html-streaming.md",
+          "sha256": "d7aeb8896ed11cfaa85cc54e85ed93851a6131b191adef118bb3238825de9d82"
+        },
+        {
+          "path": "references/performance/performance.md",
+          "sha256": "d899267dafe82ce03d5ebf444683874a882907d3ef4d0521f35fcfecb8654999"
+        },
+        {
+          "path": "references/performance/resolution-optimized-pseudo-elements.md",
+          "sha256": "0f22654bb7ea34aa37eecf6f661226cce75407c34b9d2f46acec94beccc584bb"
+        },
+        {
+          "path": "references/performance/schedule-tasks-by-priority.md",
+          "sha256": "63ef19a9390ee39219cc2c0913ff732b8e788a5587e6f451657788eae038ce94"
+        },
+        {
+          "path": "references/privacy/privacy.md",
+          "sha256": "657bf13a9b291fee0dc43079604d5e9445ddf5e05bbbe7a0da0a5aa1330e3088"
+        },
+        {
+          "path": "references/pwa/install-web-app.md",
+          "sha256": "021bd73827c136e44048ee1bfaa9a19f71a89b8ce3fb3858f254aad0fe7e1e81"
+        },
+        {
+          "path": "references/pwa/migrate-web-app-origin.md",
+          "sha256": "c722ff340d819230782de3b19fc58f1c0388d44f2fe48433c732db22832d38e0"
+        },
+        {
+          "path": "references/security/client-side-encryption.md",
+          "sha256": "e014710958087283ab8df75745ab3155a0eba879121bed2b200ec8c3126bfe6f"
+        },
+        {
+          "path": "references/security/digital-signatures.md",
+          "sha256": "0b89b44c7ea33e0fbb68c8670f2fab23f22e246f8410c5c313f8a78678038edc"
+        },
+        {
+          "path": "references/security/local-network-access.md",
+          "sha256": "613f03090186871569d9fecef9c2e6b57e46f7029bf05cb817636f105c152a04"
+        },
+        {
+          "path": "references/security/passkey-authentication.md",
+          "sha256": "72c3a34b3e23d659acec00435f7a0ee366a2307fcb4a22a43856ca7efff88ce5"
+        },
+        {
+          "path": "references/security/passkey-conditional-create.md",
+          "sha256": "f78fc4a5f261edab4a2352b78f0bb8f3fb7669d988f70d57a5176a64e2a620a1"
+        },
+        {
+          "path": "references/security/passkey-management.md",
+          "sha256": "9f26b1bab36eecfaaeea972e61104636c35aeafa6cc5a950d3f89459fe38df76"
+        },
+        {
+          "path": "references/security/passkey-reauthentication.md",
+          "sha256": "f328c3af9d35f604d215df9f1eee4a900639c3a95e573daeb3372c7b722bd559"
+        },
+        {
+          "path": "references/security/passkey-registration.md",
+          "sha256": "e1c52f6cd9fae61f583ce769786a86d3d40b68aebc4b36d4388e9c2449008447"
+        },
+        {
+          "path": "references/security/passkeys.md",
+          "sha256": "aba604f2ac2b5b720cc44069b91aea80d1de83266c2da5df44f4ec9789fa2c24"
+        },
+        {
+          "path": "references/security/quick-sign-ins.md",
+          "sha256": "cf6f524e91f14c44673800ffef54a8c7d13e1bf9ae29c2929329f2245fa3db92"
+        },
+        {
+          "path": "references/security/restrict-outbound-connections.md",
+          "sha256": "78d8cec79113ea93b898c005d0a631bc5e127cf78a4cda02d264665e4c22e5ef"
+        },
+        {
+          "path": "references/security/sanitize-untrusted-html.md",
+          "sha256": "147f0004e685d2676a1b35e498ec0eab8003a74def80cc6edc914da8af4dfc35"
+        },
+        {
+          "path": "references/security/secure-external-subresources.md",
+          "sha256": "f3d95b887b167a595a8d311de7597218ed54d986209c40f805ec94c5dae797ce"
+        },
+        {
+          "path": "references/security/security.md",
+          "sha256": "bf73ed119b17d1e6d86fb29a009626535462e01c74abda256be6a1ae71aa6af0"
+        },
+        {
+          "path": "references/security/trusted-types.md",
+          "sha256": "8eee16ed3ca94589c091a28c884f9c24e4b2fa260ae3423fdf8ed32d46497c2e"
+        },
+        {
+          "path": "references/security/validate-origins.md",
+          "sha256": "f299133b77dbbd9d512d8447be0b98c1ef0f7fe9382cd70a477258f83c25a817"
+        },
+        {
+          "path": "references/security/verify-email-ownership.md",
+          "sha256": "93bbc1bcc01d309333a5b6f7b560e7af16520d2995d5fc3d359422db97e616ad"
+        },
+        {
+          "path": "references/ui-atoms/carousel-slide-effects.md",
+          "sha256": "e0ee48bfd206cb6880dcf1e7d5d22cef08b26c4813e4add3f07b07d4589c5c2e"
+        },
+        {
+          "path": "references/ui-atoms/component-specific-light-dark-theme.md",
+          "sha256": "c3b857e89e5c5091884b75fc9b1e5ee240972a2f74f39ccd26ecee414afa9beb"
+        },
+        {
+          "path": "references/ui-atoms/icons.md",
+          "sha256": "b9848bb1ac53fd5e8d28f988bc4fef5940ef3334d194e819b029d4dd651d3153"
+        },
+        {
+          "path": "references/ui-atoms/position-aware-tooltips.md",
+          "sha256": "7119d370cc0cab7408581f91ff08df36ef3c974edd58d6f22a8c8133b3906906"
+        },
+        {
+          "path": "references/ui-atoms/pull-to-reveal.md",
+          "sha256": "685cf98baf72f995decf8320396ce16c1bbb9d28cf80807b74f64cf9a66469c4"
+        },
+        {
+          "path": "references/ui-atoms/responsive-table.md",
+          "sha256": "a62e307eb420b6b998ca3305b7735fe38c19d74d79296d3d0f1baeffb8bdd11b"
+        },
+        {
+          "path": "references/ui-atoms/scroll-position-aware-elements.md",
+          "sha256": "7e0e42938a6abf45f6023d964d00a9ce2e0ea8be743f4f0be5c2b374b87b6a66"
+        },
+        {
+          "path": "references/ui-atoms/scroll-progress-indicator.md",
+          "sha256": "005ccabd4ab54c59223b76d607bd3567714ced23286f552ddc0d3d5255d3c5b1"
+        },
+        {
+          "path": "references/ui-atoms/scrollability-affordance-hints.md",
+          "sha256": "f7a51431cb3a6bdf179d6c7c3568323683982db409e521aced43db8c357f5dd5"
+        },
+        {
+          "path": "references/ui-atoms/shrinking-header-on-scroll.md",
+          "sha256": "88bd4459538ef89561fd54e556e03addedde4f028aca99431e20b992c4890e6a"
+        },
+        {
+          "path": "references/ui-atoms/single-line-overflow.md",
+          "sha256": "d51fbc7160bff54a16db1441c87335bb5444966440f64d1b861e05a9217f0f2a"
+        },
+        {
+          "path": "references/ui-atoms/state-aware-sticky-headers.md",
+          "sha256": "36625592db587fd4a64a6a9d52905e4f75e13e937dbf05d2d6a70739eef19072"
+        },
+        {
+          "path": "references/ui-atoms/viewport-aware-dropdowns.md",
+          "sha256": "d1302dda1d1ab10d0b74a7b2a3419462293605b51c21e081c898ce15b65111e4"
+        },
+        {
+          "path": "references/ui-behaviors/2d-panning.md",
+          "sha256": "aacd970e237993a449864f9afe3e906792a04b6f5365fc92da29ed66132594d6"
+        },
+        {
+          "path": "references/ui-behaviors/anchor-positioning-tab-underline.md",
+          "sha256": "15c201b0e174560a5d991ec8ccec15dc1299d3ca74a7f944ed65076b4a61443d"
+        },
+        {
+          "path": "references/ui-behaviors/animate-element-entry-exit.md",
+          "sha256": "429e7ed3f66dea929299fd633600b36f3b15f9887ec0eced92926666966d91e8"
+        },
+        {
+          "path": "references/ui-behaviors/animate-to-from-top-layer.md",
+          "sha256": "760403bb055a6fabf37cc2e13c09dae491c11db8207460675a18f4bfdcf30312"
+        },
+        {
+          "path": "references/ui-behaviors/carousel-snap-highlights.md",
+          "sha256": "92c525db3e081467687053aa68ae4e769cc276328b7f90f510a1bd9578b05299"
+        },
+        {
+          "path": "references/ui-behaviors/consistent-cross-document-transitions.md",
+          "sha256": "3d10430ab3a8096fdb2218c048cee8e275f8e3899f11554695054dc92214a7e3"
+        },
+        {
+          "path": "references/ui-behaviors/cross-document-transitions.md",
+          "sha256": "13977b35c9d9d2ab99a7dadcdabb9d3edbe75b3c8a6e76f7e316208eb88fadb3"
+        },
+        {
+          "path": "references/ui-behaviors/custom-button-actions.md",
+          "sha256": "46c12006ad5cf97d9e3251eceddf8fc838ff8907f0a30d7f457a2125377ef81f"
+        },
+        {
+          "path": "references/ui-behaviors/declarative-dialog-popover-control.md",
+          "sha256": "6fb7b82b6dde4995c3b303313d233ab2a0cf6b833fe493f3d621c8ef57c30b14"
+        },
+        {
+          "path": "references/ui-behaviors/directional-navigation-transitions.md",
+          "sha256": "26f93a3725607333bfc81a1d54ae09947e14fdd9cedc5baeae1f1c95e6da9ae7"
+        },
+        {
+          "path": "references/ui-behaviors/drag-and-drop.md",
+          "sha256": "a1c44a903b97a345389f878ecdc9b80a00318d7f8a8046f6c49b72246ef4f930"
+        },
+        {
+          "path": "references/ui-behaviors/drag.md",
+          "sha256": "00df2bbdad1e2dd8960d3d82a91f54ef3c98838a0b83efa95bcdc81e95fb8acc"
+        },
+        {
+          "path": "references/ui-behaviors/dynamic-sibling-animations.md",
+          "sha256": "2f12bf179cecec3addc4d0e9f9e8ddbe6442234b97de9aa11b4a2a1326dee3a1"
+        },
+        {
+          "path": "references/ui-behaviors/dynamic-sort.md",
+          "sha256": "769bf18f48dd74b016ae9ab0fa3a2652373682df80151c9032b6c044dead962f"
+        },
+        {
+          "path": "references/ui-behaviors/group-element-transitions.md",
+          "sha256": "ef96b5551ca49d60432a1928031de1e3c8fd9ccd47211d66014e7e3cc3007965"
+        },
+        {
+          "path": "references/ui-behaviors/highlight-text-ranges.md",
+          "sha256": "9f94937d7d0ae6fac3c5fe6f5bcc3bc8e185577a99d365d46a8d32991a25155f"
+        },
+        {
+          "path": "references/ui-behaviors/interactive-content-reveal.md",
+          "sha256": "4817a222a9158bb5ea0aa3e8d303d2e53a596ac71f9c1fa801afb233ff7146b8"
+        },
+        {
+          "path": "references/ui-behaviors/interest-triggered-action-previews.md",
+          "sha256": "c93c63b93b50bf464a51b853c950c11165189dcd5f7fdc0af35ae7733a03fe24"
+        },
+        {
+          "path": "references/ui-behaviors/interest-triggered-tooltips.md",
+          "sha256": "d18fa8eb95db123dcc16bca3779f413a0014790ba76c7d177397a6db7b75d0ad"
+        },
+        {
+          "path": "references/ui-behaviors/light-dismiss-a-dialog.md",
+          "sha256": "7ef0e4cac0a1e55e8f00a03756ab00c5eb3372896f4c1125f35e62e060ec0d20"
+        },
+        {
+          "path": "references/ui-behaviors/motion.md",
+          "sha256": "d5ecc5fad50d8b717750f9337371ca9276e19990d91fcd2ba66bad8a5a6e9913"
+        },
+        {
+          "path": "references/ui-behaviors/move-dom-element-without-losing-state.md",
+          "sha256": "1988ad2ea547815908bcb2edf299d7010905d1b48c3113ea46616a7cd42cc37d"
+        },
+        {
+          "path": "references/ui-behaviors/parallax-scroll-effects.md",
+          "sha256": "9ed8f2b40acd93f24edf3267c5305565ec4670d4acbee3cc27fc3ed18e591358"
+        },
+        {
+          "path": "references/ui-behaviors/persistent-top-layer-ui.md",
+          "sha256": "a8a15a9e8a65c35530f8c1026cd35ca476d2d3be782901dea1d813b7191106d9"
+        },
+        {
+          "path": "references/ui-behaviors/physics-based-easing.md",
+          "sha256": "3f958a71eea9f84a6b0d1be30005fe47f77c2a9825fbc7a27ba9d70c54ecca49"
+        },
+        {
+          "path": "references/ui-behaviors/platform-controls-dismiss-dialog.md",
+          "sha256": "ae7622d0411c652bbe8bbef1d3428d29b0107d8efa5bd89aa4160aae6b939dc1"
+        },
+        {
+          "path": "references/ui-behaviors/prevent-page-scroll-under-modal-dialog.md",
+          "sha256": "a8bcba12c8350ae15ecd8d0f5168c8fe24519b9ec1a16a15a4b322e8eb236a42"
+        },
+        {
+          "path": "references/ui-behaviors/same-document-transitions.md",
+          "sha256": "6fc280ea892cf93f7420125b39a73184236958da552441849b890034d60373ce"
+        },
+        {
+          "path": "references/ui-behaviors/scoped-component-transitions.md",
+          "sha256": "18dbbbe1aa83d7315b5e88d3b6647f0a96d024df654bd9f9e4eaa3c027842822"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-completion-effects.md",
+          "sha256": "06081dd76b0b21f2fb33e18b3fcadb6be4bd2582be71041b9dee5caf1f77f646"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-entry-exit-effects.md",
+          "sha256": "fcaaafa3058131dd302a618fa3b12b9d2dc306ff9ef23bc52cfd886942ea5fc3"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-snap-realtime-feedback.md",
+          "sha256": "1386920ccdc1ee8a7079b3b1192e791dcba85159634a64d7aedddbb94d6f1f58"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-snap-state-sync.md",
+          "sha256": "83209220e6e08f28042e4ffbaa244dd7f0baa25e9cf98e2a57bc8a6d7ad26288"
+        },
+        {
+          "path": "references/ui-behaviors/scroll-target-on-load.md",
+          "sha256": "4fd7639058b9bc34b47adf8542dbe7ace5fc9b4aee206b3582f8836fb35f4e98"
+        },
+        {
+          "path": "references/ui-behaviors/scrollytelling.md",
+          "sha256": "5af890bcb2127426fac64d56ab5be0eee5cc81644d920d1cba9a4aa40cf67686"
+        },
+        {
+          "path": "references/ui-behaviors/search-hidden-content.md",
+          "sha256": "1afb5c2f1191bc1db59bcef68008d9df700efeafd766cd731456bf9de46ecd92"
+        },
+        {
+          "path": "references/ui-behaviors/sortable-table.md",
+          "sha256": "88f3a9fce2626be5c70025e90a8b9385709e83e9058aa64fe86ba8816c5de945"
+        },
+        {
+          "path": "references/ui-behaviors/spatial-navigation.md",
+          "sha256": "d7fd8382b24f1e7be90f62f65724deeaad73152762886c605a3e08f777c27d21"
+        },
+        {
+          "path": "references/ui-behaviors/swipe-to-remove.md",
+          "sha256": "c2eeeb52918db66e69d5059ebf6bb469d8c56bbc348df1fd0f8f3b368b0ab079"
+        },
+        {
+          "path": "references/ui-behaviors/swipe-to-reveal.md",
+          "sha256": "3bfaeb09b186feaa7af20a81381182a7df97c76a845fdf92d3083fcd9e86c306"
+        },
+        {
+          "path": "references/ui-components/accordion.md",
+          "sha256": "63fe5e0d88923cc44f6a6d625f867639907d55829d56d3f975e5652a5a73cc8b"
+        },
+        {
+          "path": "references/ui-components/app-menus.md",
+          "sha256": "9a1cb8cb8d99c44a9fd02609d00ea304dbf8d6080acfef4675b9405f56f702cd"
+        },
+        {
+          "path": "references/ui-components/breadcrumbs.md",
+          "sha256": "f833abb8ded6675bd7b225876d3dc8ca9efc311e9b7dd8a74a69fe1ab64680ce"
+        },
+        {
+          "path": "references/ui-components/card.md",
+          "sha256": "d76f668f40e4c5e15fcc119f115d70be4cd2f3cfd9c7d2a3e00e8a7b66e09d9a"
+        },
+        {
+          "path": "references/ui-components/carousel.md",
+          "sha256": "63146dc6f8cfd2b9dd09646a51f28daaee7796bbac20b73edd2eee00bbb55566"
+        },
+        {
+          "path": "references/ui-components/checkbox.md",
+          "sha256": "88106914e39be8ef12ca7370422a1ce8023ebf436156bbf246b2ea7258939ac8"
+        },
+        {
+          "path": "references/ui-components/copy-button.md",
+          "sha256": "88ce918c9d484a780ea36fd5739b0d7d1adaa32b2e80b9936089f29278ce818e"
+        },
+        {
+          "path": "references/ui-components/dark-mode-toggle.md",
+          "sha256": "e709dd660b44cca7aecbc2e15b59d1f41b0905e6b24597fcc66a93c42fddb418"
+        },
+        {
+          "path": "references/ui-components/dialog.md",
+          "sha256": "f3aff8b8afc686d863bf00115282674fd069fb0ee5b63da927e8e3b98f358048"
+        },
+        {
+          "path": "references/ui-components/hovercard.md",
+          "sha256": "cdb842a8e77dccb8b77d5e46e1f339ec7aad974c2f61ecfb06f82cb3c9c3b05b"
+        },
+        {
+          "path": "references/ui-components/menu.md",
+          "sha256": "97ddf384df6d38e7b3304df37a1244697bc79acb6283d0ef51644963a8add829"
+        },
+        {
+          "path": "references/ui-components/navbar.md",
+          "sha256": "02a949dcfae04073c0987d0e89fbfb5bf19bfb043ab229cf43f1373f563669f9"
+        },
+        {
+          "path": "references/ui-components/navigation-drawer.md",
+          "sha256": "92248ef3b4fe2f4162c81a7e9796c7ce3ea43f3da57b74cc49ad56b98c70cfd0"
+        },
+        {
+          "path": "references/ui-components/persistent-app-tours.md",
+          "sha256": "cba06dd1b4808e9381a668ee39c7276dcaed97fca8fbf4950411119908a4bc0d"
+        },
+        {
+          "path": "references/ui-components/persistent-toast-notifications.md",
+          "sha256": "1c7387dfaf105a45961984797af04d4f0588d2473351e6786417018290f74419"
+        },
+        {
+          "path": "references/ui-components/progress-ring.md",
+          "sha256": "b877df48985cdac63b5ea88b2b9a199665ac2d0e7f17383997ebb83a372fdfd6"
+        },
+        {
+          "path": "references/ui-components/progress.md",
+          "sha256": "9508c6c7438bf61d00e14f81721ec133af10a6adad43dd4115d8ad6ba83ea945"
+        },
+        {
+          "path": "references/ui-components/scrollspy.md",
+          "sha256": "2654bcf5ba427bec77859e0c245f202193be9ebda205d512f0a93a7aa8e97089"
+        },
+        {
+          "path": "references/ui-components/spinner.md",
+          "sha256": "6cdc940b1ee47d0153feb319e6c96caea731b07671b2a76ec3fb9c85d5736215"
+        },
+        {
+          "path": "references/ui-components/stack-drill-down.md",
+          "sha256": "85b08d3a00ef30408384da64d5fc6fd3cc71fe6141008a34381bb2fdbb621f60"
+        },
+        {
+          "path": "references/ui-components/tabs.md",
+          "sha256": "36edacb1117bf6fe17fade4330044ae7427f001d42b38ea1ba4f14d1272e3af8"
+        },
+        {
+          "path": "references/ui-components/toolbar.md",
+          "sha256": "53b32a62d6d00782a34cfd513acbbf89d40d00a036ba49eb25fd8ce7d8d86b72"
+        },
+        {
+          "path": "references/user-experience/content-first-noise-reduction.md",
+          "sha256": "730397540392fd3d1be82f8f3ca7ffe75dda2ee07b478c8180aadee6bceac0f5"
+        },
+        {
+          "path": "references/user-experience/form-factor-adaptation.md",
+          "sha256": "d3e048452b13537260a53f5a2e2de94d5627799183c0271f7963824985186ec8"
+        },
+        {
+          "path": "references/user-experience/natural-interactions.md",
+          "sha256": "a39c6d6ccc461b1ef57aeb827cce19d8a919333d9e2f49d67fc01d1b045760f5"
+        },
+        {
+          "path": "references/visual-design/adapt-scrollbar-to-contrast-preferences.md",
+          "sha256": "8e7836883c3922b1e472ba10a339740c85d6e4569d1eed01a583564564a119e3"
+        },
+        {
+          "path": "references/visual-design/apply-webgl-shaders.md",
+          "sha256": "465a8c7bbe8b12b8446138accbc4a6ee79a2f30ec125681b314ce651849c1d40"
+        },
+        {
+          "path": "references/visual-design/browser-ui-theming.md",
+          "sha256": "c01b76cab57e190f886fea10c65ee27f92056194e73b6241aec20cfa01035ac4"
+        },
+        {
+          "path": "references/visual-design/color.md",
+          "sha256": "9d63db703a5f06148188f3d35a44c613dcf104e34f84fa52addd414ea4da8e5b"
+        },
+        {
+          "path": "references/visual-design/complex-shapes.md",
+          "sha256": "e6489c83e91f72685d528a8d3794c65ea506a766d3120dc81d74f70d07f09465"
+        },
+        {
+          "path": "references/visual-design/contrast-color.md",
+          "sha256": "ea4624cae77eecaf755c024ede4fa3c84dd3af060b7e38215f1303dd193936ab"
+        },
+        {
+          "path": "references/visual-design/custom-text-decorations.md",
+          "sha256": "ce087fd5ca225334f376ddd5db725fb5107e376bf92a99113887cf58179036c0"
+        },
+        {
+          "path": "references/visual-design/customize-scrollbar-color-and-thickness.md",
+          "sha256": "7a7e16ebd816db11621753c02903db0c1a8a4f81ae63d66648586649097eb13d"
+        },
+        {
+          "path": "references/visual-design/dark-mode.md",
+          "sha256": "d6c5565ec1066ede7996b2df151e829a4cc13fd81d24435919b6198b8d229bc6"
+        },
+        {
+          "path": "references/visual-design/equal-width-text-lines.md",
+          "sha256": "b91dfa3433db06cadc512c623c947af74021536287cdef1c23dd205a6ab2ae90"
+        },
+        {
+          "path": "references/visual-design/export-html-media-from-canvas.md",
+          "sha256": "1f4a052a6f73702db573f2debc856e927631ba40e4df0bd95e050d4056232dd6"
+        },
+        {
+          "path": "references/visual-design/expose-canvas-content-to-browser-features.md",
+          "sha256": "0ef1b8ec7c77279fece8d12f2f6580faa8f808501974f84e1f185ec860fde7f5"
+        },
+        {
+          "path": "references/visual-design/improve-text-layout-and-legibility.md",
+          "sha256": "a490ea4669ab78147e0860af573636affa28734fe8da6ff182a7cedf8095fe8b"
+        },
+        {
+          "path": "references/visual-design/interactive-content-in-3d-scenes.md",
+          "sha256": "6a68509202660b6080337d99e42f5d57a780690b871a643824eb37604b4f10b2"
+        },
+        {
+          "path": "references/visual-design/precise-text-alignment.md",
+          "sha256": "db2c0aa4fb3c0df7174c64640a983c878ed085d698e8842bb119b6cce051a661"
+        },
+        {
+          "path": "references/visual-design/shaped-cutouts.md",
+          "sha256": "f447159d8d5aafc39aeac3a882a629b2abc69c0be5159456b808fc6f6047d80f"
+        },
+        {
+          "path": "references/visual-design/soft-edge-content-fade.md",
+          "sha256": "665642a5a26c39ea338524d1c66f18c48c995be8cf1567e62dbf5157acb15da6"
+        },
+        {
+          "path": "references/visual-design/typography.md",
+          "sha256": "db2edfaf073922154c6f317045b07a9e81e9165c4a1b75355ae84c5c88b235fa"
+        },
+        {
+          "path": "references/visual-design/visual-effects.md",
+          "sha256": "1d8ff7f1f4bf578f36e392788c026dcd66b0dffc5fb552e60f97729bcac6f69b"
+        },
+        {
+          "path": "references/visual-design/visually-stable-font-fallbacks.md",
+          "sha256": "725c2e616311da3caff7d84d4fd97c934688bd13e2b1834ca8f00e7b0f37fb3d"
+        },
+        {
+          "path": "references/visual-design/visually-stable-mixed-fonts.md",
+          "sha256": "8af63ff6f7c2152bbdbece2396cf33b0b6d7517770b7e3cd3645c2b4f2d86700"
+        },
+        {
+          "path": "references/visual-design/visually-texture-content.md",
+          "sha256": "ee3c4a02603c33697b6939ac232a3b2cacbbcab82c4919a62602531d05a3ac72"
+        },
+        {
+          "path": "references/wasm/cpp-on-the-web.md",
+          "sha256": "b7b6a435938fe0426bfab69a363354baa71a901096d8b89665e6168be5b5c532"
+        },
+        {
+          "path": "references/webmcp/agentic-forms.md",
+          "sha256": "8c54f3893fdd93397f55487d393ccb383977abfcce9c209e5434cfd3f1a5e165"
+        },
+        {
+          "path": "references/webmcp/agentic-javascript-tools.md",
+          "sha256": "4bd8b80d2da164bfed4750188602c4936d7da85838377068ca0c820951480f82"
+        },
+        {
+          "path": "references/webmcp/webmcp.md",
+          "sha256": "807fa4fe68fdf50326cd28cba6ac16ce38b64265ff2c9eff9f6fc064a85285b4"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "20fa7c888d27d4922112c77f487869e173a6d82a9fe50b7770d42ceebcdd4b39"
+        }
+      ]
     }
   ]
 }

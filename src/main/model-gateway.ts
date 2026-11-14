@@ -22,7 +22,8 @@ export class ModelGateway {
   baseUrl = '';
   private server?: Server;
   private requests = new Set<AbortController>();
-  constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void) {}
+  constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void,
+    private skillContext?: (messages: unknown, requestBytes: number) => Promise<string | undefined>) {}
   async start() {
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== `Bearer ${this.token}`) { res.writeHead(401).end(); return; }
@@ -61,7 +62,11 @@ export class ModelGateway {
         try { body = JSON.parse(Buffer.concat(chunks).toString()); }
         catch { fail('LV_MODEL_REQUEST_JSON', '모델 요청 JSON이 올바르지 않습니다.', 400); return; }
         if (body?.model !== this.config.model.id) { finished = true; cleanup(); res.writeHead(403).end(); return; }
+        const guidance = body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
+        if (guidance && Array.isArray(body.messages)) body.messages = [{ role: 'system', content: guidance }, ...body.messages];
+        if (abort.signal.aborted) return;
         const bytes = Buffer.from(JSON.stringify(body));
+        requestBytes = bytes.length;
         const target = new URL(this.config.model.baseUrl.replace(/\/$/, '') + '/chat/completions');
         const totalMs = duration(this.transport.timeout, false);
         const headerMs = duration(this.transport.headerTimeout, false);

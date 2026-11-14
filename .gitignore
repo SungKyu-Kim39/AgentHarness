@@ -9,3 +9,4 @@ vendor/sources/
 agent-config.json
 !agent-config.example.json
 test-results/
+__pycache__/

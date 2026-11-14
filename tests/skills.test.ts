@@ -30,8 +30,11 @@ test('the native broker reads every new offline skill and reference without invo
   const { tools, resources } = await fixture(t);
   const manifest = JSON.parse(await readFile(path.join(resources, 'ned/skills/manifest.json'), 'utf8'));
   const catalog = JSON.parse(await tools.call('skill_catalog', {}, 'test-session'));
-  assert.equal(catalog.length, 36);
-  for (const id of additions) {
+  const lock = JSON.parse(await readFile('skills-lock.json','utf8'));
+  assert.equal(catalog.length, lock.count);
+  assert.equal(lock.count,66);
+  const reviewed = JSON.parse(await readFile('reviewed-skills-lock.json','utf8')).skills.map((skill: { id: string })=>skill.id);
+  for (const id of [...additions,...reviewed]) {
     assert.ok(catalog.some((skill: { id: string }) => skill.id === id));
     const entry = manifest.skills.find((skill: { id: string }) => skill.id === id);
     assert.ok(entry.files.some((file: { path: string }) => file.path === 'LICENSE'));
