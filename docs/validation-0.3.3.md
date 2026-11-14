@@ -1,41 +1,47 @@
-# Ned 0.3.3 validation candidate
+# Ned 0.3.3 검증 기록
 
-## Deployment regression: launcher cannot initialize
+0.3.3에는 설치 시 설정 준비, 대화·프로젝트 단위 파일 자동 승인, GUI 앱 실행과 데스크톱 연결 복구를 추가했습니다. 배포 뒤 호스트 초기화 오류가 보고돼 원본 설치본용 수정 패치를 제공했습니다. 앞선 0.3.1 누적 패치의 ACP·자동 재시작 확인과 이번 전체 설치본 결과를 구분합니다.
 
-Windows deployment reported `Cannot find module './impl/format'` in the shipped main.cjs. The exact published ASAR reproduces that failure. esbuild selected jsonc-parser's UMD entry, whose factory aliases `require`; its relative parser/edit/format imports escaped bundling. Earlier source-level tests and installer hash/extraction audits did not execute the distributed host's module initialization and did not establish successful launcher startup.
+## 배포 후 발견한 JSONC 초기화 오류
 
-The JSONC startup repair selects the static ESM entry for that dependency only. Build and installer extraction now run an isolated import-initialization gate against the actual main.cjs bytes, stopping at the Electron application entry point before any profile, service or model startup. A negative regression check reproduces the original UMD failure; separate bundled-code tests exercise JSONC parse/edit/format and preserve UI preferences/comments without access to node_modules. This is not a Windows GUI acceptance test. The immutable original 0.3.3 EXE/TGZ require `Ned-jsonc-startup-fix-1.tgz`; user settings and knowledge must not be deleted to address this error.
+실제 배포한 `main.cjs`에서 `Cannot find module './impl/format'`을 재현했습니다. esbuild가 선택한 jsonc-parser의 UMD 진입점은 factory 안에서 `require`를 별칭으로 전달합니다. 그 결과 상대 parser·edit·format 모듈이 번들에 들어가지 않았습니다. 소스 테스트와 기존 해시·추출 검사만으로는 이 초기화 실패를 찾지 못했습니다.
 
-This revision adds installer-side configuration staging, memory-only conversation/project edit approval, approved GUI application dispatch and desktop connection recovery. It remains a Windows acceptance candidate. The prior deployment confirmation of ACP chat and automatic configuration restart belongs to the cumulative 0.3.1 patch; it is not proof that every new full-installer feature has run on Windows.
+수정 빌드는 이 의존성의 정적 ESM 진입점을 선택합니다. 빌드와 설치기 추출 후 실제 `main.cjs`를 격리해 읽고, 모든 초기 import가 끝나는지 검사한 뒤 Electron 앱 진입점에서 멈춥니다. 프로필·서비스·모델은 시작하지 않습니다. 원본 UMD의 실패 재현 검사와 node_modules 없는 JSONC parse·edit·format, UI 설정·주석 보존 검사도 추가했습니다.
 
-## Configuration installation
+원본 0.3.3 EXE·TGZ에는 `Ned-jsonc-startup-fix-1.tgz`가 필요합니다. 설정과 지식을 삭제해 해결할 문제는 아닙니다. 이 검사는 호스트 초기화 오류를 찾는 검사이며 Windows GUI 실행 전체를 확인하지는 않습니다.
 
-Only `$EXEDIR/agent-config.json` is copied on a first install without existing encrypted settings. A provided file bypasses the template editor; an absent file retains the existing default-template workflow. On first application launch ConfigVault validates, encrypts and removes only the staged plaintext. Existing settings, history and knowledge remain unchanged on upgrades. Invalid JSON/encryption failure does not silently initialize defaults. NSIS checks critical editor/desktop/Python files and errors on failed config copies or a directory supplied as the config.
+## 설치 설정과 파일 승인
 
-## Edit approval
+저장된 암호화 설정이 없는 첫 설치에서 `$EXEDIR/agent-config.json`만 복사합니다. 사용자가 파일을 준비했으면 예제 편집기를 건너뛰고, 파일이 없으면 기존 예제 준비 절차를 사용합니다. 첫 실행의 `ConfigVault`가 검증·암호화 후 준비 사본만 지웁니다. 기존 설정·기록·지식과 잘못된 JSON·암호화 실패 원본은 보존합니다. 설치기는 중요 편집기·데스크톱·Python 파일과 설정 복사 결과를 확인하며, JSON 대신 폴더를 지정하면 실패로 처리합니다.
 
-The native file dialog offers this edit, current request and current conversation/project grants. The latter survives new messages but is revoked on use of a different conversation/project, cancellation, restart, configuration-restart request or tray revocation. ACP session binding also detects scope changes. Grants stay in memory; no engine `always` or persistent config permission is written. An epoch and combined abort signal prevent delayed writes after revocation, including editor validation/snapshot waits. Protected paths, base-content conflicts and unsaved buffers remain checked.
+파일 승인창에서는 이번 수정, 이번 요청, 현재 대화·프로젝트 범위를 선택합니다. 대화 승인은 새 메시지에도 적용되지만 대화·프로젝트 전환, 중지·재시작, 설정 재시작 요청이나 수동 해제 시 취소됩니다. ACP 세션도 범위 변경을 검사합니다. 승인은 메모리에 두고 엔진 `always`나 영구 설정에는 저장하지 않습니다.
 
-## Desktop changes and evidence limits
+작업 세대와 합친 취소 신호로 편집 버퍼·스냅샷 대기 뒤에 늦은 쓰기가 발생하지 않도록 했습니다. 보호 경로, 기준 내용 충돌과 저장하지 않은 버퍼는 계속 검사합니다.
 
-The managed surface has 20 tools, adding installed-app discovery and GUI dispatch. Dispatch accepts named Windows builtins or an explicitly approved absolute local GUI `.exe`, validates PE subsystem/exclusions, freezes hash/empty argv/cwd and rechecks before execution. It has no caller shell/args/env or file/URI associations. The user GUI process remains outside the managed MCP Job and is not killed on Ned shutdown. It can perform its own ordinary user-level effects; this is not an OS sandbox for that app. Launch success never claims a visible window or completed task.
+## 데스크톱 실행과 연결 복구
 
-A dead/timed-out private client is no longer retained in the desktop-session cache. Confirmed stop discards refs and home; observations can create a new connection. Uncertain actions are not replayed and require a new verified snapshot before further actions. An unconfirmed exit blocks new executions. Private Windows AppData directories and explicit AGENT_DESKTOP_HOME are provided; the stdlib-only supervisor skips site packages.
+앱 검색과 실행을 추가해 도구는 20종이 됐습니다. Windows 기본 앱 이름 또는 승인한 로컬 GUI `.exe` 절대 경로만 받습니다. PE 서브시스템과 제외 대상을 확인하고 해시·빈 인자·작업 폴더를 고정해 실행 직전에 다시 검사합니다. 호출자가 셸·인자·환경·문서·URI를 지정할 수는 없습니다. 사용자 앱은 MCP Job 밖에서 실행해 Ned 종료 시 닫지 않습니다. 앱 자체의 사용자 권한 동작까지 OS 샌드박스로 제한하는 기능은 아닙니다.
 
-The first deployment Python-based probe could not import `urllib` and reported `pywin32_bootstrap` before inspecting desktop behavior. Subsequent file hashes and a repeated Python probe succeeded; this earlier error is not treated as proven file loss. Python-independent probe 2 then confirmed all five checked file hashes and successful direct CLI/MCP status. Its list-windows parser reported invalidEnvelope, which did not establish a native failure. A subsequent successful run of the original Python probe returned 18 windows and supervised MCP initialize (358 ms), tools/list (47 ms, 67 tools) and status (202 ms), all without stderr. The initial Python import error was not reproduced; no missing-file or security-software cause is claimed. The successful probe uses standard private AppData directories and explicit state root, unlike the old host. This candidate aligns the host environment and fixes stale connection reuse. Exact timeout causation is not proven by those checks. No Windows Calculator launch, click or result has yet been verified by these changes. Calculator standard sequential arithmetic and scientific precedence are distinguished in bundled guidance; conversational arithmetic is not GUI evidence.
+실행 요청 전달과 실제 창·작업 결과는 따로 확인합니다. 종료·시간 초과된 클라이언트는 캐시에서 버리고, 종료 확인 후 참조와 홈을 지웁니다. 다음 관찰은 새 연결을 만듭니다. 전달이 불확실한 동작은 반복하지 않고 새 스냅샷을 요구하며, 종료가 확인되지 않으면 새 실행을 막습니다. 표준 전용 AppData와 `AGENT_DESKTOP_HOME`을 준비하고 감독기는 site-packages 초기화를 건너뜁니다.
 
-## Execution record
+첫 배포 진단은 `urllib`·`pywin32_bootstrap` import에서 멈췄습니다. 이후 다섯 파일 해시와 직접 CLI·MCP 상태는 정상으로 확인됐습니다. PowerShell 창 목록 파서의 `invalidEnvelope`만으로 네이티브 실패를 확정하지 않았습니다. 원래 Python 진단 재실행에서는 창 18개, MCP 초기화 358ms, 도구 목록 47ms·67개, 상태 202ms를 오류 출력 없이 받았습니다. 최초 import 오류는 재현되지 않아 파일 누락이나 보안 프로그램을 원인으로 단정하지 않았습니다.
 
-Typecheck, Ned build and all 36 skill hashes passed during development. Focused approval/config/scope checks passed 26/26; focused desktop/GUI validation/private MCP checks passed 9/9. The real pinned Linux desktop MCP returned version/permissions. That check has no Windows UIA or active GUI session. Full regression, exact source commit and installer/archive audit results will be recorded with published artifacts. Deployment checks must include first-install EXE config, existing-data preservation, conversation approval reset, actual GUI launch/observation/actions and cancellation on Win10/Win11 with external DNS/TCP observed and company model endpoints only. Corporate LLM/embedding queue waits retain no default generation deadline.
+성공한 진단의 전용 AppData·상태 폴더 구성에 호스트를 맞추고 오래된 연결 재사용을 없앴습니다. 최초 시간 초과의 정확한 원인과 계산기 실행·클릭·결과는 이 검사로 확인하지 못했습니다. 기본 지침에는 표준 계산기의 순차 계산과 공학용 우선순위를 구분하고 실제 결과 표시를 읽도록 적었습니다.
 
-A small NSIS/Wine fixture was attempted, but the cached Wine runtime lacks kernel32.dll and cannot load cmd.exe (c0000135). No installer-execution success is claimed from that attempt; the optional Wine test is skipped where that dependency is absent. Full installer compilation/extraction and ConfigVault behavior are checked separately.
+## 편집기 설정과 작업표시줄 아이콘
 
-Before packaging: the complete Linux regression run passed 119/119 in 544.892 seconds, with no skips. Subsequent focused checks covering the final GUI-preparation cancellation guard, desktop recovery, private MCP and conversation grants passed 12/12. Another focused namespace/instruction/GUI validation run passed 17 checks with the optional Wine installer test skipped because kernel32 is unavailable. Typecheck/build and 36-skill hash verification passed after the source changes. Exact installer audit and public artifact checks are recorded alongside downloads.
+이전 시작 코드는 설정을 다섯 키로 줄이고 오래된 appearance 사본을 먼저 사용하며 JSONC를 엄격한 `JSON.parse`로 읽었습니다. 업데이트 후 글꼴과 패널 배치가 초기화된다는 제보에 따라 현재 UI 설정·주석·끝 쉼표·BOM을 보존하고 키맵과 `editor/db` 경로를 유지하도록 고쳤습니다. 관리형 연결·실행 설정만 갱신합니다.
 
-## Preferences and taskbar icon (added before final packaging)
+원본 설정은 한 번 백업합니다. 문법 오류·중복 키가 있으면 초기화 대신 원본과 오류를 남깁니다. 사용자 `restore_on_startup`은 유지하고 새 설치만 launchpad를 기본으로 사용합니다.
 
-The user reported resets of panel placement and fonts after updates. The old startup reduced settings to five keys, preferred a potentially stale appearance snapshot and used strict JSON.parse on a JSONC editor file. The replacement preserves current UI/font/panel values and comments/trailing commas/BOM, retains existing keymaps and the stable editor/db path, and refreshes only managed connections/execution controls. The original settings are backed up once. Invalid/duplicate JSONC is preserved with an error, rather than silently reset. User-selected restore_on_startup is retained; fresh installs still default to launchpad.
+GPUI Windows는 실행 파일의 아이콘 리소스 1을 읽습니다. 빌드에서 Ned ICO로 교체하고 모든 비리소스 섹션과 버전 리소스가 같은지 비교했습니다. 원본 바이너리·소스는 고정하고 서명 없는 수정본·아이콘 해시를 `ned/editor-branding.json`에 남깁니다. Rust 실행 코드나 개인 Zed 설치는 수정하지 않습니다. 설치기에서 추출한 아이콘 바이트도 검사합니다. 실제 작업표시줄과 기존 고정 바로가기 표시는 배포 PC 확인 항목이었습니다.
 
-GPUI Windows loads icon resource 1 from its executable. The build replaces that resource with the Ned ICO and compares all non-resource sections and version-resource bytes before/after. The original vendor image/source remain pinned; the modified unsigned image and icon hashes are recorded in ned/editor-branding.json. No Rust execution code or personal Zed installation is edited. Extraction audit verifies actual packaged icon bytes. Windows taskbar display and existing pinned-shortcut behavior still need deployment confirmation.
+## 실행 기록과 남은 검사
 
-Final checks after adding preference retention and icon changes: typecheck and Ned build passed; 36/36 focused tests passed (no skips), including actual pinned PE icon replacement, BOM/JSONC/font/dock/keymap/workspace retention, malformed-settings preservation, fresh-profile defaults, real ACP edits/dirty-buffer refusal, config restart, desktop recovery/launch cancellation and edit approval. The earlier 119/119 full regression and all-phase real MCP run passed before these last presentation/profile changes; they were not represented as a fresh whole-suite run afterward. The optional NSIS/Wine execution fixture remains unrun here.
+개발 중 타입 검사·Ned 빌드·스킬 36개 해시, 승인·설정·범위 검사 26/26과 데스크톱·GUI·MCP 검사 9/9를 통과했습니다. Linux의 네이티브 MCP는 버전·권한을 반환했으나 Windows UIA 결과는 아닙니다.
+
+전체 회귀는 119/119, 생략 없이 544.892초였습니다. 이후 GUI 준비 중 취소·연결 복구·대화 승인 검사 12/12를 통과했고, 이름·지침·GUI 검사 17개에서는 Windows 로더가 없는 선택적 Wine 검사만 제외했습니다. Wine의 `kernel32.dll` 누락과 `cmd.exe`의 `c0000135` 때문에 설치 실행 성공으로 기록하지 않았습니다.
+
+마지막 설정 보존·아이콘 변경 뒤에는 타입 검사와 빌드, 집중 검사 36/36을 다시 통과했습니다. 실제 PE 아이콘 교체, BOM·JSONC·글꼴·dock·키맵·작업공간 보존, 손상 설정, 새 프로필, 실제 ACP 수정과 미저장 거절, 설정 재시작, 데스크톱 복구·실행 취소와 승인을 포함합니다. 앞선 전체 119개와 MCP 실호출을 이 변경 뒤 다시 실행한 것으로 합산하지 않았습니다.
+
+정확한 소스·설치기·아카이브 감사는 배포 기록에 있습니다. Windows 10·11에서 첫 설치 설정, 기존 자료 보존, 승인 해제, 실제 GUI와 취소, 사내 모델·임베딩, DNS·TCP를 확인해야 했습니다. 모델 응답의 기본 대기 제한은 추가하지 않았습니다.

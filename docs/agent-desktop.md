@@ -1,33 +1,49 @@
-# Ned agent-desktop integration
+# Ned에서 로컬 앱 조작하기
 
-Ned 0.3.5 includes the official native agent-desktop 1.2.0 binary, matching source, Apache-2.0 license, pinned VCRUNTIME140.dll with its original CPython/Windows notice, and two reviewed static skills. It does not require an employee-side npm install or an external service. The selected intranet LLM chooses when to call host tools; agent-desktop itself has no model.
+Ned에는 agent-desktop 1.2.0의 공식 네이티브 바이너리와 사용 지침 두 개가 들어 있습니다. 같은 버전의 소스, Apache-2.0 라이선스, 고정 `VCRUNTIME140.dll`과 원래 CPython·Windows 고지도 함께 제공합니다. 직원 PC에서 npm 패키지를 설치하거나 외부 서비스를 연결할 필요는 없습니다. 호출할 도구는 사내 LLM이 선택하며 agent-desktop 자체에는 모델이 없습니다.
 
-## Usage
+## 창을 확인한 뒤 조작합니다
 
-Ask Ned to inspect an external local application. It calls `desktop_status`, then applies the selected Ned permission mode to window inventory, a selected window snapshot and subsequent actions. Full access automatically approves supported desktop calls; ask/file-edit-only modes show the native prompts. Qualified refs belong only to that agent session and project. After acting, observe again; an uncertain result must not be retried automatically. File-edit-only auto-approval never grants desktop permission; the explicit persistent full-access mode does.
+Ned에 로컬 프로그램을 확인하거나 조작해 달라고 요청하면 먼저 `desktop_status`로 실행 상태를 확인합니다. 이어 창 목록에서 대상을 찾고, 그 창의 스냅샷을 읽어 요소를 조작합니다. 동작 후에는 다시 관찰해 결과를 확인합니다.
 
-The reviewed host surface has 20 tools: status, list_windows, list_apps, launch, snapshot, screenshot, focus_window, get, is, click, set_value, clear, select, toggle, check, uncheck, expand, collapse, scroll, scroll_to (each prefixed `desktop_`). Screenshots are restricted to one selected window; they can enter the intranet model context and local conversation history under the user-selected approval mode. No automatic screen upload to OpenViking is performed.
+전체 권한에서는 지원하는 호출을 자동 승인합니다. 승인 요청이나 파일 자동 승인 모드에서는 데스크톱 작업을 따로 확인합니다. 요소 참조는 현재 에이전트 세션과 프로젝트에만 속합니다. 전달 여부가 불확실한 동작을 바로 반복하면 중복 입력할 수 있으므로 새 스냅샷부터 확인합니다.
 
-Ned/Zed/agent/terminal/system/approval windows are excluded. Raw MCP access, shell/script execution, global key/coordinate input, clipboard, batch, trace export and automatic headed fallback are not exposed. Upstream examples of those operations are reference documentation, not permission or a promise of availability. A native unsupported-action response is reported as a failure rather than silently switching executors. See the upstream Windows guide through `read_skill` for platform limitations.
+호스트에 연결한 도구는 다음 20종이며 모두 `desktop_` 접두사를 사용합니다.
 
-## Launching local apps
+`status`, `list_windows`, `list_apps`, `launch`, `snapshot`, `screenshot`, `focus_window`, `get`, `is`, `click`, `set_value`, `clear`, `select`, `toggle`, `check`, `uncheck`, `expand`, `collapse`, `scroll`, `scroll_to`
 
-After status, use `desktop_list_apps` to discover installed applications. `desktop_launch` accepts `calculator` (`calc`), `notepad`, `paint` or an absolute local Windows GUI `.exe` path. It checks the PE GUI subsystem, excludes managed apps/shells/script launchers/system administration tools, freezes executable hash/empty arguments/working directory and applies the selected approval mode (automatic in full access). It rechecks the file before dispatch. Caller-supplied arguments, environment, shell strings, documents and URI associations are not accepted. An approved program runs as the normal user and has its own file/network effects; this is not an OS sandbox for that program.
+스크린샷은 지정한 창 하나만 캡처합니다. 선택한 권한 모드에 따라 이미지가 사내 모델의 문맥과 로컬 대화 기록에 포함될 수 있습니다. OpenViking에 화면을 자동 업로드하지는 않습니다.
 
-A successful launch means only that process dispatch succeeded. It must be followed by window inventory and a verified snapshot before interaction. UWP Calculator can broker to another process; a launcher PID disappearing does not justify another launch. GUI apps belong to the user and are not killed when Ned closes. The managed MCP runtime remains independently supervised.
+## 앱을 직접 실행할 때
 
-For `3+4*2`, inspect the Calculator mode. Standard sequential entry can produce 14; scientific mode uses precedence and should display 11. Select the mode and buttons from actual observed refs and read the result afterward. A number calculated in the conversation is not GUI execution evidence.
+상태를 확인한 뒤 `desktop_list_apps`로 설치된 앱을 찾습니다. `desktop_launch`는 `calculator`(`calc`), `notepad`, `paint` 또는 로컬 Windows GUI `.exe`의 절대 경로를 받습니다.
 
-## Lifecycle and offline bundle
+실행 전 PE GUI 서브시스템과 파일 해시를 확인하고 실행 파일·빈 인자·작업 폴더를 고정합니다. 선택한 권한 모드로 승인한 뒤 전달 직전에 파일을 다시 검사합니다. 호출자가 인자나 환경 변수, 셸 문자열, 문서·URI 연결 프로그램을 지정할 수는 없습니다. 프로그램은 일반 사용자 권한으로 실행되므로 그 앱이 자체적으로 수행하는 파일·네트워크 동작까지 샌드박스로 제한하는 기능은 아닙니다.
 
-The binary is started on demand over private stdio with a fresh app-owned home, standard private AppData directories and explicit `AGENT_DESKTOP_HOME`. The pure standard-library supervisor skips site-package startup. Raw desktop trace capture is not enabled. Temporary ref state is removed after confirmed stop; after a crash, leftovers are not reused as another session's refs. Windows descendants are owned by the existing Job Object supervisor. Cancellation closes the process and revokes refs; an unconfirmed exit blocks subsequent desktop operations until restart. App shutdown closes all managed clients. A closed or timed-out connection is discarded after confirmed stop; subsequent observations create a new connection and old refs cannot be reused. An uncertain action is not replayed and further actions require a fresh verified snapshot. Unconfirmed termination continues to block new processes. Safe failure metadata is written to `%APPDATA%\Ned\diagnostics\desktop-status.json` without raw error text, input, titles or keys. File/image tool responses use the existing bounded MCP content validator and model-key redactor.
+실행 성공은 프로세스 시작 요청을 전달했다는 뜻입니다. 창 목록과 스냅샷에서 실제 창을 확인한 다음 조작해야 합니다. UWP 계산기는 다른 프로세스로 실행을 넘길 수 있으므로 최초 PID가 사라졌다고 곧바로 다시 실행하지 않습니다. 사용자 GUI 앱은 Ned를 닫아도 유지하며, MCP 프로세스는 별도로 관리합니다.
 
-Windows 10 1809+ and an unlocked interactive user session are required by this component. Administrator/UAC secure desktop and higher-integrity windows are outside its supported access. The pinned Zed editor has its own requirements. No administrator prompt is introduced by this integration.
+계산기에 `3+4*2`를 입력한다면 현재 모드를 먼저 확인합니다. 표준 모드의 순차 입력은 14가 나올 수 있고, 연산자 우선순위를 적용하는 공학용 모드에서는 11이 나와야 합니다. 관찰한 요소 참조로 모드와 버튼을 선택하고 결과 표시를 다시 읽습니다. 대화에서 계산한 값과 화면에서 확인한 값은 구분해 보고합니다.
 
-## Validation limits
+## 지원하지 않는 조작
 
-The real pinned Linux MCP starts and returns its version/permissions through the same private client. This cloud shell has no D-Bus accessibility session; a real GUI click/screenshot is not established by that check. Approval denial, unknown refs, project mismatch, target process replacement and managed-window exclusion have separate tests. Actual Windows UIA observation/actions, offline DNS/TCP behavior and child-tree cancellation must be verified on the deployment PC before release acceptance.
+Ned·Zed·에이전트·터미널·시스템·승인창은 대상에서 제외합니다. 원시 MCP, 셸·스크립트 실행, 전역 키·좌표 입력, 클립보드, batch, trace 내보내기, 자동 headed 전환도 노출하지 않습니다. 원본 문서에 예제가 있어도 Ned에서 모두 사용할 수 있는 것은 아닙니다.
 
-## Deployment diagnosis
+네이티브 도구가 지원하지 않는 동작을 반환하면 실패로 알립니다. 다른 실행자로 몰래 전환하지 않습니다. 플랫폼별 제약은 `read_skill`로 읽을 수 있는 원본 Windows 안내를 참고하세요.
 
-A deployment probe failed before desktop inspection because the installed Python could not import `urllib` and reported missing `pywin32_bootstrap`. This does not establish the desktop timeout cause. `CHECK_DESKTOP.cmd` / `desktop-probe.ps1` uses Windows PowerShell without Python, checks five runtime-file hashes and compares native status/window inventory with native MCP status. It performs no desktop actions or model calls. The subsequent PowerShell check verified all five file hashes and native status/MCP status; a repeated Python probe successfully listed 18 windows and initialized the supervised MCP with 67 tools and a status reply. The earlier import error did not reproduce. Those results establish runtime readiness, not GUI action success or an exact cause of the old timeout. This revision aligns the host private environment with the successful probe and removes stale client reuse. The refreshed installer checks critical files after extraction and preserves user data.
+## 프로세스와 연결 관리
+
+필요할 때 새 전용 홈과 표준 AppData 폴더, `AGENT_DESKTOP_HOME`을 만들고 비공개 표준 입출력으로 실행합니다. 표준 라이브러리만 쓰는 감독 프로세스는 site-packages 초기화를 건너뜁니다. 원시 데스크톱 trace는 수집하지 않습니다.
+
+Windows 자식 프로세스는 Job Object로 관리합니다. 취소 시 연결을 닫고 요소 참조를 해제하며, 종료가 확인되지 않으면 이후 작업을 막습니다. 닫히거나 시간 초과된 연결은 종료 확인 후 폐기합니다. 다음 관찰은 새 연결을 만들고, 이전 참조와 전달 여부가 불확실한 동작을 재사용하지 않습니다. 앱 종료 시 관리 중인 클라이언트를 모두 닫습니다.
+
+진단 파일은 `%APPDATA%\Ned\diagnostics\desktop-status.json`입니다. 도구 이름, 실패 분류와 종료 확인 여부를 저장하며 창 제목·입력·키·원본 오류는 넣지 않습니다. 파일·이미지 결과에는 기존 MCP 크기 검사와 모델 키 마스킹을 적용합니다.
+
+이 구성 요소에는 Windows 10 1809 이상과 잠금 해제된 대화형 사용자 세션이 필요합니다. 관리자·UAC 보안 데스크톱과 더 높은 무결성 수준의 창은 지원 범위 밖입니다. Ned 전체의 OS 요구사항은 함께 쓰는 Zed 기준을 따릅니다. 이 기능 때문에 관리자 권한을 추가 요청하지 않습니다.
+
+## 확인한 결과와 진단 방법
+
+고정 Linux MCP의 실행과 버전·권한 응답을 같은 비공개 클라이언트로 확인했습니다. 해당 Cloud 셸에는 D-Bus 접근성 세션이 없어 GUI 클릭·스크린샷은 확인하지 못했습니다. 승인 거절, 알 수 없는 참조, 프로젝트 불일치, 프로세스 교체와 관리형 창 차단은 별도 테스트로 검사했습니다.
+
+배포 PC에서는 한 차례 Python의 `urllib`와 `pywin32_bootstrap` import 오류가 있었습니다. 이후 PowerShell 진단에서 관련 파일 다섯 개의 해시와 네이티브 CLI·MCP 상태가 정상으로 확인됐고, 반복 Python 진단도 창 18개와 MCP 도구 67개를 읽는 데 성공했습니다. 당시 import 오류는 재현되지 않았으며, 창 조작 성공이나 최초 시간 초과의 정확한 원인까지 확인한 결과는 아닙니다.
+
+`CHECK_DESKTOP.cmd`와 `desktop-probe.ps1`은 Python 없이 Windows PowerShell로 파일 해시와 상태 응답을 비교합니다. 화면 조작이나 모델 호출은 하지 않습니다. 호스트의 전용 환경은 성공한 진단 구성에 맞췄고, 오래된 연결은 재사용하지 않도록 수정했습니다. 실제 Windows UIA 동작과 외부 DNS·TCP, 자식 프로세스 종료는 배포 PC에서 추가 확인해야 합니다.

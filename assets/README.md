@@ -1,5 +1,5 @@
-# Ned icon
+# Ned 아이콘
 
-`ned-icon.png` is the generated square master image: white bold **Ned** lettering on a black background. `ned-icon.ico` contains Windows icon sizes 16, 24, 32, 48, 64, 128 and 256 pixels, converted from that image without changing its design. These are the active product assets for the launcher, installer, tray and UI.
+`ned-icon.png`는 검은 배경에 흰색 굵은 **Ned** 글자를 넣어 생성한 정사각형 원본입니다. 디자인을 유지한 채 Windows에서 사용하는 16·24·32·48·64·128·256픽셀을 `ned-icon.ico`에 담았습니다. 실행기·설치기·트레이·UI에서 이 자산을 사용합니다.
 
-The former `lig-icon` files remain only for historical releases and provenance; new builds use the Ned assets. The bundled Zed editor retains its upstream identity as a component of Ned.
+이전 `lig-icon` 파일은 과거 배포물과 출처 기록을 위해 보관합니다. 새 빌드는 Ned 자산을 사용하며, 번들 Zed의 구성 요소 이름과 원래 식별 정보는 유지합니다.

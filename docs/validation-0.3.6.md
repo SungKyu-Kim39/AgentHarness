@@ -1,29 +1,33 @@
-# Ned 0.3.6 validation scope
+# Ned 0.3.6 검증 기록
 
-This candidate includes the compact desktop snapshot identity repair, Windows project-open workaround, late-exit diagnostic classification and an installation directory page. Original 0.3.4 and 0.3.5 binaries remain immutable; the separate snapshot-only repair archive targets their exact original hashes. New 0.3.6 installations do not need that repair.
+0.3.6에는 축약 데스크톱 스냅샷 처리, Windows 프로젝트 폴더 선택 우회, 장시간 사용 후 종료 진단과 설치 위치 선택을 포함했습니다. 기존 0.3.4·0.3.5 파일은 보관하며 그 원본 전용 스냅샷 패치를 0.3.6에 추가 적용하지 않습니다.
 
-## Desktop snapshot
+## 스냅샷 응답 처리
 
-The pinned agent-desktop 1.2.0 snapshot returns the app at the top level and only id/title in window. The host previously required full inventory fields inside window, causing valid snapshots to fail. Tests now use the actual compact contract. Capture is checked against full inventory before and after the call; contradictory optional fields, process replacement and blocked apps are refused. A dispatched snapshot clears old refs, including on failure. Regression checks exercise qualified mock actions and process changes. These are protocol/security checks, not actual Windows UIA capture or click acceptance.
+agent-desktop 1.2.0은 스냅샷의 최상위에 앱 이름을, `window`에는 id·title만 반환합니다. 이전 호스트가 window 안에 전체 프로세스 정보를 요구해 정상 응답도 거절하던 문제를 고쳤습니다.
 
-## Project opening and editor exit
+검사는 실제 축약 형식을 사용하며 캡처 전후 창 목록의 전체 신원과 대조합니다. 선택 필드가 모순되거나 프로세스가 교체되고 차단 앱이 보이면 거절합니다. 호출을 시도하면 실패하더라도 이전 참조를 해제합니다. 모의 동작과 프로세스 교체를 검사했으며 실제 Windows UIA 캡처·클릭은 배포 PC에서 확인해야 했습니다.
 
-The user reported a 0xc000041d callback exception after selecting a folder in the native Windows picker on 0.3.5 (editor 1.28.1.0). The recorded fault module was unknown; no GPU, IME or desktop-tool cause is established. The editor now uses its internal path picker on Windows. A separate Ned tray folder picker runs in the host's unchanged Windows shell environment, exposing actual Desktop/Favorites. The selected canonical directory is dispatched to the fixed bundled CLI using literal argv and the private editor profile. Tests cover cancellation, failed dispatch, concurrent clicks and editor exit. Private Zed settings are not copied or read. Late abnormal termination is described as an editor exit rather than a startup failure.
+## 폴더 선택과 편집기 종료
 
-This is a workaround for the reported native picker route. Reproduce installation, Desktop/Favorites selection, folder dispatch, reopening an existing project and closing/restarting multiple windows on Windows 10/11 before declaring the issue resolved. Virtual shell items without a filesystem directory are not project folders.
+0.3.5의 편집기 1.28.1.0에서 Windows 기본 폴더 선택 후 `0xc000041d` 예외가 보고됐습니다. 오류 모듈이 unknown이어서 GPU·IME·데스크톱 도구로 원인을 단정하지 않았습니다.
 
-## Installation location
+편집기는 Windows에서 내부 폴더 선택창을 사용하도록 바꿨습니다. 알림 영역에는 원래 Windows 환경에서 실제 바탕화면·즐겨찾기를 탐색하는 선택창을 제공합니다. 선택한 정규 경로를 고정 CLI와 전용 편집기 프로필에 인자로 전달합니다. 취소, 전달 실패, 연속 클릭과 편집기 종료를 검사했고 개인 Zed 설정은 읽지 않습니다. 장시간 사용 뒤의 비정상 종료는 시작 실패와 구분해 표시합니다.
 
-The NSIS directory page allows a dedicated writable folder such as D:\Programs\Ned, defaults upgrades to HKCU InstallLocation and retains user data under APPDATA\Ned. Drive roots and nonempty unrelated folders are refused before resource cleanup, including silent /D use. Moving an existing installation requires uninstalling the old program first; data is preserved. The new uninstaller only removes active shortcuts/registration when it still owns that registration. Diagnostics/export scripts also resolve the registered location.
+이 변경은 보고된 선택 경로를 피하기 위한 조치입니다. 설치 후 바탕화면·즐겨찾기 선택, 기존 프로젝트 재열기와 여러 창의 종료·재시작을 Windows 10·11에서 확인해야 했습니다. 실제 디렉터리가 없는 가상 셸 항목은 프로젝트로 선택할 수 없습니다.
 
-The pinned NSIS compiler is exercised with a fixture payload. The optional Wine execution fixture covers configuration import, registered custom-directory reuse and refusal to delete unrelated resources; it is skipped when the Windows loader is unavailable. Compiler success and archive extraction do not establish actual Windows installation/ACL behavior.
+## 설치 위치
 
-Build, typecheck, focused regression results, actual installer extraction/hash/ASCII audits, source comparison and public download hashes are recorded separately in downloads metadata. Full Windows GUI, real company model/embedding endpoints, knowledge migration and DNS/TCP isolation acceptance remain deployment checks. Existing model queue behavior is preserved; no default model-response deadline is added.
+NSIS에서 `D:\Programs\Ned` 같은 쓰기 가능한 전용 폴더를 선택할 수 있습니다. 업데이트는 HKCU의 `InstallLocation`을 기본으로 사용하고 사용자 데이터는 `APPDATA\Ned`에 둡니다. 드라이브 루트와 관련 없는 파일이 든 폴더는 리소스를 지우기 전에 거절합니다. 무인 `/D` 지정도 같은 검사를 거칩니다.
 
-## Same-version repair: rebuild1
+설치 위치를 옮기려면 기존 프로그램을 먼저 제거해야 하며 데이터는 보존합니다. 제거 프로그램은 자신이 현재 등록을 소유한 경우에만 바로가기와 등록 정보를 지웁니다. 진단·내보내기 스크립트도 등록 경로를 찾아갑니다.
 
-The user requested that the application version remain 0.3.6. Files use a rebuild1 suffix; the original EXE, TGZ and source tag remain unchanged. The revised installer explicitly creates missing nested installation directories and uses GetFullPathNameW so validation does not require the target to exist. The tray item is shortened to `프로젝트 폴더 열기`.
+고정 NSIS 컴파일러는 fixture로 검사했습니다. Wine이 있으면 설정 가져오기, 등록된 사용자 지정 경로 재사용과 관련 없는 자료 삭제 거부를 실행 검사하지만, Windows 로더가 없는 환경에서는 제외합니다. 컴파일과 압축 해제 결과는 실제 Windows 설치·ACL 검사와 구분합니다.
 
-The repair is based on the original 0.3.6 installer SHA-256 c8d8aa63269118a1fa9d732dc0347631aefbf6e72992fac3c0fb2c276563c326. The host is rebuilt from current TypeScript using the locked dependencies. Its compiled bytes must equal the original with only the menu label changed. ASAR entries/dependencies, ACP, editor, model bridge and runtime files are preserved; only the host archive, setup guide and build provenance are replaced/added. Re-extraction of the newly generated installer compares the entire payload inventory, not only selected component hashes. The original runtime component manifests are verified again.
+## 같은 버전의 수정 빌드 1
 
-The packaging, changed-area test results, source commit, product version, build revision and public hashes are recorded separately for the revised files. Windows installation/upgrade, actual missing-folder creation and GUI selection still require deployment-PC acceptance; a compiler or archive check does not replace that execution evidence.
+사용자 요청에 따라 앱 버전은 0.3.6으로 유지하고 파일명에 `rebuild1`을 붙였습니다. 원본 EXE·TGZ·소스 태그는 보존했습니다. `GetFullPathNameW`로 아직 없는 대상도 검사하고 설치 시 상위 폴더까지 만들도록 했습니다. 메뉴 이름은 `프로젝트 폴더 열기`로 줄였습니다.
+
+기준 EXE SHA-256은 `c8d8aa63269118a1fa9d732dc0347631aefbf6e72992fac3c0fb2c276563c326`입니다. 고정 의존성으로 TypeScript 호스트를 다시 빌드하고 컴파일 결과가 메뉴 문구 한 곳을 제외하면 원본과 같은지 대조했습니다. ASAR 항목·의존성, ACP·편집기·모델 중계·런타임은 유지하고 호스트 아카이브·설치 안내·빌드 정보를 교체하거나 추가했습니다.
+
+새 EXE를 풀어 전체 파일 목록과 모든 해시를 비교하고 원본 런타임 manifest도 다시 확인했습니다. 빌드·검사 결과, 소스·버전·수정 구분과 공개 해시는 해당 배포 메타데이터에 있습니다. 당시 Windows의 실제 폴더 생성과 GUI 선택은 배포 확인 항목이었습니다. 모델 응답의 기본 제한 시간은 추가하지 않았습니다.

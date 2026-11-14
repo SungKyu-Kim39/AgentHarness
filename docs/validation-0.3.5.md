@@ -1,21 +1,25 @@
-# Ned 0.3.5 permission modes
+# Ned 0.3.5 권한 모드 검증
 
-This release adds an explicit user-selected persistent host permission mode: ask, automatic project file edits, or full access for supported Ned tools. The default remains ask. Full access resolves native approval gates automatically for project access, edits, builds, knowledge transfer and desktop observations/actions/GUI launch. It does not add an arbitrary shell, expand the direct file tool's project scope, enable downloads or replace product decisions with guessed answers.
+0.3.5에는 사용자가 직접 선택하고 저장하는 호스트 권한 모드를 추가했습니다. 기본값은 `ask`이며 프로젝트 파일 자동 승인과 지원 도구 전체 권한을 선택할 수 있습니다. 전체 권한은 프로젝트 접근·수정·빌드·지식 전달·데스크톱 관찰·조작·앱 실행의 네이티브 승인을 자동 처리합니다. 파일 범위를 넓히거나 임의 셸·다운로드를 추가하지 않으며 제품 결정은 사용자가 답합니다.
 
-## User controls and authority
+## 권한 선택과 저장
 
-The ACP session config-options surface adds a separate Korean permission selector while preserving the original model, reasoning and agent choices. Set requests are intercepted by the bridge and authenticated owner; unattached sessions and invalid mode IDs are rejected. The engine and model have no permission-setting tool. Native tray radio items use the same host policy and changes are broadcast to attached ACP clients. The selection is saved atomically under the existing user-data root in permissions.json, independently of model secrets and project files, and survives restarts/upgrades. No extra confirmation dialog is shown after the user selects full access.
+ACP의 세션 config-options에 한국어 권한 선택 항목을 추가하고 기존 모델·reasoning·agent 선택은 유지했습니다. 브리지와 인증한 owner가 요청을 처리하며 연결되지 않은 세션이나 잘못된 모드는 거절합니다. 모델과 엔진에는 권한 설정 도구를 제공하지 않습니다. 알림 영역도 같은 정책을 사용하고 변경을 연결된 ACP에 알립니다.
 
-Original conversation/project edit grants remain temporary in ask mode. Changing the persistent mode clears those grants and aborts pending dialogs/operations so a delayed edit cannot use an older authority. Runtime configuration-restart suspension also applies in full mode. Existing snapshot, external-change, dirty-buffer, tool-target, registered-tool and stopped-process checks remain active. Full access grants existing GUI/build capabilities, whose effects can extend beyond direct project file edits; it is not an OS sandbox.
+설정은 사용자 데이터의 `permissions.json`에 원자적으로 저장합니다. 모델 키와 프로젝트 파일은 분리하고 재시작·업데이트 후에도 유지합니다. 전체 권한 선택 뒤 추가 확인창은 띄우지 않습니다.
 
-## Verification
+승인 요청 모드의 대화·프로젝트 임시 승인은 계속 메모리에 둡니다. 지속 권한을 바꿀 때 임시 승인과 대기 작업을 취소해 이전 권한으로 늦은 쓰기를 하지 못하게 했습니다. 설정 적용을 위한 재시작 대기도 전체 권한에 적용합니다. 스냅샷·외부 변경·미저장 버퍼·고정 대상·등록 도구·프로세스 종료 검사는 유지합니다. GUI와 빌드는 자체 동작을 할 수 있으므로 이 권한 모드가 OS 샌드박스를 뜻하지는 않습니다.
 
-Tests exercise persistent reload, exact mode boundaries, malformed/linked settings refusal, failed-save fallback, cancellation of pending approvals and delayed edits, runtime effect gates and restart suspension. A real Linux OpenCode/ACP integration with a synthetic model verifies the chat permission config option, rejection of an unattached setter, preservation of model options, full-mode edits without further native approval, dirty-buffer refusal, persisted reload and native-to-ACP updates. This is protocol/runtime evidence, not a Windows GUI screenshot or physical desktop automation acceptance.
+## 오래된 선택값 처리
 
-The JSONC ESM startup repair from 0.3.4 is retained. The build and actual installer-extraction gate initialize all imports from distributed main.cjs bytes before stopping at the Electron application entry point. Installer component hashes/ASCII paths, nested TGZ EXE bytes, matching source commit and public downloads are recorded separately in release metadata. Windows 10/11 actual menu rendering, install/upgrade, real intranet model, GUI automation and external-network isolation acceptance remain deployment checks. Queued model responses retain no newly added default deadline.
+Zed는 승인한 선택을 다음 대화의 기본값으로 저장합니다. 이전 전체 권한 값이 해제 후 되살아나지 않도록 선택 ID에 단조 증가하는 호스트 정책 revision을 넣었습니다. 모드가 바뀌면 ID도 바꾸고, owner의 직렬 저장 큐 안에서 예상 revision을 검사합니다.
 
-Before packaging: host/ACP build, root typecheck, strict main-process typecheck and 36 skill hashes passed. The changed-area run passed 39 checks (40 discovered, no failures, one optional Wine installer-execution fixture skipped). A final real-ACP check also verifies forwarding an ordinary model selector change while retaining the permission option, and observes only fresh notifications after a native mode change. Actual installer and public artifact audits are recorded with the release.
+저장 중에는 새 작업의 승인 처리를 보류하고 조회에는 일관된 이전 모드·revision 쌍을 제공합니다. 저장 성공 후 새 쌍을 함께 공개하며, 실패하면 더 높은 revision의 ask를 사용합니다. 임시 승인도 저장 전에 취소해 I/O 실패로 남지 않도록 했습니다. 실제 ACP 검사에서 새 대화의 ask 상태와 오래된 전체 권한 선택 거절을 확인했습니다.
 
-The pinned Zed client saves accepted config choices as future defaults. Permission selector IDs therefore carry a monotonically increasing host-policy revision. A mode change replaces the selector ID, and owner updates compare that revision atomically inside the serialized save queue. Stale defaults or concurrent old setters cannot restore an earlier full-access grant after native revocation. The real ACP test verifies fresh ask state in a new thread and rejection of the old full-access selector.
+## 실행한 검사
 
-During preference persistence, new effect gates are suspended while readers retain a consistent prior mode/revision pair. The new pair becomes visible together after the atomic save; a failed save exposes ask with a newer revision. This avoids an older status response relabeling a newer full-access state. Pending temporary edit grants are revoked before saving so an I/O failure cannot preserve them.
+단위 검사는 재로딩, 모드별 범위, 손상·링크 설정 거절, 저장 실패, 대기 승인과 늦은 편집 취소, 실행 승인과 재시작 대기를 다룹니다. 실제 Linux OpenCode·ACP와 합성 모델을 연결해 권한 선택, 미연결 setter 거절, 모델 옵션 보존, 추가 승인 없는 full 수정, 미저장 버퍼 거절과 알림 동기화도 확인했습니다. Windows 화면이나 실제 데스크톱 조작은 이 검사에 포함되지 않습니다.
+
+패키징 전 호스트·ACP 빌드, 루트와 main 프로세스의 엄격한 타입 검사, 스킬 36개 해시를 통과했습니다. 집중 검사는 40개 중 39개 통과·실패 0이며 선택적 Wine 설치 실행 한 개를 제외했습니다. 최종 ACP 검사에서는 모델 선택을 바꿔도 권한 항목이 유지되고, 네이티브 모드 변경 후 최신 알림만 관찰되는지 확인했습니다.
+
+0.3.4의 JSONC ESM 수정과 실제 배포 호스트 초기화 검사를 유지합니다. 설치기 manifest·ASCII 경로, TGZ 내부 EXE, 고정 소스와 공개 다운로드는 별도 배포 기록에 있습니다. Windows 10·11 메뉴·설치·업데이트, 실제 사내 모델·GUI·외부망 차단은 배포 확인 항목이며 모델 응답의 기본 대기 제한은 추가하지 않았습니다.

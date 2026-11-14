@@ -1,11 +1,13 @@
-# Ned editor startup probe
+# 편집기 시작 오류 진단 도구
 
-Ned 0.3.1 user evidence: Windows editor exit 101, panic marker, successful loader probe, and no app-owned Zed.log. This proves a Rust panic after binary loading; it does not establish a GPU, missing-DLL or model-server cause.
+Ned 0.3.1 배포 PC에서는 편집기가 종료 코드 101과 panic 표시를 남겼습니다. 로더 검사는 성공했지만 앱 소유 `Zed.log`는 없었습니다. 실행 파일을 읽은 뒤 Rust panic이 발생한 결과로, GPU·DLL·모델 서버 중 하나를 원인으로 단정할 수는 없었습니다.
 
-The small `Ned-editor-probe-1.tgz` is diagnostic only. Quit Ned and all Zed processes, unpack into a writable directory, and run `CHECK_EDITOR.cmd`. It uses the already installed Python and pinned Zed. No installer replacement or settings reset is performed.
+`Ned-editor-probe-1.tgz`는 원인을 비교하는 작은 진단 도구입니다. Ned와 모든 Zed를 종료하고 쓰기 가능한 새 폴더에 풀어 `CHECK_EDITOR.cmd`를 실행합니다. 설치된 Python과 고정 Zed를 사용하며 설치본 교체나 설정 초기화는 하지 않습니다.
 
-Two fresh, app-owned temporary profiles are compared: the current launcher layout and a standard Windows profile with AppData/Local and AppData/Roaming. Windows Known Folder API returns are reported as HRESULT, directory-exists and inside-private-home flags only. Zed is first run with `--system-specs`; if that succeeds an empty diagnostic workspace is briefly started. All diagnostic descendants belong to the existing kill-on-close Job supervisor. Probe deadlines are local initialization checks, not LLM/embedding timeouts.
+진단은 앱 소유 임시 프로필 두 개를 만듭니다. 하나는 당시 실행기 배치, 다른 하나는 `AppData/Local`·`AppData/Roaming`이 있는 표준 Windows 배치입니다. Known Folder API 결과는 HRESULT, 폴더 존재와 전용 홈 내부 여부만 기록합니다.
 
-The output contains only static categories and Rust source locations matched to the pinned source allowlist. Unknown locations are hashed. Raw process output, environment values, user paths, settings, code, project files and keys are excluded. A bounded sanitized report is saved to `%APPDATA%\Ned\diagnostics\editor-probe-status.json`. Temporary profiles are removed after the child exits.
+Zed를 `--system-specs`로 실행하고 성공하면 임시 빈 작업공간을 잠시 엽니다. 자식들은 기존 kill-on-close Job 감독기로 관리합니다. 이 대기 제한은 로컬 초기화 검사에만 사용하며 LLM·임베딩 대기와는 별개입니다.
 
-Checks cover panic-payload suppression, source allowlist integrity and private offline settings. The Windows Known Folder behavior and startup outcome require the actual deployment PC. Do not call this diagnostic tool a startup fix until its result identifies the cause.
+출력에는 고정 오류 분류와 허용 목록에 있는 Rust 소스 위치만 넣고, 알 수 없는 위치는 해시로 바꿉니다. 프로세스 원문 출력·환경 값·사용자 경로·설정·코드·프로젝트·키는 제외합니다. 보고서는 `%APPDATA%\Ned\diagnostics\editor-probe-status.json`에 저장하고 자식 종료 후 임시 프로필을 지웁니다.
+
+panic 내용 제외, 소스 허용 목록과 오프라인 설정은 코드 검사로 확인했습니다. Windows 폴더 API와 실제 시작 결과는 배포 PC에서 확인해야 합니다. 이 도구 자체는 수정 패치가 아닙니다. 후속 조치는 [시작 수정 패치 1](ned-startup-fix-1.md)에 정리했습니다.

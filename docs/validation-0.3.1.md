@@ -1,24 +1,41 @@
-# Ned 0.3.1 validation candidate
+# Ned 0.3.1 검증 기록
 
-Date: 2026-11-12 UTC. This is a candidate, not a completed Windows acceptance release.
+2026-11-12 UTC 기준 기록입니다. 당시 배포본은 Windows 검증 후보였으며, 아래의 Linux 검사와 배포 PC 확인을 구분해 읽어야 합니다.
 
-## Changes and evidence
+## 시작 오류와 진단
 
-- Editor launcher: retain safe exit codes/hex/OS error and fixed failure categories; inspect only a bounded app-owned log tail. A failing early Windows process gets a GUI-free loader probe. Never persist raw process output or environment variables. Close/error handling is unified, including signal exit. Create all private profile directories and supply fixed Windows shell/system runtime paths. The installer fails if the bundled editor, CLI helper or app archive is missing after extraction.
-- User evidence: Windows 10.0.19044; no log or editor/helper at the presumed default Ned installation path. A follow-up registry/file probe found only L-Vibe 0.2.7 registered and no Ned executable or bundled Zed at the installation paths. A fresh Ned installation is required; the reported old dialog is not evidence that this Ned build was installed. These facts do not prove a GPU/DLL cause or establish that the user-visible startup failure is resolved.
-- OpenViking: registration exposes lookup/upload/import/verify/state progress and safe per-skill HTTP/error codes, with persisted `openviking/skills-status.json`. Keep the last 20 safe model transport events in `model-status.json`. Manual recheck retains successes and external conflicts. Float embedding requests avoid implicit base64/dimension-reduction parameters and validate returned dimensions. The company 0/34 failure still requires its resulting safe diagnostics for causal attribution.
-- agent-desktop: official 1.2.0 Windows/Linux native binaries and corresponding source hashes pinned. Eighteen host-mediated semantic tools, separate native approvals, private homes, qualified-ref/window/process/session binding, managed/system/terminal exclusion, Job supervisor and confirmed stop. Two static adapted skills increase the default total from 34 to 36.
-- Personal import: reproduced empty search after a successful no-vector import. The SDK enqueues embeddings and returns before search is ready. Ned now waits without a default model deadline, checks index consistency only for the imported searchable areas, and marks ready afterward. Failed consistency preserves the archive/record and never advertises searchable completion. Existing completed imports are rechecked on explicit reselection.
-- Personal export: 401/500 occurred at the OLD server, before Ned import. Add authenticated user-root preflight, fixed stage/status messages and explicit no-vector export. Never bypass auth, overwrite output, copy a live DB or silently drop vectors. Ned and legacy L-Vibe Python paths are supported.
+편집기 실행기는 종료 코드·hex·OS 오류와 고정된 실패 분류를 남기도록 바꿨습니다. 앱 소유 로그의 제한된 마지막 부분만 읽고, Windows에서 조기 종료하면 화면을 띄우지 않는 로더 검사도 수행합니다. 원본 출력과 환경 변수는 저장하지 않습니다. 정상 종료·오류·시그널 처리 경로를 합치고 전용 프로필 폴더와 Windows 시스템 경로를 준비했습니다. 설치 후 편집기·CLI helper·앱 아카이브가 없으면 설치 실패로 처리합니다.
 
-- Startup presentation: local-only sandboxed loading window with the Ned icon and stage labels. Hide during native dialogs and close when the editor process launches. No preload/IPC/model keys. Chromium rendering verified the actual icon, Korean stage label and lack of overflow; static CSP/accessibility tests passed.
+배포 PC는 Windows 10.0.19044였고, 처음 가정한 Ned 기본 경로에 로그와 편집기·helper가 없었습니다. 후속 레지스트리·파일 검사에서는 L-Vibe 0.2.7만 등록돼 있었고 Ned 실행 파일과 번들 Zed도 없었습니다. 새 Ned 설치가 필요한 상태였습니다. 이 결과로 GPU·DLL 문제나 Ned 시작 오류 해결 여부를 판단하지는 않았습니다.
 
-## Executed checks
+시작 중에는 Ned 아이콘과 단계를 보여 주는 로컬 sandbox 로딩창을 추가했습니다. 네이티브 대화상자가 열리면 숨기고 편집기 프로세스가 시작되면 닫습니다. preload·IPC·모델 키를 제공하지 않습니다. Chromium의 400x300 화면에서 실제 PNG, 한국어 문구와 넘침 여부를 확인하고 CSP·접근성 정적 검사도 통과했습니다.
 
-The real pinned Linux OpenViking 0.5.4 registered all 36 default skills, restarted without duplicate model requests and enforced project scope. The real 0.5.0 server exported a synthetic user pack into 0.5.4; personal reads and cross-project queries passed. These use synthetic local model endpoints and test credentials, not the company's BGE/Qwen service.
+## OpenViking과 개인 지식
 
-The native agent-desktop MCP reported version/permissions using a private home. No D-Bus accessibility session is available in this shell, so no actual GUI operation is claimed. Focused tests cover approval/ref/project/process guards, startup diagnostic privacy, fixed profile directories, BGE request/response shape, HTTP 401 diagnostics and retrying only unfinished skills. The full suite passed 88/88 (453.8 seconds) before the final import-readiness fix, including the 185-second model queue wait. After subsequent startup/skill edits, focused checks passed 7/7, 9/9 and 4/4 (overlapping coverage). The loading view was rendered in Chromium with the actual PNG and a 400x300 viewport; icon loading and no overflow were confirmed. The final personal import/export suite passed 9/9 (95.7 seconds), including real 0.5.0→0.5.4 vector reuse AND no-vector recomputation with cross-project reads/searches, plus pending/failed consistency guards. Desktop approval-label checks passed 3/3. The native Windows binary imports VCRUNTIME140.dll; its pinned existing CPython runtime DLL and original notice are copied beside it, avoiding reliance on a system installation. Installer audit is recorded alongside artifacts when published.
+스킬 등록은 조회·업로드·가져오기·검증·상태 저장 단계를 표시하고 안전한 스킬별 HTTP·오류 코드를 남깁니다. 기록은 `openviking/skills-status.json`, 최근 모델 중계 이벤트 20개는 `model-status.json`에 보관합니다. 재확인 시 성공한 항목과 외부 변경 충돌은 보존합니다. 임베딩은 float 응답을 요청하고 반환 차원을 검사하며, 불필요한 base64·차원 축소 인자를 넣지 않습니다. 사내에서 보고된 0/34 실패 원인은 해당 진단 결과를 더 확인해야 했습니다.
 
-## Required deployment checks
+벡터 없는 개인 자료 가져오기에서는 API 성공 직후 검색이 비는 문제를 재현했습니다. SDK가 임베딩을 큐에 넣고 먼저 반환하기 때문이었습니다. Ned는 고정 모델 대기 제한 없이 완료를 기다리고 가져온 검색 영역의 색인 일관성을 확인한 뒤 `ready`로 표시하도록 바꿨습니다. 실패 시 패키지와 기록을 보존하고, 완료된 가져오기도 사용자가 다시 선택하면 상태를 확인합니다.
 
-Confirm actual installed editor path and startup result, UIA actions on Win10/Win11, BGE vector shape and skill registration, old-server export authentication/vector behavior, intranet model queuing, DNS/TCP observations, file ACLs, child-process stop and real SDK/compiler compatibility. Source/unit/Linux tests and an extracted installer are not substitutes for those checks. Existing settings, history and original OpenViking storage must be preserved.
+401·500 오류는 Ned 가져오기 전 기존 서버의 내보내기에서 발생했습니다. 인증한 사용자 루트 선확인, 단계별 상태 메시지와 명시적인 벡터 제외 내보내기를 추가했습니다. 인증을 우회하거나 출력 덮어쓰기·실행 중 DB 복사·자동 벡터 제외는 하지 않습니다. Ned와 이전 L-Vibe의 번들 Python 경로를 지원합니다.
+
+## 데스크톱 도구
+
+agent-desktop 1.2.0의 Windows·Linux 바이너리와 대응 소스를 고정했습니다. 이 버전에서는 의미 기반 도구 18종을 호스트에 연결하고 네이티브 승인, 전용 홈, 세션·프로젝트·창·프로세스별 참조, 관리형·시스템·터미널 창 차단, Job 감독과 종료 확인을 적용했습니다. 정적 지침 두 개를 더해 기본 스킬은 34개에서 36개가 됐습니다.
+
+Windows 바이너리의 `VCRUNTIME140.dll` 의존성도 확인했습니다. 고정 CPython의 DLL과 원문 고지를 같은 폴더에 넣어 시스템 설치에 의존하지 않도록 했습니다.
+
+## 실행한 검사
+
+실제 고정 Linux OpenViking 0.5.4에서 스킬 36개 등록, 재시작 후 모델 요청 중복 방지와 프로젝트 범위를 확인했습니다. 실제 0.5.0 서버의 합성 사용자 자료를 0.5.4로 내보내고 가져와 개인 읽기와 프로젝트 간 조회를 검사했습니다. 모두 로컬 합성 모델과 테스트 키를 사용했으며 사내 BGE·Qwen에는 요청하지 않았습니다.
+
+| 검사 | 당시 결과 |
+| --- | --- |
+| 전체 회귀 | 가져오기 준비 수정 전 88/88 통과, 453.8초. 185초 모델 대기 포함 |
+| 시작·스킬 후속 검사 | 7/7, 9/9, 4/4 통과. 범위 중복 있음 |
+| 최종 개인 가져오기·내보내기 | 9/9 통과, 95.7초. 실제 0.5.0→0.5.4 벡터 재사용·재계산, 두 프로젝트 검색과 일관성 실패 포함 |
+| 데스크톱 승인 문구 | 3/3 통과 |
+| 로딩창 | Chromium 렌더링, 실제 아이콘·한국어 단계·넘침 없음 확인 |
+
+데스크톱 MCP는 전용 홈에서 버전·권한을 반환했습니다. 이 셸에는 D-Bus 접근성 세션이 없어 GUI 동작은 확인하지 못했습니다. 단위 검사는 승인·참조·프로젝트·프로세스 검사, 시작 진단의 비밀 보호, BGE 요청·응답 형식, HTTP 401 분류와 미완료 스킬 재시도를 다룹니다. 설치 파일 감사는 배포 파일 옆에 따로 기록합니다.
+
+실제 설치 위치와 첫 실행, Windows 10·11 UIA, 사내 BGE와 스킬 등록, 기존 서버 인증·벡터 내보내기, 긴 모델 대기열, DNS·TCP, ACL과 자식 종료, SDK·컴파일러 호환성은 배포 PC에서 확인해야 했습니다. 기존 설정·기록·OpenViking 원본은 보존합니다.

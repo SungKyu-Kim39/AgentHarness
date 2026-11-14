@@ -1,57 +1,73 @@
-# Ned 0.3.7 validation and review
+# Ned 0.3.7 검토와 검증 결과
 
-Status: final zlib installer built, complete payload verified and Windows Server installation/import checks passed. Full employee Windows 10/11 GUI/intranet acceptance remains separate. Public archive hashes are recorded after publication. This file does not establish employee Windows 10/11 GUI or intranet-model acceptance.
+0.3.7은 코드 검토와 설치 최적화, 기본 스킬 추가, 문맥에 따른 지침 선택을 반영한 배포본입니다. 최종 zlib 설치기의 전체 파일을 대조하고 Windows Server에서 설치·모듈 로딩을 확인했습니다. 직원 PC의 Windows 10·11 GUI와 실제 사내 모델·네트워크 검증은 별도 항목으로 남아 있습니다.
 
-## Authorized scope
+## 검토 범위
 
-- Apply the six project-scoped Codex skills to review the host, ACP boundary, settings, tool/knowledge lifecycle, runtime dependencies, installer and release pipeline.
-- Optimize installer size and installation file count while retaining offline functionality, user settings, editor state, knowledge, pinned runtimes and license/source availability.
-- Add the recently recommended skills (rated at least 3/5) as reviewed static, offline host adapters. Existing duplicate capabilities are retained or complemented rather than replaced silently.
-- Activate relevant guidance from request and conversation context without requiring explicit skill names, an extra model call, remote services, new permissions or a default model-response timeout.
-- Build and publish version 0.3.7 with source, hashes, installer extraction audit and explicit remaining acceptance limits.
+프로젝트에 추가한 Codex 스킬 여섯 개의 지침을 적용해 호스트, ACP, 설정, 승인, 도구·지식 서비스 실행과 종료, 런타임 의존성과 배포 과정을 검토했습니다. 사용자 설정과 편집기 상태, 지식, 기존 오프라인 기능과 소스·라이선스를 보존하면서 설치 부담을 줄이는 데 초점을 맞췄습니다.
 
-## Baseline observed on Linux
+추천도 3/5 이상으로 검토한 스킬은 정적 오프라인 어댑터로 추가했습니다. 관련 지침은 사용자가 이름을 지정하지 않아도 요청과 대화 문맥에서 선택하며, 별도 분류 모델·원격 서비스·권한·모델 응답 제한 시간을 추가하지 않았습니다.
 
-Ned 0.3.6-rebuild1 installer: 1,176,899,012 bytes; SHA-256 4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252. Archive extraction reports 94,240 files and 3,375,931,544 uncompressed bytes. These are archive measurements, not Windows installation timings.
+## 기존 설치본에서 확인한 크기
 
-Largest areas: OpenViking Python 870 MB/63,622 files; MCP browser 465 MB; separate MCP Python packages 449 MB/17,117 files. Large generated SDK trees contain many small Python modules. Preserve code and native libraries; investigate deterministic ZIP import for reviewed pure-Python SDKs and relocation of optional source archives to the offline handover bundle. Preserve redistributable source and notices.
+비교 기준은 0.3.6-rebuild1 EXE입니다. 크기는 1,176,899,012 bytes, SHA-256은 `4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252`입니다. Linux에서 압축을 풀면 파일 94,240개와 비압축 데이터 3,375,931,544 bytes가 나옵니다. 이는 아카이브 측정값이며 Windows 설치 시간과는 구분합니다.
 
-## Review findings and corrections
+주요 공간은 OpenViking Python 870MB·63,622개 파일, MCP 브라우저 465MB, 별도 MCP Python 449MB·17,117개 파일이 차지했습니다. 생성형 SDK의 작은 Python 파일이 많아, 원문을 유지한 ZIP import와 실행에 필요 없는 소스 아카이브의 별도 보관을 적용했습니다.
 
-- Distribution review: 139 generated pure-Python SDK packages (37,876 modules) are ZIP-imported after every archived source byte is compared with its original. Native/asset/path-sensitive packages remain unpacked. Source-backed build bytecode caches are removed. The preparation report records 38,605 avoided file writes and 312,699,583 installed bytes avoided before the smaller host ASAR is applied.
-- Host ASAR review: the host is fully bundled and its smoke check permits only Electron and Node builtins. The release assembler creates a two-file ASAR instead of carrying unused parent-project dependencies. Host and ACP are both rebuilt; the latter uses 192 SHA-locked OpenCode source files and a separate npm dependency lock, not the full desktop development workspace.
-- Skill review: 30 static adapters expand the catalog to 66. Modern Web Guidance includes 204 fixed web references; the five built-in-AI/model-download guides are excluded. No upstream executable plugins, online CLI, telemetry, hook setup, mandatory Q&A or parallel agents are installed by these skills.
-- Runtime-pin review: MCP and desktop consumers accept only the compiled-in original manifest or its corresponding reviewed optimized manifest. The production MCP integrity path verifies the complete optimized staging payload without a fixture bypass; modified or unrelated manifest hashes remain rejected.
-- Integrity review: malformed manifests and directory escapes fail closed; declared text files are checked before exposing the bundle to the engine and again when read. A corrupt catalog is no longer silently ignored. Long documents have explicit offset continuation rather than silent truncation.
-- Context review: local suggestions are only candidates; the answering model uses actual intent/context and may choose other guidance. Preloading is byte-bounded against configured context/output limits and omitted when headroom is insufficient. Engine-side semantic selection is included in normal context accounting. Compaction/checkpoint prompts and tool_choice=none requests are not rewritten with task skills. Original user text, tool definitions and reasoning options are preserved.
-- Installer review: reject installation at or below Ned/L-Vibe private-data roots, and refuse recursive removal if an old installation overlaps those roots. Missing dedicated installation directories are still created automatically. The pinned NSIS compilation fixture passed; Windows CI also checks that a private-data installation is refused before normal installation.
-- Existing test-harness issue: the editor-owner fixture lacked the current permission-change subscription stub and left its server open on failure. The fixture is corrected; no product permission was relaxed. The NSIS fixture must use a writable ELECTRON_BUILDER_CACHE in this Cloud workspace.
-- Preserved boundaries: encrypted settings and private data, editor preferences/buffers, ask/edits/full permissions, project scopes, child-process ownership/cancellation, fixed endpoint/model IDs and deadline-free model waits remain under their existing policies. No private configuration or user conversation is added to release content.
+## 수정한 내용
 
-## Verification record
+- **SDK 파일 배치:** 순수 Python 생성형 SDK 139개 패키지·37,876개 모듈을 ZIP으로 묶었습니다. 모든 멤버를 원문 바이트와 비교한 뒤 교체하고 네이티브·자산·경로 의존 패키지는 유지했습니다. 원본 `.py`가 있는 빌드 캐시만 지웠습니다. 호스트 ASAR 절감 전 준비 단계에서 파일 쓰기 38,605건과 312,699,583 bytes를 줄였습니다.
+- **호스트 번들:** 사용하지 않는 상위 프로젝트 의존성을 제외하고 두 파일짜리 ASAR를 만듭니다. 초기화 검사는 Electron·Node 기본 모듈만 허용합니다. 호스트와 ACP를 모두 다시 빌드했으며, ACP는 SHA로 고정한 OpenCode 소스 192개와 별도 npm lock을 사용합니다.
+- **기본 스킬:** 정적 어댑터 30개를 더해 66개가 됐습니다. Modern Web Guidance는 웹 문서 204개를 포함하고 AI 모델 다운로드 관련 5개는 제외했습니다. 원본 실행 플러그인·온라인 CLI·통계 전송·훅·필수 Q&A·병렬 에이전트는 설치하지 않았습니다.
+- **런타임 해시:** MCP·데스크톱은 코드에 고정한 원본 manifest 또는 그 원본에 대응하는 검토된 최적화 manifest만 허용합니다. 테스트 우회 옵션 없이 실제 최적화 MCP의 모든 파일을 검사했습니다.
+- **스킬 무결성:** 잘못된 manifest와 경로 이탈을 거절하고 엔진에 공개하기 전과 읽을 때 파일을 검사합니다. 손상된 목록을 조용히 무시하지 않습니다. 긴 문서는 `offset`으로 이어 읽도록 했습니다.
+- **문맥 선택:** 로컬 후보를 모델이 실제 목적·문맥과 다시 대조하도록 했습니다. 설정된 context·output과 요청 바이트 수로 여유를 계산해 본문을 추가하고, 부족하면 엔진의 선택 지침과 `read_skill`을 사용합니다. 압축·체크포인트·`tool_choice=none` 요청은 변경하지 않습니다. 사용자 본문·도구 정의·reasoning 옵션도 유지합니다.
+- **설치 경로:** Ned·L-Vibe 사용자 자료 폴더 내부 설치를 막고, 기존 설치가 자료 폴더와 겹치면 재귀 제거를 중단합니다. 전용 폴더가 없으면 자동 생성하는 동작은 유지했습니다.
+- **검사 환경:** 편집기 owner fixture에 누락된 권한 변경 구독 stub과 실패 시 서버가 남는 문제를 고쳤습니다. 제품 권한을 완화하지 않았습니다. Cloud의 NSIS 검사에는 쓰기 가능한 `ELECTRON_BUILDER_CACHE`를 지정했습니다.
 
-Environment: Linux Cloud executor; Node 24.22.1; fixed OpenCode v2.2.6 Linux baseline archive SHA-256 08bb21d6326ce740d91cce7ebe88a6536933f6e1e30353b91a06b01f25da306c, binary SHA-256 50503d24577fa4117a7c95ee85b2cd679606a87eacf20ca54ed5db5c9e1cf895. Model endpoints are synthetic loopback OpenAI-compatible fixtures; no company model or embedding credentials are used.
+암호화 설정, 사용자 자료, 편집기 상태, ask·edits·full 정책, 프로젝트 범위와 프로세스 취소, 모델 ID와 기본 무제한 응답 대기는 유지했습니다. 개인 설정·대화는 배포물에 포함하지 않았습니다.
 
-- npm run typecheck: passed.
-- ELECTRON_BUILDER_CACHE=$PWD/.cache/ned/builder-cache npm test: 147 tests, 132 passed, 15 skipped, zero failures (309.8 seconds). Skips cover unavailable legacy 1.19.5 paths, Linux OpenViking/native runtime fixtures and optional Wine/Windows execution; they are not reported as acceptance success.
-- Targeted latest transport/routing/skill/native-runtime suite: 21 passed, zero skips (104.7 seconds). It includes real v2 engine skill discovery, model wire IDs/thinking variants and guarded file edits. Follow-up checks cover the final byte-budget and tool-free/compaction exclusions.
-- node --test tests/runtime-optimization.test.mjs: source-backed cache removal, ZIP-member identity, actual isolated Python ZIP import and preservation of asset/native/path-sensitive packages passed.
-- Post-review runtime pin/boundary checks: 11 passed, zero failures, one unavailable native desktop fixture skipped (20.8 seconds); includes full production MCP file verification. Typecheck passed again.
-- NSIS fixture compiles with the cached pinned toolchain; optional Windows/Wine execution remains skipped locally.
-- The real v2 queue fixture waited beyond the former 180-second response deadline and then verified explicit cancellation (187.7 seconds); no default model-response timeout is added.
-- Rejected LZMA experiment producer: 3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0. Installer: 811,344,026 bytes / SHA-256 4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c (31.06% below the 0.3.6-rebuild1 installer).
-- Complete installer extraction audit: all 55,925 staged application files match byte-for-byte. Four generated installer/plugin files are accounted for separately. All 55,929 archive files/7,934 directories use ASCII paths; the installed catalog has 66 skills/569 verified documents. Archive file count decreases 40.65%.
-- The fully bundled host initializes through the smoke boundary with only Electron/Node imports. Every component manifest, the runtime transformation report, editor icon and complete payload manifest are verified from the EXE.
-- Windows experiment (run 43540857847, Server 2022/10.0.20348): missing directory creation, private-data path refusal, OpenViking import, all seven tokenizer encodings and bundled Node passed. However, LZMA installation took 90,792 ms versus the baseline 54,182 ms, so this candidate is not selected for the release. The raw summary is Ned-0.3.7-lzma-benchmark.json.
-- Final zlib producer: 448b2e648e89f6c8001c508eaf121a4fc0c2c236. EXE: 1,040,612,708 bytes / SHA-256 9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b; 11.58% smaller than baseline. The same complete staged/extracted comparison and 66-skill audit passed again.
-- Windows Server 2022 run 43542694638: baseline installation 50,497 ms; final installation 38,935 ms (22.90% reduction). Installed files: 94,237 -> 55,926; logical installed bytes: 3,375,883,034 -> 3,024,551,545 (10.41% reduction). Missing-directory creation, refusal of a private-data install directory, OpenViking import, seven tokenizer encodings and bundled Node passed. No company models or desktop actions were used.
-- The comparison is one sequential baseline-then-candidate run on one Windows Server runner. It is not a general Windows 10/11 performance or GUI acceptance benchmark. Raw summary: downloads/Ned-0.3.7-windows-offline-smoke.json; workflow: https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638.
-- The handover contains the exact audited EXE, matching frozen producer source and retained corresponding sources. Bundle/public download verification is stored separately in downloads/Ned-0.3.7-bundle-verification.json and Ned-0.3.7-public-verification.json after publication; no self-referential archive hash is claimed inside this report.
+## Linux 검사
 
-Keep releaseReady false until the existing real Win10/Win11 GUI/intranet/offline-network acceptance criteria are met. Windows Server CI, when completed, is reported separately from those criteria.
+Cloud Linux, Node 24.22.1과 고정 OpenCode v2.2.6을 사용했습니다. Linux baseline 아카이브 SHA-256은 `08bb21d6326ce740d91cce7ebe88a6536933f6e1e30353b91a06b01f25da306c`, 실행 파일은 `50503d24577fa4117a7c95ee85b2cd679606a87eacf20ca54ed5db5c9e1cf895`입니다. 모델은 루프백 OpenAI 호환 합성 서버이며 사내 모델·임베딩 키는 사용하지 않았습니다.
 
-## Published artifacts
+| 검사 | 결과 |
+| --- | --- |
+| `npm run typecheck` | 통과 |
+| `ELECTRON_BUILDER_CACHE=$PWD/.cache/ned/builder-cache npm test` | 147개 중 132 통과·15 제외·실패 0, 309.8초 |
+| 전송·라우팅·스킬·native-runtime 집중 검사 | 21 통과·제외 0, 104.7초. 실제 v2 스킬 검색·모델 ID·thinking·파일 수정 포함 |
+| `node --test tests/runtime-optimization.test.mjs` | 원본 캐시 처리, ZIP 바이트·실제 Python import, 네이티브·자산·경로 의존 패키지 보존 통과 |
+| 런타임 해시·경계 후속 검사 | 11 통과·1 제외·실패 0, 20.8초. 실제 production MCP 전체 파일 포함. 타입 검사 재통과 |
+| NSIS fixture | 고정 컴파일러 통과. 로컬 Windows·Wine 실행은 환경이 없어 제외 |
+| 모델 대기와 취소 | 이전 180초를 넘어 대기한 뒤 명시적 취소 확인, 187.7초 |
 
-Public prerelease: https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7 (draft=false, source/tag 448b2e648e89f6c8001c508eaf121a4fc0c2c236). Handover artifact commit: f0e7b9b0132e46aef406657689a99e8b542b8517. TGZ: 1,169,734,854 bytes / SHA-256 8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a.
+전체 검사의 제외 항목은 구형 1.19.5 경로, 없는 Linux OpenViking·네이티브 fixture와 선택적 Wine·Windows 실행입니다. 실행하지 않은 검사를 통과로 계산하지 않았습니다. 최종 바이트 예산과 압축·도구 없는 요청 제외도 후속 검사에서 확인했습니다.
 
-The complete public EXE/TGZ plus eight checksum/metadata files were streamed without client authentication and matched exact local byte counts and SHA-256 hashes. The public release page returns HTTP 200 and exposes both download links. Files are provided through immutable Git LFS URLs in the release body; no uploaded release attachments are claimed. See downloads/Ned-0.3.7-public-verification.json and Ned-0.3.7-release-state.json. Previous versions/tags remain unchanged.
+## Windows에서 압축 방식을 비교한 결과
+
+먼저 만든 LZMA EXE는 811,344,026 bytes로 31.06% 작아졌습니다. 소스는 `3a0d450b200c2555f0aa1ad3bfea3d79db7bc6e0`, EXE SHA-256은 `4a740aac58b78ce002dc9d2d52d9dc9373b5ffcd6dc1b2eb6e915d6edf38428c`입니다.
+
+Windows Server 2022/10.0.20348의 실행 43540857847에서 새 폴더 생성, 자료 폴더 설치 거절, OpenViking import, 토크나이저 7종과 Node는 통과했습니다. 그러나 설치 시간이 기준 54,182ms에서 90,792ms로 늘어 최종 압축 방식으로 선택하지 않았습니다. 기록은 `Ned-0.3.7-lzma-benchmark.json`에 있습니다.
+
+최종 빌드는 zlib를 사용했습니다. 소스는 `448b2e648e89f6c8001c508eaf121a4fc0c2c236`, EXE SHA-256은 `9dd37851029e0afa077468e71912c33cc98b9887aaae030d199080ce9f9d4b1b`입니다.
+
+| 항목 | 기준 0.3.6-rebuild1 | 최종 0.3.7 |
+| --- | ---: | ---: |
+| 설치 EXE | 1,176,899,012 bytes | 1,040,612,708 bytes, 11.58% 감소 |
+| 설치 시간 | 50,497ms | 38,935ms, 22.90% 감소 |
+| 설치된 파일 | 94,237개 | 55,926개 |
+| 논리 설치 크기 | 3,375,883,034 bytes | 3,024,551,545 bytes, 10.41% 감소 |
+
+실행 43542694638에서 같은 설치·로딩 검사를 다시 통과했습니다. 모델 질문과 데스크톱 조작은 하지 않았습니다. 이 수치는 같은 Windows Server 실행기에서 기준 버전 다음 후보를 설치한 1회 비교입니다. 직원 PC의 Windows 10·11 성능과 GUI 검증으로 일반화하지 않습니다. [원본 요약](../downloads/Ned-0.3.7-windows-offline-smoke.json)과 [실행 기록](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638)을 제공합니다.
+
+## 설치기와 공개 파일 대조
+
+실제 EXE를 풀어 준비본의 앱 파일 55,925개와 모든 바이트가 같은지 확인했습니다. 생성된 설치기·플러그인 파일 네 개는 따로 기록했습니다. 아카이브의 55,929개 파일·7,934개 디렉터리는 모두 ASCII 경로이며 기본 스킬은 66개·문서 569개입니다. 아카이브 파일 수는 40.65% 줄었습니다.
+
+EXE에서 호스트 초기화, 각 구성 요소 manifest, 최적화 보고서, 편집기 아이콘과 전체 파일 manifest를 검사했습니다. zlib 재빌드 후에도 같은 대조를 다시 통과했습니다. 반입 묶음에는 이 EXE와 고정 소스, 대응 소스를 넣었습니다. 묶음·공개 파일 검증은 `Ned-0.3.7-bundle-verification.json`과 `Ned-0.3.7-public-verification.json`에 기록하며, TGZ 안 보고서에 자기 자신의 해시를 넣지는 않습니다.
+
+[공개 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7)는 prerelease이며 `draft=false`입니다. 소스·태그는 위 최종 소스와 같고, 반입 파일 커밋은 `f0e7b9b0132e46aef406657689a99e8b542b8517`입니다. TGZ는 1,169,734,854 bytes, SHA-256은 `8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a`입니다.
+
+공개 EXE·TGZ와 체크섬·메타데이터 여덟 개를 인증 없이 전체 다운로드해 크기와 SHA-256을 확인했습니다. 릴리스 페이지도 HTTP 200과 두 다운로드 링크를 확인했습니다. 파일은 릴리스 본문의 고정 Git LFS 링크로 제공하며 이전 배포물·태그는 보존했습니다. [공개 검증](../downloads/Ned-0.3.7-public-verification.json)과 [릴리스 상태](../downloads/Ned-0.3.7-release-state.json)에 결과가 있습니다.
+
+실제 Win10·Win11 GUI, 사내 모델과 외부망 차단 환경의 전체 검증을 마치기 전까지 `releaseReady`는 false로 유지합니다.

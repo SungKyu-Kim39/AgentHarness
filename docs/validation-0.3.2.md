@@ -1,49 +1,47 @@
-# Ned 0.3.2 validation candidate
+# Ned 0.3.2 검증 기록
 
-This revision includes the 0.3.1 startup hotfix and configuration-import automatic restart. It is not a completed Windows acceptance release. Earlier component evidence and outstanding deployment checks remain in [0.3.1 validation](validation-0.3.1.md).
+0.3.2에는 0.3.1 시작 수정과 설정 가져오기 후 자동 재시작을 포함했습니다. 이전 결과와 당시 남은 배포 검사는 [0.3.1 기록](validation-0.3.1.md)에 있습니다. 이 문서는 해당 버전의 검사 결과이며 Windows 전체 기능 검증 완료를 뜻하지 않습니다.
 
-## Startup evidence
+## 배포 PC에서 확인한 시작 오류
 
-The deployment PC's private-profile probe identified `crates/paths/src/paths.rs:204:18`: LocalAppData/RoamingAppData Known Folder lookup returned 0x80070003 before logs initialized. Creating the standard private USERPROFILE/AppData directories resolved both lookups. The user subsequently confirmed that Ned starts after startup fix 1. A separate diagnostic invocation exited 0xC0000005; normal editor startup now works on that PC, but the diagnostic result is not attributed to GPU/DLLs without further evidence. Blank startup no longer requires project selection; AI project access still requires scope approval.
+전용 프로필 진단에서 `crates/paths/src/paths.rs:204:18`을 찾았습니다. 로그 초기화 전 LocalAppData·RoamingAppData의 Known Folder 조회가 `0x80070003`을 반환했고, `USERPROFILE/AppData`의 표준 하위 폴더를 만들자 두 조회가 성공했습니다. 사용자는 시작 수정 패치 1 적용 후 Ned 실행을 확인했습니다.
 
-## Windows ACP launch evidence and fix
+별도 진단 실행의 `0xC0000005`는 원인을 더 확인해야 했습니다. 정상 편집기 실행 성공과 구분했으며 GPU·DLL 때문으로 단정하지 않았습니다. 빈 시작 화면은 프로젝트 선택 없이 열고, AI의 프로젝트 접근은 기존 범위 승인을 따르도록 했습니다.
 
-The deployment probe confirmed direct Electron Node startup (version output, exit 0) and direct ACP initialize (response ok, process still alive). The same agent through PowerShell returned exit 0 before the server connection could be maintained, matching Zed's Failed to Launch / exit code 0. The final direct-ACP exit 1 followed intentional diagnostic stdin closure and is not an initialization failure. Earlier PowerShell call-operator probes were inconclusive; they did not establish unsupported Node mode.
+## ACP 서버가 먼저 종료되던 문제
 
-On Windows, Zed now launches the already-bundled console Python supervisor with fixed argv, explicit ELECTRON_RUN_AS_NODE and the existing exact Ned/agent/descriptor paths. Its console process waits for Electron's Node child and preserves raw ACP stdio; the existing Windows Job owns descendants. No new dependency, general shell tool, external Node installation or personal Zed config is required. The user confirmed Windows model-list/chat success with the published cumulative patch.
+진단에서는 Electron Node 직접 실행이 버전과 종료 코드 0을 반환했고, 직접 ACP 초기화도 응답 후 프로세스가 살아 있었습니다. PowerShell 경유 실행만 연결을 유지하기 전에 종료 코드 0으로 끝났습니다. Zed의 `Failed to Launch / exit code 0`과 맞는 결과였습니다. 직접 ACP의 마지막 종료 코드 1은 진단 중 stdin을 닫은 결과였습니다. 앞선 PowerShell 호출 연산자 검사는 결과가 불충분해 Node 모드 미지원 근거로 쓰지 않았습니다.
 
-## Configuration import
+Windows 실행은 번들 Python 콘솔 감독기를 거쳐 Electron Node의 ACP를 시작하도록 바꿨습니다. 고정 인자와 `ELECTRON_RUN_AS_NODE`, 정확한 Ned·agent·descriptor 경로를 전달합니다. 감독기는 자식을 기다리며 ACP 표준 입출력을 그대로 유지하고, 기존 Windows Job이 자식들을 관리합니다. 외부 Node나 개인 Zed 설정은 필요하지 않습니다. 사용자는 누적 패치에서 모델 목록과 대화 성공을 확인했습니다.
 
-A successful JSON import validates and encrypts the configuration, requests normal editor window closure, waits for the editor and managed services to exit, then schedules one Electron relaunch. The new host reloads the encrypted vault and rebuilds model gateways/engine configuration. No success dialog requires the user to quit/reopen manually. Windows closure uses a fixed PowerShell Win32 WM_CLOSE request, limited to visible, unowned windows belonging to the exact live editor child PID. No forced editor kill, shell interpolation of JSON, personal settings or model deadline is added.
+## 설정 가져오기와 자동 재시작
 
-Unsaved buffers use Zed's normal save prompts. Cancelling save keeps the editor/services running and restart pending; a tray action can cancel the pending relaunch while preserving the saved configuration for next startup. Invalid JSON or encryption failure never requests close. Imports are serialized. Abnormal editor exit or unconfirmed service shutdown never triggers a replacement host.
+JSON 검증·암호화 저장 후 편집기를 정상 종료하고, 편집기와 서비스가 끝나면 Electron을 한 번 재실행합니다. 새 호스트가 저장 설정을 읽어 모델 게이트웨이와 엔진 설정을 만듭니다. 성공 알림 뒤 사용자가 수동으로 닫고 열 필요가 없어졌습니다.
 
-## Verification
+Windows의 `WM_CLOSE`는 정확한 실행 중 편집기 PID에 속하고, 보이며 소유 창이 없는 일반 창으로 제한합니다. 강제 종료와 JSON의 셸 해석은 추가하지 않았습니다. 저장하지 않은 버퍼는 Zed의 확인창으로 처리합니다. 저장 취소 시 실행을 유지하고 재시작을 대기하며, 알림 영역에서 예약만 취소할 수 있습니다. 저장한 설정은 다음 실행 때 적용합니다.
 
-Focused tests exercise real encrypted-vault import and fresh NativeRuntime model/limit reload, save-before-close and shutdown-before-relaunch order, concurrent import refusal, pending cancellation, failed close delivery, abnormal exit, shutdown failure, and editor closure during a vault write. Static Windows checks enforce numeric PID selection and normal WM_CLOSE without termination APIs. Existing startup/ACP tests and package verification are run for the candidate, with exact results recorded beside published downloads.
+가져오기는 직렬 처리합니다. 잘못된 JSON·암호화 실패 시 창을 닫지 않고, 비정상 편집기 종료나 서비스 종료 미확인 시 새 호스트를 실행하지 않습니다. 모델·임베딩의 기존 무제한 기본 대기는 유지했습니다.
 
-The user confirmed ordinary JSON import, automatic restart and applied settings on the deployment Windows PC with the cumulative patch. Unsaved save/cancellation behavior and the refreshed full installer still require deployment execution. Linux tests and installer extraction do not establish native Windows close delivery, Win10/Win11 acceptance, company model connectivity, or external-network isolation. Original settings/history/knowledge are preserved. Model and embedding queues retain their existing no-default-deadline behavior.
+검사는 암호화 저장소에서 가져온 값과 새 `NativeRuntime`의 모델·한도, 저장·종료·재실행 순서, 동시 가져오기 거절, 취소와 종료 전달 실패, 저장 중 편집기 종료를 다룹니다. Windows 정적 검사에서는 PID가 숫자로 고정되고 종료 API 대신 `WM_CLOSE`를 쓰는지 확인했습니다. 사용자는 누적 패치의 일반 JSON 가져오기·자동 재시작·반영 성공을 보고했습니다. 저장 취소와 새 전체 설치본은 별도 배포 확인 항목이었습니다.
 
-Executed before packaging: typecheck/build passed; 16/16 focused checks passed, including the real Electron Node adapter behind the Python supervisor against the real pinned Linux OpenCode engine (model catalog, approved edit and unsaved-buffer refusal). Direct Electron mode separately passed 3/3. These are Linux evidence; the revised Windows console launcher and automatic save/restart path still require the deployment result.
+## Ned 도구 이름과 한국어 지침
 
-## Ned public naming
+호스트 MCP 이름은 `ned_host`, 공개 도구는 `ned_host_*`로 통일했습니다. `ned_host_read_file`, `ned_host_propose_edit`, provider 대체 ID, Git 스냅샷 helper, MCP 표기와 기본 지침도 함께 바꿨습니다. 새 리소스는 `resources/ned`에 두고 공개 허용 정책에는 예전 별칭을 노출하지 않습니다.
 
-New public host MCP identity is `ned_host`; every exposed host tool uses `ned_host_*`, including `ned_host_read_file` and `ned_host_propose_edit`. Generated fallback provider IDs, Git snapshot helper identity, MCP client/server labels, adapter instructions and static skill branding use Ned. New bundle resources use `resources/ned`. New tool definitions and allow policies expose no old aliases. Historical conversations and persisted OpenViking account/package/owner namespaces remain readable; they are not rewritten or deleted to rename public tool IDs. A compatible resource resolver can read the older app-owned resource layout during migration.
+과거 대화와 OpenViking의 account·package·owner 이름은 읽을 수 있도록 유지했습니다. 공개 이름을 바꾸면서 사용자 자료까지 고쳐 쓰거나 삭제하지 않았습니다. 이관 시 이전 앱 소유 리소스를 읽는 호환 경로도 남겼습니다.
 
-The namespace regression checks enumerate every host tool and its matching allow policy, scan every host-exposed skill document, and assert the actual model request contains `ned_host_read_file` with no old tool prefixes. Actual revised-name Windows execution still requires the refreshed installer result; the earlier Windows confirmation covers the ACP/restart patch.
+회귀 검사에서 모든 도구와 허용 정책, 호스트에 노출하는 스킬을 나열하고 실제 모델 요청에 새 이름이 전달되는지 확인했습니다. 새 이름의 Windows 실행은 새 설치본에서 따로 확인해야 했습니다.
 
-## Korean response defaults
+첫 실행은 `editor/config/AGENTS.md`에 요청한 Speak Korean 블록을 한 번 추가합니다. 기존 내용과 CRLF를 보존하고 링크·일반 파일이 아닌 경로는 거절합니다. 같은 블록을 엔진 지침에도 넣어 편집기의 지침 전달 여부에 의존하지 않게 했습니다. 기술 용어·고유 명사에는 영어를 허용합니다. 이는 응답 지침이며 별도 언어 감지·번역 필터는 아닙니다.
 
-Startup appends the requested Speak Korean block to editor/config/AGENTS.md once, preserves existing content and refuses symlink/non-file instruction paths. The same block is present in the managed engine system instructions, so ACP does not depend on the editor forwarding a user instruction file. Existing technical names/terms can remain English per the supplied block. This sets default guidance; no language-detection/translation filter is claimed.
+## 최종 실행 기록
 
-## Final execution record
+소스는 `4c2d55e54bef1bdba577cda3833d1bc402e0299b`입니다. Linux, Node v24.22.1에서 빌드·검증했고 ACP 연동에는 Electron 45.2.3의 Node 24.22.2를 사용했습니다. Windows 설치본은 별도로 고정한 Electron 44.9.1입니다. 모델은 합성 OpenAI 호환 서버를 사용했습니다. 앞선 사용자 확인은 사내 서비스를 사용한 누적 패치 1의 결과입니다.
 
-Source: `4c2d55e54bef1bdba577cda3833d1bc402e0299b`. Build/verification host: Linux, Node v24.22.1. ACP integration used Electron 45.2.3 Node 24.22.2; the Windows installer bundles the separately pinned Electron 44.9.1. Local model endpoints are synthetic OpenAI-compatible fixtures. The deployment user's earlier Windows report concerns cumulative patch 1 with the actual company service, not execution of this full refreshed installer.
+- `npm run typecheck`, `npm run ned:build`를 통과했습니다.
+- `NED_TEST_AGENT_EXECUTABLE=.../electron NED_TEST_AGENT_SUPERVISED=1 npm test`는 110/110 통과, 생략 없이 644.0초였습니다. 마지막 한국어 테스트 파일 추가 전 시작한 전체 검사이며, 이후 한국어·프로필·이름 검사 10/10과 CRLF 검사 2/2를 다시 확인했습니다.
+- `npm run test:mcp:live`의 모든 단계를 통과했습니다. 실제 Git, Serena C++ 개요·정의·참조, 문서·데이터 질의와 외부 요청을 막은 두 브라우저를 포함했습니다.
+- 패키지·네이티브 파일은 유지하고 MCP Python worker, OpenViking launch·analysis worker의 검토한 이름 변경만 적용했습니다. MCP 21,031개, OpenViking 63,069개 파일을 포함했습니다.
+- `NED_AUDIT_DISCARD_STAGE=1 npm run package:win`이 성공했습니다. NSIS 검사·실제 추출 후 ASCII 경로와 payload 해시, 구성 요소 manifest를 대조했습니다. 파일 수는 94,237개입니다. EXE 해시는 `INSTALLER_AUDIT.json`에 기록했습니다. 임시 staging을 지울 때 비교 해시를 보존하고 사용자 데이터는 건드리지 않았습니다.
 
-- `npm run typecheck` and `npm run ned:build`: passed.
-- `NED_TEST_AGENT_EXECUTABLE=.../electron NED_TEST_AGENT_SUPERVISED=1 npm test`: 110/110 passed, no skip, 644.0 seconds. This full run began before the final Korean test file was added; fresh Korean/profile/naming checks passed 10/10 afterward, plus 2/2 final CRLF checks.
-- `npm run test:mcp:live`: all phase passed, including real Git, Serena C++ overview/definition/reference, document/data queries and both local-browser backends with blocked external requests.
-- Runtime manifest comparison: all native/package files retained; only the reviewed MCP Python worker and OpenViking launch/analysis worker branding changed. Current bundles contain 21,031 MCP and 63,069 OpenViking files.
-- `NED_AUDIT_DISCARD_STAGE=1 npm run package:win`: passed. The generated NSIS was integrity-tested, actually extracted, checked for ASCII paths and compared against payload hashes and every component manifest. It contains 94,237 files. See INSTALLER_AUDIT.json for the exact EXE hash and complete component counts. Temporary build-stage deletion preserved comparison hashes and never touched user data.
-
-The installation's AGENTS.md is generated by first startup; it is tested with new/custom/CRLF/linked-file cases and is not an existing user file inside the installer. Existing Windows ACP/chat and automatic config apply were confirmed by the user on the earlier cumulative patch. The new full installer, revised public tool namespace, Win11 and complete offline acceptance remain distinct deployment checks.
+패키징 전 집중 검사 16/16에는 실제 고정 Linux OpenCode와 Python 감독기 뒤의 Electron ACP를 연결한 모델 목록·승인 편집·미저장 버퍼 거절이 포함됩니다. 직접 Electron 모드는 별도로 3/3을 통과했습니다. 이 결과와 Windows GUI·종료 전달·사내 모델·외부망 차단 검증은 구분합니다. 설치본에는 사용자의 기존 `AGENTS.md`를 넣지 않으며 첫 실행에 생성합니다. 새 전체 설치본, 새 도구 이름, Win11과 전체 폐쇄망 검증은 당시 남은 확인 항목입니다.

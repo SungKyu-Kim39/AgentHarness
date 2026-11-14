@@ -1,15 +1,21 @@
-# Ned settings and ACP fix 1
+# 설정 재시작과 ACP 실행 수정 패치 1
 
-[Download cumulative patch (about 4.2MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-config-restart-fix-1.tgz)
+[누적 패치 다운로드 · 약 4.2MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-config-restart-fix-1.tgz)
 
-Apply only to original Ned 0.3.1 or Ned 0.3.1 with startup fix 1. Quit Ned and all Zed instances, extract into a new writable folder, run `APPLY_FIX.cmd` and confirm `applied`/`already-applied`, `EXIT_CODE=0`. Start Ned. No settings, keys, knowledge or project files are replaced. `ROLLBACK_FIX.cmd` restores the exact prior host archive. The installer version remains 0.3.1; the updated host tray menu identifies 0.3.2.
+대상은 원본 Ned 0.3.1 또는 시작 수정 패치 1을 적용한 0.3.1입니다. Ned와 모든 Zed를 종료하고 쓰기 가능한 새 폴더에 압축을 푼 뒤 `APPLY_FIX.cmd`를 실행합니다. `applied`·`already-applied`, `EXIT_CODE=0`을 확인하고 Ned를 실행하세요.
 
-## Configuration import
+설정·키·지식·프로젝트는 교체하지 않습니다. `ROLLBACK_FIX.cmd`는 직전 호스트 아카이브로 복원합니다. 설치 등록 버전은 0.3.1이며 수정된 호스트의 알림 영역 메뉴는 0.3.2로 표시합니다.
 
-Use **설정 JSON 가져와 적용 (자동 재시작)**. Valid JSON is encrypted first. Ned asks its editor to close normally, waits for editor/service shutdown and relaunches automatically to load the saved configuration. No manual success dialog/quit/reopen step is required. Complete Zed's normal save prompt if a buffer is dirty. Cancelling save keeps the editor/services live with restart pending; **설정 적용 재시작 대기 취소** cancels the automatic relaunch reservation while preserving the saved config for next launch. Invalid imports do not request close; unconfirmed shutdown does not start another host.
+## 설정 가져오기 후 자동 재시작
 
-## Failed to Launch / exit code 0
+**설정 JSON 가져와 적용 (자동 재시작)**에서 파일을 선택하면 검증과 암호화 저장을 먼저 수행합니다. 편집기를 정상 종료하고 편집기·서비스가 끝나면 저장한 설정으로 다시 실행합니다. 성공 알림 뒤 수동 종료·재실행하는 단계를 없앴습니다.
 
-The deployment probe confirmed direct Node startup and direct ACP initialization. PowerShell-mediated launch returned exit 0 instead of maintaining the connection. Zed tracks that shell as its external server. The Windows settings now launch the existing bundled Python console supervisor, which waits for Electron's Node agent and preserves ACP stdio. No external Node or new online dependency is installed. The adapter and model settings themselves initialized successfully in the direct probe; do not delete settings or reset knowledge to repair shell lifetime.
+저장하지 않은 파일은 Zed 확인창에서 처리합니다. 취소하면 편집기와 서비스는 유지하고 재시작을 대기합니다. **설정 적용 재시작 대기 취소**는 예약만 취소하며 저장 설정은 다음 실행에 적용합니다. 가져오기 실패 시 창을 닫지 않고, 서비스 종료가 확인되지 않으면 새 호스트를 만들지 않습니다.
 
-The AppData/blank-launchpad startup fix is also included. Startup was confirmed by the user after the earlier patch. Linux source/build/focused tests and archive comparisons passed. The deployment user confirmed Windows model-list/chat success and JSON import followed by automatic relaunch and applied settings. Unsaved-save-cancellation and full Windows acceptance remain separate; see [0.3.2 validation](validation-0.3.2.md).
+## `Failed to Launch / exit code 0` 수정
+
+배포 진단에서 직접 Node 실행과 ACP 초기화는 성공했습니다. PowerShell 경유 실행만 연결을 유지하지 못하고 종료 코드 0으로 끝났습니다. Zed가 그 셸을 외부 서버로 추적하던 문제였습니다.
+
+기존 번들 Python 콘솔 감독기가 Electron Node의 에이전트를 기다리며 ACP 표준 입출력을 유지하도록 바꿨습니다. 외부 Node나 온라인 의존성은 추가하지 않았습니다. 직접 검사에서 어댑터와 모델 설정은 이미 초기화됐으므로 설정이나 지식을 지워 해결할 문제는 아닙니다.
+
+AppData·빈 시작 화면 수정도 포함합니다. 사용자는 앞선 패치 뒤 시작 성공을, 이번 누적 패치 뒤에는 Windows 모델 목록·대화와 JSON 가져오기·자동 재시작·설정 반영 성공을 확인했습니다. Linux 소스·빌드·집중 검사와 아카이브 대조도 통과했습니다. 미저장 버퍼의 취소 동작과 Windows 전체 검증은 [0.3.2 기록](validation-0.3.2.md)을 참고하세요.

@@ -1,21 +1,23 @@
-# Ned 0.3.4 validation candidate
+# Ned 0.3.4 검증 기록
 
-0.3.4 incorporates the JSONC startup repair into the full Windows installer. It keeps the 0.3.3 feature set, settings/history/knowledge paths, editor preference retention and branded managed editor. A separate 0.3.3 host patch is unnecessary and must not be applied to 0.3.4. Original published 0.3.3 binaries, archives and patch remain immutable.
+0.3.4는 JSONC 시작 오류 수정을 전체 Windows 설치본에 포함한 버전입니다. 0.3.3의 기능과 설정·기록·지식 경로, 편집기 설정 보존과 Ned 아이콘을 유지합니다. 0.3.3 전용 패치를 추가 적용할 필요는 없습니다. 원본 0.3.3 EXE·TGZ와 패치는 그대로 보관합니다.
 
-## Startup packaging correction
+## 호스트 초기화 오류 수정
 
-The exact published 0.3.3 main.cjs failed before the launcher opened with `Cannot find module './impl/format'`. esbuild had selected jsonc-parser's UMD entry; its factory aliases require, hiding relative submodules from the bundler. The host build now explicitly selects that dependency's static ESM entry. No user configuration reset or knowledge deletion is involved.
+배포한 0.3.3 `main.cjs`는 `Cannot find module './impl/format'`으로 실행기 초기화에 실패했습니다. jsonc-parser UMD factory의 `require` 별칭 때문에 상대 모듈이 번들에서 빠졌습니다. 빌드가 이 의존성의 정적 ESM 진입점을 선택하도록 수정했으며 사용자 설정이나 지식을 지울 필요는 없습니다.
 
-The build gate and actual installer-extraction audit load distributed main.cjs bytes in an isolated VM with only Node builtins and a controlled Electron stub. They require all top-level imports to initialize, then stop at the first app.setName before a profile, editor, service or model can start. A negative test using the original UMD entry fails the same gate. A separate isolated bundle exercises parse/edit/format with comments, trailing commas and UI preference retention without node_modules. This catches the reported defect; it is not a full Windows GUI launch test.
+빌드와 설치기 추출 검사에서 실제 `main.cjs`를 Node 기본 모듈과 제어된 Electron stub만 있는 격리 VM으로 읽습니다. 초기 import가 끝나는지 확인한 뒤 첫 `app.setName`에서 멈춰 프로필·편집기·서비스·모델을 시작하지 않습니다. 원본 UMD는 같은 검사에 실패합니다. node_modules 없이 JSONC parse·edit·format, 주석·끝 쉼표와 UI 설정 보존도 검사했습니다. Windows GUI 전체 실행은 이 검사에 포함되지 않습니다.
 
-## Included export repair
+## 함께 제공한 내보내기 수정
 
-The offline archive includes the current OpenViking exporter and CHECK_EXPORT.cmd. Export preflight uses an authenticated, bounded, non-recursive minimal fs/ls request rather than the old server's failing stat route. Diagnostic mode uses safe fixed status fields without exporting documents or prompting a model. Export authentication, private scope and vector behavior remain explicit. A healthy OpenViking health response alone does not prove its filesystem/backend is ready. Actual success against the user's old 0.5.0 server remains unconfirmed.
+반입 묶음에는 OpenViking 내보내기 도구와 `CHECK_EXPORT.cmd`를 넣었습니다. 기존 서버에서 실패하던 stat 대신 인증한 사용자 범위의 최소 `fs/ls`를 비재귀·제한 조회로 사용합니다. 진단은 고정 상태만 읽고 문서 내보내기나 모델 질문은 하지 않습니다.
 
-## Verification and limits
+인증, 개인 범위와 벡터 선택은 유지합니다. health가 정상이어도 파일 시스템·backend 읽기는 실패할 수 있습니다. 실제 사용자의 기존 0.5.0 서버에서 내보내기가 성공했는지는 당시 확인하지 못했습니다.
 
-The release records its exact source commit, build OS, module smoke result, installer EXE/archive sizes and SHA-256, actual extracted runtime manifests and ASCII paths. The TGZ's nested EXE must match the audited EXE, and selected included source files must match that source commit. Focused checks cover bundled-host initialization, JSONC preference retention, configuration restart, installer policy and extraction guards. Exact results are recorded in the downloadable validation JSON after building.
+## 검사 결과와 범위
 
-Before installer compilation, the 0.3.4 host/ACP build and TypeScript check passed, all 36 bundled skill hashes passed, and 20 focused checks passed with no failures (21 discovered; one optional Wine installer-execution fixture skipped because its Windows loader is unavailable). That skipped fixture does not establish a successful Windows install. Actual installer/archive audit results are separate release records.
+설치기 생성 전 호스트·ACP 빌드와 TypeScript, 스킬 36개 해시를 확인했습니다. 집중 검사는 21개 중 20개 통과·실패 0이며 Windows 로더가 없는 선택적 Wine 실행 한 개를 제외했습니다.
 
-Earlier 0.3.3 Linux regression results and user-supplied Windows desktop component probes are historical evidence, not new 0.3.4 GUI acceptance. Windows 10/11 actual first launch/upgrade, company-model traffic, external DNS/TCP observation, real desktop actions and full knowledge migration still require deployment acceptance. There is no new default deadline for queued LLM or embedding responses. This release does not claim completion of 1.0 acceptance.
+배포 기록에는 소스 커밋, 빌드 OS, 초기화 검사, EXE·TGZ 크기와 SHA-256, 실제 추출 manifest와 ASCII 경로를 남깁니다. TGZ 내부 EXE는 검사한 EXE와, 포함 소스는 해당 커밋과 대조합니다. 집중 검사는 호스트 초기화, JSONC 설정 보존, 설정 재시작, 설치 정책과 추출 검사를 다룹니다.
+
+이전 0.3.3 Linux 결과와 배포 PC의 데스크톱 진단을 새 0.3.4 GUI 검증으로 합산하지 않았습니다. Windows 10·11의 첫 실행·업데이트, 사내 모델, DNS·TCP, 실제 데스크톱 조작과 전체 지식 이관은 배포 확인 항목입니다. 모델·임베딩 대기에는 기본 시간 제한을 추가하지 않았고, 1.0 전체 검증은 완료하지 않았습니다.
