@@ -6,6 +6,8 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 [소개와 활용](docs/ned-introduction.md) · [Zed와의 차이](docs/ned-vs-zed.md) · [설치 안내](docs/offline-setup.md) · [모델 설정](docs/model-controls.md) · [권한 설정](docs/approval-modes.md) · [라이선스](docs/license-policy.md)
 
+AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 66개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
+
 ## 다운로드
 
 최신 버전은 [Ned 0.3.7](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
