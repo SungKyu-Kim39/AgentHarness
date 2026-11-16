@@ -6,7 +6,7 @@ on:
         description: Exact immutable installer build
         default: 0.3.8
         type: choice
-        options: ['0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build']
+        options: ['0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
       candidate_source:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
@@ -25,7 +25,7 @@ permissions:
   contents: read
 jobs:
   offline-install:
-    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build'
+    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe'
     runs-on: windows-2022
     timeout-minutes: 30
     env:
@@ -441,3 +441,59 @@ jobs:
           git commit -m 'build: record source-built Ned editor menus and About window'
           git push origin work
           if ($LASTEXITCODE -ne 0) { throw 'Editor component publication failed' }
+
+  native-agent-source-probe:
+    if: inputs.artifact_version == 'native-agent-source-probe'
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          lfs: false
+          persist-credentials: false
+      - name: Prepare prior Node runtime and new Astryx assets for source tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $exe = Join-Path $env:RUNNER_TEMP 'Ned-prior.exe'
+          & curl.exe --fail --location --retry 2 --output $exe 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-win-x64.exe'
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne '860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27') { throw 'Prior installer mismatch' }
+          $install = Join-Path $env:RUNNER_TEMP 'ned-source-probe'
+          $process = Start-Process -FilePath $exe -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Prior runtime install failed' }
+          $group = "Ned-source-CI-$env:GITHUB_RUN_ID"
+          Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+          New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program (Join-Path $install 'Ned.exe') -RemoteAddress Internet | Out-Null
+          "NED_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          $lock = Get-Content astryx-offline-lock.json -Raw | ConvertFrom-Json
+          $kit = Join-Path $install ('resources\ned\astryx\' + $lock.archive.name)
+          New-Item -ItemType Directory (Split-Path $kit) -Force | Out-Null
+          & curl.exe --fail --location --retry 2 --output $kit "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/astryx/$($lock.archive.name)"
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $kit -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.archive.sha256) { throw 'Astryx download mismatch' }
+          "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Exercise new native-agent transport and real Windows Astryx build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $test = 'downloads/Ned-0.3.8-rebuild1-windows-native-test.cjs'
+          $expected = (Get-Content "$test.sha256").Split(' ')[0]
+          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Source fixture mismatch' }
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $pattern = 'native Zed|native editor settings|closing a queued|installed Windows Astryx'
+          $process = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', ('--test-name-pattern="' + $pattern + '"'), ('"' + (Resolve-Path $test).Path + '"')) -RedirectStandardOutput native-source-test.txt -RedirectStandardError native-source-stderr.txt -Wait -PassThru
+          Get-Content native-source-test.txt
+          if ($process.ExitCode -ne 0) { throw 'Native source probe failed' }
+          [ordered]@{ schemaVersion=1; sourceOnly=$true; newInstallerAcceptance=$false; usesPriorInstalledNode=$true; newAstryxFilesCopied=$true; modelEndpoints='localhost synthetic'; internetEgress='Ned Node blocked'; sourceCommit=$env:GITHUB_SHA } | ConvertTo-Json | Set-Content native-source-status.json -Encoding utf8
+      - name: Remove disposable firewall rules
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:NED_FIREWALL_GROUP) { Get-NetFirewallRule -Group $env:NED_FIREWALL_GROUP -ErrorAction SilentlyContinue | Remove-NetFirewallRule }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-agent-source-probe
+          path: |
+            native-source-test.txt
+            native-source-stderr.txt
+            native-source-status.json
