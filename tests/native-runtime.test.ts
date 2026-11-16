@@ -135,6 +135,7 @@ test('real v2 model selection uses wire IDs and guarded MCP edits require native
   assert.ok(messages.includes('Native approval test complete.'), messages + '\nCalls: ' + JSON.stringify(calls.map(c => ({ model: c.body.model, tools: c.body.tools?.map((t: any) => t.function.name) }))));
   assert.equal(approvals, 1); assert.equal(await readFile(path.join(project, 'main.c'), 'utf8'), 'int main() { return 7; }\n');
   assert.ok(calls.length >= 3); assert.ok(calls.every(c => c.body.model === 'wire-b' && c.url === '/v1/chat/completions' && c.auth === 'Bearer test-wire-key'));
+  for(const call of calls)for(const tool of call.body.tools??[])assert.doesNotMatch(tool.function.name,/^(?:subagent|spawn_agent|task)(?:$|:)/,'Ned must not expose an unapproved subagent executor');
   const previousCalls = calls.length;
   await api('/api/session/' + id + '/model', { model: { providerID: 'test-provider', id: 'alias-a' } });
   await api('/api/session/' + id + '/prompt', { text: 'Respond using the other selected model.' });
