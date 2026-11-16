@@ -59,3 +59,7 @@ Python 작업은 PC의 기존 Conda 환경을 조사하고 실제 사용자 선�
 첫 0.3.8 설치 후보(`1bc5b3a049c4`)의 [Windows 실행 43863840513](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43863840513)은 설치·SDK 로딩·이관·삭제·Ghidra·대규모 패키지·Conda 검사를 통과했지만 요약·Git fixture가 잘못된 임시/리소스 경로로 실패했습니다. 해당 검사는 경로를 정규화하고 실제 설치 리소스를 사용하도록 수정했습니다. 이 후보를 정식 다운로드로 게시하지 않았습니다.
 
 추가 조사에서는 기존 공통 감독기의 자연 종료 오류도 실제로 재현했습니다. Python 전용 감독기뿐 아니라 Git·빌드·Graphify 등이 공유하는 Ned 소유의 `sidecar-supervisor.py`도 같은 수정으로 교체합니다. 순수 SDK 파일은 그대로 두고 검토한 단일 파일 변경을 최적화 보고서·manifest·release-runtime-lock에 기록합니다. 원본과 다른 배포 manifest를 무단 허용하지 않습니다. 변환은 같은 입력에 재적용해도 기록이 바뀌지 않으며, manifest와 다른 파일은 교체 전에 거절하는 검사도 통과했습니다.
+
+공통 감독기·새 manifest를 구 후보의 설치 리소스에 명시적으로 적용한 [Windows 소스 검사 43867044052](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43867044052)는 전체 단계가 통과했습니다. 실제 Git 스테이징·선택 파일 커밋·index 보존, 실제 엔진 요약, Ghidra, 13,242개 파일 패키지, SDK 이관과 Conda 실행·중지를 포함합니다. 이 결과는 수정 런타임의 소스 검사이며 새 EXE의 검증으로 합산하지 않습니다. 중간 소스 검사는 Windows checkout의 CRLF 변환으로 해시가 달라져 차단됐고, 해당 바이트 고정 입력에 LF 속성을 지정한 뒤 재검증했습니다.
+
+공통 감독기 교체 이후 집중 회귀 9건과 변환의 멱등성·변조 거절 1건도 통과했습니다. SDK·third-party 코드 대신 Ned 소유 파일 하나만 바뀌며, 변환 전후 해시는 `runtime-optimization.json`의 `supervisorUpdate`와 잠금 자료에 남습니다.
