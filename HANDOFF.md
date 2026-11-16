@@ -4,6 +4,8 @@
 
 ## 현재 수정 빌드
 
+[수정 빌드 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1)를 공개 prerelease로 게시했습니다. 첨부 서버는 작은 체크섬에도 HTTP 401을 반환하므로, EXE·TGZ는 릴리스 본문의 고정 Git LFS 링크에서 받습니다. [릴리스 상태](downloads/Ned-0.3.7-rebuild1-release-state.json)에 공개 페이지·메타데이터 확인과 첨부 실패를 구분해 기록했습니다.
+
 수정 EXE·TGZ는 `0.3.7-rebuild1`로 구분하며, 기존 버전·배포 파일은 보존합니다. 호스트 빌드 소스는 `b096614b23bbc7101ba1659c3313194155b24c26`, 두 반입 파일이 함께 있는 커밋은 `348787c011ed2bc5cac8a0074a75f4376ee601e2`입니다. [다운로드 안내](downloads/README.md)와 [검증 기록](docs/validation-0.3.7-rebuild1.md)을 기준으로 이어갑니다.
 
 OpenViking 0.5.5·LiteLLM 1.103.10, `ned` 계정·스킬 이름의 검증 이관, `ned_host_delete_file`을 반영했습니다. 삭제는 기존 권한 모드와 ACP 버퍼 검사, 파일 충돌 검사, 원본 스냅샷을 사용하며 2 MiB 이하 UTF-8 파일 하나만 지원합니다. [저장소 이관과 원본 보존](docs/openviking-0.5.5-update.md)에 실패·재시작 처리와 백업 위치를 설명합니다.

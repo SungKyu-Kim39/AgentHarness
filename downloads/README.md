@@ -2,6 +2,8 @@
 
 앱 버전은 **0.3.7**을 유지합니다. `rebuild1`은 원본 설치 파일을 보존하면서 수정 배포를 구분하는 이름입니다.
 
+설치 파일은 아래 고정 링크에서 받습니다. GitHub 첨부 서버의 HTTP 401로 릴리스의 첨부 목록에는 올리지 못했으며, 릴리스 본문에도 같은 다운로드 링크를 제공합니다. [공개 릴리스 상태](Ned-0.3.7-rebuild1-release-state.json)를 남겼습니다.
+
 - [폐쇄망 반입 TGZ · 설치 EXE/설정/상세 설명서/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/348787c011ed2bc5cac8a0074a75f4376ee601e2/downloads/Ned-0.3.7-rebuild1-windows-x64.tgz) — 1,182,931,028 bytes
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/348787c011ed2bc5cac8a0074a75f4376ee601e2/downloads/Ned-0.3.7-rebuild1-win-x64.exe) — 1,045,627,103 bytes
 - [TGZ SHA-256](Ned-0.3.7-rebuild1-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.7-rebuild1-win-x64.exe.sha256)
