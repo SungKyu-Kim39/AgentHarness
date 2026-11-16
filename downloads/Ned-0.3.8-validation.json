@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "product": "Ned",
   "version": "0.3.8",
-  "sourceCommit": "1bc5b3a049c4eafa7bbd163dd231bd8d5ba5b168",
-  "auditSourceCommit": "1bc5b3a049c4eafa7bbd163dd231bd8d5ba5b168",
-  "recordedAt": "2026-11-16T12:04:56.800947+00:00",
+  "sourceCommit": "35e7771c1d5dc731953aa10b436bd2a423c87303",
+  "auditSourceCommit": "35e7771c1d5dc731953aa10b436bd2a423c87303",
+  "recordedAt": "2026-11-16T12:46:05.245487+00:00",
   "os": "linux",
   "modelEndpointKind": "synthetic-loopback-openai-compatible; no intranet models prompted",
   "typecheck": "passed",
@@ -26,13 +26,13 @@
   "pinnedNsisCompile": "passed",
   "installer": {
     "name": "Ned-0.3.8-win-x64.exe",
-    "bytes": 1511355307,
-    "sha256": "f50a54a5dab37ddb4aee895fdae1566ef0d790e1da8c14758b48a06ffa9ad661"
+    "bytes": 1511354669,
+    "sha256": "860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27"
   },
   "payloadComparison": {
     "files": 59694,
     "allStagedBytesVerified": true,
-    "manifestSha256": "525e1e14091047d0b9e291b307d395cb9459e62271498dfae930f951eded4787",
+    "manifestSha256": "6c672f24dce510d4eeb9b9527bef940a966ee0cbed2bfba82efd8cbabbad7a77",
     "generatedInstallerFiles": {
       "$PLUGINSDIR/System.dll": "3eb38ae99653a7dbc724132ee240f6e5c4af4bfe7c01d31d23faf373f9f2eaca",
       "$PLUGINSDIR/nsDialogs.dll": "1e40211af65923c2f4fd02ce021458a7745d28e2f383835e3015e96575632172",
@@ -42,7 +42,7 @@
   },
   "runtimeComponents": {
     "openviking": {
-      "manifestSha256": "d11f6caf6e1b807f74a87213c7a0f9654e2ac6b582ec1c7c4b3765c19edf2cb3",
+      "manifestSha256": "8ee132a83b1bd421620a5b8f4f5ae97c868d2b33a8e2b1a871e001825b2de7a0",
       "files": 25295
     },
     "mcp": {
@@ -73,5 +73,24 @@
   "jdkVersion": "21.0.13+9",
   "windowsAcceptance": false,
   "realIntranetAcceptance": false,
-  "releaseReady": false
+  "releaseReady": false,
+  "runtimeSupervisorUpdate": {
+    "path": "runtime/windows-x64/openviking/sidecar-supervisor.py",
+    "source": "scripts/sidecar-supervisor.py",
+    "previousSha256": "78d7dd7eadbb79dceb7a7aadc3571a8c54ec85cabcf1c473deac7fdb864771c3",
+    "sha256": "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7",
+    "reason": "Preserve child exit status without finalizing a blocked stdin daemon"
+  },
+  "additionalTargetTests": {
+    "tests": 10,
+    "passed": 10,
+    "failed": 0,
+    "includesPreviouslyCoveredTests": true
+  },
+  "nativeRuntimeSourceProbe": {
+    "runId": 43867044052,
+    "passed": 20,
+    "failed": 0,
+    "newInstallerAcceptance": false
+  }
 }
