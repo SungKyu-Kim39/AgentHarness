@@ -10,9 +10,13 @@ AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를
 
 ## 다운로드
 
-최신 버전은 [Ned 0.3.7](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
+최신 배포는 [Ned 0.3.7 수정 빌드 1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
+
+수정 빌드에는 OpenViking 0.5.5와 `ned_host_delete_file`이 포함됩니다. 기존 지식 저장소와 기본 스킬은 원본을 보관한 뒤 `ned` 이름의 활성 경로로 이관합니다. 삭제 도구는 기존 파일 수정 권한 모드와 스냅샷을 사용합니다. [업데이트 안내](docs/openviking-0.5.5-update.md)와 [검증 기록](docs/validation-0.3.7-rebuild1.md)을 참고하세요.
 
 0.3.7에서는 기본 스킬을 66개로 늘리고, 요청과 대화 문맥에 맞는 지침을 자동으로 불러오도록 했습니다. Python SDK의 파일 배치와 호스트 번들을 정리해 설치 부담도 줄였습니다.
+
+아래 수치는 최초 0.3.7 배포의 비교 결과입니다. 수정 빌드의 파일 크기와 Windows 실행 결과는 다운로드 안내에서 별도로 제공합니다.
 
 | 항목 | 0.3.6 수정 빌드 1 | 0.3.7 |
 | --- | ---: | ---: |

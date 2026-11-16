@@ -1,4 +1,27 @@
-# Ned 0.3.7
+# Ned 0.3.7 수정 빌드 1
+
+앱 버전은 **0.3.7**을 유지합니다. `rebuild1`은 원본 설치 파일을 보존하면서 수정 배포를 구분하는 이름입니다.
+
+- [폐쇄망 반입 TGZ · 설치 EXE/설정/상세 설명서/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/348787c011ed2bc5cac8a0074a75f4376ee601e2/downloads/Ned-0.3.7-rebuild1-windows-x64.tgz) — 1,182,931,028 bytes
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/348787c011ed2bc5cac8a0074a75f4376ee601e2/downloads/Ned-0.3.7-rebuild1-win-x64.exe) — 1,045,627,103 bytes
+- [TGZ SHA-256](Ned-0.3.7-rebuild1-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.7-rebuild1-win-x64.exe.sha256)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1) · [검증 기록](../docs/validation-0.3.7-rebuild1.md) · [전체 파일 대조](Ned-0.3.7-rebuild1-installer-audit.json) · [반입 묶음 검사](Ned-0.3.7-rebuild1-bundle-verification.json) · [공개 다운로드 검사](Ned-0.3.7-rebuild1-public-verification.json)
+
+OpenViking을 0.5.5로 업데이트하고 LiteLLM은 해당 버전의 의존 조건에 맞춰 1.103.10으로 고정했습니다. 새 계정·프로젝트 지식·기본 스킬에는 `ned` 이름을 사용합니다. 기존 자료는 비공개 원본 백업과 임시 복원·재색인을 거쳐 새 활성 경로로 전환합니다. 과거 이름을 찾는 호환 코드와 백업은 보존합니다. [업데이트 안내](../docs/openviking-0.5.5-update.md)를 확인하세요.
+
+파일을 실제로 삭제하는 `ned_host_delete_file`도 추가했습니다. 프로젝트 안의 2 MiB 이하 UTF-8 텍스트 파일 하나를 대상으로 하며, 기존 권한 모드·미저장 버퍼·외부 변경 검사와 원본 스냅샷을 적용합니다. 디렉터리나 바이너리 파일은 삭제하지 않습니다. [사용·복구 안내](../docs/ned-user-guide.md#file-deletion)를 제공합니다.
+
+Ned를 완전히 종료하고 TGZ를 새 폴더에 푼 뒤 EXE로 업데이트합니다. 기존 설정·대화·편집기 환경을 유지하며, OpenViking의 최초 이름 이관은 자료량과 사내 모델 대기에 따라 오래 걸릴 수 있습니다. 새 저장소가 정상 동작하는지 확인하기 전 백업을 지우거나 폴더명을 직접 바꾸지 마세요. 상세 설명서는 TGZ의 `USER_GUIDE.md`, 이관 안내는 `OPENVIKING_UPDATE.md`에도 포함합니다.
+
+전체 회귀 검사 166건 중 157건 통과·실패 0건·9건 건너뜀, TypeScript와 스킬 66개 검증을 확인했습니다. EXE에서 앱 파일 56,024개를 추출해 준비본과 전부 대조했습니다. 실제 0.5.4→0.5.5 및 0.5.0 개인 OVPack 검사는 localhost 합성 모델로 실행했으며, 실제 Win10/11 GUI·사내 모델 전체 수용 완료를 뜻하지 않습니다.
+
+빌드 소스는 `b096614b23bbc7101ba1659c3313194155b24c26`, EXE·TGZ가 함께 있는 공개 파일 커밋은 `348787c011ed2bc5cac8a0074a75f4376ee601e2`입니다. 두 파일을 인증 없이 전체 다운로드해 크기와 SHA-256을 다시 확인했습니다. 이전 배포물과 태그는 그대로 보존합니다.
+
+[Windows Server 실행 43792692526](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43792692526)에서 설치·OpenViking 로딩, 실제 구버전 자료 이관 1건과 파일 삭제 9건을 통과했습니다. 같은 실행기의 1회 설치 비교는 기준 50.665초→수정본 39.016초였으며, 설치 파일은 56,025개·논리 용량은 3,030,749,882 bytes입니다. [Windows 결과](Ned-0.3.7-rebuild1-windows-offline-smoke.json)에서 모델·네트워크·OS 범위를 확인할 수 있습니다.
+
+---
+
+# Ned 0.3.7 최초 배포
 
 - [폐쇄망 반입 TGZ · EXE/설정/안내/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.7-windows-x64.tgz) (1,169,734,854 bytes)
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-0.3.7-win-x64.exe) (1,040,612,708 bytes)

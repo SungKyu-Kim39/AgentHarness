@@ -1,8 +1,18 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포 버전은 **Ned 0.3.7**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.7 수정 빌드 1**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-## 현재 배포 기준
+## 현재 수정 빌드
+
+수정 EXE·TGZ는 `0.3.7-rebuild1`로 구분하며, 기존 버전·배포 파일은 보존합니다. 호스트 빌드 소스는 `b096614b23bbc7101ba1659c3313194155b24c26`, 두 반입 파일이 함께 있는 커밋은 `348787c011ed2bc5cac8a0074a75f4376ee601e2`입니다. [다운로드 안내](downloads/README.md)와 [검증 기록](docs/validation-0.3.7-rebuild1.md)을 기준으로 이어갑니다.
+
+OpenViking 0.5.5·LiteLLM 1.103.10, `ned` 계정·스킬 이름의 검증 이관, `ned_host_delete_file`을 반영했습니다. 삭제는 기존 권한 모드와 ACP 버퍼 검사, 파일 충돌 검사, 원본 스냅샷을 사용하며 2 MiB 이하 UTF-8 파일 하나만 지원합니다. [저장소 이관과 원본 보존](docs/openviking-0.5.5-update.md)에 실패·재시작 처리와 백업 위치를 설명합니다.
+
+전체 회귀 검사는 166건 중 157건 통과·실패 0건·9건 건너뜀이며, EXE 추출 앱 파일 56,024개를 준비본과 전부 대조했습니다. EXE 1,045,627,103 bytes의 SHA-256은 `bae628b3cb4febe8e500e24556b674f10fcab27aa5e69b8fa2349a5c838d3eb5`, TGZ 1,182,931,028 bytes는 `e88022adfe329655a5134f68c0b77b20925d26dffca3a912c38e56e6a75adc4c`입니다. 공개 전체 다운로드도 확인했습니다. Windows 결과는 해당 수정 빌드의 별도 기록을 확인하고, Win10/11 GUI·실제 사내 모델 수용과 구분합니다.
+
+Windows Server [실행 43792692526](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43792692526)에서 설치·오프라인 로딩·실제 구버전 자료 이관 1건·파일 삭제 9건이 모두 통과했습니다. [Windows 결과](downloads/Ned-0.3.7-rebuild1-windows-offline-smoke.json)에 조건을 기록합니다. 최초 두 실행의 중단은 검증 파일의 줄바꿈 변환이었으며, 설치본을 다시 만들지 않고 검증 입력을 보정했습니다.
+
+## 원본 0.3.7 배포 기준
 
 [0.3.7 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7)는 공개 prerelease입니다. 소스·태그는 `448b2e648e89f6c8001c508eaf121a4fc0c2c236`, 반입 파일 커밋은 `f0e7b9b0132e46aef406657689a99e8b542b8517`입니다. 릴리스 본문의 고정 Git LFS 링크에서 파일을 받습니다.
 
