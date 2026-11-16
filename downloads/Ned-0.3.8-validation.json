@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.8",
+  "sourceCommit": "1bc5b3a049c4eafa7bbd163dd231bd8d5ba5b168",
+  "auditSourceCommit": "1bc5b3a049c4eafa7bbd163dd231bd8d5ba5b168",
+  "recordedAt": "2026-11-16T12:04:56.800947+00:00",
+  "os": "linux",
+  "modelEndpointKind": "synthetic-loopback-openai-compatible; no intranet models prompted",
+  "typecheck": "passed",
+  "offlineSkillsVerified": 66,
+  "fullTests": {
+    "tests": 199,
+    "passed": 189,
+    "failed": 0,
+    "skipped": 10,
+    "seconds": 851.117428405,
+    "command": "ELECTRON_BUILDER_CACHE=\"$PWD/.cache/ned/builder-cache\" npm test"
+  },
+  "nativeCondaSourceProbe": {
+    "runId": 43861408322,
+    "passed": 1,
+    "failed": 0,
+    "newInstallerAcceptance": false
+  },
+  "pinnedNsisCompile": "passed",
+  "installer": {
+    "name": "Ned-0.3.8-win-x64.exe",
+    "bytes": 1511355307,
+    "sha256": "f50a54a5dab37ddb4aee895fdae1566ef0d790e1da8c14758b48a06ffa9ad661"
+  },
+  "payloadComparison": {
+    "files": 59694,
+    "allStagedBytesVerified": true,
+    "manifestSha256": "525e1e14091047d0b9e291b307d395cb9459e62271498dfae930f951eded4787",
+    "generatedInstallerFiles": {
+      "$PLUGINSDIR/System.dll": "3eb38ae99653a7dbc724132ee240f6e5c4af4bfe7c01d31d23faf373f9f2eaca",
+      "$PLUGINSDIR/nsDialogs.dll": "1e40211af65923c2f4fd02ce021458a7745d28e2f383835e3015e96575632172",
+      "$PLUGINSDIR/modern-wizard.bmp": "3ad2dc318056d0a2024af1804ea741146cfc18cc404649a44610cbf8b2056cf2",
+      "Uninstall Ned.exe": "81441bbebcb6b35682cf266b8892b9b9c2c08053b10ca52dd2e0a00101b28b6d"
+    }
+  },
+  "runtimeComponents": {
+    "openviking": {
+      "manifestSha256": "d11f6caf6e1b807f74a87213c7a0f9654e2ac6b582ec1c7c4b3765c19edf2cb3",
+      "files": 25295
+    },
+    "mcp": {
+      "manifestSha256": "e9ca7b287740bf0de0cdef850209ba1082fdb0c5e79773e11458c0a1a72915f9",
+      "files": 21028
+    },
+    "rea": {
+      "manifestSha256": "96b22a192568d40c14a7a0563b3af9b9f2c03b29e9bab255a42e0af7b6a89523",
+      "files": 9012
+    },
+    "agent-desktop": {
+      "manifestSha256": "5e20ba52fc353efa79e8e551ebd29b31d8499d09f859c1b2e0988999577a4685",
+      "files": 4
+    },
+    "ghidra": {
+      "manifestSha256": "c59be72fd4c4c765f6b1a6f950d452e730ef46fb1667cfecb41073a568bfa2f3",
+      "files": 3659
+    },
+    "skills": {
+      "manifestSha256": "028284610f7acc41e1c9929e51d35b3764d44dc731b0a13f31ca6b43b1e95579",
+      "files": 569,
+      "count": 66
+    }
+  },
+  "openVikingVersion": "0.5.5",
+  "litellmVersion": "1.103.10",
+  "ghidraVersion": "12.1.4",
+  "jdkVersion": "21.0.13+9",
+  "windowsAcceptance": false,
+  "realIntranetAcceptance": false,
+  "releaseReady": false
+}
