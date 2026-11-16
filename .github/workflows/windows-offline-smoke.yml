@@ -103,6 +103,7 @@ jobs:
           Remove-Item Env:ELECTRON_RUN_AS_NODE
           "NED_TEST_CURRENT_PYTHON=$python" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_TOKENIZERS_DIR=$(Join-Path $install 'resources\runtime\windows-x64\openviking\tokenizers')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "NED_TEST_SKILLS_DIR=$(Join-Path $install 'resources\ned\skills')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $files = @(Get-ChildItem $install -Recurse -File)
           $baseline = Get-Content baseline-smoke.json -Raw | ConvertFrom-Json

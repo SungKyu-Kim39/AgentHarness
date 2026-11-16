@@ -15,6 +15,7 @@ import { configSchema } from '../src/shared/contracts';
 
 const currentPython = path.resolve(process.env.NED_TEST_CURRENT_PYTHON ?? '.cache/openviking/env-linux/bin/python3');
 const previousPython = path.resolve(process.env.NED_TEST_PREVIOUS_PYTHON ?? '.cache/openviking/env-0.5.4/bin/python3');
+const inputSkills = path.resolve(process.env.NED_TEST_SKILLS_DIR ?? 'vendor/skills');
 const sha = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 test('real 0.5.4 account migrates through 0.5.5 with project/personal search, renamed packages and intact raw backup',
   { skip: !existsSync(currentPython) || !existsSync(previousPython), timeout: 300000 }, async t => {
@@ -40,9 +41,9 @@ test('real 0.5.4 account migrates through 0.5.5 with project/personal search, re
   const baseUrl = `http://127.0.0.1:${(endpoint.address() as { port: number }).port}/v1`;
   const config = configSchema.parse({ schemaVersion: 2, model: { baseUrl, apiKey: 'synthetic-llm', id: 'llm-test' }, openViking: { enabled: true, embedding: { baseUrl, apiKey: 'synthetic-embedding', id: 'embed-test', dimension: 4 } } });
   const bundle = path.join(root, 'resources/ned/skills'); await mkdir(bundle, { recursive: true });
-  const manifest = JSON.parse(await readFile('vendor/skills/manifest.json', 'utf8'));
+  const manifest = JSON.parse(await readFile(path.join(inputSkills, 'manifest.json'), 'utf8'));
   manifest.skills = manifest.skills.filter((s: { id: string }) => ['cpp-testing', 'ab-testing'].includes(s.id));
-  for (const entry of manifest.skills) await cp(path.join('vendor/skills', entry.directory), path.join(bundle, entry.directory), { recursive: true });
+  for (const entry of manifest.skills) await cp(path.join(inputSkills, entry.directory), path.join(bundle, entry.directory), { recursive: true });
   const bytes = JSON.stringify(manifest); await writeFile(path.join(bundle, 'manifest.json'), bytes);
   await writeFile(path.join(bundle, '../skills-lock.json'), JSON.stringify({ schemaVersion: 1, count: 2, manifestSha256: sha(bytes) }));
   await cp(process.env.NED_TEST_TOKENIZERS_DIR ?? 'vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
@@ -61,14 +62,30 @@ test('real 0.5.4 account migrates through 0.5.5 with project/personal search, re
   await writeFile(path.join(root, 'openviking/personal-imports.json'), JSON.stringify({ schemaVersion: 1, entries: [{ sha256: 'a'.repeat(64), root: 'viking://user/default', roots: ['viking://user/default/resources'], status: 'ready', files: 1, importedAt: new Date().toISOString() }] }));
   const registry = { schemaVersion: 1, entries: {} as Record<string, { revision: string; bundleHash: string }> };
   for (const pkg of await loadBundledSkillPackages(bundle)) {
-    const form = new FormData(); form.append('file', new Blob([new Uint8Array(pkg.archive)]), pkg.name + '.zip');
+    // Reproduce the actual previous ZIP layout/frontmatter, not just a renamed
+    // current folder. Its bundle hash must differ from the new Ned archive.
+    const name = previousVikingAccount + '-' + pkg.id;
+    const currentZip = path.join(root, pkg.name + '.zip'), previousZip = path.join(root, name + '.zip');
+    await writeFile(currentZip, pkg.archive);
+    await execute(previousPython, ['-I', '-B', '-c', `import sys, zipfile
+with zipfile.ZipFile(sys.argv[1]) as source, zipfile.ZipFile(sys.argv[2], 'w') as target:
+    for entry in source.infolist():
+        name = entry.filename.replace(sys.argv[3] + '/', sys.argv[4] + '/', 1)
+        data = source.read(entry)
+        if name.endswith('/NED-BUNDLE.json'):
+            name = name[:-len('NED-BUNDLE.json')] + 'L-VIBE-BUNDLE.json'
+        if name.endswith('/SKILL.md'):
+            data = data.replace(('name: ' + sys.argv[3] + '\\n').encode(), ('name: ' + sys.argv[4] + '\\n').encode(), 1)
+        target.writestr(name, data)
+`, currentZip, previousZip, pkg.name, name]);
+    const previousArchive = await readFile(previousZip), previousHash = sha(previousArchive);
+    assert.notEqual(previousHash, pkg.hash);
+    const form = new FormData(); form.append('file', new Blob([new Uint8Array(previousArchive)]), name + '.zip');
     const upload = await request('/api/v1/resources/temp_upload', form);
     await request('/api/v1/skills', { temp_file_id: upload.result.temp_file_id, target_uri: 'viking://agent/skills', wait: true,
-      source_metadata: { [previousSkillOwner]: 'bundled-skills', [previousSkillHash]: pkg.hash } });
-    const name = previousVikingAccount + '-' + pkg.id;
-    await request('/api/v1/fs/mv', { from_uri: 'viking://agent/skills/' + pkg.name, to_uri: 'viking://agent/skills/' + name });
+      source_metadata: { [previousSkillOwner]: 'bundled-skills', [previousSkillHash]: previousHash } });
     const remote = await request('/api/v1/skills/' + name + '?target_uri=viking%3A%2F%2Fagent%2Fskills&include_integrity=true&include_files=true&include_source=true');
-    registry.entries[pkg.id] = { revision: remote.result.revision, bundleHash: pkg.hash };
+    registry.entries[pkg.id] = { revision: remote.result.revision, bundleHash: previousHash };
   }
   await writeFile(path.join(root, 'openviking/bundled-skills.json'), JSON.stringify(registry));
   await request('/api/v1/system/wait', {}); await old.close();
@@ -99,6 +116,10 @@ test('real 0.5.4 account migrates through 0.5.5 with project/personal search, re
   const accounts = await readdir(path.join(root, 'openviking/data/viking')); assert.ok(accounts.includes('ned')); assert.ok(!accounts.includes(previousVikingAccount));
   const names = await readdir(path.join(root, 'openviking/data/viking/ned/agent/skills'));
   assert.ok(names.includes('ned-cpp-testing') && names.includes('ned-ab-testing')); assert.ok(names.every(n => !n.startsWith(previousVikingAccount)));
+  for (const name of ['ned-cpp-testing', 'ned-ab-testing']) {
+    const files = await readdir(path.join(root, 'openviking/data/viking/ned/agent/skills', name));
+    assert.ok(files.includes('NED-BUNDLE.json')); assert.ok(!files.includes('L-VIBE-BUNDLE.json'));
+  }
   const before = modelRequests.length; await current.configure(config);
   while (['pending', 'registering'].includes(current.state().skills?.status ?? '') && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(current.state().skills?.status, 'ready', diagnostics.slice(-10000));

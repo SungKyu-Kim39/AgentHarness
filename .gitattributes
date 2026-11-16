@@ -1,6 +1,6 @@
 # Preserve pinned upstream Markdown byte-for-byte, including intentional hard breaks.
-vendor/skills/** -whitespace
-.agents/skills/**/references/upstream.md -whitespace
+vendor/skills/** -text -whitespace
+.agents/skills/**/references/upstream.md -text -whitespace
 downloads/*.exe filter=lfs diff=lfs merge=lfs -text
 downloads/*.tgz filter=lfs diff=lfs merge=lfs -text
 # Generated native test fixtures have byte-pinned SHA-256 records.
