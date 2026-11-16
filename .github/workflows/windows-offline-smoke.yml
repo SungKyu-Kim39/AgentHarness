@@ -83,7 +83,7 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
           $group = "Ned-CI-$env:GITHUB_RUN_ID"
           "NED_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          foreach ($program in @($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'), (Join-Path $install 'resources\opencode-cli.exe'))) {
+          foreach ($program in @($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'), (Join-Path $install 'resources\opencode-cli.exe'), (Join-Path $install 'resources\runtime\windows-x64\ghidra\jdk\bin\java.exe'))) {
             New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
           }
           $result = @(& $python -I -B distribution/openviking-import-check.py 2>&1)
@@ -172,6 +172,31 @@ jobs:
           Get-Content windows-compaction-stderr.txt
           if ($run.ExitCode -ne 0) { throw 'Windows compaction test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
+      - name: Verify Git writes, external reads, Ghidra and large OVPack recovery
+        if: always() && env.NED_ARTIFACT_VERSION == '0.3.8' && env.NED_TEST_NODE != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $resources = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources'
+          $env:NED_TEST_RESOURCES = $resources
+          $env:NED_TEST_GIT = Join-Path $resources 'runtime\windows-x64\mcp\git\cmd\git.exe'
+          $env:NED_TEST_PYTHON = $env:NED_TEST_CURRENT_PYTHON
+          $env:NED_TEST_RECOVERY_SCRIPT = Join-Path $resources 'ned\personal-pack-recovery.py'
+          $env:NED_TEST_LAUNCHER = Join-Path $resources 'runtime\windows-x64\openviking\launch.py'
+          $env:NED_TEST_TOKENIZERS = $env:NED_TEST_TOKENIZERS_DIR
+          $env:NED_TEST_GHIDRA = Join-Path $resources 'runtime\windows-x64\ghidra\ghidra'
+          $env:NED_TEST_JAVA = Join-Path $resources 'runtime\windows-x64\ghidra\jdk'
+          $env:NED_TEST_GHIDRA_WORKER = Join-Path $resources 'ned\rea-ghidra-worker.mjs'
+          $test = 'downloads/Ned-0.3.8-windows-native-test.cjs'
+          $expected = (Get-Content "$test.sha256").Split(' ')[0]
+          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Native test hash mismatch' }
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-native-test.txt -RedirectStandardError windows-native-stderr.txt -Wait -PassThru
+          $run.Refresh()
+          Get-Content windows-native-test.txt
+          Get-Content windows-native-stderr.txt
+          if ($run.ExitCode -ne 0) { throw 'Windows native operations test failed' }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Restore disposable runner firewall configuration
         if: always()
         shell: pwsh
@@ -192,4 +217,6 @@ jobs:
             windows-delete-stderr.txt
             windows-compaction-test.txt
             windows-compaction-stderr.txt
+            windows-native-test.txt
+            windows-native-stderr.txt
           if-no-files-found: ignore

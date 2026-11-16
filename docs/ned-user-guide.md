@@ -260,7 +260,7 @@ Serena가 특정 심볼의 정의와 참조를 해석하는 데 초점을 둔다
 
 ### 4.5 REA: 지원하는 프로그램 산출물의 내부 정보를 정적으로 살펴보는 도구
 
-REA는 **Reverse Engineer Anything**의 약자이며, 프로그램과 산출물을 조사하는 도구 모음입니다. 원본은 분석 범위가 넓지만 Ned에서는 다음 다섯 종류의 정적 검사만 연결했습니다.
+REA는 **Reverse Engineer Anything**의 약자이며, 프로그램과 산출물을 조사하는 도구 모음입니다. Ned의 `rea_inspect`는 다음 다섯 종류의 형식별 정적 검사를 제공합니다. 0.3.8부터 `rea_ghidra`로 Ghidra 기반 함수·호출 관계 분석과 의사코드 생성도 제공합니다. [구체적인 사용법](git-and-binary-analysis.md)을 함께 읽어 보세요.
 
 | Ned에서 선택할 분석 종류 | 조사 대상 | 활용 예 |
 | --- | --- | --- |
@@ -341,7 +341,7 @@ Serena를 포함한 개발 MCP는 여섯 종류입니다. Graphify·REA·OpenVik
 | 도구 | 실제로 할 수 있는 일 | 요청 예시와 준비 조건 |
 | --- | --- | --- |
 | Serena·clangd | C/C++ 개요·정의·참조 조사 | “이 함수의 참조 위치를 찾아 주세요.” 컴파일 옵션과 필요한 헤더가 있어야 정확도가 높습니다. |
-| Git MCP | 상태·diff·staged diff·log·show 조회 | “최근 변경 중 연결 종료 처리와 관련된 수정 내용을 조사해 주세요.” 지원하는 로컬 `.git` 저장소가 필요합니다. commit·checkout·push는 이 도구에 없습니다. |
+| Git MCP | 상태·diff·staged diff·log·show 조회 | “최근 변경 중 연결 종료 처리와 관련된 수정 내용을 조사해 주세요.” 지원하는 로컬 `.git` 저장소가 필요합니다. 스테이징·커밋은 별도 호스트 도구 `git_stage`, `git_commit`으로 수행합니다. checkout·push는 지원하지 않습니다. [커밋 안내](git-and-binary-analysis.md)를 참고하세요. |
 | MarkItDown MCP | 선택한 PDF·DOCX·PPTX·XLSX·XLS·CSV·텍스트를 Markdown으로 변환 | “`docs/protocol.pdf`에서 패킷 형식을 읽고 코드와 비교해 주세요.” 스캔 이미지 OCR·HWP·Office 원본 편집·매크로 실행은 제공하지 않습니다. |
 | DuckDB Local MCP | 복사한 CSV·TSV·Parquet 또는 로컬 `.duckdb`에 단일 SELECT 수행 | “`data/events.csv`의 오류 코드별 건수를 조회해 주세요.” CSV 등은 `input_0` 같은 뷰로 조회합니다. 출력은 최대 200행이며 DB 쓰기·외부 서버·HTTP·확장 설치는 차단합니다. |
 | Playwright MCP | 허용한 로컬 HTTP 페이지의 접근성 스냅샷·콘솔·선택적 스크린샷 | “이미 실행 중인 `http://127.0.0.1:3000` 페이지의 콘솔 오류와 접근성 구조를 확인해 주세요.” 개인 브라우저 프로필과 외부 사이트는 사용하지 않습니다. |
@@ -1239,3 +1239,7 @@ LLM 연결, OpenViking 실행, 임베딩 설정과 해당 문서 색인은 각�
 - [0.3.7 검증 기록](validation-0.3.7.md), [라이선스 정책](license-policy.md)
 
 현재 배포본에서 Windows Server 설치·로딩과 직원 PC의 실제 GUI·사내 모델·SDK·외부 통신 차단 검증은 구분해 관리합니다. 특정 기능의 일반적인 사용 방법을 이 문서에서 설명했다고 모든 직원 환경의 검증이 끝난 것은 아닙니다. 배포·지원 담당자는 버전별 검증 기록을 함께 확인해 주세요.
+
+## 0.3.8의 Git·Ghidra·외부 참조 자료
+
+[Git 커밋과 Ghidra 분석 안내](git-and-binary-analysis.md)에 실제 요청 예시, 승인 모드, 작성자 정보, 스테이징 보존, 바이너리 디컴파일과 전체 권한의 외부 읽기 범위를 설명합니다. 기존 REA 정적 검사에 Ghidra 본체와 Java를 추가했으며, 사용자 프로그램을 실행하는 기능과는 구분합니다.

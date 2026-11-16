@@ -1,0 +1,66 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { GitTools } from '../distribution/git-tools';
+const exec = promisify(execFile);
+const binary = process.env.NED_TEST_GIT ?? (process.platform === 'win32' ? undefined : '/usr/bin/git');
+async function fixture(t: { after(fn: () => Promise<void>): void }, approve: ConstructorParameters<typeof GitTools>[2] = async () => true) {
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-git-test-')), project = path.join(root, 'project');
+  await mkdir(project); const git = (args: string[]) => exec(binary!, args, { cwd: project, env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: path.join(root, 'missing'), GIT_TERMINAL_PROMPT: '0' } });
+  await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Ned Git Fixture']); await git(['config', 'user.email', 'fixture@example.invalid']);
+  const tools = new GitTools(root, process.env.NED_TEST_RESOURCES ?? '', approve, async () => {}, binary);
+  t.after(async () => { await tools.close(); await rm(root, { recursive: true, force: true }); });
+  return { root, project, git, tools };
+}
+test('real Git selected-path commits preserve unrelated staging, working edits, deletions and disabled hooks', { skip: !binary }, async t => {
+  const { root, project, git, tools } = await fixture(t);
+  await writeFile(path.join(project, 'selected.txt'), 'initial\n'); await writeFile(path.join(project, 'other.txt'), 'original\n');
+  await git(['add', '.']); await git(['commit', '-m', 'initial']);
+  const marker = path.join(root, 'HOOK_RAN').replaceAll('\\', '/');
+  await writeFile(path.join(project, '.git/hooks/pre-commit'), '#!/bin/sh\necho ran > "' + marker + '"\n', { mode: 0o755 });
+  await writeFile(path.join(project, '.git/hooks/reference-transaction'), '#!/bin/sh\necho ran > "' + marker + '"\n', { mode: 0o755 });
+  await writeFile(path.join(project, 'other.txt'), 'user staged this\n'); await git(['add', 'other.txt']);
+  await writeFile(path.join(project, 'selected.txt'), 'approved bytes\r\n');
+  assert.equal((await tools.execute(project, 'stage', ['selected.txt'])).status, 'staged');
+  await writeFile(path.join(project, 'selected.txt'), 'later unsaved-to-index edit\n');
+  const beforeIndex = await readFile(path.join(project, '.git/index'));
+  const result = await tools.execute(project, 'commit', ['selected.txt'], 'Commit only selected');
+  assert.equal(result.status, 'committed'); assert.match(result.commit!, /^[a-f0-9]{40}$/);
+  assert.equal((await git(['show', 'HEAD:selected.txt'])).stdout, 'approved bytes\r\n');
+  assert.equal((await git(['show', 'HEAD:other.txt'])).stdout, 'original\n');
+  assert.equal((await git(['diff', '--cached', '--name-only'])).stdout.trim(), 'other.txt');
+  assert.deepEqual(await readFile(path.join(project, '.git/index')), beforeIndex);
+  assert.equal(await readFile(marker).then(() => true, () => false), false);
+  await rm(path.join(project, 'selected.txt')); await tools.execute(project, 'stage', ['selected.txt']);
+  await tools.execute(project, 'commit', ['selected.txt'], 'Remove selected');
+  assert.equal((await git(['ls-tree', '--name-only', 'HEAD'])).stdout.trim(), 'other.txt');
+});
+test('initial commit, author validation, permission denial and index lock ownership', { skip: !binary }, async t => {
+  let allowed = false; const { project, git, tools } = await fixture(t, async () => allowed);
+  await writeFile(path.join(project, 'new.txt'), 'new\n');
+  await assert.rejects(tools.execute(project, 'stage', ['new.txt']), /거절/);
+  allowed = true; await tools.execute(project, 'stage', ['new.txt']);
+  await git(['config', '--unset', 'user.email']);
+  await assert.rejects(tools.execute(project, 'commit', ['new.txt'], 'first'), /작성자/);
+  await writeFile(path.join(project, '.git/index.lock'), 'external lock');
+  await assert.rejects(tools.execute(project, 'commit', ['new.txt'], 'first', { name: 'User', email: 'user@example.invalid' }), /EEXIST/);
+  assert.equal(await readFile(path.join(project, '.git/index.lock'), 'utf8'), 'external lock');
+  await rm(path.join(project, '.git/index.lock'));
+  assert.equal((await tools.execute(project, 'commit', ['new.txt'], 'first', { name: 'User', email: 'user@example.invalid' })).status, 'committed');
+});
+test('changed approved inputs, configuration includes and executable clean filters are blocked', { skip: !binary }, async t => {
+  let mutate: (() => Promise<void>) | undefined;
+  const { project, git, tools } = await fixture(t, async () => { await mutate?.(); return true; });
+  await writeFile(path.join(project, 'file.txt'), 'before');
+  mutate = () => writeFile(path.join(project, 'file.txt'), 'after');
+  await assert.rejects(tools.execute(project, 'stage', ['file.txt']), /승인 후 파일/); mutate = undefined;
+  await writeFile(path.join(project, '.gitattributes'), '*.txt filter=unsafe\n');
+  await git(['config', 'filter.unsafe.clean', 'this-command-must-never-run']);
+  await assert.rejects(tools.execute(project, 'stage', ['file.txt']), /필터/);
+  await git(['config', 'include.path', '../external-config']);
+  await assert.rejects(tools.execute(project, 'stage', ['file.txt']), /include/);
+});

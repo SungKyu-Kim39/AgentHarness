@@ -1,4 +1,3 @@
-"use strict";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -7528,7 +7527,11 @@ var entrySchema = external_exports.object({
   roots: external_exports.array(external_exports.string()).max(64),
   status: external_exports.enum(["importing", "ready", "failed"]),
   files: external_exports.number().int().nonnegative(),
-  importedAt: external_exports.string()
+  importedAt: external_exports.string(),
+  sourceRoot: external_exports.string().regex(rootPattern).optional(),
+  imported: external_exports.boolean().optional(),
+  lastStage: external_exports.string().regex(/^OV_PERSONAL_[A-Z_]+$/).optional(),
+  lastHttpStatus: external_exports.number().int().min(100).max(599).optional()
 }).strict();
 var registrySchema = external_exports.object({ schemaVersion: external_exports.literal(1), entries: external_exports.array(entrySchema).max(32) }).strict();
 var inspectPersonalPackPython = String.raw`
@@ -7575,10 +7578,11 @@ function uriAllowed(uri, roots) {
   return !/[%\\\x00-\x1f?#]/.test(uri) && !/(?:^|\/)\.{1,2}(?:\/|$)/.test(uri) && roots.some((root) => uri === root || uri.startsWith(root + "/"));
 }
 var PersonalKnowledge = class {
-  constructor(directory2, python, transport) {
+  constructor(directory2, python, transport, recovery) {
     this.directory = directory2;
     this.python = python;
     this.transport = transport;
+    this.recovery = recovery;
   }
   operation = Promise.resolve();
   abort = new AbortController();
@@ -7603,7 +7607,16 @@ var PersonalKnowledge = class {
   }
   async status() {
     const registry = await this.registry();
-    return registry.entries.map(({ sha256, root, status, files, importedAt }) => ({ sha256, root, status, files, importedAt }));
+    return registry.entries.map(({ sha256, root, status, files, importedAt, sourceRoot, lastStage, lastHttpStatus }) => ({
+      sha256,
+      root,
+      status,
+      files,
+      importedAt,
+      ...sourceRoot ? { sourceRoot } : {},
+      ...lastStage ? { lastStage } : {},
+      ...lastHttpStatus ? { lastHttpStatus } : {}
+    }));
   }
   async verifyIndex(entry, signal) {
     await this.request(entry.root, "/api/v1/system/wait", { method: "POST", body: {}, signal });
@@ -7644,43 +7657,86 @@ var PersonalKnowledge = class {
         throw new Error("\uC0AC\uC6A9\uC790 \uC601\uC5ED\uC744 \uB0B4\uBCF4\uB0B8 OVPack v3\uC778\uC9C0 \uD655\uC778\uD558\uC138\uC694. \uC804\uCCB4 DB \uBC31\uC5C5\uC774\uB098 \uC798\uBABB\uB41C \uC555\uCD95 \uD30C\uC77C\uC740 \uAC00\uC838\uC62C \uC218 \uC5C6\uC2B5\uB2C8\uB2E4.");
       }
       const registry = await this.registry();
-      const existing = registry.entries.find((e) => e.sha256 === sha256);
-      if (existing?.status === "ready") {
-        await this.request(existing.root, "/api/v1/fs/stat?uri=" + encodeURIComponent(existing.root), { signal });
-        await this.verifyIndex(existing, signal);
-        return { status: "already-imported", root: existing.root, sha256 };
+      const complete = registry.entries.find((e) => e.sha256 === sha256 && e.status === "ready");
+      if (complete) {
+        await this.request(complete.root, "/api/v1/fs/stat?uri=" + encodeURIComponent(complete.root), { signal });
+        await this.verifyIndex(complete, signal);
+        return { status: "already-imported", root: complete.root, sha256 };
       }
-      if (existing || registry.entries.some((e) => e.root === preview.root)) throw new Error("\uAC19\uC740 \uC0AC\uC6A9\uC790 \uC601\uC5ED\uC758 \uAC00\uC838\uC624\uAE30 \uAE30\uB85D\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uAE30\uC874 \uC790\uB8CC\uC640 \uC2E4\uD328 \uC0C1\uD0DC\uB97C \uBCF4\uC874\uD588\uC73C\uBA70 \uC790\uB3D9 \uB36E\uC5B4\uC4F0\uAE30\uB294 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
-      if (registry.entries.length >= 32) throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30 \uAC1C\uC218 \uC81C\uD55C\uC5D0 \uB3C4\uB2EC\uD588\uC2B5\uB2C8\uB2E4.");
+      const existing = registry.entries.slice().reverse().find((e) => e.sha256 === sha256);
+      const collision = !!existing || registry.entries.some((e) => e.root === preview.root || e.sourceRoot === preview.root);
+      const resume = existing?.imported === true && existing.status !== "ready";
+      if (collision && !this.recovery) throw new Error("\uAC19\uC740 \uC0AC\uC6A9\uC790 \uC601\uC5ED\uC758 \uAC00\uC838\uC624\uAE30 \uAE30\uB85D\uC774 \uC788\uC2B5\uB2C8\uB2E4. \uAE30\uC874 \uC790\uB8CC\uC640 \uC2E4\uD328 \uC0C1\uD0DC\uB97C \uBCF4\uC874\uD588\uC73C\uBA70 \uC790\uB3D9 \uB36E\uC5B4\uC4F0\uAE30\uB294 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+      if (!resume && registry.entries.length >= 32) throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30 \uAC1C\uC218 \uC81C\uD55C\uC5D0 \uB3C4\uB2EC\uD588\uC2B5\uB2C8\uB2E4.");
+      const isolated = collision && !resume;
+      const user = "ned-import-" + (0, import_node_crypto5.randomUUID)().replaceAll("-", "");
+      const destination = resume ? existing.root : isolated ? "viking://user/" + user : preview.root;
       const approved = await approve(
         "\uAC1C\uC778 \uACF5\uD1B5 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30",
         `\uC120\uD0DD\uD55C \uD30C\uC77C: ${file}
 \uC6D0\uBCF8 \uC0AC\uC6A9\uC790 \uC601\uC5ED: ${preview.root}
+\uB300\uC0C1: ${destination}
 \uD30C\uC77C: ${preview.files}\uAC1C
 SHA-256: ${sha256}
 
-Ned\uC758 \uAC1C\uC778 \uC800\uC7A5\uC18C\uC5D0 \uAC00\uC838\uC640 \uBAA8\uB4E0 \uD504\uB85C\uC81D\uD2B8\uC5D0\uC11C \uC77D\uAE30 \uC804\uC6A9\uC73C\uB85C \uAC80\uC0C9\uD569\uB2C8\uB2E4. \uAE30\uC874 \uB300\uC0C1\uC740 \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uBCA1\uD130\uB294 \uD638\uD658\uB420 \uB54C \uC7AC\uC0AC\uC6A9\uD558\uACE0, \uD544\uC694\uD558\uBA74 \uC124\uC815\uD55C \uC0AC\uB0B4 \uC784\uBCA0\uB529 API\uB85C \uC7AC\uACC4\uC0B0\uD569\uB2C8\uB2E4. \uB300\uD654/\uAC1C\uC778\uC815\uBCF4 \uAD00\uB9AC \uC790\uB8CC\uB294 \uBCF4\uC874\uD558\uB418 \uAC80\uC0C9 \uB3C4\uAD6C\uC5D0\uB294 \uB178\uCD9C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC0AC\uC6A9\uC790 \uC2A4\uD0AC\uC740 \uC790\uB8CC\uB85C\uB9CC \uBCF4\uC874\uD558\uBA70 \uC2E4\uD589\uD615 \uD50C\uB7EC\uADF8\uC778\uC73C\uB85C \uC124\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.`,
+${resume ? "\uD30C\uC77C \uAC00\uC838\uC624\uAE30 \uC644\uB8CC \uAE30\uB85D\uC774 \uC788\uC5B4 \uAE30\uC874 \uC790\uB8CC\uB97C \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uACE0 \uC0C9\uC778\uB9CC \uB2E4\uC2DC \uD655\uC778\xB7\uBCF5\uAD6C\uD569\uB2C8\uB2E4." : isolated ? "\uC774\uC804 \uAE30\uB85D\uACFC \uC790\uB8CC\uB97C \uBCF4\uC874\uD558\uACE0 \uBCC4\uB3C4 \uC0AC\uC6A9\uC790 \uC601\uC5ED\uC5D0 \uBCF5\uAD6C\uD569\uB2C8\uB2E4. SDK\uB85C \uC6D0\uBCF8\xB7\uBCF5\uAD6C \uD328\uD0A4\uC9C0\uB97C \uAC80\uC99D\uD558\uBA70 \uD30C\uC77C \uB0B4\uC6A9\uC740 \uADF8\uB300\uB85C \uC720\uC9C0\uD569\uB2C8\uB2E4. \uC0AC\uC6A9\uC790 \uACBD\uB85C\uAC00 \uBC14\uB00C\uBBC0\uB85C \uBCA1\uD130\uB294 \uB2E4\uC2DC \uACC4\uC0B0\uD569\uB2C8\uB2E4." : "Ned\uC758 \uAC1C\uC778 \uC800\uC7A5\uC18C\uC5D0 \uAC00\uC838\uC635\uB2C8\uB2E4. \uAE30\uC874 \uB300\uC0C1\uC740 \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC73C\uBA70 \uBCA1\uD130\uB294 \uD638\uD658\uB420 \uB54C \uC7AC\uC0AC\uC6A9\uD569\uB2C8\uB2E4."}
+\uBAA8\uB4E0 \uD504\uB85C\uC81D\uD2B8\uC5D0\uC11C \uC77D\uAE30 \uC804\uC6A9\uC73C\uB85C \uAC80\uC0C9\uD569\uB2C8\uB2E4. \uB300\uD654/\uAC1C\uC778\uC815\uBCF4 \uAD00\uB9AC \uC790\uB8CC\uB294 \uBCF4\uC874\uD558\uB418 \uAC80\uC0C9 \uB3C4\uAD6C\uC5D0\uB294 \uB178\uCD9C\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC0AC\uC6A9\uC790 \uC2A4\uD0AC\uC740 \uC790\uB8CC\uB85C\uB9CC \uBCF4\uC874\uD558\uBA70 \uC2E4\uD589\uD615 \uD50C\uB7EC\uADF8\uC778\uC73C\uB85C \uC124\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.`,
         signal
       );
       if (!approved || signal.aborted) throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30\uB97C \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.");
       const archive2 = import_node_path4.default.join(this.directory, "personal-" + sha256 + ".ovpack");
-      await (0, import_promises5.rename)(snapshot, archive2);
-      const entry = { sha256, root: preview.root, roots: preview.roots, files: preview.files, status: "importing", importedAt: (/* @__PURE__ */ new Date()).toISOString() };
-      registry.entries.push(entry);
+      await (0, import_promises5.copyFile)(snapshot, archive2, import_node_fs2.constants.COPYFILE_EXCL).catch(async (error) => {
+        if (error.code !== "EEXIST") throw error;
+        const stat = await (0, import_promises5.lstat)(archive2);
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_PACK) throw new Error("\uBCF4\uAD00\uD55C \uC6D0\uBCF8 OVPack\uC758 \uD30C\uC77C \uD615\uC2DD\uC774 \uBC14\uB00C\uC5C8\uC2B5\uB2C8\uB2E4. \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
+        const digest3 = (0, import_node_crypto5.createHash)("sha256");
+        for await (const chunk of (0, import_node_fs2.createReadStream)(archive2)) digest3.update(chunk);
+        if (digest3.digest("hex") !== sha256) throw new Error("\uBCF4\uAD00\uD55C \uC6D0\uBCF8 OVPack\uC774 \uBCC0\uACBD\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
+      });
+      const entry = resume ? existing : { sha256, root: destination, roots: preview.roots.map((root) => destination + root.slice(preview.root.length)), files: preview.files, status: "importing", importedAt: (/* @__PURE__ */ new Date()).toISOString(), ...isolated ? { sourceRoot: preview.root } : {} };
+      entry.status = "importing";
+      entry.lastHttpStatus = void 0;
+      if (!resume) registry.entries.push(entry);
       await atomicJSON(this.file, registry);
-      let stageName = "OV_PERSONAL_UPLOAD";
+      let stageName = "OV_PERSONAL_PREPARE";
+      const checkpoint = async (name) => {
+        stageName = name;
+        entry.lastStage = name;
+        await atomicJSON(this.file, registry);
+        signal.throwIfAborted();
+      };
       try {
-        const form = new FormData();
-        form.append("file", await (0, import_node_fs2.openAsBlob)(archive2), "personal.ovpack");
-        const upload = await this.request(entry.root, "/api/v1/resources/temp_upload", { method: "POST", body: form, signal });
-        const id = upload.result?.temp_file_id;
-        if (typeof id !== "string") throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uD30C\uC77C \uC804\uB2EC \uD655\uC778 \uC2E4\uD328");
-        stageName = "OV_PERSONAL_IMPORT";
-        const imported = await this.request(entry.root, "/api/v1/pack/import", { method: "POST", body: { temp_file_id: id, parent: "viking://user", on_conflict: "fail", vector_mode: "auto" }, signal });
-        if (imported.result?.uri !== entry.root) throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30 \uACBD\uB85C \uD655\uC778 \uC2E4\uD328");
-        stageName = "OV_PERSONAL_INDEX";
+        if (resume) {
+          await checkpoint("OV_PERSONAL_REINDEX");
+          for (const uri of entry.roots) await this.request(entry.root, "/api/v1/content/reindex", { method: "POST", body: { uri, mode: "vectors_only", wait: true }, signal });
+        } else {
+          let uploadFile = archive2;
+          if (isolated) {
+            await checkpoint("OV_PERSONAL_RECOVERY");
+            const derived = import_node_path4.default.join(this.directory, "personal-" + sha256 + "-" + user + ".ovpack");
+            const result = await exec(this.python, ["-I", "-B", this.recovery.script, archive2, derived, user, this.recovery.launcher, this.recovery.tokenizers], { windowsHide: true, maxBuffer: 1024 * 1024, signal }).catch((error) => {
+              this.recovery?.diagnostic?.(String(error.stderr ?? error.code ?? "OV_RECOVERY_PROCESS"));
+              throw error;
+            });
+            const proof = JSON.parse(result.stdout);
+            if (proof.root !== entry.root || proof.sourceRoot !== preview.root || proof.contentBytesUnchanged !== true) throw new Error("\uBCF5\uAD6C \uD328\uD0A4\uC9C0 \uAC80\uC99D \uC2E4\uD328");
+            uploadFile = derived;
+          }
+          await checkpoint("OV_PERSONAL_UPLOAD");
+          const form = new FormData();
+          form.append("file", await (0, import_node_fs2.openAsBlob)(uploadFile), "personal.ovpack");
+          const upload = await this.request(entry.root, "/api/v1/resources/temp_upload", { method: "POST", body: form, signal });
+          const id = upload.result?.temp_file_id;
+          if (typeof id !== "string") throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uD30C\uC77C \uC804\uB2EC \uD655\uC778 \uC2E4\uD328");
+          await checkpoint("OV_PERSONAL_IMPORT");
+          const imported = await this.request(entry.root, "/api/v1/pack/import", { method: "POST", body: { temp_file_id: id, parent: "viking://user", on_conflict: "fail", vector_mode: isolated ? "recompute" : "auto" }, signal });
+          if (imported.result?.uri !== entry.root) throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30 \uACBD\uB85C \uD655\uC778 \uC2E4\uD328");
+          entry.imported = true;
+          await atomicJSON(this.file, registry);
+        }
+        await checkpoint("OV_PERSONAL_INDEX");
         await this.verifyIndex(entry, signal);
-        stageName = "OV_PERSONAL_VERIFY";
+        await checkpoint("OV_PERSONAL_VERIFY");
         await this.request(entry.root, "/api/v1/fs/stat?uri=" + encodeURIComponent(entry.root), { signal });
         signal.throwIfAborted();
         entry.status = "ready";
@@ -7688,10 +7744,12 @@ Ned\uC758 \uAC1C\uC778 \uC800\uC7A5\uC18C\uC5D0 \uAC00\uC838\uC640 \uBAA8\uB4E0 
         return { status: "imported", root: entry.root, sha256, files: entry.files };
       } catch (error) {
         entry.status = "failed";
-        await atomicJSON(this.file, registry);
         const http = error?.status;
+        entry.lastStage = stageName;
+        if (Number.isInteger(http)) entry.lastHttpStatus = http;
+        await atomicJSON(this.file, registry);
         const code = stageName + (Number.isInteger(http) ? " HTTP " + http : "");
-        throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30\uB97C \uC644\uB8CC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. [" + code + "] \uC6D0\uBCF8 OVPack\uACFC \uC2E4\uD328 \uAE30\uB85D\uC740 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4. \uAE30\uC874 \uB300\uC0C1 \uCDA9\uB3CC\xB7OVPack \uAC80\uC99D\xB7\uC784\uBCA0\uB529 \uC5F0\uACB0\uC744 \uD655\uC778\uD558\uC138\uC694. \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uB098 \uB36E\uC5B4\uC4F0\uAE30\uB294 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+        throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30\uB97C \uC644\uB8CC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. [" + code + "] \uC6D0\uBCF8 OVPack\uACFC \uC2E4\uD328 \uAE30\uB85D\uC740 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4. \uAC19\uC740 \uD30C\uC77C\uC744 \uB2E4\uC2DC \uC120\uD0DD\uD558\uBA74 \uBCF5\uAD6C\uB97C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uAE30\uC874 \uB300\uC0C1\uC740 \uC790\uB3D9 \uB36E\uC5B4\uC4F0\uAE30\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
       }
     } finally {
       await (0, import_promises5.rm)(stage, { recursive: true, force: true });
@@ -7920,7 +7978,8 @@ var OpenVikingService = class {
     this.personal = new PersonalKnowledge(
       import_node_path5.default.join(this.data, "openviking"),
       launch.executable,
-      (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user)
+      (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user),
+      { launcher: launch.launcher, tokenizers: import_node_path5.default.join(launch.cwd, "tokenizers"), diagnostic: this.testLaunch?.diagnostic, script: this.testLaunch ? import_node_path5.default.resolve("distribution/personal-pack-recovery.py") : import_node_path5.default.resolve(this.runtime, "../ned/personal-pack-recovery.py") }
     );
     this.startupStage = "configuration";
     const folder = import_node_path5.default.join(this.data, "openviking");

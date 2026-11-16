@@ -1,0 +1,21 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { ExternalRead } from '../distribution/external-read';
+test('full access reads external UTF-8 and lists one directory; revoked modes and managed secrets remain blocked', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-external-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const protectedDir = path.join(root, 'private'); await mkdir(protectedDir);
+  await writeFile(path.join(protectedDir, 'credentials'), 'never expose');
+  const note = path.join(root, 'note.md'); await writeFile(note, '외부 참조 문서\n');
+  let full = false; const reader = new ExternalRead(() => full, [protectedDir]);
+  await assert.rejects(reader.read(note), /전체 권한/); full = true;
+  assert.equal(JSON.parse(await reader.read(note)).text, '외부 참조 문서\n');
+  assert.ok(JSON.parse(await reader.list(root)).entries.some((e: { name: string }) => e.name === 'note.md'));
+  await assert.rejects(reader.read(path.join(protectedDir, 'credentials')), /앱 관리/);
+  await assert.rejects(reader.read('//server/share/note.md'), /로컬/);
+  await writeFile(path.join(root, 'binary'), Buffer.from([0, 1, 2])); await assert.rejects(reader.read(path.join(root, 'binary')), /UTF-8/);
+  full = false; await assert.rejects(reader.list(root), /전체 권한/);
+  full = true; const abort = new AbortController(); abort.abort(); await assert.rejects(reader.read(note, abort.signal));
+});

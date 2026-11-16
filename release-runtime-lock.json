@@ -29,6 +29,17 @@
       "originalManifestSha256": "e5f2ae573ad07e4643ffb712ba2eb65a9d315dedb0c0a40a4a1340fcd01fa6b7",
       "manifestSha256": "5e20ba52fc353efa79e8e551ebd29b31d8499d09f859c1b2e0988999577a4685",
       "files": 4
+    },
+    "ghidra": {
+      "originalManifestSha256": "c59be72fd4c4c765f6b1a6f950d452e730ef46fb1667cfecb41073a568bfa2f3",
+      "manifestSha256": "c59be72fd4c4c765f6b1a6f950d452e730ef46fb1667cfecb41073a568bfa2f3",
+      "files": 3659
     }
+  },
+  "ghidraInputs": {
+    "ghidra-runtime-lock.json": "b8617e462c52ca3939945c496dfc440c955c3c33f8e6d0312ac00a788fcc2ca3",
+    "scripts/bundle-ghidra.py": "143686cd4a89d17b9bcbdba34a43a9344f3458bdf1f4602860b5492039d3aa29",
+    "scripts/CompileGhidraGuard.java": "692dcdce5c3394580746b1e85824a857241f4c3666f3f661286373668b8b59e6",
+    "distribution/NedOfflineNetworkGuard.java": "f88062fdb7dabbdb416bfdf1b8e320f538aef643d3d34fa308595badcaa25e0a"
   }
 }

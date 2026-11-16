@@ -40,3 +40,7 @@ Ned 0.3.3의 설정 보존에는 Microsoft의 jsonc-parser 3.3.1(MIT)을 사용�
 생성형 Python SDK는 원문과 바이트가 같은 ZIP으로 묶으며 저작권·라이선스 메타데이터는 유지합니다. 설치 리소스에서 옮긴 소스는 같은 TGZ의 `source/`에 보관합니다. 원래 위치·해시·새 manifest는 `ned/runtime-optimization.json`에 기록합니다. EXE만 전달할 때도 같은 릴리스의 대응 소스를 함께 제공해야 합니다.
 
 TGZ와 설치 리소스의 라이선스·저작자 고지, dist-info 문서, REA 제3자 고지와 스킬 문서를 보존합니다. 소스와 해시를 확인한 결과와 전체 라이선스 의무 충족 여부는 구분하며, 남은 재배포 검토는 [정책 문서](docs/license-policy.md)를 따릅니다.
+
+## Ned 0.3.8 Ghidra / Temurin JDK
+
+Ghidra 12.1.4는 Apache-2.0 및 배포본의 개별 제3자 조건을 적용합니다. Eclipse Temurin OpenJDK 21.0.13+9는 GPL-2.0 with Classpath Exception 및 `legal/`의 개별 조건을 적용합니다. 고정 바이너리·대응 소스의 URL·크기·SHA-256은 `ghidra-runtime-lock.json`에 기록합니다. Ghidra LICENSE·NOTICE·하위 고지와 JDK legal/을 설치본에 보존하고, 대응 소스 두 아카이브를 TGZ의 source/에 제공합니다. Ned의 Java 가드와 고정 REA 소스 검사·메모리 어댑터는 Ned 소스에 포함합니다. 원본 REA 파일은 변경하지 않습니다.

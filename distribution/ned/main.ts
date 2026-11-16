@@ -181,6 +181,7 @@ async function start() {
       { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
       { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
       { label: '새 스킬·MCP 추가 방법', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },
+      { label: 'Git 커밋·Ghidra·외부 자료 읽기', click: () => { void shell.openPath(path.join(resources, 'ned/git-and-binary-analysis.md')); } },
     ] },
     { label: '권한 및 자동 승인 상태', click: async () => {
       const selected=permissionModes.find(mode=>mode.value===permissions.mode)!;

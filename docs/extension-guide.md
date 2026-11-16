@@ -97,3 +97,5 @@ Example: <작은 로컬 파일로 재현할 요청>
 4. 새 기능을 뺀 기존 작업도 확인하고, 결과와 OS·빌드 해시·모델 종류를 검증 기록에 남깁니다.
 
 소스 개발에 필요한 Codex 전용 스킬은 루트 `.agents/skills`입니다. 여기에 파일을 추가해도 직원에게 배포하는 Ned 기본 스킬이 늘어나지는 않습니다.
+
+0.3.8의 Git 스테이징·커밋과 Ghidra는 검토된 호스트 도구로 기본 제공하므로 별도 MCP 설치가 필요하지 않습니다. Ghidra·JDK 잠금 값과 Java 네트워크 가드는 `ghidra-runtime-lock.json`, `scripts/bundle-ghidra.py`, `distribution/rea-ghidra-worker.mjs`에서 확인합니다. 사용법은 [Git·바이너리 분석 안내](git-and-binary-analysis.md)를 따릅니다.

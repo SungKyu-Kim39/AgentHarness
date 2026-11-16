@@ -92,11 +92,14 @@ async function packageApp(compileInstaller=true) {
     directories:{app:path.join(cache,'app'),output},files:['main.cjs','package.json'],asar:true,npmRebuild:false,publish:null,
     win:{target:'dir',signAndEditExecutable:false,icon:path.join(root,'assets/ned-icon.ico')},
     extraResources:[
-      {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*','windows-x64/agent-desktop/**/*']},
+      {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*','windows-x64/agent-desktop/**/*','windows-x64/ghidra/**/*']},
       {from:path.join(root,'vendor/skills'),to:'ned/skills',filter:['**/*','!doc-coauthoring{,/**/*}']},
       {from:path.join(root,'distribution/methodology'),to:'ned/methodology'},
       {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
+      {from:path.join(root,'distribution/personal-pack-recovery.py'),to:'ned/personal-pack-recovery.py'},
+      {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
+      {from:path.join(root,'docs/git-and-binary-analysis.md'),to:'ned/git-and-binary-analysis.md'},
       {from:path.join(root,'LICENSE'),to:'ned/licenses/Ned-MIT.txt'},
       {from:path.join(root,'node_modules/jsonc-parser/LICENSE.md'),to:'ned/licenses/jsonc-parser-MIT.txt'},
       {from:path.join(cache,'editor-branding.json'),to:'ned/editor-branding.json'},
@@ -160,7 +163,7 @@ async function audit() {
     const baseline=revision&&!fullRelease?await rebuildBaseline(root,version,revision):undefined;
     const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
-    for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
+    for(const name of ['openviking','mcp','rea','agent-desktop',...(version==='0.3.8'?['ghidra']:[]),'skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
@@ -208,7 +211,7 @@ async function bundle() {
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
   if(fullRelease)await cp(path.join(root,'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
-  if(version==='0.3.8')for(const [from,to] of [['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
+  if(version==='0.3.8')for(const [from,to] of [['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));
@@ -223,6 +226,9 @@ async function bundle() {
     const sourceFile=path.join(cache,'handover-sources',item.handoverFile);
     if(await fileHash(sourceFile)!==item.sha256)throw Error('Offline corresponding-source handover is incomplete');
     await cp(sourceFile,path.join(stage,'source',item.handoverFile));
+  }
+  if(version==='0.3.8')for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
+    const file=path.join(root,'.cache/ghidra',item.file);if(await fileHash(file)!==item.sha256)throw Error('Ghidra/JDK corresponding source hash mismatch');await cp(file,path.join(stage,'source',item.file));
   }
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);

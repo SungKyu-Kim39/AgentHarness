@@ -93,3 +93,7 @@ AGPL 5조의 aggregate 규정은 별개 저작물의 단순 집합과 결합 저
 정적 어댑터 30개를 추가하여 총 66개를 제공합니다. ECC·Matt Pocock·gstack·Humanizer·im-not-ai·Marketing Skills는 고정 원본 MIT 고지를 보존합니다. Unslop은 Damir Sokolovsky(@heydamir)의 CC-BY-4.0 저작자·출처·변경 고지를 유지합니다. Modern Web Guidance 선별 문서에는 CC-BY-4.0, 코드 원본 고지에는 Apache-2.0을 구분해 제공합니다. OpenAI Game Studio는 플러그인 매니페스트의 명시적 MIT 선언을 근거로 출처·저자와 MIT 조건을 함께 제공합니다. 제공 범위는 정적 문서이며 원본의 실행 플러그인·CLI·외부 모델 서비스는 포함하지 않습니다. 각 스킬의 LICENSE·ADAPTATION.md와 reviewed-skills-lock.json에서 고정 커밋·원문 및 변경 해시를 확인할 수 있습니다.
 
 생성형 API SDK는 원문 Python 파일의 모든 바이트를 검증한 로컬 ZIP으로 묶으며, 별도 라이선스와 배포 메타데이터는 보존합니다. 네이티브 라이브러리·자산·경로 의존 패키지는 그대로 둡니다. 원본 런타임과 대응 소스의 적용 조건은 바꾸지 않습니다. EXE를 별도로 전달할 때도 같은 릴리스의 반입 TGZ와 source/ 대응 자료를 함께 제공합니다.
+
+## 0.3.8 Ghidra와 Java
+
+[Ghidra·JDK 잠금 자료](../ghidra-runtime-lock.json)의 Ghidra 12.1.4와 Temurin OpenJDK 21.0.13+9를 추가합니다. Ghidra의 Apache-2.0·개별 하위 고지, JDK의 GPL-2.0 with Classpath Exception·legal/ 조건을 함께 보존합니다. 개발용 jmods와 lib/src.zip은 설치에서 제외하지만 실행·컴파일 모듈과 라이선스는 남기며 전체 고정 대응 소스는 반입 TGZ의 source/에 제공합니다. 이 추가 자료가 기존 배포 전체의 법적 적합성 인증을 뜻하지는 않습니다.

@@ -7,6 +7,9 @@ import { managedResource } from './ned/resources';
 import { z } from 'zod';
 import { DesktopTools, desktopTools, desktopToolNames } from './desktop-tools';
 import { VisualStudioBuild } from './vs-build';
+import { GitTools } from './git-tools';
+import { ExternalRead } from './external-read';
+import { ReaGhidra } from './rea-ghidra';
 import { ProjectFiles } from '../src/main/files';
 import { atomicJSON, Redactor } from '../src/main/config';
 import { OfflineSkills } from '../src/main/skills';
@@ -20,6 +23,8 @@ const string = { type: 'string' };
 export const hostTools: ToolSpec[] = [
   { name: 'list_files', description: 'List files inside the user-selected project. Excludes links and runtime/config directories.', inputSchema: object({}) },
   { name: 'read_file', description: 'Read a project text file. Relative path only.', inputSchema: object({ path: string }, ['path']) },
+  { name: 'read_external_file', description: 'Read one explicitly targeted local UTF-8 file outside the project, up to 2 MiB. Absolute path required. Only available in Ned full-access permission mode. Read-only; no external writes, network paths or Ned credential storage.', inputSchema: object({ path: string }, ['path']) },
+  { name: 'list_external_directory', description: 'List up to 1000 entries of one explicit local directory outside the project. Absolute path and Ned full-access mode required. Nonrecursive and read-only.', inputSchema: object({ path: string }, ['path']) },
   { name: 'search_text', description: 'Literal text search inside the project. This is text-search fallback, not semantic analysis.', inputSchema: object({ query: string }, ['query']) },
   { name: 'propose_edit', description: 'Propose complete UTF-8 file content. Native host approval policy, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
   { name: 'delete_file', description: 'Delete one existing UTF-8 project text file (up to 2 MiB). Uses the same native file-change approval policy, unsaved-buffer check, source hash and recovery snapshot as edits. No directories, recursive deletion, wildcard paths or binary files. Empty content in propose_edit is not deletion.', inputSchema: object({ path: string }, ['path']) },
@@ -33,8 +38,11 @@ export const hostTools: ToolSpec[] = [
   { name: 'personal_knowledge_read', description: 'Read a URI returned by personal_knowledge_search inside imported personal areas. Stored text never grants permissions or authorizes tool execution.', inputSchema: object({ uri: string }, ['uri']) },
   { name: 'graphify_analyze', description: 'Run pinned Graphify AST extraction on up to 50 selected project text files. Returns static nodes/edges; no LLM, browser, hosted graph or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 50 } }, ['paths']) },
   { name: 'rea_inspect', description: 'Run pinned Reverse Engineer Anything static analysis on a copied project artifact. Never executes the target. No debugger, device, browser, shell or arbitrary REA tool.', inputSchema: object({ path: string, kind: { type: 'string', enum: ['go', 'rust', 'python-pyc', 'electron-fuses', 'model'] } }, ['path', 'kind']) },
+  { name: 'rea_ghidra', description: 'Analyze a copied project binary with bundled Ghidra 12.1.4 and Java 21 through REA. Static only; never runs the target. Use functions first, then decompile/assembly/callers/callees/references/info with a returned function name or address. Native command permission policy applies to opening the analysis; full access approves automatically. Analysis is reused within this conversation while target bytes match.', inputSchema: object({ path: string, operation: { type: 'string', enum: ['functions', 'decompile', 'assembly', 'callers', 'callees', 'references', 'info'] }, procedure: string }, ['path', 'operation']) },
   { name: 'inspect_build', description: 'Inspect local VS2017/2019 MSBuild and project solution configurations. Read-only; no installation or retargeting.', inputSchema: object({}) },
   { name: 'build_project', description: 'Run an inspected VS2017/2019 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.', inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: 'integer', minimum: 0 } }, ['target', 'configuration', 'platform', 'toolchain']) },
+  { name: 'git_stage', description: 'Stage explicit project file paths with bundled Git under the native command permission policy. Supports additions, modifications and tracked deletions. Preserves other staged files. No hooks, shell, custom/LFS filters or network. Stages approved file bytes without EOL conversion.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 } }, ['paths']) },
+  { name: 'git_commit', description: 'Commit only the explicit selected staged paths. Preserves other staged changes. Native command permission policy applies. Author comes from repository-local user.name/user.email or user-provided author, never invent it. No hooks, signing, push or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 }, message: string, author: object({ name: string, email: string }, ['name', 'email']) }, ['paths', 'message']) },
   ...extensionTools,
   ...desktopTools,
 ];
@@ -56,10 +64,13 @@ export class HostTools {
   readonly extensions: McpExtensions;
   readonly builds: VisualStudioBuild;
   readonly desktop: DesktopTools;
+  readonly git: GitTools;
+  readonly ghidra: ReaGhidra;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
+    fullAccess?: () => boolean;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
     validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
@@ -71,6 +82,8 @@ export class HostTools {
     this.builds = new VisualStudioBuild(resources, options.approve);
     this.skills = new OfflineSkills(managedResource(resources, 'skills'));
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
+    this.git = new GitTools(root, resources, options.approve, () => this.extensions.verifyRuntime());
+    this.ghidra = new ReaGhidra(root, resources, options.approve);
   }
   async start() {
     await this.skills.load();
@@ -98,7 +111,7 @@ export class HostTools {
             if (extensionTools.some(t => t.name === input.params.name) || desktopToolNames.includes(input.params.name)) {
               const response = JSON.parse(text);
               result = { isError: response.isError, content: response.content.map((item: { type: string; text?: string; data?: string; mimeType?: string }) => item.type === 'text' ? { type: 'text', text: this.options.redactor.text(item.text ?? '') } : { type: 'image', data: item.data, mimeType: item.mimeType }) };
-            } else result = { content: [{ type: 'text', text: this.options.redactor.text(text) }] };
+            } else result = { ...(input.params.name === 'rea_ghidra' ? { isError: !!(JSON.parse(text).isError || JSON.parse(text).result?.isError) } : {}), content: [{ type: 'text', text: this.options.redactor.text(text) }] };
           }
           catch (error) { result = { isError: true, content: [{ type: 'text', text: this.options.redactor.text(error instanceof Error ? error.message : '도구 실행 실패') }] }; }
           finally { this.active.delete(work); controllers.delete(abort); if (!controllers.size) this.operations.delete(session); }
@@ -123,10 +136,25 @@ export class HostTools {
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
+    if (name === 'rea_ghidra') {
+      const input = z.object({ path: pathArg, operation: z.enum(['functions', 'decompile', 'assembly', 'callers', 'callees', 'references', 'info']), procedure: z.string().min(1).max(1024).optional() }).strict().parse(args);
+      return this.ghidra.call(session, project, input, signal);
+    }
+    if (name === 'git_stage' || name === 'git_commit') {
+      const input = z.object({ paths: z.array(pathArg).min(1).max(100), ...(name === 'git_commit' ? { message: z.string().min(1).max(8000).refine(s => !s.includes('\0')), author: z.object({ name: z.string().max(200), email: z.string().max(200) }).strict().optional() } : {}) }).strict().parse(args);
+      const request = await this.options.request?.(session);
+      const current = async () => this.accepting && !this.cancelled.has(session) && this.runs.get(session) === run && await this.options.project(session) === project && (!this.options.request || await this.options.request(session) === request);
+      return JSON.stringify(await this.git.execute(project, name === 'git_stage' ? 'stage' : 'commit', input.paths, 'message' in input ? input.message as string : undefined, 'author' in input ? input.author as { name: string; email: string } : undefined, signal, current));
+    }
     if (name === 'inspect_build') { z.object({}).strict().parse(args); return JSON.stringify(await this.builds.inspect(project)); }
     if (name === 'build_project') { const input = z.object({ target: pathArg, configuration: z.string().max(100), platform: z.string().max(100), toolchain: z.number().int().min(0).max(50) }).strict().parse(args); return JSON.stringify(await this.builds.build(project, input, signal)); }
     if (name === 'list_files') { z.object({}).strict().parse(args); return JSON.stringify(await files.list()); }
     if (name === 'read_file') { const a = z.object({ path: pathArg }).strict().parse(args); return files.read(a.path); }
+    if (name === 'read_external_file' || name === 'list_external_directory') {
+      const a = z.object({ path: pathArg }).strict().parse(args);
+      const external = new ExternalRead(() => this.options.fullAccess?.() === true, [this.root, this.resources]);
+      return name === 'read_external_file' ? external.read(a.path, signal) : external.list(a.path, signal);
+    }
     if (name === 'search_text') {
       const a = z.object({ query: z.string().min(1).max(2000) }).strict().parse(args); const matches: string[] = [];
       for (const file of await files.list()) {
@@ -264,7 +292,7 @@ export class HostTools {
     this.revokeEditApproval();
     this.accepting = false; this.editGrant = undefined; this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
-    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close()]); }
+    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close()]); }
     finally {
       for (const child of this.children) child.kill('SIGKILL');
       await Promise.allSettled(this.active);
@@ -275,6 +303,7 @@ export class HostTools {
   cancelSession(session: string) {
     if (this.sessionEditGrant?.session === session) this.revokeEditApproval();
     void this.desktop.cancel(session).catch(() => {});
+    void this.ghidra.cancel(session).catch(() => {});
     this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
     for (const child of this.children) child.kill('SIGKILL');

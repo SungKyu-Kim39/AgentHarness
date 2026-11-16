@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "ghidraVersion": "12.1.4",
+  "jdkVersion": "21.0.13+9",
+  "jdkLicense": "GPL-2.0-with-classpath-exception",
+  "ghidraLicense": "Apache-2.0 and bundled third-party licenses",
+  "artifacts": [
+    {
+      "kind": "ghidra",
+      "file": "ghidra_12.1.4_PUBLIC_20260921.zip",
+      "url": "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.4_build/ghidra_12.1.4_PUBLIC_20260921.zip",
+      "bytes": 569649598,
+      "sha256": "ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db"
+    },
+    {
+      "kind": "jdk",
+      "file": "OpenJDK21U-jdk_x64_windows_hotspot_21.0.13_9.zip",
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk_x64_windows_hotspot_21.0.13_9.zip",
+      "bytes": 205421281,
+      "sha256": "a4dbaa05fca4bd89d84584e58c459bd732efebb1722af80ab13c6516832004f9"
+    },
+    {
+      "kind": "jdk-source",
+      "file": "OpenJDK21U-jdk-sources_21.0.13_9.tar.gz",
+      "url": "https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.13%2B9/OpenJDK21U-jdk-sources_21.0.13_9.tar.gz",
+      "bytes": 115231532,
+      "sha256": "b5232c9980d8a0f0459676c084c41c6e2c771ed9e785890b03c6a438406ad1ca"
+    },
+    {
+      "kind": "ghidra-source",
+      "file": "ghidra-12.1.4-source.tar.gz",
+      "url": "https://github.com/NationalSecurityAgency/ghidra/archive/refs/tags/Ghidra_12.1.4_build.tar.gz",
+      "bytes": 79326423,
+      "sha256": "2a858300c350f05ae2e729dff86b4f584d0b9a6b398879c55025574e67696cec"
+    }
+  ]
+}

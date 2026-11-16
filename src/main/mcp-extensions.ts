@@ -23,6 +23,7 @@ export const extensionTools: ExtensionTool[] = [
 const relative = z.string().min(1).max(4096);
 export interface ExtensionPaths { python: (service: string) => string; site: (service: string) => string; git: string; clangd: string; browser: string; node: string; pythonWorker: string; nodeWorker: string; supervisor: string; testNoSandbox?: boolean }
 export class McpExtensions {
+  verifyRuntime() { return this.verify(); }
   private clients = new Set<PrivateMcpClient>();
   private stopping = new Set<Promise<void>>();
   private stopped = false; private uncertain = false;
