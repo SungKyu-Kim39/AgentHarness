@@ -43,10 +43,13 @@ jobs:
           if(validation.conclusion!=='success'||validation.path!=='.github/workflows/windows-offline-smoke.yml'||validation.head_branch!=='work')throw Error('Windows validation did not succeed');
           const artifacts=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/actions/runs/${process.env.NED_VALIDATION_RUN}/artifacts`],{encoding:'utf8'}));
           if(!artifacts.artifacts.some(a=>a.name==='windows-offline-smoke-'+version&&!a.expired&&a.size_in_bytes>0))throw Error('Windows validation artifact version mismatch');
+          execFileSync('gh',['run','download',process.env.NED_VALIDATION_RUN,'--name','windows-offline-smoke-'+version,'--dir','windows-validation'],{stdio:'inherit'});
+          const installedProof=JSON.parse((await readFile('windows-validation/windows-offline-smoke.json','utf8')).replace(/^\uFEFF/,''));
           const prefix='Ned-'+version;
           const audit=JSON.parse(await readFile('downloads/'+prefix+'-installer-audit.json'));
           const bundle=JSON.parse(await readFile('downloads/'+prefix+'-bundle-manifest.json'));
           if(audit.version!==version||bundle.version!==version||audit.sourceCommit!==bundle.sourceCommit)throw Error('Inconsistent release provenance');
+          if(installedProof.version!==version||installedProof.installerSha256!==audit.installer.sha256)throw Error('Installed Windows bytes do not match release');
           const tag=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/commits/v${version}`],{encoding:'utf8'}));
           if(tag.sha!==audit.sourceCommit||bundle.installer.sha256!==audit.installer.sha256||audit.payloadComparison?.allStagedBytesVerified!==true)throw Error('Tag or complete installer provenance mismatch');
           execFileSync('git',['merge-base','--is-ancestor',validation.head_sha,process.env.GITHUB_SHA]);

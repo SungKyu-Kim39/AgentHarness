@@ -16,7 +16,7 @@ on:
     paths:
       - downloads/Ned-0.3.7-win-x64.exe
       - downloads/Ned-0.3.7-rebuild1-win-x64.exe
-      - downloads/Ned-0.3.8-win-x64.exe
+      # 0.3.8 uses an explicit immutable candidate_source dispatch before publication.
 permissions:
   contents: read
 jobs:
