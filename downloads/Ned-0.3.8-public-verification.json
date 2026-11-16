@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.8",
+  "sourceCommit": "35e7771c1d5dc731953aa10b436bd2a423c87303",
+  "artifactCommit": "bd4c4639dadfeef1a531833dcc9f823908a818bc",
+  "verifiedAt": "2026-11-16T15:31:31.501031+00:00",
+  "clientAuthenticationSupplied": false,
+  "releaseAssetsFullyVerified": true,
+  "files": [
+    {
+      "name": "Ned-0.3.8-win-x64.exe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-win-x64.exe",
+      "httpStatus": 200,
+      "bytes": 1511354669,
+      "sha256": "860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27",
+      "fullRemoteSha256Verified": true,
+      "seconds": 265.999
+    },
+    {
+      "name": "Ned-0.3.8-windows-x64.tgz",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-windows-x64.tgz",
+      "httpStatus": 200,
+      "bytes": 1837611541,
+      "sha256": "dcc0c46cf970811168770e609c4de9540c00643724cb6986bd57bc8778be951c",
+      "fullRemoteSha256Verified": true,
+      "seconds": 334.945
+    },
+    {
+      "name": "Ned-0.3.8-win-x64.exe.sha256",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-win-x64.exe.sha256",
+      "httpStatus": 200,
+      "bytes": 88,
+      "sha256": "5b85993ba9fea405bf50c0d8bbc50ca9cfb2d895d1c03c600639358d64b38653",
+      "fullRemoteSha256Verified": true,
+      "seconds": 1.819
+    },
+    {
+      "name": "Ned-0.3.8-windows-x64.tgz.sha256",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-windows-x64.tgz.sha256",
+      "httpStatus": 200,
+      "bytes": 92,
+      "sha256": "22a3766578cf62e7c6fd9a5899c4930c821b193c3dff931b350bee450c63083c",
+      "fullRemoteSha256Verified": true,
+      "seconds": 1.959
+    },
+    {
+      "name": "Ned-0.3.8-installer-audit.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-installer-audit.json",
+      "httpStatus": 200,
+      "bytes": 11740,
+      "sha256": "20aaa63a42d407d64c2810a796c794eb4db5fb0ef8d0b70ee998ed59849eb6c2",
+      "fullRemoteSha256Verified": true,
+      "seconds": 1.114
+    },
+    {
+      "name": "Ned-0.3.8-bundle-manifest.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-bundle-manifest.json",
+      "httpStatus": 200,
+      "bytes": 565,
+      "sha256": "ba558f9eb437a59ee67e87cad9f77ecc43a3a387d6da968aca6f86d96c8ded12",
+      "fullRemoteSha256Verified": true,
+      "seconds": 0.825
+    },
+    {
+      "name": "Ned-0.3.8-payload-manifest.json",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-payload-manifest.json",
+      "httpStatus": 200,
+      "bytes": 9968758,
+      "sha256": "6c672f24dce510d4eeb9b9527bef940a966ee0cbed2bfba82efd8cbabbad7a77",
+      "fullRemoteSha256Verified": true,
+      "seconds": 3.744
+    }
+  ]
+}

@@ -2,10 +2,12 @@
 
 최신 배포입니다. Ned와 개인 Zed를 종료하고 반입 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식·편집기 환경은 유지합니다.
 
-- [폐쇄망 반입 TGZ · EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-windows-x64.tgz) — 1,837,611,541 bytes
-- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-win-x64.exe) — 1,511,354,669 bytes
+- [폐쇄망 반입 TGZ · EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-windows-x64.tgz) — 1,837,611,541 bytes
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-win-x64.exe) — 1,511,354,669 bytes
 - [TGZ SHA-256](Ned-0.3.8-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.8-win-x64.exe.sha256)
 - [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8) · [검증 보고서](../docs/validation-0.3.8.md) · [전체 파일 대조](Ned-0.3.8-installer-audit.json) · [반입 묶음 검사](Ned-0.3.8-bundle-verification.json) · [Windows 검사](Ned-0.3.8-windows-offline-smoke.json) · [배포 상태](Ned-0.3.8-release-state.json)
+
+GitHub Release 첨부 파일 7개를 인증 없이 전부 다운로드해 크기와 SHA-256을 확인했습니다. [공개 다운로드 결과](Ned-0.3.8-public-verification.json)를 남겼습니다. 첨부 다운로드가 어려울 때는 [TGZ 보조 링크](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-windows-x64.tgz)와 [EXE 보조 링크](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-win-x64.exe)를 사용할 수 있습니다.
 
 PC의 Conda 환경을 사용자가 한 번 선택하면 프로젝트별로 계속 사용하고 OpenViking에도 기록합니다. `.py` 실행·컴파일 검사·pytest·wheel·PyInstaller와 실행 상태 확인·중지를 지원합니다. [Conda 사용 안내](../docs/python-conda.md)를 참고하세요. 전체 권한에서도 환경 선택은 사용자가 결정하며, 패키지를 자동 설치하지 않습니다.
 

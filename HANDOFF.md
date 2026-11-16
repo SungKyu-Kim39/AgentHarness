@@ -6,6 +6,8 @@
 
 [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8)의 EXE·TGZ는 소스 `35e7771c1d5dc731953aa10b436bd2a423c87303`에서 생성했습니다. 반입 파일 커밋은 `bd4c4639dadfeef1a531833dcc9f823908a818bc`입니다. EXE 1,511,354,669 bytes의 SHA-256은 `860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27`, TGZ 1,837,611,541 bytes는 `dcc0c46cf970811168770e609c4de9540c00643724cb6986bd57bc8778be951c`입니다. [다운로드 안내](downloads/README.md)와 [배포 상태](downloads/Ned-0.3.8-release-state.json)를 기준으로 이어갑니다.
 
+GitHub Release의 EXE·TGZ·체크섬·manifest·audit 첨부 7개를 모두 공개했습니다. [익명 전체 다운로드 검사](downloads/Ned-0.3.8-public-verification.json)와 GitHub의 asset digest가 일치했습니다. 게시 작업은 [43872146785](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43872146785)에서 완료했습니다. `main`과 `work`에 배포 기록을 반영합니다.
+
 요약 출력 한도 복구, OpenViking Studio, 실패 OVPack의 원본 보존 재시도, Git 스테이징·로컬 커밋, Ghidra/Java, 전체 권한의 외부 읽기와 프로젝트별 Conda 환경 선택을 반영했습니다. Conda 선택은 로컬에 보존하고 OpenViking에 참고 기록으로 비동기 색인합니다. 지식 문서만으로 실행 환경을 바꾸지 않습니다. [기능 안내](docs/python-conda.md)를 참고하세요.
 
 Linux 전체 회귀 199건 중 189건 통과·10건 환경별 제외·실패 0건이며 추가 집중 검사 10건도 통과했습니다. 최종 앱 파일 59,694개를 준비본과 전부 대조했습니다. [Windows 실행 43869521183](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43869521183)은 설치 후 파일 교체 없이 SDK 이관·삭제·요약·Git·Ghidra·대규모 패키지·Conda 20건 모두 통과했습니다. 실제 직원 Win10/11·사내 모델 전체 수용과는 구분합니다.

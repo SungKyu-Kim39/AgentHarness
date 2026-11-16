@@ -73,3 +73,9 @@ Python 작업은 PC의 기존 Conda 환경을 조사하고 실제 사용자 선�
 설치된 Ned Node 모드에서 체크섬을 확인한 `Ned-0.3.8-windows-{namespace,delete,compaction,native,python}-test.cjs`를 각각 `--test`로 실행했습니다. SDK 이관 1건, 삭제 9건, 실제 엔진 요약 1건, Git·외부 읽기·Ghidra·대규모 패키지 8건, Conda 1건으로 총 20건 모두 통과했습니다. OpenViking 0.5.5·토크나이저 7종·Node 로딩, 없는 설치 폴더 생성과 사용자 자료 폴더 설치 거절도 확인했습니다.
 
 모델은 localhost 합성 서버만 사용했습니다. 해당 실행 파일의 Internet 송신은 Windows 방화벽으로 차단했으며 실제 사내 Qwen/BGE 호출과 직원 Windows 10·11 GUI·데스크톱 조작·전체 DNS/TCP 관찰은 별도 수용 범위입니다. [기계 판독 결과](../downloads/Ned-0.3.8-windows-offline-smoke.json)를 함께 제공합니다.
+
+## 공개 배포 파일 확인
+
+[v0.3.8 Release](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8)에 EXE·TGZ·체크섬·검증 자료 7개를 첨부했습니다. [게시 작업 43872146785](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43872146785)에서 검증한 Windows 설치 파일과 같은 해시인지 확인한 뒤 업로드했습니다. 첨부 서버에는 이미 있는 다른 파일을 덮어쓰지 않습니다.
+
+외부 클라이언트에서도 인증 없이 7개 파일 전체를 다운로드했습니다. TGZ 1,837,611,541 bytes와 EXE 1,511,354,669 bytes를 포함해 모든 SHA-256이 로컬 검증본·GitHub asset digest와 일치했습니다. [전체 다운로드 기록](../downloads/Ned-0.3.8-public-verification.json)에 URL·크기·해시를 기록합니다. TGZ의 외부 경로와 Ned 소스 경로는 ASCII이며, third-party 대응 소스는 원본 바이트를 보존했습니다.
