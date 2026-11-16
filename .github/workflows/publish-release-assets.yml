@@ -50,7 +50,14 @@ jobs:
           const tag=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/commits/v${version}`],{encoding:'utf8'}));
           if(tag.sha!==audit.sourceCommit||bundle.installer.sha256!==audit.installer.sha256||audit.payloadComparison?.allStagedBytesVerified!==true)throw Error('Tag or complete installer provenance mismatch');
           execFileSync('git',['merge-base','--is-ancestor',validation.head_sha,process.env.GITHUB_SHA]);
-          execFileSync('git',['diff','--exit-code',validation.head_sha,process.env.GITHUB_SHA,'--','downloads/'+prefix+'-win-x64.exe','downloads/'+prefix+'-installer-audit.json']);
+          // Validation may consume an immutable candidate before public final
+          // filenames exist. Its exact installer digest must match this release.
+          const candidatePath='downloads/candidates/'+audit.sourceCommit+'/'+prefix+'-installer-audit.json';
+          let validatedAudit;
+          try { validatedAudit=JSON.parse(execFileSync('git',['show',validation.head_sha+':'+candidatePath],{encoding:'utf8',stdio:['ignore','pipe','ignore']})); }
+          catch { validatedAudit=JSON.parse(execFileSync('git',['show',validation.head_sha+':downloads/'+prefix+'-installer-audit.json'],{encoding:'utf8'})); }
+          if(validatedAudit.sourceCommit!==audit.sourceCommit||validatedAudit.installer.sha256!==audit.installer.sha256)throw Error('Validated installer differs from release');
+          execFileSync('git',['diff','--exit-code',validation.head_sha,process.env.GITHUB_SHA,'--','.github/workflows/windows-offline-smoke.yml',...['namespace','delete','compaction','native','python'].flatMap(n=>['downloads/'+prefix+'-windows-'+n+'-test.cjs','downloads/'+prefix+'-windows-'+n+'-test.cjs.sha256'])]);
           await mkdir('release-assets');
           const files=[prefix+'-win-x64.exe',prefix+'-windows-x64.tgz',prefix+'-win-x64.exe.sha256',prefix+'-windows-x64.tgz.sha256',prefix+'-installer-audit.json',prefix+'-bundle-manifest.json',prefix+'-payload-manifest.json'];
           const hash=async file=>{const h=createHash('sha256');for await(const b of createReadStream(file))h.update(b);return h.digest('hex');};

@@ -7,6 +7,10 @@ on:
         default: 0.3.8
         type: choice
         options: ['0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe']
+      candidate_source:
+        description: Optional immutable candidate source SHA (leave empty for published downloads)
+        type: string
+        default: ''
   push:
     branches: [work]
     paths:
@@ -22,6 +26,7 @@ jobs:
     timeout-minutes: 30
     env:
       NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.8' }}
+      NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -55,9 +60,13 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $audit = Get-Content "downloads/Ned-$env:NED_ARTIFACT_VERSION-installer-audit.json" -Raw | ConvertFrom-Json
+          if ($env:NED_CANDIDATE_SOURCE -and $env:NED_CANDIDATE_SOURCE -notmatch '^[a-f0-9]{40}$') { throw 'Invalid candidate source' }
+          $directory = if ($env:NED_CANDIDATE_SOURCE) { 'downloads/candidates/' + $env:NED_CANDIDATE_SOURCE } else { 'downloads' }
+          $audit = Get-Content "$directory/Ned-$env:NED_ARTIFACT_VERSION-installer-audit.json" -Raw | ConvertFrom-Json
+          if ($env:NED_CANDIDATE_SOURCE -and $audit.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Candidate provenance mismatch' }
+          "NED_ARTIFACT_SHA256=$($audit.installer.sha256)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $exe = Join-Path $env:RUNNER_TEMP "Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-          $url = "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
+          $url = "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
           & curl.exe --fail --location --retry 2 --output $exe $url
           if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
           if ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $audit.installer.sha256) { throw 'Installer SHA-256 mismatch' }
@@ -112,6 +121,7 @@ jobs:
           $baseline = Get-Content baseline-smoke.json -Raw | ConvertFrom-Json
           [ordered]@{
             schemaVersion=1; product='Ned'; version=$env:NED_ARTIFACT_VERSION; openVikingVersion=$expectedVersion
+            candidateSource=$env:NED_CANDIDATE_SOURCE; installerSha256=$env:NED_ARTIFACT_SHA256
             os=[Environment]::OSVersion.Version.ToString()
             installerMilliseconds=$watch.ElapsedMilliseconds
             baselineInstallerMilliseconds=$baseline.installerMilliseconds
