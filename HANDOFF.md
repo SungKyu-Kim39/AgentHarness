@@ -1,16 +1,22 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.7 수정 빌드 1**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.8**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-## 진행 중인 0.3.8
+## 0.3.8 배포 기준
 
-`work`에는 요약 출력 한도 복구, OpenViking Studio, 실패 OVPack의 원본 보존 재시도, Git 스테이징·커밋, Ghidra/Java, 전체 권한의 외부 읽기와 프로젝트별 Conda 환경 선택이 있습니다. 0.3.8 설치 파일은 아직 공개하지 않았습니다. 이전 소스의 비공개 후보 EXE는 최신 HTTP 400·Python 변경을 포함하지 않으므로 배포하면 안 됩니다. 최종 소스 커밋에서 `ned:release`와 `bundle:offline`을 다시 실행하고 Windows 검사를 마친 뒤 게시합니다.
+[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8)의 EXE·TGZ는 소스 `35e7771c1d5dc731953aa10b436bd2a423c87303`에서 생성했습니다. 반입 파일 커밋은 `bd4c4639dadfeef1a531833dcc9f823908a818bc`입니다. EXE 1,511,354,669 bytes의 SHA-256은 `860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27`, TGZ 1,837,611,541 bytes는 `dcc0c46cf970811168770e609c4de9540c00643724cb6986bd57bc8778be951c`입니다. [다운로드 안내](downloads/README.md)와 [배포 상태](downloads/Ned-0.3.8-release-state.json)를 기준으로 이어갑니다.
 
-첫 대화 HTTP 400의 서버 원인은 아직 미확정입니다. 두 번째 system 메시지 생성은 수정했고 0.3.7용 [호환성·안전한 진단 패치](docs/first-chat-http-400.md)를 공개했습니다. 사용자 로그의 모델 실패와 임베딩 성공은 약 5시간 차이이므로 동시 부하를 원인으로 단정하지 않습니다. 임의의 모델 대기 제한을 추가하지 않습니다.
+요약 출력 한도 복구, OpenViking Studio, 실패 OVPack의 원본 보존 재시도, Git 스테이징·로컬 커밋, Ghidra/Java, 전체 권한의 외부 읽기와 프로젝트별 Conda 환경 선택을 반영했습니다. Conda 선택은 로컬에 보존하고 OpenViking에 참고 기록으로 비동기 색인합니다. 지식 문서만으로 실행 환경을 바꾸지 않습니다. [기능 안내](docs/python-conda.md)를 참고하세요.
 
-Conda는 실제 사용자 선택을 `%APPDATA%\Ned\python-projects`에 저장하고 OpenViking에 참고 기록으로 반영합니다. Linux 실제 SDK 색인·검색과 선택/실행기 검사는 통과했습니다. `python-source-probe` Windows 작업은 기존 0.3.7 런타임과 현재 소스만 검사하는 별도 작업이며 0.3.8 설치본 수용 검사로 합산하지 않습니다. [기능 안내](docs/python-conda.md)와 [0.3.8 검증 기록](docs/validation-0.3.8.md)을 이어서 갱신합니다.
+Linux 전체 회귀 199건 중 189건 통과·10건 환경별 제외·실패 0건이며 추가 집중 검사 10건도 통과했습니다. 최종 앱 파일 59,694개를 준비본과 전부 대조했습니다. [Windows 실행 43869521183](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43869521183)은 설치 후 파일 교체 없이 SDK 이관·삭제·요약·Git·Ghidra·대규모 패키지·Conda 20건 모두 통과했습니다. 실제 직원 Win10/11·사내 모델 전체 수용과는 구분합니다.
 
-## 현재 수정 빌드
+공통 감독기의 stdin daemon 종료 충돌은 `scripts/sidecar-supervisor.py`에서 수정합니다. `scripts/release-supervisor.mjs`가 최적화 후 해당 Ned 소유 파일만 교체하고 manifest·최적화 보고서·release-runtime-lock에 해시를 고정합니다. 현재 OpenViking 최적화 manifest는 `8ee132a83b1bd421620a5b8f4f5ae97c868d2b33a8e2b1a871e001825b2de7a0`입니다. 원본 SDK 파일과 배포 후보는 보존합니다.
+
+첫 대화 HTTP 400은 중복 system 메시지 호환성을 수정하고 비밀 없는 진단을 추가했습니다. 사내 서버의 정확한 거절 원인은 미확정입니다. 기존 모델 실패와 임베딩 성공 로그는 약 5시간 차이이므로 동시 부하를 입증하지 않습니다. 모델 생성 대기에 임의의 제한을 추가하지 않습니다.
+
+새 EXE는 기존 후보를 덮어쓰지 않고 별도 소스 커밋 디렉터리에서 검증했습니다. `downloads/candidates/`의 첫 후보는 공통 감독기 수정 전이므로 직원 배포용으로 사용하지 않습니다. `python-source-probe`·`runtime_source_probe` 결과도 최종 설치본 검사와 혼동하지 않습니다. [0.3.8 검증 기록](docs/validation-0.3.8.md)에 중간 실패와 최종 결과를 함께 남겼습니다.
+
+## 이전 0.3.7 수정 빌드
 
 [수정 빌드 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1)를 공개 prerelease로 게시했습니다. 첨부 서버는 작은 체크섬에도 HTTP 401을 반환하므로, EXE·TGZ는 릴리스 본문의 고정 Git LFS 링크에서 받습니다. [릴리스 상태](downloads/Ned-0.3.7-rebuild1-release-state.json)에 공개 페이지·메타데이터 확인과 첨부 실패를 구분해 기록했습니다.
 

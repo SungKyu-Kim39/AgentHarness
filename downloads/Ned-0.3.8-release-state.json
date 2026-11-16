@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.8",
+  "recordedAt": "2026-11-16T13:02:55.361542+00:00",
+  "sourceCommit": "35e7771c1d5dc731953aa10b436bd2a423c87303",
+  "artifactCommit": "bd4c4639dadfeef1a531833dcc9f823908a818bc",
+  "releaseUrl": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8",
+  "filesPublished": true,
+  "releaseAssetsPublished": false,
+  "publicDownloadsFullyVerified": false,
+  "windowsRunId": 43869521183,
+  "installer": {
+    "name": "Ned-0.3.8-win-x64.exe",
+    "bytes": 1511354669,
+    "sha256": "860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27"
+  },
+  "bundle": {
+    "name": "Ned-0.3.8-windows-x64.tgz",
+    "bytes": 1837611541,
+    "sha256": "dcc0c46cf970811168770e609c4de9540c00643724cb6986bd57bc8778be951c"
+  },
+  "releaseReady": false
+}

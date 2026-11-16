@@ -10,9 +10,9 @@ AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를
 
 ## 다운로드
 
-최신 배포는 [Ned 0.3.7 수정 빌드 1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
+최신 배포는 [Ned 0.3.8](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
 
-수정 빌드에는 OpenViking 0.5.5와 `ned_host_delete_file`이 포함됩니다. 기존 지식 저장소와 기본 스킬은 원본을 보관한 뒤 `ned` 이름의 활성 경로로 이관합니다. 삭제 도구는 기존 파일 수정 권한 모드와 스냅샷을 사용합니다. [업데이트 안내](docs/openviking-0.5.5-update.md)와 [검증 기록](docs/validation-0.3.7-rebuild1.md)을 참고하세요.
+0.3.8은 프로젝트별 Conda 환경 선택과 Python 실행·빌드, Git 커밋, REA/Ghidra 분석, OpenViking Studio와 실패한 개인 지식 가져오기 복구를 추가했습니다. 요약 출력 한도와 공통 프로세스 감독기도 보완했습니다. OpenViking 0.5.5와 스킬 66개를 유지합니다. [검증 기록](docs/validation-0.3.8.md)에서 확인한 동작과 남은 수용 범위를 볼 수 있습니다.
 
 0.3.7에서는 기본 스킬을 66개로 늘리고, 요청과 대화 문맥에 맞는 지침을 자동으로 불러오도록 했습니다. Python SDK의 파일 배치와 호스트 번들을 정리해 설치 부담도 줄였습니다.
 
@@ -41,7 +41,7 @@ Ned는 선택한 프로젝트의 코드를 읽고 검색한 뒤 수정안을 만
 
 반복 승인창이 번거롭다면 대화 입력창이나 알림 영역의 **권한** 메뉴에서 **프로젝트 파일 자동 승인** 또는 **전체 권한**을 선택할 수 있습니다. 선택은 재시작과 업데이트 후에도 유지됩니다. 적용 범위는 [권한 안내](docs/approval-modes.md)에 설명했습니다.
 
-기본 구성에는 Aegis·Conductor 지침, 스킬 66개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 개발 중인 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
+기본 구성에는 Aegis·Conductor 지침, 스킬 66개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
 
 OpenViking은 Ned와 함께 시작하고 종료합니다. 기본 스킬을 등록하고, 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [스킬 안내](docs/skills-0.3.7.md), [개인 지식 이관](docs/openviking-personal-migration.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
 
@@ -49,6 +49,6 @@ OpenViking은 Ned와 함께 시작하고 종료합니다. 기본 스킬을 등�
 
 Ned 호스트는 설정과 승인, 서비스 실행·종료를 관리합니다. Zed는 편집기와 대화 화면을, 전용 OpenCode 엔진은 에이전트 실행을 담당합니다. 모델 가중치는 포함하지 않으며, 답변과 임베딩 계산에는 JSON에 지정한 사내 API를 사용합니다. 긴 서버 대기열을 고려해 모델 응답에 기본 시간 제한을 두지 않습니다.
 
-빌드는 고정 OpenCode 소스와 Windows 런타임을 준비한 뒤 진행합니다. `npm run ned:prepare:acp`로 빌드 의존성을 준비하고, `npm run build`로 호스트와 ACP를, `npm run ned:release`로 0.3.7 설치기를 생성합니다. 자세한 절차와 코드 위치는 [개발 인계](HANDOFF.md), [아키텍처](docs/architecture.md), [어댑터 명세](docs/adapters.md)를 참고하세요.
+빌드는 고정 OpenCode 소스와 Windows 런타임을 준비한 뒤 진행합니다. `npm run ned:prepare:acp`로 빌드 의존성을 준비하고, `npm run build`로 호스트와 ACP를, `npm run ned:release`로 0.3.8 설치기를 생성합니다. 자세한 절차와 코드 위치는 [개발 인계](HANDOFF.md), [아키텍처](docs/architecture.md), [어댑터 명세](docs/adapters.md)를 참고하세요.
 
-`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.7입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.
+`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.8입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.

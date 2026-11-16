@@ -1,3 +1,26 @@
+# Ned 0.3.8
+
+최신 배포입니다. Ned와 개인 Zed를 종료하고 반입 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식·편집기 환경은 유지합니다.
+
+- [폐쇄망 반입 TGZ · EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-windows-x64.tgz) — 1,837,611,541 bytes
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-win-x64.exe) — 1,511,354,669 bytes
+- [TGZ SHA-256](Ned-0.3.8-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.8-win-x64.exe.sha256)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8) · [검증 보고서](../docs/validation-0.3.8.md) · [전체 파일 대조](Ned-0.3.8-installer-audit.json) · [반입 묶음 검사](Ned-0.3.8-bundle-verification.json) · [Windows 검사](Ned-0.3.8-windows-offline-smoke.json) · [배포 상태](Ned-0.3.8-release-state.json)
+
+PC의 Conda 환경을 사용자가 한 번 선택하면 프로젝트별로 계속 사용하고 OpenViking에도 기록합니다. `.py` 실행·컴파일 검사·pytest·wheel·PyInstaller와 실행 상태 확인·중지를 지원합니다. [Conda 사용 안내](../docs/python-conda.md)를 참고하세요. 전체 권한에서도 환경 선택은 사용자가 결정하며, 패키지를 자동 설치하지 않습니다.
+
+Git 스테이징·로컬 커밋, REA의 Ghidra 12.1.4·Java 분석, 전체 권한의 프로젝트 외부 읽기를 추가했습니다. 실패한 `.ovpack` 기록은 보존하고 같은 파일로 새 영역에 재시도할 수 있습니다. 알림 영역의 OpenViking Studio와 [새 MCP·스킬 추가 안내](../docs/extension-guide.md)도 제공합니다. 기본 스킬은 66개, OpenViking은 0.5.5입니다.
+
+잘린 요약은 한 번 더 짧게 요청하고 완성본만 저장합니다. 첫 대화의 중복 system 메시지를 고쳤으며 HTTP 오류는 본문 없이 분류·건수를 기록합니다. 사내 서버의 실제 400 원인은 아직 미확정입니다. 공통 프로세스 감독기의 종료 오류도 수정했으며 모델 생성에 기본 대기 제한은 두지 않습니다.
+
+Linux 전체 회귀 199건은 189건 통과·10건 환경별 제외·실패 0건이고, 추가 집중 검사 10건도 통과했습니다. [최종 EXE의 Windows 검사](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43869521183)는 20건 모두 통과했습니다. 설치 후 파일을 교체하지 않았습니다. EXE 앱 파일 59,694개와 소스 해시를 대조했습니다.
+
+Ghidra·Java를 포함해 설치 논리 크기는 약 3.93GB입니다. 이번 Windows Server 실행기의 설치는 47.144초였으며 직원 PC의 시간을 보장하지 않습니다. 실제 사내 Qwen/BGE, 직원 Windows 10·11 GUI와 전체 DNS/TCP 수용은 별도 확인 대상입니다.
+
+빌드 소스는 `35e7771c1d5dc731953aa10b436bd2a423c87303`, 반입 파일 커밋은 `bd4c4639dadfeef1a531833dcc9f823908a818bc`입니다. 이전 버전의 파일과 태그는 보존합니다.
+
+---
+
 # Ned 0.3.7 수정 빌드 1
 
 앱 버전은 **0.3.7**을 유지합니다. `rebuild1`은 원본 설치 파일을 보존하면서 수정 배포를 구분하는 이름입니다.
