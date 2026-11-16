@@ -92,5 +92,11 @@
     "passed": 20,
     "failed": 0,
     "newInstallerAcceptance": false
+  },
+  "windowsInstallerValidation": {
+    "runId": 43869521183,
+    "passed": 20,
+    "failed": 0,
+    "installerSha256": "860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27"
   }
 }

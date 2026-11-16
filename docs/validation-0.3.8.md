@@ -63,3 +63,13 @@ Python 작업은 PC의 기존 Conda 환경을 조사하고 실제 사용자 선�
 공통 감독기·새 manifest를 구 후보의 설치 리소스에 명시적으로 적용한 [Windows 소스 검사 43867044052](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43867044052)는 전체 단계가 통과했습니다. 실제 Git 스테이징·선택 파일 커밋·index 보존, 실제 엔진 요약, Ghidra, 13,242개 파일 패키지, SDK 이관과 Conda 실행·중지를 포함합니다. 이 결과는 수정 런타임의 소스 검사이며 새 EXE의 검증으로 합산하지 않습니다. 중간 소스 검사는 Windows checkout의 CRLF 변환으로 해시가 달라져 차단됐고, 해당 바이트 고정 입력에 LF 속성을 지정한 뒤 재검증했습니다.
 
 공통 감독기 교체 이후 집중 회귀 9건과 변환의 멱등성·변조 거절 1건도 통과했습니다. SDK·third-party 코드 대신 Ned 소유 파일 하나만 바뀌며, 변환 전후 해시는 `runtime-optimization.json`의 `supervisorUpdate`와 잠금 자료에 남습니다.
+
+## 최종 설치본의 Windows 검사
+
+[Windows 실행 43869521183](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43869521183)에서 소스 `35e7771c1d5dc731953aa10b436bd2a423c87303`의 최종 EXE를 설치했습니다. SHA-256은 `860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27`이며, 검사 중 런타임 파일을 교체하지 않았습니다. Windows Server의 OS 버전은 `10.0.20348.0`입니다.
+
+설치는 47.144초였고 설치 파일 59,695개, 논리 크기 3,926,160,608 bytes였습니다. 같은 실행기의 이전 기준 설치는 50.005초였습니다. Ghidra와 Java를 포함한 수치이며 직원 Windows 10·11의 설치 시간을 보장하지 않습니다.
+
+설치된 Ned Node 모드에서 체크섬을 확인한 `Ned-0.3.8-windows-{namespace,delete,compaction,native,python}-test.cjs`를 각각 `--test`로 실행했습니다. SDK 이관 1건, 삭제 9건, 실제 엔진 요약 1건, Git·외부 읽기·Ghidra·대규모 패키지 8건, Conda 1건으로 총 20건 모두 통과했습니다. OpenViking 0.5.5·토크나이저 7종·Node 로딩, 없는 설치 폴더 생성과 사용자 자료 폴더 설치 거절도 확인했습니다.
+
+모델은 localhost 합성 서버만 사용했습니다. 해당 실행 파일의 Internet 송신은 Windows 방화벽으로 차단했으며 실제 사내 Qwen/BGE 호출과 직원 Windows 10·11 GUI·데스크톱 조작·전체 DNS/TCP 관찰은 별도 수용 범위입니다. [기계 판독 결과](../downloads/Ned-0.3.8-windows-offline-smoke.json)를 함께 제공합니다.
