@@ -17,7 +17,9 @@
 
 삭제 도구의 대상 검사, 승인 거절·취소, 미저장 버퍼, 승인 중 외부 변경, 자동 승인 모드, 빈 파일의 실제 삭제, BOM·CRLF 원본 보관, 큰 파일의 제한된 승인 미리보기를 검사했습니다. 스냅샷 저장이 실패하면 삭제하지 않습니다. 이관 상태 복구와 충돌·링크 경로 거절도 대상 테스트에서 검사합니다.
 
-TypeScript 검사와 기본 스킬 66개의 원본·해시 검사를 통과했습니다. 전체 회귀 검사와 최종 설치 파일 검사 결과, 소스 커밋·파일 해시·Windows 실행 기록은 해당 배포의 `INSTALLER_AUDIT.json`, `PAYLOAD_MANIFEST.json`, 저장소 `downloads/Ned-0.3.7-rebuild1-*` 검증 기록에 남깁니다. 이 문서가 포함된 TGZ를 만든 뒤 완료한 외부 검증은 저장소의 후속 기록으로 제공합니다.
+TypeScript 검사와 기본 스킬 66개의 원본·해시 검사를 통과했습니다. 작업공간의 고정 설치 도구 캐시를 지정한 전체 회귀 검사(`ELECTRON_BUILDER_CACHE="$PWD/.cache/ned/builder-cache" npm test`)는 166건 중 157건 통과, 실패 0건, 9건 건너뜀으로 끝났습니다. 실행 시간은 587.6초입니다. 건너뛴 항목은 별도 REA·원형 Desktop·이전 엔진·agent-desktop·Wine·편집기 바이너리 fixture가 필요한 검사입니다. 현재 엔진·실제 SDK 이관·자료 읽기·삭제·권한·NSIS 컴파일 검사는 실행했습니다.
+
+최종 설치 파일 검사 결과, 소스 커밋·파일 해시·Windows 실행 기록은 해당 배포의 `INSTALLER_AUDIT.json`, `PAYLOAD_MANIFEST.json`, 저장소 `downloads/Ned-0.3.7-rebuild1-*` 검증 기록에 남깁니다. 이 문서가 포함된 TGZ를 만든 뒤 완료한 외부 검증은 저장소의 후속 기록으로 제공합니다.
 
 ## 런타임과 배포물
 
