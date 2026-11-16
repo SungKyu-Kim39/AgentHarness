@@ -30,7 +30,7 @@ app.whenReady().then(async () => {
   if (!locked) return;
   const dev =
     !app.isPackaged &&
-    process.env.L_VIBE_DEV_URL === "http://127.0.0.1:5173";
+    process.env.NED_DEV_URL === "http://127.0.0.1:5173";
   const page = pathToFileURL(
     path.join(__dirname, "../renderer/index.html"),
   ).href;

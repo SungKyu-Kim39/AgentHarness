@@ -11,7 +11,7 @@ import { requestJSON } from '../src/main/http-request';
 import { configSchema } from '../src/shared/contracts';
 import { NativeRuntime } from '../distribution/native-control';
 
-const cli = path.resolve('.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
+const cli = path.resolve('.cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
 const python = path.resolve('.cache/openviking/env-linux/bin/python3');
 
 test('deadline-free JSON transport cancels while the server is silent and does not follow redirects', async t => {

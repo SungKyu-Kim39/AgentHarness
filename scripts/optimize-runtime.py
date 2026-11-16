@@ -91,6 +91,16 @@ def optimize(resources, source_output):
         manifest = base / 'manifest.json'
         before = manifest.read_bytes()
         data = json.loads(before)
+        if component == 'mcp':
+            # This is Ned-authored diagnostic text, not an upstream package.
+            worker = base / 'mcp-python-worker.py'
+            original = worker.read_bytes()
+            current = Path(__file__).with_name('mcp-python-worker.py').read_bytes()
+            if original not in (current, current.replace(b'NED_LSP_DIAGNOSTICS', b'L_VIBE_LSP_DIAGNOSTICS')):
+                raise RuntimeError('Unreviewed MCP worker change')
+            worker.write_bytes(current)
+            report['namingChanges'] = [{'component': component, 'path': 'mcp-python-worker.py',
+                                       'originalSha256': digest(original), 'sha256': digest(current)}]
         for p in sorted(base.rglob('*')):
             # Preserve runtime data archives (e.g. botocore JSON). Move only named source distributions.
             if p.is_file() and p.name.endswith(('.tar.gz', '.tgz')) and ('-source.' in p.name or p.name == 'source.tar.gz'):

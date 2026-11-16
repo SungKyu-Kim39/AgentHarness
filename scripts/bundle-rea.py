@@ -22,11 +22,11 @@ def main():
     if sys.argv[1] != 'fetch': raise RuntimeError('Usage: bundle-rea.py fetch|verify')
     if not LOCK.exists():
         lock = json.loads((STAGE / 'package-lock.json').read_text())
-        lock['name'] = 'l-vibe-rea-runtime'
+        lock['name'] = 'ned-rea-runtime'
         lock['packages']['']['dependencies']['rea-agents'] = '6.8.0'
         LOCK.write_text(json.dumps(lock, indent=2) + '\n')
     STAGE.mkdir(parents=True, exist_ok=True)
-    (STAGE / 'package.json').write_text(json.dumps({'name': 'l-vibe-rea-runtime', 'private': True, 'dependencies': {'rea-agents': '6.8.0'}}) + '\n')
+    (STAGE / 'package.json').write_text(json.dumps({'name': 'ned-rea-runtime', 'private': True, 'dependencies': {'rea-agents': '6.8.0'}}) + '\n')
     shutil.copyfile(LOCK, STAGE / 'package-lock.json')
     if not (STAGE / 'node_modules/rea-agents/package.json').exists():
         subprocess.run(['npm', 'ci', '--omit=dev', '--ignore-scripts', '--os=win32', '--cpu=x64', '--no-audit', '--no-fund', '--prefix', str(STAGE)], check=True)

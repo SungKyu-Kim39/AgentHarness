@@ -526,9 +526,9 @@
     },
     {
       "name": "litellm",
-      "version": "1.102.4",
-      "url": "https://files.pythonhosted.org/packages/05/d3/01189ba046eb402aaef4680dd710e87bab62cdc05469484a888a89d52a93/litellm-1.102.4-cp310-abi3-win_amd64.whl",
-      "sha256": "25d37f43e80c4b4276b84910d42c6bf2688ff83ad4ceff8a3513a9cd296a0161",
+      "version": "1.103.10",
+      "url": "https://files.pythonhosted.org/packages/0a/5b/8e011f2fed0a445b71b24a79cc426e30433e7435b684167c1953202a3a8a/litellm-1.103.10-cp310-abi3-win_amd64.whl",
+      "sha256": "adbcbb663a9cc96331de0f6ddd60e81d883288b901b7a4f6fbbfeb66edb669cd",
       "license": "MIT"
     },
     {
@@ -687,9 +687,9 @@
     },
     {
       "name": "openviking",
-      "version": "0.5.4",
-      "url": "https://files.pythonhosted.org/packages/cd/d5/600bab00abb65efba300fcf5265267b8e3d613e8e60c00114952a00b9de3/openviking-0.5.4-cp310-abi3-win_amd64.whl",
-      "sha256": "b8c77e51d7b9d86acbaf08f71a6d96c4d65bd8cef326a38c5b7560f70ec6693c",
+      "version": "0.5.5",
+      "url": "https://files.pythonhosted.org/packages/60/2c/234a1e3cc5cf9061f6ac590fb99f440fb9f98f2440038a074a8707657007/openviking-0.5.5-cp310-abi3-win_amd64.whl",
+      "sha256": "42b55e84fd5a67d33813a6e3cfed483353751d576fee3ec9f449cca1a412334c",
       "license": "AGPL-3.0"
     },
     {
@@ -2415,5 +2415,13 @@
       "license": "ZPL-2.1"
     }
   ],
-  "manifestSha256": "6b62b83f14351ca5450e281410070b0f443e17f0d8a4756706f658ffba339ee7"
+  "manifestSha256": "51e611182b399d6f6d2a23e3106d08b94b037a324754b138ee75c24215ed857d",
+  "openViking": {
+    "version": "0.5.5",
+    "source": {
+      "filename": "openviking-0.5.5.tar.gz",
+      "url": "https://files.pythonhosted.org/packages/0f/d8/858cceeba435f6983ed6d05992c6a4ec9315b47045fba53d8c47699ce7a5/openviking-0.5.5.tar.gz",
+      "sha256": "038fa5cdd1c175ce7e8e08791fad999fda08f65a5ac7326ab1aa3b1a471d1d7d"
+    }
+  }
 }

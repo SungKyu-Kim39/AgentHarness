@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, cp } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { engineConfiguration, providerID } from '../distribution/native-control';
@@ -8,6 +8,8 @@ import { hostTools } from '../distribution/host-tools';
 import { managedResource } from '../distribution/ned/resources';
 import { configSchema } from '../src/shared/contracts';
 import { OfflineSkills } from '../src/main/skills';
+import { loadBundledSkillPackages } from '../src/main/openviking-skills';
+import { knowledgeRoot } from '../src/main/openviking';
 
 test('every model-visible host tool has a matching Ned-only MCP and permission identity', () => {
  const config = configSchema.parse({ model: { baseUrl: 'http://127.0.0.1:19350/v1', apiKey: 'synthetic-key', id: 'coding' } });
@@ -34,12 +36,26 @@ test('all bundled skill documents exposed by the host use current Ned branding',
  }
 });
 
-test('new Ned resources take precedence while upgrades still read legacy app-owned resources', async t => {
+test('Ned resources never fall back to obsolete product directories', async t => {
  const root = await mkdtemp(path.join(tmpdir(), 'ned-resources-')); t.after(() => rm(root, { recursive: true, force: true }));
  await mkdir(path.join(root, 'l-vibe/skills'), { recursive: true });
- assert.equal(managedResource(root, 'skills'), path.join(root, 'l-vibe/skills'));
+ assert.equal(managedResource(root, 'skills'), path.join(root, 'ned/skills'));
  await mkdir(path.join(root, 'ned/skills'), { recursive: true });
  assert.equal(managedResource(root, 'skills'), path.join(root, 'ned/skills'));
  await writeFile(path.join(root, 'ned/agent-config.example.json'), '{}');
  assert.equal(managedResource(root, 'agent-config.example.json'), path.join(root, 'ned/agent-config.example.json'));
+});
+
+test('all new OpenViking packages, metadata filenames and project URIs use Ned', async t => {
+ const root = await mkdtemp(path.join(tmpdir(), 'ned-package-names-')); t.after(() => rm(root, { recursive: true, force: true }));
+ await cp('vendor/skills', path.join(root, 'skills'), { recursive: true }); await cp('skills-lock.json', path.join(root, 'skills-lock.json'));
+ const packages = await loadBundledSkillPackages(path.join(root, 'skills'));
+ assert.equal(packages.length, 66);
+ for (const pkg of packages) {
+  assert.equal(pkg.name, 'ned-' + pkg.id);
+  assert.ok(pkg.files.has('NED-BUNDLE.json'));
+  for (const name of pkg.files.keys()) assert.doesNotMatch(name, /l[_-]vibe/i);
+  assert.doesNotMatch(pkg.archive.toString('utf8'), /l[_-]vibe/i, pkg.id);
+ }
+ assert.equal(knowledgeRoot('p1'), 'viking://resources/ned/p1');
 });

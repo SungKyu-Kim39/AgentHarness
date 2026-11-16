@@ -13,7 +13,7 @@ import { AgentOwner } from '../distribution/ned/owner';
 import { migrateLegacy, migrationNeedsBootstrap } from '../distribution/ned/migration';
 import { editorSettings } from '../distribution/ned/profile';
 import { PermissionPolicy } from '../distribution/ned/permission-policy';
-const cli = path.resolve('.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
+const cli = path.resolve('.cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
 const bridge = path.resolve('.cache/ned/app/agent.cjs');
 
 test('Ned migration preserves encrypted settings and history without replacing existing data', async t => {

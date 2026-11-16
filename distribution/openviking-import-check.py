@@ -9,7 +9,7 @@ import tempfile
 
 def main():
     runtime = Path(sys.executable).resolve().parent.parent
-    with tempfile.TemporaryDirectory(prefix="l-vibe-import-check-") as folder:
+    with tempfile.TemporaryDirectory(prefix="ned-import-check-") as folder:
         keep = {key: value for key, value in os.environ.items() if key.upper() in {"SYSTEMROOT", "WINDIR", "TEMP", "TMP"}}
         os.environ.clear()
         os.environ.update(keep)
@@ -17,7 +17,7 @@ def main():
                            "HF_HUB_OFFLINE": "1", "TRANSFORMERS_OFFLINE": "1", "HF_HUB_DISABLE_TELEMETRY": "1",
                            "LITELLM_LOCAL_MODEL_COST_MAP": "True", "LITELLM_TELEMETRY": "False", "DO_NOT_TRACK": "1", "OTEL_SDK_DISABLED": "true"})
         print("PYTHON_OK", sys.version, flush=True)
-        spec = importlib.util.spec_from_file_location("l_vibe_launch", runtime / "launch.py")
+        spec = importlib.util.spec_from_file_location("ned_launch", runtime / "launch.py")
         launch = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(launch)
         launch.restrict_python_network({"embedding": {"dense": {"api_base": "http://127.0.0.1:9/v1"}}})
@@ -28,7 +28,7 @@ def main():
             import tiktoken
             for name in encodings:
                 codec = tiktoken.get_encoding(name)
-                sample = "L-Vibe offline tokenizer check."
+                sample = "Ned offline tokenizer check."
                 if codec.decode(codec.encode(sample)) != sample:
                     raise RuntimeError("Tokenizer round-trip failed")
             print("TOKENIZERS_OK", len(encodings), flush=True)

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
 import { hostAliases } from './ned-host-build.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const upstream = path.join(root, '.cache/l-vibe-desktop/source');
+const upstream = path.join(root, '.cache/opencode/source');
 const output = path.join(root, '.cache/ned/app');
 await mkdir(output, { recursive: true });
 const version = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).version;

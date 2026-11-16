@@ -9,7 +9,7 @@ import { OpenVikingService } from '../src/main/openviking';
 import { configSchema } from '../src/shared/contracts';
 const executable = path.resolve('.cache/openviking/env-linux/bin/python3');
 test('real pinned OpenViking registers default skill packages, restarts without duplicate indexing and keeps project knowledge scoped', { skip: !existsSync(executable), timeout: 300000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-viking-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-viking-')); t.after(() => rm(root, { recursive: true, force: true }));
   const requests: string[] = [];
   const endpoint = createServer(async (req, res) => {
     let raw = ''; for await (const bytes of req) raw += bytes;
@@ -28,7 +28,7 @@ test('real pinned OpenViking registers default skill packages, restarts without 
   const baseUrl = `http://127.0.0.1:${port}/v1`;
   const config = configSchema.parse({ schemaVersion: 2, model: { baseUrl, apiKey: 'viking-test-key', id: 'llm-test' }, openViking: { enabled: true, embedding: { baseUrl, apiKey: 'embedding-test-key', id: 'embed-test', dimension: 4 } } });
   let diagnostics = '';
-  const skills = path.join(root, 'resources/l-vibe/skills');
+  const skills = path.join(root, 'resources/ned/skills');
   await cp('vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
   await cp('vendor/skills', skills, { recursive: true }); await cp('skills-lock.json', path.join(skills, '..', 'skills-lock.json'));
   const viking = new OpenVikingService(root, root, () => {}, { executable, launcher: path.resolve('scripts/openviking-launch.py'), cwd: root, diagnostic: text => { diagnostics += text; } }, skills);
@@ -38,16 +38,16 @@ test('real pinned OpenViking registers default skill packages, restarts without 
     const deadline = Date.now() + 240000;
     while (Date.now() < deadline && ['pending', 'registering'].includes(viking.state().skills?.status ?? '')) await new Promise(resolve => setTimeout(resolve, 100));
     assert.equal(viking.state().skills?.status, 'ready', JSON.stringify(viking.state().skills) + '\n' + diagnostics.slice(-12000));
-    assert.equal(viking.state().skills?.registered, 36);
+    assert.equal(viking.state().skills?.registered, 66);
   };
   await waitForSkills();
   const afterFirstImport = requests.length;
   await viking.configure(config); await waitForSkills();
   assert.equal(requests.length, afterFirstImport, 'unchanged restarts must not send default skills for embedding again');
-  await viking.index('p1', 'hello.txt', 'L-Vibe tests local project knowledge.').catch(error => assert.fail(error.message + '\n' + diagnostics));
-  const found = await viking.search('p1', 'L-Vibe', 3);
+  await viking.index('p1', 'hello.txt', 'Ned tests local project knowledge.').catch(error => assert.fail(error.message + '\n' + diagnostics));
+  const found = await viking.search('p1', 'Ned', 3);
   assert.ok(found.includes('p1'), found);
-  await assert.rejects(viking.read('p2', 'viking://resources/l-vibe/p1/file.txt'));
+  await assert.rejects(viking.read('p2', 'viking://resources/ned/p1/file.txt'));
   assert.ok(requests.every(route => ['/v1/embeddings', '/v1/chat/completions'].includes(route)), JSON.stringify(requests));
   await viking.close();
 });

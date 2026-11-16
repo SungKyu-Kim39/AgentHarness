@@ -213,7 +213,7 @@ def main():
     def parent_watch():
         sys.stdin.buffer.read()
         server.should_exit = True
-    threading.Thread(target=parent_watch, name="l-vibe-parent-watch", daemon=True).start()
+    threading.Thread(target=parent_watch, name="ned-parent-watch", daemon=True).start()
     server.run()
     _ = job_handle
 

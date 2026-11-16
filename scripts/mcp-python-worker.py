@@ -226,7 +226,7 @@ def run_serena(config, work, site):
         from solidlsp.ls import SolidLanguageServer
         original_diagnostics = SolidLanguageServer._store_published_diagnostics
         def diagnostics(self, params):
-            print('L_VIBE_LSP_DIAGNOSTICS ' + json.dumps(params), file=sys.stderr)
+            print('NED_LSP_DIAGNOSTICS ' + json.dumps(params), file=sys.stderr)
             return original_diagnostics(self, params)
         SolidLanguageServer._store_published_diagnostics = diagnostics
     # Upstream uses shell=True for LSP launch; the adapter always passes fixed

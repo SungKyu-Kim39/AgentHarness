@@ -1,10 +1,10 @@
 {
-  "name": "l-vibe-mcp-node",
+  "name": "ned-mcp-node",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
-      "name": "l-vibe-mcp-node",
+      "name": "ned-mcp-node",
       "dependencies": {
         "@playwright/mcp": "0.0.85",
         "chrome-devtools-mcp": "1.12.0"

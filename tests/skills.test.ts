@@ -63,7 +63,7 @@ test('the native skill reader rejects tampered documents, scripts and path escap
   await assert.rejects(tools.call('read_skill', { id: 'cpp-pro', document: 'scripts/install.py' }, 'test-session'), /문서만 읽을 수/);
 });
 
-const cli = path.resolve('.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
+const cli = path.resolve('.cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
 test('the real pinned v2 engine discovers the offline skill bundle from the installation resources', { skip: !existsSync(cli), timeout: 60000 }, async t => {
   const { root, resources, project } = await fixture(t);
   const manifest = JSON.parse(await readFile(path.join(resources, 'ned/skills/manifest.json'), 'utf8'));

@@ -1,4 +1,5 @@
 import { requestJSON } from './http-request';
+import pythonRuntime from '../../python-runtime-lock.json';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
 import { randomBytes, createHash } from 'node:crypto';
@@ -9,6 +10,7 @@ import { OpenVikingGateway } from './openviking-gateway';
 import { vikingErrorCode } from './openviking-errors';
 import { registerBundledSkills } from './openviking-skills';
 import { PersonalKnowledge } from './personal-knowledge';
+import { migrateVikingNamespace, backupVikingAccount, vikingAccount } from './openviking-namespace';
 import type { AgentConfig, AppState } from '../shared/contracts';
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
@@ -21,8 +23,8 @@ export interface KnowledgeService {
   personalRead?(uri: string): Promise<string>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
-type StartupStage = 'bundle' | 'configuration' | 'process' | 'health';
-type StartupCode = 'OV_BUNDLE' | 'OV_CONFIGURATION' | 'OV_PROCESS_START' | 'OV_PROCESS_EXIT' | 'OV_HEALTH_TIMEOUT';
+type StartupStage = 'bundle' | 'configuration' | 'process' | 'health' | 'namespace';
+type StartupCode = 'OV_BUNDLE' | 'OV_CONFIGURATION' | 'OV_PROCESS_START' | 'OV_PROCESS_EXIT' | 'OV_HEALTH_TIMEOUT' | 'OV_NAMESPACE';
 type StartupDetail = { osError?: string; exitCode?: number; exitHex?: string; signal?: string; hint?: string; healthStatus?: number };
 class StartupFailure extends Error {
   constructor(readonly code: StartupCode, readonly detail: StartupDetail = {}) { super(code); }
@@ -30,7 +32,7 @@ class StartupFailure extends Error {
 // Persist only categories and numeric status. Raw Python output can contain
 // request data and is deliberately excluded from production diagnostics.
 function startupHint(stderr: string) {
-  if (/(?:Ned|L-Vibe) tokenizer (?:cache|data)/.test(stderr)) return 'tokenizer_cache';
+  if (/Ned tokenizer (?:cache|data)/.test(stderr)) return 'tokenizer_cache';
   if (/DLL load failed|WinError (?:126|127|193)|cannot load library/i.test(stderr)) return 'native_library';
   if (/ModuleNotFoundError|No module named/.test(stderr)) return 'python_module';
   if (/ValidationError|validation error/i.test(stderr)) return 'configuration';
@@ -45,7 +47,7 @@ function osError(error: unknown) {
 const pause = (ms: number) => new Promise(r => setTimeout(r, ms));
 export function knowledgeRoot(project: string) {
   if (!/^[a-zA-Z0-9-]{1,128}$/.test(project)) throw new Error('프로젝트 지식 범위가 올바르지 않습니다.');
-  return `viking://resources/l-vibe/${project}`;
+  return `viking://resources/ned/${project}`;
 }
 export function scopedKnowledgeUri(project: string, uri: string) {
   const root = knowledgeRoot(project);
@@ -55,18 +57,23 @@ export function scopedKnowledgeUri(project: string, uri: string) {
 export class OpenVikingService implements KnowledgeService {
   private value: NonNullable<AppState['knowledge']> = { status: 'unconfigured', indexedFiles: 0 };
   private process?: ChildProcess; private gateway?: OpenVikingGateway; private configFile?: string;
+  private account = 'ned';
+  private maintenance = false;
   private baseUrl = ''; private token = ''; private exited = true; private expectedExit = false;
   private operation = Promise.resolve(); private stopped?: Promise<void>;
   private diagnosticWrites = Promise.resolve();
   private modelEvents: unknown[] = [];
   private registration?: Promise<void>; private registrationAbort?: AbortController;
   private personal?: PersonalKnowledge;
+  private namespaceAbort?: AbortController;
   private startupStage: StartupStage = 'bundle';
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
   state() { return structuredClone(this.value); }
   localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
   private update(status: NonNullable<AppState['knowledge']>['status'], message?: string) { this.value.status = status; this.value.message = message; this.changed(); }
   configure(config?: AgentConfig) {
+    this.namespaceAbort?.abort();
+    const namespaceAbort = new AbortController(); this.namespaceAbort = namespaceAbort;
     this.operation = this.operation.catch(() => {}).then(async () => {
       await this.stop();
       this.value.skills = undefined;
@@ -75,6 +82,12 @@ export class OpenVikingService implements KnowledgeService {
       if (!config.openViking.enabled) { this.update('disabled'); return; }
       this.update('starting');
       try {
+        await migrateVikingNamespace(path.join(this.data, 'openviking'), {
+          start: (workspace, account) => this.start(config, workspace, account, true), stop: () => this.stop(),
+          request: (route, options) => this.request(route, options?.body, false, options?.method, options?.signal),
+          backup: (file, signal) => backupVikingAccount(this.baseUrl, this.credentials('local-user'), file, signal),
+        }, namespaceAbort.signal).catch(error => { this.startupStage = 'namespace'; throw new StartupFailure('OV_NAMESPACE', { osError: osError(error) }); });
+        namespaceAbort.signal.throwIfAborted();
         await this.start(config); this.update('ready');
         await this.writeStartupStatus({ status: 'ready', stage: 'health' });
         this.beginSkillRegistration();
@@ -93,6 +106,7 @@ export class OpenVikingService implements KnowledgeService {
           OV_PROCESS_START: 'OpenViking Python 프로세스를 실행하지 못했습니다.',
           OV_PROCESS_EXIT: 'OpenViking이 준비되기 전에 Python 프로세스가 종료되었습니다.',
           OV_HEALTH_TIMEOUT: 'OpenViking의 로컬 준비 확인 시간이 초과되었습니다.',
+          OV_NAMESPACE: 'OpenViking 저장소 이름 이관을 완료하지 못했습니다. 원본과 이관 사본을 보존했습니다. 폴더를 직접 변경하지 말고 namespace-migration.json과 진단 상태를 확인하세요.',
         };
         const detail = [failure.code, failure.detail.osError, failure.detail.exitHex, failure.detail.hint].filter(Boolean).join(', ');
         this.update('error', labels[failure.code] + ' [' + detail + ']' +
@@ -135,13 +149,14 @@ export class OpenVikingService implements KnowledgeService {
     const platform = process.platform === 'win32' ? 'windows-x64' : 'linux-x64';
     const root = path.join(this.runtime, platform, 'openviking');
     const manifest = JSON.parse(await readFile(path.join(root, 'manifest.json'), 'utf8'));
-    if (manifest.version !== '0.5.4' || !Array.isArray(manifest.files) || !manifest.files.length) throw new Error('OpenViking 번들 없음');
+    if (manifest.version !== pythonRuntime.openViking.version || !Array.isArray(manifest.files) || !manifest.files.length) throw new Error('OpenViking 번들 없음');
     for (const f of manifest.files) {
       if (typeof f.path !== 'string' || path.isAbsolute(f.path) || f.path.split('/').includes('..') || createHash('sha256').update(await readFile(path.join(root, f.path))).digest('hex') !== f.sha256) throw new Error('OpenViking 번들 무결성 오류');
     }
     return { executable: path.join(root, 'python', process.platform === 'win32' ? 'python.exe' : 'bin/python3'), launcher: path.join(root, 'launch.py'), cwd: root };
   }
-  private async start(config: AgentConfig) {
+  private async start(config: AgentConfig, workspace = path.join(this.data, 'openviking', 'data'), account = vikingAccount, maintenance = false) {
+    this.account = account; this.maintenance = maintenance;
     this.startupStage = 'bundle';
     const launch = await this.resolveLaunch();
     this.personal = new PersonalKnowledge(path.join(this.data, 'openviking'), launch.executable,
@@ -160,7 +175,7 @@ export class OpenVikingService implements KnowledgeService {
     const gateway = this.gateway; const embedding = config.openViking!.embedding; const vlm = config.openViking!.vlm ?? config.model;
     this.configFile = path.join(folder, `runtime-${randomBytes(8).toString('hex')}.json`);
     await atomicJSON(this.configFile, {
-      storage: { workspace: path.join(folder, 'data'), agfs: { backend: 'local' }, vectordb: { backend: 'local', name: 'context' } },
+      storage: { workspace, agfs: { backend: 'local' }, vectordb: { backend: 'local', name: 'context' } },
       server: { host: '127.0.0.1', port, workers: 1, auth_mode: 'trusted', root_api_key: this.token },
       embedding: { dense: { provider: 'openai', api_base: gateway.baseUrl, api_key: gateway.token, model: embedding.id, dimension: embedding.dimension } },
       vlm: { provider: 'openai', api_base: gateway.baseUrl, api_key: gateway.token, model: vlm.id },
@@ -199,9 +214,15 @@ export class OpenVikingService implements KnowledgeService {
     }
     throw new StartupFailure('OV_HEALTH_TIMEOUT', { healthStatus: lastHealthStatus, hint: startupHint(stderr) });
   }
+  private credentials(user: string): Record<string, string> {
+    // Account maintenance is asserted only on the private migration connection,
+    // before model/tools are ready. Normal sessions retain USER scope checks.
+    return { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': this.account,
+      'X-OpenViking-User': user, ...(this.maintenance ? { 'X-OpenViking-Role': 'admin' } : {}) };
+  }
   private async request(route: string, body?: unknown, timeout: number | false = false, method?: 'GET' | 'POST' | 'PUT', signal?: AbortSignal, user = 'local-user'): Promise<any> {
     const form = body instanceof FormData;
-    const headers = { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': user, ...(form ? {} : { 'Content-Type': 'application/json' }) };
+    const headers = { ...this.credentials(user), ...(form ? {} : { 'Content-Type': 'application/json' }) };
     const response = timeout === false && !form
       ? await requestJSON(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), headers, body: body === undefined ? undefined : JSON.stringify(body), signal })
       : await fetch(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), redirect: 'error', headers, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: timeout === false ? signal : signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
@@ -234,7 +255,7 @@ export class OpenVikingService implements KnowledgeService {
     this.ready();
     if (Buffer.byteLength(content) > 2 * 1024 * 1024) throw new Error('2 MiB 이하 텍스트만 색인할 수 있습니다.');
     const form = new FormData(); form.append('file', new Blob([content], { type: 'text/plain' }), path.basename(filename).replace(/[^a-zA-Z0-9_.-]/g, '_') + '.txt');
-    const response = await fetch(this.baseUrl + '/api/v1/resources/temp_upload', { method: 'POST', redirect: 'error', headers: { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': 'l-vibe', 'X-OpenViking-User': 'local-user' }, body: form, signal: AbortSignal.timeout(30000) });
+    const response = await fetch(this.baseUrl + '/api/v1/resources/temp_upload', { method: 'POST', redirect: 'error', headers: this.credentials('local-user'), body: form, signal: AbortSignal.timeout(30000) });
     if (!response.ok) { this.testLaunch?.diagnostic?.(`Upload HTTP ${response.status}: ${await response.text()}`); throw new Error('OpenViking 파일 전달 실패'); }
     const upload = await response.json(); const id = upload.result?.temp_file_id ?? upload.temp_file_id;
     if (typeof id !== 'string') throw new Error('OpenViking 업로드 확인 실패');
@@ -261,5 +282,5 @@ export class OpenVikingService implements KnowledgeService {
     this.process = undefined; await this.gateway?.close(); this.gateway = undefined;
     if (this.configFile) await unlink(this.configFile).catch(() => {}); this.configFile = undefined;
   }
-  async close() { if (this.stopped) return this.stopped; this.stopped = this.operation.catch(() => {}).then(() => this.stop()); return this.stopped; }
+  async close() { this.namespaceAbort?.abort(); if (this.stopped) return this.stopped; this.stopped = this.operation.catch(() => {}).then(() => this.stop()); return this.stopped; }
 }

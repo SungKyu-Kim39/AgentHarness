@@ -5,6 +5,7 @@ import path from 'node:path';
 import { vikingErrorCode } from './openviking-errors';
 import { atomicJSON } from './config';
 import type { SkillEntry } from './skills';
+import { previousSkillOwner, previousSkillHash } from './openviking-namespace';
 
 const digest = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 export const bundledSkillsRoot = 'viking://agent/skills';
@@ -46,7 +47,7 @@ export async function loadBundledSkillPackages(root: string): Promise<Package[]>
   const base = await realpath(root), ids = new Set<string>(); const packages: Package[] = [];
   for (const entry of manifest.skills as SkillEntry[]) {
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id) || entry.id.length > 56 || ids.has(entry.id) || entry.directory !== entry.id || !Array.isArray(entry.files) || entry.files.length > 500) throw new Error('기본 스킬 형식 오류');
-    ids.add(entry.id); const name = 'l-vibe-' + entry.id, files = new Map<string, Buffer>(); let total = 0;
+    ids.add(entry.id); const name = 'ned-' + entry.id, files = new Map<string, Buffer>(); let total = 0;
     for (const file of entry.files) {
       const relative = safeRelative(file.path);
       if (!/\.(md|txt)$/i.test(relative) && !/^(LICENSE|COPYING)$/i.test(path.posix.basename(relative))) throw new Error('실행형 스킬 파일 차단');
@@ -60,7 +61,7 @@ export async function loadBundledSkillPackages(root: string): Promise<Package[]>
     const main = files.get('SKILL.md'); if (!main) throw new Error('기본 스킬 본문 없음');
     const body = `# Ned bundled skill: ${entry.id}\n\n${entry.adapter}\n\nThis is static guidance. It does not install an executor, grant permissions or upload personal conversations. Use the local Ned skill catalog ID ${entry.id} for the reviewed original package.\n\n${bodyOf(main.toString('utf8'))}`;
     files.set('SKILL.md', Buffer.from(`---\nname: ${name}\ndescription: ${JSON.stringify(entry.description)}\n---\n\n${body}\n`));
-    files.set('L-VIBE-BUNDLE.json', Buffer.from(JSON.stringify({ schemaVersion: 1, id: entry.id, source: entry.source, commit: entry.commit, license: entry.license, files: entry.files }, null, 2) + '\n'));
+    files.set('NED-BUNDLE.json', Buffer.from(JSON.stringify({ schemaVersion: 1, id: entry.id, source: entry.source, commit: entry.commit, license: entry.license, files: entry.files }, null, 2) + '\n'));
     const bytes = archive(files, name);
     packages.push({ id: entry.id, name, hash: digest(bytes), archive: bytes, body, files, source: entry.source, commit: entry.commit });
   }
@@ -106,13 +107,15 @@ export async function registerBundledSkills(options: { bundle: string; stateFile
     step('lookup');
     try {
       let remote = await installed(transport, pkg.name, signal); const record = saved.entries[pkg.id];
-      if (remote && (remote.source?.l_vibe_owner !== 'bundled-skills' || (record && (record.revision !== remote.revision || record.bundleHash !== remote.source.l_vibe_bundle_sha256)))) {
+      const owner = remote?.source?.ned_owner ?? remote?.source?.[previousSkillOwner];
+      const remoteHash = remote?.source?.ned_bundle_sha256 ?? remote?.source?.[previousSkillHash];
+      if (remote && (owner !== 'bundled-skills' || (record && (record.revision !== remote.revision || record.bundleHash !== remoteHash)))) {
         state.conflicts.push(pkg.id); publish(); continue;
       }
-      if (remote && remote.source?.l_vibe_bundle_sha256 === pkg.hash && !matches(pkg, remote)) {
+      if (remote && remote.source?.ned_bundle_sha256 === pkg.hash && !matches(pkg, remote)) {
         state.conflicts.push(pkg.id); publish(); continue;
       }
-      if (!remote || remote.source?.l_vibe_bundle_sha256 !== pkg.hash) {
+      if (!remote || remote.source?.ned_bundle_sha256 !== pkg.hash) {
         // A changed bundle without a prior app record must not replace an existing package.
         if (remote && !record) { state.conflicts.push(pkg.id); publish(); continue; }
         const form = new FormData(); form.append('file', new Blob([new Uint8Array(pkg.archive)], { type: 'application/zip' }), pkg.name + '.zip');
@@ -122,11 +125,11 @@ export async function registerBundledSkills(options: { bundle: string; stateFile
         step('import');
         await transport(remote ? `/api/v1/skills/${pkg.name}` : '/api/v1/skills', { method: remote ? 'PUT' : 'POST', signal, body: {
           temp_file_id: id, wait: true, target_uri: bundledSkillsRoot,
-          source_metadata: { type: 'l-vibe-bundle', source: 'offline-bundle', l_vibe_owner: 'bundled-skills', l_vibe_bundle_sha256: pkg.hash, l_vibe_id: pkg.id, upstream_source: pkg.source, upstream_commit: pkg.commit },
+          source_metadata: { type: 'ned-bundle', source: 'offline-bundle', ned_owner: 'bundled-skills', ned_bundle_sha256: pkg.hash, ned_id: pkg.id, upstream_source: pkg.source, upstream_commit: pkg.commit },
         } });
         step('verify');
         remote = await installed(transport, pkg.name, signal);
-        if (!remote || remote.source?.l_vibe_bundle_sha256 !== pkg.hash || !matches(pkg, remote)) throw Object.assign(new Error('등록된 스킬 내용 검증 실패'), { diagnosticCode: 'OV_SKILL_INTEGRITY' });
+        if (!remote || remote.source?.ned_bundle_sha256 !== pkg.hash || !matches(pkg, remote)) throw Object.assign(new Error('등록된 스킬 내용 검증 실패'), { diagnosticCode: 'OV_SKILL_INTEGRITY' });
       }
       step('state');
       saved.entries[pkg.id] = { bundleHash: pkg.hash, revision: remote!.revision };

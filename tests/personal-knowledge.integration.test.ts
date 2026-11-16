@@ -91,7 +91,7 @@ print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.a
   if(includeVectors) assert.ok(diagnostics.includes('L_VIBE_TEST_VECTOR_ACTION=restore'), 'SDK must restore the compatible vector snapshot\n'+diagnostics.slice(-15000));
   assert.equal((await current.personalStatus())[0].root,'viking://user/default');
   const currentInternals=current as unknown as {baseUrl:string;token:string};
-  const forbidden=await fetch(currentInternals.baseUrl+'/api/v1/content/write',{method:'POST',headers:{Authorization:'Bearer '+currentInternals.token,'X-API-Key':currentInternals.token,'X-OpenViking-Account':'l-vibe','X-OpenViking-User':'local-user','Content-Type':'application/json'},body:JSON.stringify({uri:'viking://user/default/resources/legacy-note.md',content:'must not replace private knowledge',mode:'replace',wait:true,processing_mode:'vectors_only'})});
+  const forbidden=await fetch(currentInternals.baseUrl+'/api/v1/content/write',{method:'POST',headers:{Authorization:'Bearer '+currentInternals.token,'X-API-Key':currentInternals.token,'X-OpenViking-Account':'ned','X-OpenViking-User':'local-user','Content-Type':'application/json'},body:JSON.stringify({uri:'viking://user/default/resources/legacy-note.md',content:'must not replace private knowledge',mode:'replace',wait:true,processing_mode:'vectors_only'})});
   assert.equal(forbidden.status,403,'the container fix must not bypass original-user ownership');
   assert.ok((await current.personalRead('viking://user/default/resources/legacy-note.md')).includes('Preserve VxWorks'));
   assert.ok((await current.personalRead('viking://user/default/peers/codex.tool@local/memories/preferences/errors.md')).includes('explicit error codes'));

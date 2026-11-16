@@ -26,7 +26,7 @@ test('native model bindings hide actual keys and select the configured default',
   for (const key of ['timeout', 'headerTimeout', 'chunkTimeout']) assert.equal(document.providers[providerID('A')].settings[key as 'timeout'], false);
 });
 
-const cli = path.resolve('.cache/l-vibe-desktop/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
+const cli = path.resolve('.cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
 test('an unconfirmed MCP stop still closes HTTP gateways and prevents native restart', async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-stop-failure-')); t.after(() => rm(root, { recursive: true, force: true }));
   const runtime = new NativeRuntime(root, root, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });

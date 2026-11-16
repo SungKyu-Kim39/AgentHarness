@@ -51,8 +51,8 @@ def main():
         for script in ['openviking-launch.py', 'analysis-worker.py', 'rea-supervisor.py', 'sidecar-supervisor.py']:
             source = Path('scripts') / script
             if source.exists(): shutil.copyfile(source, ROOT / script.replace('openviking-launch.py', 'launch.py'))
-        files = [{'path': p.relative_to(ROOT).as_posix(), 'sha256': digest(p.read_bytes())} for p in sorted(ROOT.rglob('*')) if p.is_file() and p.name != 'manifest.json' and '__pycache__' not in p.parts]
-        save_json(ROOT / 'manifest.json', {'schemaVersion': 1, 'version': '0.5.4', 'graphifyVersion': '0.9.105', 'files': files})
+        files = [{'path': p.relative_to(ROOT).as_posix(), 'sha256': digest(p.read_bytes())} for p in sorted(ROOT.rglob('*')) if p.is_file() and p != ROOT / 'manifest.json' and '__pycache__' not in p.parts]
+        save_json(ROOT / 'manifest.json', {'schemaVersion': 1, 'version': '0.5.5', 'graphifyVersion': '0.9.105', 'files': files})
         lock['manifestSha256'] = digest((ROOT / 'manifest.json').read_bytes()); save_json(LOCK, lock)
         print('Refreshed reviewed Python launchers:', len(files), 'files'); return
     if mode != 'fetch':
@@ -62,7 +62,7 @@ def main():
         lock = json.loads(LOCK.read_text())
     else:
         report = CACHE / 'resolution.json'
-        subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet', '--dry-run', '--ignore-installed', '--only-binary=:all:', '--platform', 'win_amd64', '--python-version', '3.12', '--implementation', 'cp', '--abi', 'cp312', '--target', str(CACHE / 'unused'), '--report', str(report), 'openviking==0.5.4', 'graphifyy[mcp]==0.9.105'], check=True)
+        subprocess.run([sys.executable, '-m', 'pip', 'install', '--quiet', '--dry-run', '--ignore-installed', '--only-binary=:all:', '--platform', 'win_amd64', '--python-version', '3.12', '--implementation', 'cp', '--abi', 'cp312', '--target', str(CACHE / 'unused'), '--report', str(report), 'openviking==0.5.5', 'graphifyy[mcp]==0.9.105'], check=True)
         resolved = json.loads(report.read_text())
         packages = []
         for entry in resolved['install']:
@@ -148,16 +148,17 @@ def main():
         file = Path('scripts') / script
         if file.exists(): shutil.copyfile(file, ROOT / script.replace('openviking-launch.py', 'launch.py'))
     stage_tokenizers(ROOT)
-    source_url = 'https://files.pythonhosted.org/packages/63/78/24eed6038a59b14d8856019c31c50b880fdc11391e61d5fe081fc17a14f9/openviking-0.5.4.tar.gz'
-    source = CACHE / 'openviking-0.5.4.tar.gz'
-    if not source.exists(): source.write_bytes(download(source_url))
-    if digest(source.read_bytes()) != '97e6ac2a7f6c5522206c3a1e1e2ed59cbfa62d7ec890451ee726376dea321147':
+    source_pin = json.loads(Path('openviking-upgrade-lock.json').read_text())['source']
+    source = CACHE / source_pin['filename']
+    if not source.exists(): source.write_bytes(download(source_pin['url']))
+    if digest(source.read_bytes()) != source_pin['sha256']:
         raise RuntimeError('OpenViking corresponding source integrity mismatch')
+    lock['openViking'] = {'version': '0.5.5', 'source': source_pin}
     (ROOT / 'licenses').mkdir(exist_ok=True)
-    shutil.copyfile(source, ROOT / 'licenses/openviking-0.5.4-source.tar.gz')
+    shutil.copyfile(source, ROOT / 'licenses/openviking-0.5.5-source.tar.gz')
     save_json(ROOT / 'licenses/packages.json', lock['packages'])
-    files = [{'path': str(p.relative_to(ROOT)).replace(os.sep, '/'), 'sha256': digest(p.read_bytes())} for p in sorted(ROOT.rglob('*')) if p.is_file() and p.name != 'manifest.json' and '__pycache__' not in p.parts]
-    save_json(ROOT / 'manifest.json', {'schemaVersion': 1, 'version': '0.5.4', 'graphifyVersion': '0.9.105', 'files': files})
+    files = [{'path': str(p.relative_to(ROOT)).replace(os.sep, '/'), 'sha256': digest(p.read_bytes())} for p in sorted(ROOT.rglob('*')) if p.is_file() and p != ROOT / 'manifest.json' and '__pycache__' not in p.parts]
+    save_json(ROOT / 'manifest.json', {'schemaVersion': 1, 'version': '0.5.5', 'graphifyVersion': '0.9.105', 'files': files})
     lock['manifestSha256'] = digest((ROOT / 'manifest.json').read_bytes())
     save_json(LOCK, lock)
     print('Bundled Python', lock['python']['version'], 'with', len(lock['packages']), 'pinned Windows wheels;', len(files), 'files')

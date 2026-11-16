@@ -7,7 +7,7 @@ const root=path.resolve(import.meta.dirname,'..');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const exists=p=>access(p).then(()=>true,()=>false);
 const upstreamLock=JSON.parse(await readFile(path.join(root,'upstream-lock.json'),'utf8'));
-const source=path.join(root,'.cache/l-vibe-desktop/source');
+const source=path.join(root,'.cache/opencode/source');
 const archive=path.join(root,'.cache/ned/opencode-source.tgz');
 await mkdir(path.dirname(archive),{recursive:true});
 if(!await exists(path.join(source,'packages/cli/src/acp/agent.ts'))) {

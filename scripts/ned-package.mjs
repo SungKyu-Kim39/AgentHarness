@@ -25,6 +25,7 @@ process.env.ELECTRON_BUILDER_CACHE ??= path.join(cache,'builder-cache');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
+if(version==='0.3.7' && !revision && ['release','bundle'].includes(mode))throw new Error('Published 0.3.7 artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
@@ -98,7 +99,7 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'LICENSE'),to:'ned/licenses/Ned-MIT.txt'},
       {from:path.join(root,'node_modules/jsonc-parser/LICENSE.md'),to:'ned/licenses/jsonc-parser-MIT.txt'},
       {from:path.join(cache,'editor-branding.json'),to:'ned/editor-branding.json'},
-      {from:path.join(root,'.cache/l-vibe-desktop/source/LICENSE'),to:'ned/licenses/OpenCode-MIT.txt'},
+      {from:path.join(root,'.cache/opencode/source/LICENSE'),to:'ned/licenses/OpenCode-MIT.txt'},
       {from:path.join(root,'THIRD_PARTY_NOTICES.md'),to:'ned/licenses/THIRD_PARTY_NOTICES.md'},
       {from:path.join(cache,'app/agent.cjs'),to:'ned/agent.cjs'},
       {from:path.join(cache,'app/ACP-THIRD-PARTY-NOTICES.txt'),to:'ned/licenses/ACP-THIRD-PARTY-NOTICES.txt'},
@@ -114,7 +115,7 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(cache,'archives/zed-source-v1.28.1.tar.gz'),to:'ned/sources/zed-source-v1.28.1.tar.gz'},
       {from:path.join(cache,'zed-source/Cargo.lock'),to:'ned/licenses/Zed-Cargo.lock'},
       {from:zed,to:'zed'},
-      {from:path.join(root,'.cache/l-vibe-desktop/source/packages/cli/dist/cli-windows-x64-baseline/bin/opencode.exe'),to:'opencode-cli.exe'},
+      {from:path.join(root,'.cache/opencode/source/packages/cli/dist/cli-windows-x64-baseline/bin/opencode.exe'),to:'opencode-cli.exe'},
     ],
   };
   const configuration=path.join(cache,'builder.json');await writeFile(configuration,JSON.stringify(config,null,2));
@@ -155,7 +156,7 @@ async function audit() {
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
     if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
     verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
-    const baseline=revision?await rebuildBaseline(root,version,revision):undefined;
+    const baseline=revision&&version!=='0.3.7'?await rebuildBaseline(root,version,revision):undefined;
     const released=version==='0.3.7'?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
     for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
@@ -164,7 +165,7 @@ async function audit() {
       components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }
     let rebuild;
-    if(revision){
+    if(revision&&version!=='0.3.7'){
       const proof=await json(path.join(cache,revision,'provenance.json'));
       if(proof.sourceCommit!==buildCommit||proof.buildRevision!==revision)throw new Error('Stale rebuild provenance');
       const actual=await payloadInventory(extracted),generatedInstallerFiles={};
@@ -209,7 +210,7 @@ async function bundle() {
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));
   }
-  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd'],['distribution/export-openviking-personal-no-vectors.cmd','EXPORT_PERSONAL_NO_VECTORS.cmd'],['distribution/ned/agent-probe.py','agent-probe.py'],['distribution/ned/check-agent.cmd','CHECK_AGENT.cmd'],['distribution/ned/desktop-probe.ps1','desktop-probe.ps1'],['docs/approval-modes.md','APPROVAL_MODES.md'],['docs/agent-desktop.md','DESKTOP_GUIDE.md']]) await cp(path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd'],['distribution/export-openviking-personal-no-vectors.cmd','EXPORT_PERSONAL_NO_VECTORS.cmd'],['distribution/ned/agent-probe.py','agent-probe.py'],['distribution/ned/check-agent.cmd','CHECK_AGENT.cmd'],['distribution/ned/desktop-probe.ps1','desktop-probe.ps1'],['docs/ned-user-guide.md','USER_GUIDE.md'],['docs/approval-modes.md','APPROVAL_MODES.md'],['docs/agent-desktop.md','DESKTOP_GUIDE.md']]) await cp(path.join(root,from),path.join(stage,to));
   await writeFile(path.join(stage,'CHECK_DESKTOP.cmd'),'@echo off\r\npowershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0desktop-probe.ps1"\r\necho EXIT_CODE=%ERRORLEVEL%\r\npause\r\n');
   await cp(path.join(root,'distribution/export-openviking-check.cmd'),path.join(stage,'CHECK_EXPORT.cmd'));
   await writeFile(path.join(stage,'CHECK_OPENVIKING.cmd'),(await readFile(path.join(root,'distribution/check-openviking.cmd'),'utf8')).replaceAll('L-Vibe','Ned').replaceAll('L_VIBE','NED'));

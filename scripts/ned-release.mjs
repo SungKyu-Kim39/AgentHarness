@@ -27,6 +27,7 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
  execFileSync(seven,['x','-y','-o'+staged,installer],{stdio:'ignore'});
  await rm(path.join(staged,'$PLUGINSDIR'),{recursive:true,force:true});await rm(path.join(staged,'Uninstall Ned.exe'),{force:true});
  for(const name of ['openviking','mcp','rea','agent-desktop'])await verifyManifest(path.join(staged,'resources/runtime/windows-x64',name),baseline.components[name].manifestSha256,name==='mcp');
+ execFileSync('python3',[path.join(root,'scripts/upgrade-openviking.py'),'apply',path.join(staged,'resources/runtime/windows-x64/openviking')],{cwd:root,stdio:'inherit'});
  const sources=path.join(cache,'handover-sources');await rm(sources,{recursive:true,force:true});await mkdir(sources,{recursive:true});
  const report=execFileSync('python3',[path.join(root,'scripts/optimize-runtime.py'),path.join(staged,'resources'),sources],{cwd:root,encoding:'utf8',maxBuffer:4*1024*1024});
  const proof=JSON.parse(report);
@@ -37,7 +38,7 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
 }
 
 export async function refreshReleaseHost(root,cache,staged,version,sourceCommit) {
- const changes=execFileSync('git',['diff','HEAD','--name-only','--','src','distribution','scripts','package.json','package-lock.json','skills-lock.json','reviewed-skills-lock.json','release-runtime-lock.json','vendor/skills'],{cwd:root,encoding:'utf8'}).trim();
+ const changes=execFileSync('git',['diff','HEAD','--name-only','--','src','distribution','scripts','package.json','package-lock.json','skills-lock.json','reviewed-skills-lock.json','release-runtime-lock.json','python-runtime-lock.json','openviking-upgrade-lock.json','vendor/skills'],{cwd:root,encoding:'utf8'}).trim();
  if(changes)throw Error('Commit reviewed executable and bundle inputs before release build: '+changes);
  execFileSync(process.execPath,[path.join(root,'scripts/prepare-acp.mjs')],{cwd:root,stdio:'inherit'});
  execFileSync(process.execPath,[path.join(root,'scripts/ned-build.mjs')],{cwd:root,stdio:'inherit'});
