@@ -31,3 +31,9 @@ TypeScript 검사와 집중 회귀 검사는 통과했습니다. Linux 전체 �
 ## 서브에이전트 확인
 
 Ned의 OpenCode 정책은 subagent 도구를 허용하지 않습니다. 실제 엔진이 합성 모델에 보낸 도구 목록에도 subagent·spawn_agent·task가 없음을 검사했습니다. Zed 기본 Agent의 spawn_agent는 원본 native Agent 내부에서 부모 모델·프로필을 이어 하위 Thread를 생성합니다. 해당 소스 경로를 확인했으며 실제 하위 GUI 작업 성공은 아직 수용 증거에 포함하지 않습니다.
+
+## Windows의 새 소스·Astryx 검사
+
+[사전 검사 43974417593](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43974417593)에서 기본 Zed 모델 연결·설정 유지·대기 취소 3건과 실제 Windows Astryx 재빌드 1건이 모두 통과했습니다. 설치된 기존 0.3.8의 Node를 실행기로 사용하고 새 ZIP·테스트 소스를 별도로 복사한 검사입니다. 새 rebuild1 설치본의 수용 검사로 합산하지 않습니다. 모델은 localhost 합성 서버이며 Ned Node의 Internet 송신은 Windows 방화벽으로 차단했습니다.
+
+첫 사전 검사는 테스트 파일만의 JSONC UMD 번들 누락으로 중단됐습니다. 제품 호스트에서 이미 쓰는 고정 ESM 별칭을 테스트 빌더에도 적용했습니다. 두 번째는 PowerShell 7의 Archive 모듈 경로가 Windows PowerShell 5에 상속되어 지원하지 않는 .NET 오버로드를 호출했습니다. OS 기본 .NET의 두 인자 ZIP API로 바꾸어 세 번째 검사에서 통과했습니다. 이 두 실패를 설치본 결함이나 사내 서버 오류로 분류하지 않습니다.

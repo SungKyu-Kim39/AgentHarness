@@ -4,7 +4,7 @@
 
 ## 0.3.8 rebuild1 작업 중
 
-기본 Zed Agent용 모델 중계는 `distribution/ned/zed-models.ts`에 있습니다. Ned 도구·지침·스킬·MCP·OpenViking·요약 재시도를 주입하지 않습니다. 실제 키는 Zed에 저장하지 않고 실행별 로컬 토큰으로 연결하며, Zed 자체 프로필·승인 체계를 사용합니다. 모델 중계 테스트와 설정 유지 검사를 통과했습니다.
+기본 Zed Agent용 모델 중계는 `distribution/ned/zed-models.ts`에 있습니다. Ned 도구·지침·스킬·MCP·OpenViking·요약 재시도를 주입하지 않습니다. 기본 Zed는 자체 native 하네스로 동작하며 OpenCode와 ACP를 사용하지 않습니다. 실제 키는 Zed에 저장하지 않고 실행별 로컬 토큰으로 연결하며, Zed 자체 프로필·승인 체계를 사용합니다. 모델 중계 테스트와 설정 유지 검사를 통과했습니다.
 
 Astryx 0.7.16 스킬·281개 참조와 Windows React 시작 프로젝트를 추가해 기본 스킬은 67종입니다. `astryx-offline-lock.json`, `distribution/astryx-starter`, `downloads/astryx`를 함께 확인합니다. 원본 CLI를 실행하지 않으며 직원 PC에서 패키지를 받지 않습니다. `skills:bundle`은 기존 두 지침 묶음을 갱신하면서 Astryx의 검토된 항목을 보존하고 실패하면 원본 번들을 복구합니다. 이 작업공간에서 upstream 스킬 전체 재생성은 누락된 빌드 캐시의 외부 다운로드 실패로 완료하지 못했지만 검토된 기존 67종 파일은 무결성 검사를 통과합니다.
 
