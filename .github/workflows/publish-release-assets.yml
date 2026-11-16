@@ -38,7 +38,7 @@ jobs:
           import {createHash} from 'node:crypto';
           import {execFileSync} from 'node:child_process';
           const version=process.env.NED_VERSION;
-          if(version!=='0.3.8'||!/^\d+$/.test(process.env.NED_VALIDATION_RUN))throw Error('Unreviewed release inputs');
+          if(!['0.3.8','0.3.8-rebuild1'].includes(version)||!/^\d+$/.test(process.env.NED_VALIDATION_RUN))throw Error('Unreviewed release inputs');
           const validation=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/actions/runs/${process.env.NED_VALIDATION_RUN}`],{encoding:'utf8'}));
           if(validation.conclusion!=='success'||validation.path!=='.github/workflows/windows-offline-smoke.yml'||validation.head_branch!=='work')throw Error('Windows validation did not succeed');
           const artifacts=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/actions/runs/${process.env.NED_VALIDATION_RUN}/artifacts`],{encoding:'utf8'}));
@@ -48,7 +48,7 @@ jobs:
           const prefix='Ned-'+version;
           const audit=JSON.parse(await readFile('downloads/'+prefix+'-installer-audit.json'));
           const bundle=JSON.parse(await readFile('downloads/'+prefix+'-bundle-manifest.json'));
-          if(audit.version!==version||bundle.version!==version||audit.sourceCommit!==bundle.sourceCommit)throw Error('Inconsistent release provenance');
+          if(audit.version!==version.split('-')[0]||bundle.version!==version.split('-')[0]||(audit.buildRevision??'')!==(version.endsWith('-rebuild1')?'rebuild1':'')||(bundle.buildRevision??'')!==(audit.buildRevision??'')||audit.sourceCommit!==bundle.sourceCommit)throw Error('Inconsistent release provenance');
           if(installedProof.version!==version||installedProof.installerSha256!==audit.installer.sha256)throw Error('Installed Windows bytes do not match release');
           const tag=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/commits/v${version}`],{encoding:'utf8'}));
           if(tag.sha!==audit.sourceCommit||bundle.installer.sha256!==audit.installer.sha256||audit.payloadComparison?.allStagedBytesVerified!==true)throw Error('Tag or complete installer provenance mismatch');

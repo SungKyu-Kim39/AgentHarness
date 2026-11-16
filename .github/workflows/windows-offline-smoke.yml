@@ -6,7 +6,7 @@ on:
         description: Exact immutable installer build
         default: 0.3.8
         type: choice
-        options: ['0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build']
+        options: ['0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build']
       candidate_source:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
@@ -191,11 +191,11 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows file deletion test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify real engine compaction length recovery
-        if: always() && env.NED_ARTIFACT_VERSION == '0.3.8' && env.NED_TEST_NODE != ''
+        if: always() && startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-0.3.8-windows-compaction-test.cjs'
+          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-compaction-test.cjs'
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Compaction test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
@@ -206,7 +206,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows compaction test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify Git writes, external reads, Ghidra and large OVPack recovery
-        if: always() && env.NED_ARTIFACT_VERSION == '0.3.8' && env.NED_TEST_NODE != ''
+        if: always() && startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -220,7 +220,7 @@ jobs:
           $env:NED_TEST_GHIDRA = Join-Path $resources 'runtime\windows-x64\ghidra\ghidra'
           $env:NED_TEST_JAVA = Join-Path $resources 'runtime\windows-x64\ghidra\jdk'
           $env:NED_TEST_GHIDRA_WORKER = Join-Path $resources 'ned\rea-ghidra-worker.mjs'
-          $test = 'downloads/Ned-0.3.8-windows-native-test.cjs'
+          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-native-test.cjs'
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Native test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
@@ -231,7 +231,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows native operations test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify installed Python tools with a preinstalled Conda environment
-        if: always() && env.NED_ARTIFACT_VERSION == '0.3.8' && env.NED_TEST_NODE != ''
+        if: always() && startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -244,7 +244,7 @@ jobs:
           foreach ($program in @((Join-Path $conda 'python.exe'), (Join-Path $conda 'Scripts\conda.exe'))) {
             New-NetFirewallRule -DisplayName $env:NED_FIREWALL_GROUP -Group $env:NED_FIREWALL_GROUP -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
           }
-          $test = 'downloads/Ned-0.3.8-windows-python-test.cjs'
+          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-python-test.cjs'
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Python test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'

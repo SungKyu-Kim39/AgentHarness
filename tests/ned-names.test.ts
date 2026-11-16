@@ -50,7 +50,7 @@ test('all new OpenViking packages, metadata filenames and project URIs use Ned',
  const root = await mkdtemp(path.join(tmpdir(), 'ned-package-names-')); t.after(() => rm(root, { recursive: true, force: true }));
  await cp('vendor/skills', path.join(root, 'skills'), { recursive: true }); await cp('skills-lock.json', path.join(root, 'skills-lock.json'));
  const packages = await loadBundledSkillPackages(path.join(root, 'skills'));
- assert.equal(packages.length, 66);
+ assert.equal(packages.length, 67);
  for (const pkg of packages) {
   assert.equal(pkg.name, 'ned-' + pkg.id);
   assert.ok(pkg.files.has('NED-BUNDLE.json'));

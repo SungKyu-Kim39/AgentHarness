@@ -2,6 +2,16 @@
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.8**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
+## 0.3.8 rebuild1 작업 중
+
+기본 Zed Agent용 모델 중계는 `distribution/ned/zed-models.ts`에 있습니다. Ned 도구·지침·스킬·MCP·OpenViking·요약 재시도를 주입하지 않습니다. 실제 키는 Zed에 저장하지 않고 실행별 로컬 토큰으로 연결하며, Zed 자체 프로필·승인 체계를 사용합니다. 모델 중계 테스트와 설정 유지 검사를 통과했습니다.
+
+Astryx 0.7.16 스킬·281개 참조와 Windows React 시작 프로젝트를 추가해 기본 스킬은 67종입니다. `astryx-offline-lock.json`, `distribution/astryx-starter`, `downloads/astryx`를 함께 확인합니다. 원본 CLI를 실행하지 않으며 직원 PC에서 패키지를 받지 않습니다. `skills:bundle`은 기존 두 지침 묶음을 갱신하면서 Astryx의 검토된 항목을 보존하고 실패하면 원본 번들을 복구합니다. 이 작업공간에서 upstream 스킬 전체 재생성은 누락된 빌드 캐시의 외부 다운로드 실패로 완료하지 못했지만 검토된 기존 67종 파일은 무결성 검사를 통과합니다.
+
+메뉴·About 수정은 `scripts/patch-ned-editor.mjs`와 `ned-editor-source-lock.json`에 있습니다. Windows 소스 빌드 43966924528은 현재 진행 중입니다. 완료하면 bot이 `work`의 `downloads/editor`에 바이너리·수정 대응 소스·build.json을 새 파일로 커밋합니다. 로컬 변경을 보존하며 그 커밋을 병합한 뒤 `scripts/ned-source-editor.mjs`로 배포 준비본에 적용합니다. 기존의 아이콘 전용 변경과 구별하며 원본 및 수정 대응 소스·라이선스를 함께 배포해야 합니다.
+
+`NED_BUILD_REVISION=rebuild1 node scripts/ned-package.mjs release`가 현재 전체 호스트 재빌드 경로입니다. 역사적인 0.3.6 단일 수정용 `rebuild` 모드를 사용하지 않습니다. 기존 게시 EXE·TGZ·태그는 불변입니다. [검증 진행 기록](docs/validation-0.3.8-rebuild1.md)을 갱신하고 새 설치본의 Windows 검증 뒤에만 배포 완료로 표시합니다.
+
 ## 0.3.8 배포 기준
 
 [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8)의 EXE·TGZ는 소스 `35e7771c1d5dc731953aa10b436bd2a423c87303`에서 생성했습니다. 반입 파일 커밋은 `bd4c4639dadfeef1a531833dcc9f823908a818bc`입니다. EXE 1,511,354,669 bytes의 SHA-256은 `860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27`, TGZ 1,837,611,541 bytes는 `dcc0c46cf970811168770e609c4de9540c00643724cb6986bd57bc8778be951c`입니다. [다운로드 안내](downloads/README.md)와 [배포 상태](downloads/Ned-0.3.8-release-state.json)를 기준으로 이어갑니다.
@@ -51,7 +61,7 @@ Windows Server [실행 43792692526](https://github.com/SungKyu-Kim39/AgentHarnes
 - 사용자 직접 편집·저장은 일반 IDE 동작입니다. AI 쓰기는 호스트 권한, 프로젝트 범위, 외부 변경, 미저장 버퍼와 스냅샷을 확인합니다. 고정 명령과 자식 프로세스 종료도 호스트가 관리합니다.
 - `ask`·`edits`·`full`은 `permissions.json`에 별도로 저장합니다. 전체 권한에서도 충돌·버퍼·범위·중지 확인을 유지합니다. 임시 대화·프로젝트 허용과 지속 권한을 혼동하지 않습니다.
 - 새 도구는 `ned_host_*`, 리소스는 `resources/ned`를 사용합니다. OpenViking 내부 계정과 등록 이름도 `ned`로 이관하며, 원본 저장소와 스킬 수정본은 보존합니다. 상세 절차는 [0.5.5 업데이트·이름 이관](docs/openviking-0.5.5-update.md)을 따릅니다. 옛 배포 파일과 패치의 대상 식별자는 바꾸지 않습니다.
-- 실행기·설치기·트레이는 `assets/ned-icon.png`와 `ned-icon.ico`를 씁니다. 번들 Zed는 아이콘 리소스만 교체하며 실행 코드·공급자 버전 정보는 보존합니다.
+- 실행기·설치기·트레이는 `assets/ned-icon.png`와 `ned-icon.ico`를 씁니다. 0.3.8 원본까지는 번들 Zed 아이콘 리소스만 교체했습니다. rebuild1은 두 Rust 소스의 메뉴·About을 수정해 빌드하고 그 출력에 아이콘을 적용합니다. 기반 버전·소스·원본 라이선스와 수정 대응 소스를 유지합니다.
 
 ## 코드 위치
 

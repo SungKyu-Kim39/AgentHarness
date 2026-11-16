@@ -13,6 +13,7 @@ import { brandEditor, verifyEditorIcon } from './ned-editor-branding.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
 import { prepareRebuild, rebuildBaseline, payloadInventory } from './ned-rebuild.mjs';
 import { prepareRelease, refreshReleaseHost } from './ned-release.mjs';
+import {installSourceEditor,verifySourceEditor} from './ned-source-editor.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
@@ -26,7 +27,7 @@ const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
 const fullRelease = ['0.3.7','0.3.8'].includes(version);
-if(version==='0.3.7' && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published 0.3.7 artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
+if(['0.3.7','0.3.8'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
@@ -163,6 +164,13 @@ async function audit() {
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
     if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
     verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
+    const sourceEditor=version==='0.3.8'&&revision==='rebuild1'?await verifySourceEditor(root,resources):undefined;
+    let astryx;
+    if(version==='0.3.8'&&revision==='rebuild1'){
+      const lock=await json(path.join(root,'astryx-offline-lock.json'));
+      if(await fileHash(path.join(resources,'ned/astryx',lock.archive.name))!==lock.archive.sha256||await fileHash(path.join(resources,'ned/astryx/astryx-offline-lock.json'))!==await fileHash(path.join(root,'astryx-offline-lock.json')))throw Error('Installed Astryx assets differ from the reviewed lock');
+      astryx={version:lock.version,archive:lock.archive,referenceCount:lock.referenceCount,upstreamCliExecuted:false};
+    }
     const baseline=revision&&!fullRelease?await rebuildBaseline(root,version,revision):undefined;
     const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
@@ -200,7 +208,7 @@ async function audit() {
       await writeFile(path.join(output,'payload-manifest.json'),bytes);
       payloadComparison={files:Object.keys(actual).length,allStagedBytesVerified:true,manifestSha256:createHash('sha256').update(bytes).digest('hex'),generatedInstallerFiles};
     }
-    const report={auditSourceCommit:verifierCommit,buildRevision:revision||undefined,rebuild,runtimeOptimization,payloadComparison,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,hostModuleSmoke,windowsAcceptance:false};
+    const report={auditSourceCommit:verifierCommit,buildRevision:revision||undefined,rebuild,runtimeOptimization,payloadComparison,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,sourceEditor,astryx,hostModuleSmoke,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }
@@ -233,6 +241,15 @@ async function bundle() {
   if(version==='0.3.8')for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
     const file=path.join(root,'.cache/ghidra',item.file);if(await fileHash(file)!==item.sha256)throw Error('Ghidra/JDK corresponding source hash mismatch');await cp(file,path.join(stage,'source',item.file));
   }
+  if(version==='0.3.8'&&revision==='rebuild1'){
+    await cp(path.join(root,'docs/zed-native-agent.md'),path.join(stage,'ZED_NATIVE_AGENT.md'));
+    await cp(path.join(root,'docs/astryx.md'),path.join(stage,'ASTRYX.md'));
+    await mkdir(path.join(stage,'astryx'),{recursive:true});
+    const astryx=await json(path.join(root,'astryx-offline-lock.json'));
+    const kit=path.join(root,'downloads/astryx',astryx.archive.name);if(await fileHash(kit)!==astryx.archive.sha256)throw Error('Astryx kit hash mismatch');
+    await cp(kit,path.join(stage,'astryx',astryx.archive.name));
+    await cp(path.join(root,'downloads/editor/zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz'),path.join(stage,'source/zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz'));
+  }
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);
   run('git',['archive','--format=tar.gz','--output='+source,commit,':(exclude)downloads']);
@@ -251,7 +268,9 @@ if(mode==='release-prepare') {
 }
 else if(mode==='release') {
   await prepareRelease(root,cache,staged,version,await getPath7za());
-  await refreshReleaseHost(root,cache,staged,version,buildCommit);await stamp();await verifyAsciiTree(staged);
+  await refreshReleaseHost(root,cache,staged,version,buildCommit);
+  if(version==='0.3.8'&&revision==='rebuild1')await installSourceEditor(root,staged);
+  await stamp();await verifyAsciiTree(staged);
   const nsis=await getMakeNsisPath('0.0.0');
   run(nsis.path,[process.env.NED_VERBOSE_INSTALLER==='1'?'-V4':'-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
   await audit();

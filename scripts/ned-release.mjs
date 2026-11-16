@@ -62,8 +62,18 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
  await cp(path.join(cache,'app/ACP-THIRD-PARTY-NOTICES.txt'),path.join(resources,'licenses/ACP-THIRD-PARTY-NOTICES.txt'));
  await rm(path.join(resources,'skills'),{recursive:true,force:true});await cp(path.join(root,'vendor/skills'),path.join(resources,'skills'),{recursive:true});
  for(const [from,to]of [['scripts/sidecar-supervisor.py','python-supervisor.py'],['distribution/python-runner.py','python-runner.py'],['docs/python-conda.md','python-conda.md'],['distribution/rea-ghidra-worker.mjs','rea-ghidra-worker.mjs'],['skills-lock.json','skills-lock.json'],['agent-config.example.json','agent-config.example.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/skills-0.3.7.md','SKILLS_GUIDE.md'],['docs/license-policy.md','LICENSE_POLICY.md'],['THIRD_PARTY_NOTICES.md','licenses/THIRD_PARTY_NOTICES.md'],['distribution/personal-pack-recovery.py','personal-pack-recovery.py'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(resources,to));
+ const astryxFile=path.join(root,'astryx-offline-lock.json');
+ if(await exists(astryxFile)){
+  const astryx=await json(astryxFile),archive=path.join(root,'downloads/astryx',astryx.archive.name);
+  if(await fileHash(archive)!==astryx.archive.sha256)throw Error('Astryx offline kit hash mismatch');
+  for(const input of astryx.starterInputs)if(await fileHash(path.join(root,input.path))!==input.sha256)throw Error('Stale Astryx kit input');
+  await mkdir(path.join(resources,'astryx'),{recursive:true});
+  await cp(archive,path.join(resources,'astryx',astryx.archive.name));
+  await cp(astryxFile,path.join(resources,'astryx/astryx-offline-lock.json'));
+  for(const file of ['astryx.md','zed-native-agent.md'])await cp(path.join(root,'docs',file),path.join(resources,file));
+ }
  await cp(path.join(root,'release-runtime-lock.json'),path.join(resources,'locks/release-runtime.json'));
- const info={schemaVersion:1,product:'Ned',version,sourceCommit,baselineRuntime:base,hostBuiltFromSource:true,acpBuiltFromPinnedSource:true,upstreamAcpSourceLockSha256:await fileHash(path.join(root,'ned-acp-lock.json')),buildDependencyLockSha256:await fileHash(path.join(root,'scripts/acp-build/package-lock.json')),hostModuleSmoke:smoke,windowsAcceptance:false};
+ const info={schemaVersion:1,product:'Ned',version,buildRevision:process.env.NED_BUILD_REVISION||undefined,sourceCommit,baselineRuntime:base,hostBuiltFromSource:true,acpBuiltFromPinnedSource:true,upstreamAcpSourceLockSha256:await fileHash(path.join(root,'ned-acp-lock.json')),buildDependencyLockSha256:await fileHash(path.join(root,'scripts/acp-build/package-lock.json')),hostModuleSmoke:smoke,windowsAcceptance:false};
  await writeFile(path.join(resources,'build-info.json'),JSON.stringify(info,null,2)+'\n');
  return info;
 }
