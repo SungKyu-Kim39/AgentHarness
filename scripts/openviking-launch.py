@@ -27,11 +27,11 @@ def configure_model_queue_wait():
     """
     from openviking.models.vlm.backends.openai_vlm import OpenAIVLM
     original = OpenAIVLM.__init__
-    if getattr(original, "_l_vibe_queue_wait", False):
+    if getattr(original, "_ned_queue_wait", False):
         return
     def initialize(self, config):
         original(self, {**config, "timeout": None})
-    initialize._l_vibe_queue_wait = True
+    initialize._ned_queue_wait = True
     OpenAIVLM.__init__ = initialize
 
 

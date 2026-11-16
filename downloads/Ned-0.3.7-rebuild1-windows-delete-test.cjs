@@ -4498,11 +4498,11 @@ var release_runtime_lock_default = {
     sourceCommit: "5dab50279b91fdb0bb135793df699b57410c6e3d"
   },
   optimizerSha256: "6b9a223237c968bb6669e35429a2f619b8d46716c1c830f497386e4ea7256de3",
-  reportSha256: "71fefc71899256499c3552f3856de75979be59c69413150c937c309c05f8cc61",
+  reportSha256: "f3828cc1c2ff1a02e435297ce5ec5f6f843e62ab33d89e0a6c87b54a4bd6a537",
   components: {
     openviking: {
-      originalManifestSha256: "51e611182b399d6f6d2a23e3106d08b94b037a324754b138ee75c24215ed857d",
-      manifestSha256: "e42adf91f4fc6736c85f385a49c76fb13e54130d9ec2716017b5047d513ae1b1",
+      originalManifestSha256: "bd4d0e02913ce85d78d8b26b4cc016001043982ba280c2793b9bc0cf7a766d71",
+      manifestSha256: "d11f6caf6e1b807f74a87213c7a0f9654e2ac6b582ec1c7c4b3765c19edf2cb3",
       files: 25295
     },
     mcp: {

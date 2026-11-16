@@ -2415,7 +2415,7 @@
       "license": "ZPL-2.1"
     }
   ],
-  "manifestSha256": "51e611182b399d6f6d2a23e3106d08b94b037a324754b138ee75c24215ed857d",
+  "manifestSha256": "bd4d0e02913ce85d78d8b26b4cc016001043982ba280c2793b9bc0cf7a766d71",
   "openViking": {
     "version": "0.5.5",
     "source": {
