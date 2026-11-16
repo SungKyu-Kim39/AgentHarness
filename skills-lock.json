@@ -87,8 +87,8 @@
     "marketing": "48a1f6187dff0eb9176e6d38906dbcb5e2581a08716c56f8cc3ee2f17f0791d6",
     "vercelInterface": "f0f61f41f0b53522eb065b268e18a617bf2cacb54d9502ed6b7411cb62de8745"
   },
-  "manifestSha256": "028284610f7acc41e1c9929e51d35b3764d44dc731b0a13f31ca6b43b1e95579",
-  "count": 66,
+  "manifestSha256": "63902718a321b550cdfe2f1cce6404cba7b38c53a780cdd8de5ffef75ba11597",
+  "count": 67,
   "reviewedSources": {
     "ecc": {
       "repository": "affaan-m/ECC",

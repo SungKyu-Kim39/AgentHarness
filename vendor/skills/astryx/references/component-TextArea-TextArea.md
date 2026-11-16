@@ -1,0 +1,347 @@
+# Astryx component reference: TextArea/TextArea.doc.mjs
+
+Ned offline adaptation. Use read_skill for these frozen local references. Do not run the original Astryx CLI, online installation, registry discovery, update checks, blog feed, CDN, remote fonts or online playground. Static guidance does not grant execution permissions. Use existing compatible project dependencies, or the fully imported Windows x64 starter kit; never overwrite another project’s dependencies. Preserve the existing framework and ask about an actual incompatible migration, not about skill selection. Verify changes with approved local build tools and otherwise report verification as not run.
+
+Copyright (c) Meta Platforms, Inc. and affiliates. MIT; see ../LICENSE.
+Frozen npm package @astryxdesign/core 0.7.16, src/TextArea/TextArea.doc.mjs. Original SHA-256: ca2dad732d8b15c4a7a729599aa6bb322e4a874302f6884e502856f50dc09b8f.
+Only the exported English docs object is reproduced as text. It is not executable code. Online installation examples are omitted.
+
+```javascript
+{
+  name: 'TextArea',
+  playground: {
+    defaults: {label: 'Notes', value: 'Some notes'},
+  },
+  displayName: 'Text Area',
+  category: 'Form Controls',
+  keywords: [
+    'textarea',
+    'textfield',
+    'multiline',
+    'comment',
+    'message',
+    'autoresize',
+    'autosize',
+    'charlimit',
+  ],
+  props: [
+    {
+      name: 'ref',
+      type: 'React.Ref<HTMLTextAreaElement>',
+      description: 'Ref forwarded to the underlying <textarea> element.',
+    },
+    {
+      name: 'label',
+      type: 'string',
+      description:
+        'Label text for the textarea. Always rendered for accessibility.',
+      required: true,
+    },
+    {
+      name: 'value',
+      type: 'string',
+      description: 'Current value of the textarea.',
+      required: true,
+    },
+    {
+      name: 'onChange',
+      type: '(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void',
+      description: 'Callback fired when the textarea value changes.',
+    },
+    {
+      name: 'changeAction',
+      type: '(value: string, e: ChangeEvent<HTMLTextAreaElement>) => void | Promise<void>',
+      description:
+        'Async action fired after onChange inside a React transition. Enables optimistic updates via useOptimistic.',
+    },
+    {
+      name: 'isLabelHidden',
+      type: 'boolean',
+      description:
+        'Visually hides the label while keeping it accessible to screen readers.',
+      default: 'false',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Helper text displayed between the label and textarea.',
+    },
+    {
+      name: 'isOptional',
+      type: 'boolean',
+      description:
+        'Displays an "Optional" indicator next to the label. Mutually exclusive with isRequired.',
+      default: 'false',
+    },
+    {
+      name: 'isRequired',
+      type: 'boolean',
+      description:
+        'Displays a "Required" indicator next to the label and sets aria-required. Mutually exclusive with isOptional.',
+      default: 'false',
+    },
+    {
+      name: 'isDisabled',
+      type: 'boolean',
+      description: 'Disables the textarea, preventing interaction.',
+      default: 'false',
+    },
+    {
+      name: 'isReadOnly',
+      type: 'boolean',
+      description:
+        'Makes the textarea read-only: the value is shown at full opacity and still submits with the form, but cannot be edited. Unlike isDisabled, a read-only textarea is not dimmed and keeps its form value. isDisabled takes precedence when both are set.',
+      default: 'false',
+    },
+    {
+      name: 'disabledMessage',
+      type: 'string',
+      description:
+        'Explains why the textarea is disabled. With isDisabled, shows a tooltip on hover/keyboard focus and keeps the textarea focusable via aria-disabled (the field becomes read-only). Use this instead of wrapping a disabled TextArea in Tooltip, so the reason is attached to the field itself.',
+    },
+    {
+      name: 'isLoading',
+      type: 'boolean',
+      description:
+        'Puts the textarea in a loading state, showing a spinner inside the input.',
+      default: 'false',
+    },
+    {
+      name: 'placeholder',
+      type: 'string',
+      description: 'Placeholder text shown when the textarea is empty.',
+    },
+    {
+      name: 'rows',
+      type: 'number',
+      description: 'Number of visible text rows.',
+      default: '3',
+    },
+    {
+      name: 'maxLength',
+      type: 'number',
+      description:
+        'Maximum number of characters allowed, counted as user-perceived characters: an emoji or flag sequence counts as one. When set, a character counter (current/max) is displayed inside the input container, anchored to the bottom-right beneath the text. Does not enforce the limit natively; when exceeded the counter turns red and shows a warning icon (a non-color cue), and screen-reader users hear the remaining/over-limit count announced. Consumers validating the limit should count with characterCount (exported from the package) so enforcement matches the displayed count.',
+    },
+    {
+      name: 'htmlMaxLength',
+      type: 'number',
+      description:
+        'The native `maxlength` attribute: the browser stops typing past this many UTF-16 code units (an emoji can take two or more). It is separate from `maxLength`, the soft counter of user-perceived characters: it works without the counter, and it neither shows nor changes the counter. It can stop typing before the counter reaches its limit. TextArea adds no truncation or validation of its own, so a longer controlled value stays as set. The attribute is in the server-rendered HTML, so it applies before hydration. Validate on the server too: the browser limit does not bind requests that skip the UI.',
+    },
+    {
+      name: 'status',
+      type: "{ type: 'warning' | 'error' | 'success'; message?: string }",
+      description:
+        'Status indicator that applies a colored border and icon. An optional message is displayed in a floating box below the textarea.',
+    },
+    {
+      name: 'statusVariant',
+      type: "'attached' | 'detached' | 'tooltip'",
+      description:
+        'How the status message is placed relative to the input. attached overlaps directly below the input (bordered treatment); detached floats below as a separate element with spacing; tooltip hides the message box and surfaces it in a tooltip on the status icon.',
+      default: "'attached'",
+    },
+    {
+      name: 'labelTooltip',
+      type: 'string',
+      description:
+        'Tooltip text displayed in an info icon at the end of the label.',
+    },
+    {
+      name: 'startIcon',
+      type: 'IconType',
+      description:
+        'Icon component rendered inside the leading edge of the textarea wrapper. See `astryx docs icons` for valid semantic names.',
+    },
+    {
+      name: 'hasSpellCheck',
+      type: 'boolean',
+      description:
+        'Enables or disables browser spell checking.',
+      default: 'true',
+    },
+    {
+      name: 'hasAutoFocus',
+      type: 'boolean',
+      description: 'Automatically focuses the textarea on mount.',
+      default: 'false',
+    },
+    {
+      name: 'size',
+      type: "'sm' | 'md' | 'lg'",
+      description:
+        'Size of the textarea, affecting internal padding. Height is controlled by rows, not size.',
+      default: "'md'",
+    },
+    {
+      name: 'onPaste',
+      type: '(e: ClipboardEvent<HTMLTextAreaElement>) => void',
+      description: 'Callback fired when content is pasted into the textarea.',
+    },
+    {
+      name: 'htmlName',
+      type: 'string',
+      description:
+        'HTML name attribute for the textarea element, useful for form submissions.',
+    },
+    {
+      name: 'width',
+      type: 'SizeValue',
+      description:
+        'Width of the field (number = pixels, string used as-is, e.g. "100%"). Sizes the whole field (label, control, and status) so they stay aligned.',
+    },
+    {
+      name: 'onFocus',
+      type: '(e: FocusEvent<HTMLTextAreaElement>) => void',
+      description: 'Callback fired when the textarea receives focus.',
+    },
+    {
+      name: 'onBlur',
+      type: '(e: FocusEvent<HTMLTextAreaElement>) => void',
+      description: 'Callback fired when the textarea loses focus.',
+    },
+    {
+      name: 'autoComplete',
+      type: 'string',
+      description:
+        'The native autocomplete attribute, forwarded to the textarea unchanged. Does not affect the controlled value.',
+    },
+    {
+      name: 'enterKeyHint',
+      type: "'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send'",
+      description:
+        'What the Return key of a touch keyboard says (the native `enterkeyhint`). iOS gives `done`, `go`, `next`, `search` and `send` their own key (a glyph on iOS 26: a checkmark, an arrow, a chevron, a magnifier, an up arrow); `enter` and `previous` keep the plain Return key. Chrome on Android (Gboard) gives every value its own key; with no hint a TextArea keeps Return. It only labels the key: what Enter does stays with your handlers.',
+    },
+    {
+      name: 'inputMode',
+      type: "'none' | 'text' | 'tel' | 'url' | 'email' | 'numeric' | 'decimal' | 'search'",
+      description:
+        'Which touch keyboard the field asks for (the native `inputmode`) without changing what it accepts: `numeric` brings up the number pad, `decimal` the decimal pad, `tel` the phone pad, `search` the web-search keyboard (whose Return key reads Go on iOS even with `enterKeyHint="search"`).',
+    },
+    {
+      name: 'autoCapitalize',
+      type: "'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters'",
+      description:
+        'When a touch keyboard capitalizes as you type (the native `autocapitalize`). Unset, iOS capitalizes sentences. `off` and `none` never capitalize; `on` and `sentences` capitalize each sentence.',
+    },
+    {
+      name: 'hasAutoCorrect',
+      type: 'boolean',
+      description:
+        'Whether a touch keyboard corrects words as you type (the native `autocorrect`). Unset, the browser decides; turn it off for usernames, codes and other values that are not words.',
+    },
+    {
+      name: 'containerXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the field container (label, control, and status together). No effect inside InputGroup (style the InputGroup instead) or in a `horizontal-labels` FormLayout. Root `xstyle`, `className`, and `style` are not accepted.',
+    },
+    {
+      name: 'containerClassName',
+      type: 'string',
+      description: 'Class name for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'containerStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the field container. Same targeting as `containerXstyle`.',
+    },
+    {
+      name: 'controlXstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for the visual control box: the element that paints the border and background and holds icons and end controls. Never the native input.',
+    },
+    {
+      name: 'controlClassName',
+      type: 'string',
+      description: 'Class name for the visual control box.',
+    },
+    {
+      name: 'controlStyle',
+      type: 'CSSProperties',
+      description: 'Inline styles for the visual control box.',
+    },
+  ],
+  theming: {
+    targets: [
+      {
+        className: 'astryx-text-area',
+        visualProps: ['size', 'status'],
+        states: ['disabled', 'readonly'],
+      },
+      {className: 'astryx-text-area-control'},
+      {className: 'astryx-text-area-counter'},
+    ],
+    vars: [
+      {
+        name: '--_textarea-inline-padding',
+        description:
+          "Inline padding of the textarea's text. The wrapper stays flush (padding: 0) so the native resize grip sits in the true corner; this var carries the inset on the inner <textarea>, and the start icon, status/spinner, and character counter align to it.",
+        default: 'var(--spacing-2)',
+        private: true,
+      },
+    ],
+    derived: [
+      {
+        property: 'paddingInline',
+        vars: ['--_textarea-inline-padding'],
+        replaces: true,
+      },
+    ],
+  },
+  usage: {
+    anatomy,
+    description:
+      'TextArea is a multi-line text input for collecting longer-form content like comments, descriptions, or messages. Use it when the expected input spans multiple lines. For shorter, single-line values, use TextInput.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Provide a visible label so users know what to enter. If the label must be hidden, set isLabelHidden with a descriptive label for screen readers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set maxLength with a character counter when there is a defined limit; it helps users stay within bounds before they submit.',
+      },
+      {
+        guidance: true,
+        description:
+          'Keep Return a line break in a multi-line field. Relabel it with enterKeyHint (send, done) only when your own Enter handling does what the label says.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use the status prop to surface validation feedback inline: show success when input is valid, warning for soft limits, and error for hard failures.',
+      },
+      {
+        guidance: true,
+        description:
+          'Add a description or placeholder to clarify expected content, like "Describe the issue in detail," but never rely on placeholder alone as the only label.',
+      },
+      {
+        guidance: false,
+        description:
+          'Avoid using TextArea for short, single-line values like names or emails; use TextInput instead.',
+      },
+      {
+        guidance: false,
+        description:
+          "Don't rely solely on placeholder text to communicate the purpose of the field; placeholders disappear on focus and are not accessible labels.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't show a status message without also setting the status type; the colored border and icon are what draw the user's attention to the message.",
+      },
+      {
+        guidance: false,
+        description:
+          "Don't wrap a disabled TextArea in Tooltip to explain why it's disabled. Use the disabledMessage prop, which attaches the reason to the field itself.",
+      },
+    ],
+  },
+}
+```

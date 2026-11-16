@@ -58,3 +58,7 @@ OpenViking은 서비스 실행, 기본 스킬 등록, 자료 색인과 검색을
 새 설치본에는 0.3.1의 AppData·빈 시작 화면 수정, 0.3.3의 설정·ACP 수정과 0.3.4의 JSONC 시작 수정, 0.3.6의 축약 스냅샷 처리가 포함됩니다. 과거 버전용 패치를 추가 적용하지 마세요. L-Vibe 0.2.7에는 번들 Zed가 없으므로 Ned 설치 파일인지 확인해야 합니다.
 
 시작·등록 오류는 [Windows 진단 안내](windows-diagnostics.md), 기존 OpenViking 자료 내보내기는 동봉한 `CHECK_EXPORT.cmd`와 [개인 지식 이관 안내](openviking-personal-migration.md)를 참고하세요. 파일명과 배포 경로는 ASCII를 사용하며 한국어 UI와 문서 내용은 유지합니다.
+
+## 0.3.8 rebuild1의 Agent 선택과 UI 제작
+
+설치 후 [기본 Zed Agent와 Ned Agent](zed-native-agent.md)를 선택할 수 있습니다. 모델 정보는 같은 JSON에서 관리하며 기본 Zed Agent에는 Ned 스킬·MCP·지식 연동을 주입하지 않습니다. 기본 스킬은 Astryx를 더한 67종입니다. UI를 새로 만드는 경우에는 [Astryx 오프라인 시작 프로젝트](astryx.md)를 사용할 수 있습니다.

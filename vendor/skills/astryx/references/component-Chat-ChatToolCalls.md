@@ -1,0 +1,90 @@
+# Astryx component reference: Chat/ChatToolCalls.doc.mjs
+
+Ned offline adaptation. Use read_skill for these frozen local references. Do not run the original Astryx CLI, online installation, registry discovery, update checks, blog feed, CDN, remote fonts or online playground. Static guidance does not grant execution permissions. Use existing compatible project dependencies, or the fully imported Windows x64 starter kit; never overwrite another project’s dependencies. Preserve the existing framework and ask about an actual incompatible migration, not about skill selection. Verify changes with approved local build tools and otherwise report verification as not run.
+
+Copyright (c) Meta Platforms, Inc. and affiliates. MIT; see ../LICENSE.
+Frozen npm package @astryxdesign/core 0.7.16, src/Chat/ChatToolCalls.doc.mjs. Original SHA-256: b19d346cd14b221d57fbf5bdc09a1095d89b98fcd6beb817aa0dc1499e54fc3b.
+Only the exported English docs object is reproduced as text. It is not executable code. Online installation examples are omitted.
+
+```javascript
+{
+  name: 'ChatToolCalls',
+  displayName: 'Chat Tool Calls',
+  group: 'Chat',
+  category: 'Chat',
+
+  keywords: ['tool', 'function', 'call', 'invocation', 'llm', 'agent', 'bash', 'edit', 'read', 'search', 'status', 'running', 'error', 'complete', 'diff', 'stats'],
+
+  usage: {
+    description:
+      'ChatToolCalls displays tool or function call invocations from an LLM response. Pass an array of calls and the component handles the rest: a single call renders inline, while multiple calls collapse into a summary with the latest call visible at the surface. Use it anywhere an AI agent shows what actions it took.',
+    bestPractices: [
+      {guidance: true, description: 'Include a target string on every call so the user can see what the tool acted on: a file path, a shell command, or a search query.'},
+      {guidance: true, description: 'Show a duration on completed calls so users can judge which tools are slow and understand why a response took time.'},
+      {guidance: true, description: 'Provide a group label when the automatic count does not explain what the calls represent.'},
+      {guidance: true, description: 'Provide resultDetail with a code block for calls that produce output (diffs for edits, terminal output for shell commands) so users can inspect results inline.'},
+      {guidance: true, description: 'Set a unique key on each call item when streaming so React can animate additions without re-mounting completed rows.'},
+      {guidance: false, description: "Don't omit the status field. Without it the call defaults to complete, which is misleading for calls that are still running or have failed."},
+      {guidance: false, description: "Don't display tool calls outside a chat message context; they are designed to sit inside an assistant message, not as standalone UI."},
+      {guidance: false, description: "Don't use custom wrappers around individual calls; the component handles single vs. grouped layout automatically based on the array length."},
+    ],
+    anatomy: [
+      {name: 'Status icon', required: true, description: 'A themed semantic success/error icon, or a spinner while the call is pending or running.'},
+      {name: 'Tool name', required: true, description: 'The function or tool name displayed in monospace: bash, edit, read, web_search, etc.'},
+      {name: 'Node badge', required: false, description: 'A neutral pill badge showing which sandbox or environment ran the tool, like cli:remote-server or workspace.'},
+      {name: 'Target label', required: false, description: 'The target of the action (a file path, command, or search query) shown after the tool name.'},
+      {name: 'Diff stats', required: false, description: 'Green additions and red deletions counts for edit operations, displayed inline after the target.'},
+      {name: 'Duration', required: false, description: 'Execution time shown on the trailing edge for completed calls.'},
+      {name: 'Group header', required: false, description: 'A wrench icon with a call count, shown when multiple calls are present. Clicking toggles between the summary and the full list.'},
+    ],
+  },
+
+  playground: {
+    defaults: {
+      calls: [
+        {name: 'read_file', status: 'complete', target: 'Button.tsx', duration: '120ms'},
+        {name: 'run_tests', status: 'complete', target: 'yarn test', duration: '1.2s', additions: 12, deletions: 3},
+      ],
+    },
+  },
+
+  props: [
+    {
+      name: 'calls',
+      type: 'ChatToolCallItem[]',
+      description:
+        "Array of tool call data. Each item has name, status, target, duration, node, additions, deletions, stats, errorMessage, resultDetail, key, and data. status is one of 'pending', 'running', 'complete', or 'error' (defaults to 'complete').",
+      required: true,
+    },
+    {
+      name: 'label',
+      type: 'string',
+      description:
+        'Custom summary label shown for an expanded group. The translated call count is used when omitted.',
+    },
+    {
+      name: 'isExpanded',
+      type: 'boolean',
+      description: 'Controlled expanded state for the group.',
+    },
+    {
+      name: 'defaultIsExpanded',
+      type: 'boolean',
+      description:
+        'Default expanded state when uncontrolled.',
+      default: 'false',
+    },
+    {
+      name: 'onExpandedChange',
+      type: '(isExpanded: boolean) => void',
+      description: 'Callback fired when the expanded state changes.',
+    },
+    {
+      name: 'xstyle',
+      type: 'StyleXStyles',
+      description:
+        'StyleX styles for layout customization (margins, positioning, sizing). Must be a stylex.create() value, not an inline style object like style={{}}.',
+    },
+  ],
+}
+```

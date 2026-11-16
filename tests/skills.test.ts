@@ -9,7 +9,7 @@ import { Redactor } from '../src/main/config';
 import { NativeRuntime } from '../distribution/native-control';
 import { configSchema } from '../src/shared/contracts';
 
-const additions = ['agent-desktop', 'agent-desktop-windows', 'cpp-pro', 'cpp-testing', 'legacy-modernizer', 'codebase-onboarding', 'api-design', 'database-migrations', 'error-handling-patterns', 'architecture-decision-records', 'differential-review', 'session-handoff', 'explore-data', 'validate-data', 'data-visualization', 'statistical-analysis', 'ab-testing', 'web-design-guidelines'];
+const additions = ['agent-desktop', 'agent-desktop-windows', 'cpp-pro', 'cpp-testing', 'legacy-modernizer', 'codebase-onboarding', 'api-design', 'database-migrations', 'error-handling-patterns', 'architecture-decision-records', 'differential-review', 'session-handoff', 'explore-data', 'validate-data', 'data-visualization', 'statistical-analysis', 'ab-testing', 'web-design-guidelines', 'astryx'];
 
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
   const root = await mkdtemp(path.join(tmpdir(), 'ned-offline-skills-'));
@@ -32,7 +32,7 @@ test('the native broker reads every new offline skill and reference without invo
   const catalog = JSON.parse(await tools.call('skill_catalog', {}, 'test-session'));
   const lock = JSON.parse(await readFile('skills-lock.json','utf8'));
   assert.equal(catalog.length, lock.count);
-  assert.equal(lock.count,66);
+  assert.equal(lock.count,67);
   const reviewed = JSON.parse(await readFile('reviewed-skills-lock.json','utf8')).skills.map((skill: { id: string })=>skill.id);
   for (const id of [...additions,...reviewed]) {
     assert.ok(catalog.some((skill: { id: string }) => skill.id === id));

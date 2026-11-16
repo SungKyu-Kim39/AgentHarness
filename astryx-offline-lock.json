@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "version": "0.7.16",
+  "skillCommit": "5a3fd39483c1890150dbb46372f65e5a82739373",
+  "packages": {
+    "core": {
+      "version": "0.7.16",
+      "url": "https://registry.npmjs.org/@astryxdesign/core/-/core-0.7.16.tgz",
+      "integrity": "sha512-3FFQGIOiRVczlrBtRH/Pm4TQwl6FVTCkMhGfljVcxjGBY1AJ4yhx6fRFnP7Nw/Wjaic1vne2TbJ7HW00d3vK2Q==",
+      "license": "MIT",
+      "sha256": "d5f00933d8cfd82ad52bf64129b373d58eb5d34d7a5db2bcaa01daaa3367f262",
+      "bytes": 7935256
+    },
+    "cli": {
+      "version": "0.7.16",
+      "url": "https://registry.npmjs.org/@astryxdesign/cli/-/cli-0.7.16.tgz",
+      "integrity": "sha512-lksV0SdKjlE+Mi12VD1loDN3KE65NYnO7RqhLZ+tXaxQuUi+ccND2vLcLTZex3X/6j1FOH1cdZlhQc+LJIo73g==",
+      "license": "MIT",
+      "sha256": "95921261d2334cb46cd38124ce2ace1a6f3ce011a036a810d250763b7b8e9968",
+      "bytes": 5650808
+    }
+  },
+  "dependencyLockSha256": "3165eb81c822249a9cf1ffd4a6c50c2e3001274ce6b39f88a02d23821d81af20",
+  "starterInputs": [
+    {
+      "path": "distribution/astryx-starter/BUILD.cmd",
+      "sha256": "d0fd85714377cabff461f10801fce965499012747b862aa3ee3995d5029443f3"
+    },
+    {
+      "path": "distribution/astryx-starter/BUILD.ps1",
+      "sha256": "05e931672599f848eecdf3482d5637b9ef6ab652fdeb8a7986db3a5775fb5525"
+    },
+    {
+      "path": "distribution/astryx-starter/LICENSE-Ned.txt",
+      "sha256": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+    },
+    {
+      "path": "distribution/astryx-starter/README.md",
+      "sha256": "be8137bf719bc8ae58d7e7ae1d83a07638125719486b37b291c229b449485e15"
+    },
+    {
+      "path": "distribution/astryx-starter/build.mjs",
+      "sha256": "43c4ad127f5382a7571b62178b7b18f761e66a5f50329627f514ef2333a56c48"
+    },
+    {
+      "path": "distribution/astryx-starter/index.html",
+      "sha256": "e8b852aa47e30d53a7372dd52ffb1691bf088c07d9c3079255fbbc780b5a1f21"
+    },
+    {
+      "path": "distribution/astryx-starter/package-lock.json",
+      "sha256": "3165eb81c822249a9cf1ffd4a6c50c2e3001274ce6b39f88a02d23821d81af20"
+    },
+    {
+      "path": "distribution/astryx-starter/package.json",
+      "sha256": "63c0653cf15abfb735b4e0df80f780b31363063891f13f5b22ba25d6be76d332"
+    },
+    {
+      "path": "distribution/astryx-starter/src/main.tsx",
+      "sha256": "f130aa183c514ba40d3e147fd8a3148c4fc71e31b684ed533f3f18cb329ed56c"
+    }
+  ],
+  "archive": {
+    "name": "Ned-Astryx-0.7.16-windows-x64.zip",
+    "bytes": 24922585,
+    "sha256": "70aa74491bc66c7eee3612c24a4903a7832fc018f6de33f739afd1c32df77162"
+  },
+  "referenceCount": 281,
+  "installedFiles": 10351,
+  "cliExecuted": false
+}

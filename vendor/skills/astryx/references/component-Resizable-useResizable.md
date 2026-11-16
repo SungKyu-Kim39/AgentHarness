@@ -1,0 +1,173 @@
+# Astryx component reference: Resizable/useResizable.doc.mjs
+
+Ned offline adaptation. Use read_skill for these frozen local references. Do not run the original Astryx CLI, online installation, registry discovery, update checks, blog feed, CDN, remote fonts or online playground. Static guidance does not grant execution permissions. Use existing compatible project dependencies, or the fully imported Windows x64 starter kit; never overwrite another project’s dependencies. Preserve the existing framework and ask about an actual incompatible migration, not about skill selection. Verify changes with approved local build tools and otherwise report verification as not run.
+
+Copyright (c) Meta Platforms, Inc. and affiliates. MIT; see ../LICENSE.
+Frozen npm package @astryxdesign/core 0.7.16, src/Resizable/useResizable.doc.mjs. Original SHA-256: 6e6d717704c1bc0ca0ddc2a680fdb2703a4d9593dadfe7703a12ff4462636074.
+Only the exported English docs object is reproduced as text. It is not executable code. Online installation examples are omitted.
+
+```javascript
+{
+  name: 'useResizable',
+  displayName: 'useResizable',
+  group: 'Resizable',
+  keywords: [
+    'resize',
+    'resizable',
+    'drag',
+    'split',
+    'panel',
+    'sidebar',
+    'divider',
+    'splitter',
+    'splitpane',
+    'resizablepanels',
+  ],
+  params: [
+    {
+      name: 'defaultSize',
+      type: 'SizeValue | ResizableSize',
+      description:
+        'Initial size. Numbers, exact "Npx", and pixel(value) are pixels. Exact "N%" has no additional pixel bound. percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds one pixel floor or ceiling. A percentage resolves ONCE into pixels — against containerRef when supplied, against the viewport otherwise — and does not track its basis afterwards. The released broad number | string type remains compatible; runtime validation is authoritative.',
+      default: '250',
+    },
+    {
+      name: 'minSize',
+      type: 'ResizableSize',
+      description:
+        'Minimum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage minimums re-resolve when their basis changes and clamp the current pixel selection.',
+      default: '50',
+    },
+    {
+      name: 'maxSize',
+      type: 'ResizableSize',
+      description:
+        'Maximum size. Numbers, exact "Npx", and pixel(value) remain pixels; exact "N%" has no additional pixel bound; percent(value, {min: pixel(value)}) or percent(value, {max: pixel(value)}) adds exactly one. Percentage maximums re-resolve when their basis changes and clamp the current pixel selection.',
+      default: 'Infinity',
+    },
+    {
+      name: 'containerRef',
+      type: 'RefObject<HTMLElement | null>',
+      description:
+        'The element a percentage is a share of. Caller-owned: the hook never infers one. Omitted, percentages use the viewport, which is the released behaviour. The ref may point at a different element over time — the basis follows it. Until that element is actually laid out (not yet mounted, display:none, detached) percentages use a temporary 1200px basis rather than its zero measurement, and nothing is persisted from it.',
+    },
+    {
+      name: 'direction',
+      type: "'horizontal' | 'vertical'",
+      description:
+        "Which axis this region resizes along. Selects the container's inline or block content-box size as the percentage basis, and must match the direction given to ResizeHandle.",
+      default: "'horizontal'",
+    },
+    {
+      name: 'collapsible',
+      type: 'boolean',
+      description:
+        'Whether a lift or a key step below the collapsed threshold collapses the region to zero.',
+      default: 'false',
+    },
+    {
+      name: 'snaps',
+      type: 'number[]',
+      description: 'Pixel values to snap to during drag.',
+    },
+    {
+      name: 'autoSaveId',
+      type: 'string',
+      description:
+        'Key for localStorage persistence of size and collapse state across sessions.',
+    },
+    {
+      name: 'defaultIsCollapsed',
+      type: 'boolean',
+      description:
+        'Initial collapse state (uncontrolled). A persisted entry wins over it.',
+      default: 'false',
+    },
+    {
+      name: 'isCollapsed',
+      type: 'boolean',
+      description:
+        'Controlled collapse state. collapse(), expand(), a lift or a key step past the threshold, and a drag that reopens the region then report through onCollapseChange instead of changing state internally.',
+    },
+    {
+      name: 'onCollapseChange',
+      type: '(isCollapsed: boolean) => void',
+      description:
+        'Called once per collapse state change: a lift or a key step that closes the region, a drag or a key that reopens it, Enter, a double-click, or a call to collapse(), expand() or resize().',
+    },
+  ],
+  returns: [
+    {
+      name: 'size',
+      type: 'number',
+      description: 'Current size in pixels.',
+    },
+    {
+      name: 'isCollapsed',
+      type: 'boolean',
+      description: 'Whether the region is currently collapsed.',
+    },
+    {
+      name: 'collapse',
+      type: '() => void',
+      description: 'Programmatically collapse the region.',
+    },
+    {
+      name: 'expand',
+      type: '() => void',
+      description: 'Expand from collapsed state.',
+    },
+    {
+      name: 'resize',
+      type: '(size: number) => void',
+      description: 'Resize to a specific pixel value.',
+    },
+    {
+      name: 'props',
+      type: 'ResizableProps',
+      description:
+        'Props to spread on the resizable component or pass to ResizeHandle.',
+    },
+  ],
+  usage: {
+    description:
+      'Hook for adding drag-to-resize behavior to layout regions. Supports single-region and multi-region configurations with snap points, collapsible panels, localStorage persistence, and cascade resize ordering.',
+    bestPractices: [
+      {
+        guidance: true,
+        description:
+          'Use percent(40, {min: pixel(333)}) for a 40% size with a 333px floor, or percent(10, {max: pixel(400)}) for a 10% size with a 400px ceiling. The options argument is required and carries a floor XOR a ceiling.',
+      },
+      {
+        guidance: true,
+        description:
+          'A structured default is an initial choice only; a structured minSize or maxSize remains live. State, persistence, callbacks, resize(), paint, and ARIA all use resolved pixel numbers.',
+      },
+      {
+        guidance: true,
+        description:
+          'Import percent and Table’s same pixel binding from @astryxdesign/core/Resizable/utils when constructing configuration in a Server Component; the root package exposes one pixel symbol and one percent symbol without collision.',
+      },
+      {
+        guidance: true,
+        description:
+          'Use with Layout or AppShell sidebar for resizable navigation panels.',
+      },
+      {
+        guidance: true,
+        description:
+          'Set autoSaveId to persist user-chosen sizes across page reloads.',
+      },
+      {
+        guidance: false,
+        description:
+          'Set minSize too small; content becomes unreadable. Prefer collapsible for panels that can hide entirely.',
+      },
+    ],
+  },
+  relatedComponents: ['Resizable', 'AppShell', 'Layout', 'SideNav'],
+  relatedHooks: ['useCollapsible'],
+  importPath: '@astryxdesign/core/Resizable',
+  category: 'layout',
+}
+```

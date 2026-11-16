@@ -44,3 +44,12 @@ TGZ와 설치 리소스의 라이선스·저작자 고지, dist-info 문서, REA
 ## Ned 0.3.8 Ghidra / Temurin JDK
 
 Ghidra 12.1.4는 Apache-2.0 및 배포본의 개별 제3자 조건을 적용합니다. Eclipse Temurin OpenJDK 21.0.13+9는 GPL-2.0 with Classpath Exception 및 `legal/`의 개별 조건을 적용합니다. 고정 바이너리·대응 소스의 URL·크기·SHA-256은 `ghidra-runtime-lock.json`에 기록합니다. Ghidra LICENSE·NOTICE·하위 고지와 JDK legal/을 설치본에 보존하고, 대응 소스 두 아카이브를 TGZ의 source/에 제공합니다. Ned의 Java 가드와 고정 REA 소스 검사·메모리 어댑터는 Ned 소스에 포함합니다. 원본 REA 파일은 변경하지 않습니다.
+
+## Astryx 0.7.16 — 0.3.8 rebuild1
+
+Meta Platforms, Inc. and affiliates, MIT. https://github.com/meta/astryx
+The reviewed skill is pinned to 5a3fd39483c1890150dbb46372f65e5a82739373. Npm Core/CLI 0.7.16 documentation assets have independently recorded hashes. Ned adapts static references and supplies an offline React starter; it does not execute the upstream CLI. Original MIT terms and attributions remain in vendor/skills/astryx/LICENSE and the starter node_modules packages. The starter includes React/React DOM 19.2.0, StyleX, seven themes, esbuild 0.25.12 and locked transitive dependencies; retain their individual LICENSE and NOTICE files. See astryx-offline-lock.json and distribution/astryx-starter/package-lock.json.
+
+## Source-built Ned editor — 0.3.8 rebuild1
+
+Based on Zed 1.28.1, commit e8bc16acee5ae1937600d571d441c4b5d7b0d288. Ned contributors modify crates/zed/src/zed/app_menus.rs and crates/zed/src/zed.rs for Ned menus/About, add the Ned About image, then replace Windows icon resources. The original licenses remain applicable. Modified corresponding source is supplied as zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz alongside the original source and Cargo.lock. This source build is distinct from the earlier icon-only modification of the vendor binary. No upstream endorsement is implied.

@@ -18,3 +18,5 @@ downloads/Ned-0.3.8-supervisor-runtime-manifest.json text eol=lf
 # Source-built managed editor and corresponding source.
 downloads/editor/*.exe filter=lfs diff=lfs merge=lfs -text
 downloads/editor/*.tar.gz filter=lfs diff=lfs merge=lfs -text
+
+downloads/astryx/*.zip filter=lfs diff=lfs merge=lfs -text

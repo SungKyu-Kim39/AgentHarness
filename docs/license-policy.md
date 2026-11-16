@@ -97,3 +97,9 @@ AGPL 5조의 aggregate 규정은 별개 저작물의 단순 집합과 결합 저
 ## 0.3.8 Ghidra와 Java
 
 [Ghidra·JDK 잠금 자료](../ghidra-runtime-lock.json)의 Ghidra 12.1.4와 Temurin OpenJDK 21.0.13+9를 추가합니다. Ghidra의 Apache-2.0·개별 하위 고지, JDK의 GPL-2.0 with Classpath Exception·legal/ 조건을 함께 보존합니다. 개발용 jmods와 lib/src.zip은 설치에서 제외하지만 실행·컴파일 모듈과 라이선스는 남기며 전체 고정 대응 소스는 반입 TGZ의 source/에 제공합니다. 이 추가 자료가 기존 배포 전체의 법적 적합성 인증을 뜻하지는 않습니다.
+
+## 0.3.8 rebuild1의 추가 구성
+
+Ned 메뉴와 About 화면은 고정한 Zed 1.28.1 원본 소스를 수정해 빌드합니다. 기존 아이콘 변경과 별도로 Rust 소스 두 파일과 About 이미지가 바뀝니다. 원본 라이선스·저작권·Cargo.lock을 유지하며 수정한 대응 소스 아카이브를 설치 자료와 반입 묶음에 함께 제공합니다. About 화면에도 기반 Zed 버전과 소스 정보를 남깁니다.
+
+Astryx는 MIT 라이선스입니다. 전용 스킬의 원본과 수정 내역은 vendor/skills/astryx에, React 시작 프로젝트의 개별 의존성 라이선스는 해당 node_modules에 있습니다. Ned의 앱 라이선스가 이 라이선스들을 대체하지 않습니다. 시작 프로젝트를 다른 곳에 배포할 때도 저작권·LICENSE·NOTICE를 보존해야 합니다.
