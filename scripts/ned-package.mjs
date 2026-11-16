@@ -99,6 +99,7 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       {from:path.join(root,'distribution/personal-pack-recovery.py'),to:'ned/personal-pack-recovery.py'},
       {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
+      {from:path.join(root,'scripts/sidecar-supervisor.py'),to:'ned/python-supervisor.py'},
       {from:path.join(root,'distribution/python-runner.py'),to:'ned/python-runner.py'},
       {from:path.join(root,'docs/python-conda.md'),to:'ned/python-conda.md'},
       {from:path.join(root,'docs/git-and-binary-analysis.md'),to:'ned/git-and-binary-analysis.md'},

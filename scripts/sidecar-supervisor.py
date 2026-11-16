@@ -51,6 +51,13 @@ def main():
             try: child.wait(timeout=5)
             except subprocess.TimeoutExpired: child.terminate()
     threading.Thread(target=watch_parent, daemon=True).start()
-    sys.exit(child.wait())
+    code = child.wait()
+    # A daemon may still be blocked on the parent stdin BufferedReader. Normal
+    # interpreter finalization then races that lock and turns a successful child
+    # into a fatal shutdown error. Finish inherited output before the OS closes
+    # this process and its kill-on-close Job handle; do not finalize the daemon.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(ctypes.c_int32(code).value if os.name == 'nt' else (code if code >= 0 else 128 - code))
 
 if __name__ == '__main__': main()

@@ -15,3 +15,11 @@ test('user cancellation confirms the owned command exits before returning and cl
   assert.equal(stopped.cancelled, true); assert.equal(owner.stoppingUnconfirmed, false);
   await owner.close(); assert.throws(() => owner.run({ executable: process.execPath, args: [], cwd: process.cwd(), env: {} }), /종료 중/);
 });
+
+test('the process supervisor preserves natural child exits while its parent stdin remains open', { skip: process.platform === 'win32', timeout: 10000 }, async t => {
+  const owner = new OwnedCommand(''); t.after(() => owner.close());
+  for (const code of [0, 7]) {
+    const result = await owner.run({ executable: 'python3', args: ['-I', '-B', 'scripts/sidecar-supervisor.py', process.execPath, '-e', `process.stdout.write('FINISHED');process.exitCode=${code}`], cwd: process.cwd(), env: { PATH: process.env.PATH } });
+    assert.equal(result.exitCode, code); assert.equal(result.output, 'FINISHED');
+  }
+});

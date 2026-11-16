@@ -20,7 +20,7 @@ export class OwnedCommand {
     signal.throwIfAborted();
     const windows = process.platform === 'win32';
     const executable = windows ? path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe') : spec.executable;
-    const args = windows ? ['-I', '-B', path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py'), spec.executable, ...spec.args] : spec.args;
+    const args = windows ? ['-I', '-B', path.join(this.resources, 'ned/python-supervisor.py'), spec.executable, ...spec.args] : spec.args;
     const child = spawn(executable, args, { cwd: spec.cwd, env: spec.env, shell: false, windowsHide: true, stdio: 'pipe', detached: !windows });
     child.stdin.on('error', () => {});
     let output = '', stdout = '', outputTruncated = false, cancelled = false;

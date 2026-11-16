@@ -198,6 +198,30 @@ jobs:
           Get-Content windows-native-stderr.txt
           if ($run.ExitCode -ne 0) { throw 'Windows native operations test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
+      - name: Verify installed Python tools with a preinstalled Conda environment
+        if: always() && env.NED_ARTIFACT_VERSION == '0.3.8' && env.NED_TEST_NODE != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $candidates = @($env:CONDA, 'C:\Miniconda', 'C:\Miniconda3', 'C:\ProgramData\Miniconda3') | Where-Object { $_ }
+          $conda = $candidates | Where-Object { Test-Path (Join-Path $_ 'Scripts\conda.exe') } | Select-Object -First 1
+          if (!$conda) { throw 'Python integration requires preinstalled Windows Conda' }
+          $env:NED_TEST_CONDA_ROOT = $conda
+          $env:CONDA = $conda
+          $env:NED_TEST_RESOURCES = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources'
+          foreach ($program in @((Join-Path $conda 'python.exe'), (Join-Path $conda 'Scripts\conda.exe'))) {
+            New-NetFirewallRule -DisplayName $env:NED_FIREWALL_GROUP -Group $env:NED_FIREWALL_GROUP -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
+          }
+          $test = 'downloads/Ned-0.3.8-windows-python-test.cjs'
+          $expected = (Get-Content "$test.sha256").Split(' ')[0]
+          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Python test hash mismatch' }
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-test.txt -RedirectStandardError windows-python-stderr.txt -Wait -PassThru
+          $run.Refresh()
+          Get-Content windows-python-test.txt
+          Get-Content windows-python-stderr.txt
+          if ($run.ExitCode -ne 0) { throw 'Installed Windows Python tools failed' }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Restore disposable runner firewall configuration
         if: always()
         shell: pwsh
@@ -220,6 +244,8 @@ jobs:
             windows-compaction-stderr.txt
             windows-native-test.txt
             windows-native-stderr.txt
+            windows-python-test.txt
+            windows-python-stderr.txt
           if-no-files-found: ignore
 
   python-source-probe:
@@ -247,6 +273,7 @@ jobs:
           New-Item -ItemType Directory -Path (Join-Path $resources 'ned') -Force | Out-Null
           New-Item -ItemType Junction -Path (Join-Path $resources 'runtime') -Target (Join-Path $install 'resources\runtime') | Out-Null
           Copy-Item distribution/python-runner.py (Join-Path $resources 'ned\python-runner.py')
+          Copy-Item scripts/sidecar-supervisor.py (Join-Path $resources 'ned\python-supervisor.py')
           $candidates = @($env:CONDA, 'C:\Miniconda', 'C:\Miniconda3', 'C:\ProgramData\Miniconda3') | Where-Object { $_ }
           $conda = $candidates | Where-Object { Test-Path (Join-Path $_ 'Scripts\conda.exe') } | Select-Object -First 1
           if (!$conda) { throw 'This source probe requires preinstalled Windows Conda' }

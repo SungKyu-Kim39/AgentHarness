@@ -48,7 +48,8 @@ export class PythonProjects {
   private environment(work: string): NodeJS.ProcessEnv {
     const env: NodeJS.ProcessEnv = { TEMP: work, TMP: work, TMPDIR: work, CONDA_OFFLINE: 'true', CONDA_NO_PLUGINS: 'true', CONDA_SOLVER: 'classic', CONDA_AUTO_UPDATE_CONDA: 'false', CONDA_NOTICES_OFF: 'true', CONDA_REPORT_ERRORS: 'false', PIP_NO_INDEX: '1', PIP_DISABLE_PIP_VERSION_CHECK: '1', UV_OFFLINE: '1', PYTHONNOUSERSITE: '1', PYTHONDONTWRITEBYTECODE: '1', PYTHONIOENCODING: 'utf-8', CONDA_SHLVL: '0' };
     for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'HOME', 'ProgramData', 'ProgramFiles', 'ProgramFiles(x86)', 'COMSPEC']) if (process.env[key]) env[key] = process.env[key];
-    env.PATH = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32'); return env;
+    const windows = process.env.SystemRoot ?? 'C:\\Windows';
+    env.PATH = [path.join(windows, 'System32'), windows, path.join(windows, 'System32/WindowsPowerShell/v1.0'), path.join(windows, 'System32/Wbem')].join(path.delimiter); return env;
   }
   private async installations(work: string, signal: AbortSignal) {
     if (this.options.roots) return this.options.roots();

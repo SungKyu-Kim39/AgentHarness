@@ -5704,7 +5704,7 @@ var OwnedCommand = class {
     signal.throwIfAborted();
     const windows = process.platform === "win32";
     const executable = windows ? import_node_path10.default.join(this.resources, "runtime/windows-x64/openviking/python/python.exe") : spec.executable;
-    const args = windows ? ["-I", "-B", import_node_path10.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py"), spec.executable, ...spec.args] : spec.args;
+    const args = windows ? ["-I", "-B", import_node_path10.default.join(this.resources, "ned/python-supervisor.py"), spec.executable, ...spec.args] : spec.args;
     const child = (0, import_node_child_process5.spawn)(executable, args, { cwd: spec.cwd, env: spec.env, shell: false, windowsHide: true, stdio: "pipe", detached: !windows });
     child.stdin.on("error", () => {
     });
@@ -5819,7 +5819,8 @@ var PythonProjects = class {
   environment(work) {
     const env = { TEMP: work, TMP: work, TMPDIR: work, CONDA_OFFLINE: "true", CONDA_NO_PLUGINS: "true", CONDA_SOLVER: "classic", CONDA_AUTO_UPDATE_CONDA: "false", CONDA_NOTICES_OFF: "true", CONDA_REPORT_ERRORS: "false", PIP_NO_INDEX: "1", PIP_DISABLE_PIP_VERSION_CHECK: "1", UV_OFFLINE: "1", PYTHONNOUSERSITE: "1", PYTHONDONTWRITEBYTECODE: "1", PYTHONIOENCODING: "utf-8", CONDA_SHLVL: "0" };
     for (const key of ["SystemRoot", "SYSTEMROOT", "WINDIR", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOME", "ProgramData", "ProgramFiles", "ProgramFiles(x86)", "COMSPEC"]) if (process.env[key]) env[key] = process.env[key];
-    env.PATH = import_node_path11.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32");
+    const windows = process.env.SystemRoot ?? "C:\\Windows";
+    env.PATH = [import_node_path11.default.join(windows, "System32"), windows, import_node_path11.default.join(windows, "System32/WindowsPowerShell/v1.0"), import_node_path11.default.join(windows, "System32/Wbem")].join(import_node_path11.default.delimiter);
     return env;
   }
   async installations(work, signal) {
