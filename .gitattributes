@@ -10,3 +10,7 @@ downloads/*-windows-*-test.cjs text eol=lf
 downloads/candidates/**/*.exe filter=lfs diff=lfs merge=lfs -text
 downloads/candidates/**/*.tgz filter=lfs diff=lfs merge=lfs -text
 downloads/candidates/**/source/** filter=lfs diff=lfs merge=lfs -text
+
+# These source-probe inputs are compared to byte-pinned runtime manifests.
+scripts/sidecar-supervisor.py text eol=lf
+downloads/Ned-0.3.8-supervisor-runtime-manifest.json text eol=lf
