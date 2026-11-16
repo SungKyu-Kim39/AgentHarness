@@ -1,7 +1,7 @@
 import { execFile } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { createReadStream, openAsBlob } from 'node:fs';
-import { copyFile, lstat, mkdir, mkdtemp, readFile, rename, rm } from 'node:fs/promises';
+import { createHash, randomUUID } from 'node:crypto';
+import { constants, createReadStream, openAsBlob } from 'node:fs';
+import { copyFile, lstat, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { z } from 'zod';
@@ -15,6 +15,8 @@ const entrySchema = z.object({
   sha256: z.string().regex(/^[a-f0-9]{64}$/), root: z.string().regex(rootPattern),
   roots: z.array(z.string()).max(64), status: z.enum(['importing', 'ready', 'failed']),
   files: z.number().int().nonnegative(), importedAt: z.string(),
+  sourceRoot: z.string().regex(rootPattern).optional(), imported: z.boolean().optional(),
+  lastStage: z.string().regex(/^OV_PERSONAL_[A-Z_]+$/).optional(), lastHttpStatus: z.number().int().min(100).max(599).optional(),
 }).strict();
 const registrySchema = z.object({ schemaVersion: z.literal(1), entries: z.array(entrySchema).max(32) }).strict();
 type Entry = z.infer<typeof entrySchema>;
@@ -73,7 +75,8 @@ function uriAllowed(uri: string, roots: string[]) {
 export class PersonalKnowledge {
   private operation: Promise<unknown> = Promise.resolve();
   private abort = new AbortController();
-  constructor(private directory: string, private python: string, private transport: PersonalTransport) {}
+  constructor(private directory: string, private python: string, private transport: PersonalTransport,
+    private recovery?: { script: string; launcher: string; tokenizers: string; diagnostic?: (text: string) => void }) {}
   private request(root: string, route: string, options?: Parameters<SkillTransport>[1]) {
     if (!rootPattern.test(root)) throw new Error('개인 지식 사용자 범위가 올바르지 않습니다.');
     return this.transport(root.slice('viking://user/'.length), route, options);
@@ -89,7 +92,8 @@ export class PersonalKnowledge {
   }
   async status() {
     const registry = await this.registry();
-    return registry.entries.map(({ sha256, root, status, files, importedAt }) => ({ sha256, root, status, files, importedAt }));
+    return registry.entries.map(({ sha256, root, status, files, importedAt, sourceRoot, lastStage, lastHttpStatus }) => ({ sha256, root, status, files, importedAt,
+      ...(sourceRoot ? { sourceRoot } : {}), ...(lastStage ? { lastStage } : {}), ...(lastHttpStatus ? { lastHttpStatus } : {}) }));
   }
   private async verifyIndex(entry: Pick<Entry, 'root' | 'roots'>, signal: AbortSignal) {
     // OVPack import enqueues embedding work; HTTP success is not search readiness.
@@ -124,41 +128,75 @@ export class PersonalKnowledge {
         if (!rootPattern.test(preview.root) || !Array.isArray(preview.roots) || preview.roots.some(r => !validRoot(r, preview.root))) throw new Error();
       } catch { throw new Error('사용자 영역을 내보낸 OVPack v3인지 확인하세요. 전체 DB 백업이나 잘못된 압축 파일은 가져올 수 없습니다.'); }
       const registry = await this.registry();
-      const existing = registry.entries.find(e => e.sha256 === sha256);
-      if (existing?.status === 'ready') {
-        await this.request(existing.root, '/api/v1/fs/stat?uri=' + encodeURIComponent(existing.root), { signal });
-        await this.verifyIndex(existing, signal);
-        return { status: 'already-imported', root: existing.root, sha256 };
+      const complete = registry.entries.find(e => e.sha256 === sha256 && e.status === 'ready');
+      if (complete) {
+        await this.request(complete.root, '/api/v1/fs/stat?uri=' + encodeURIComponent(complete.root), { signal });
+        await this.verifyIndex(complete, signal);
+        return { status: 'already-imported', root: complete.root, sha256 };
       }
-      if (existing || registry.entries.some(e => e.root === preview.root)) throw new Error('같은 사용자 영역의 가져오기 기록이 있습니다. 기존 자료와 실패 상태를 보존했으며 자동 덮어쓰기는 하지 않습니다.');
-      if (registry.entries.length >= 32) throw new Error('개인 지식 가져오기 개수 제한에 도달했습니다.');
+      const existing = registry.entries.slice().reverse().find(e => e.sha256 === sha256);
+      const collision = !!existing || registry.entries.some(e => e.root === preview.root || e.sourceRoot === preview.root);
+      const resume = existing?.imported === true && existing.status !== 'ready';
+      if (collision && !this.recovery) throw new Error('같은 사용자 영역의 가져오기 기록이 있습니다. 기존 자료와 실패 상태를 보존했으며 자동 덮어쓰기는 하지 않습니다.');
+      if (!resume && registry.entries.length >= 32) throw new Error('개인 지식 가져오기 개수 제한에 도달했습니다.');
+      const isolated = collision && !resume;
+      const user = 'ned-import-' + randomUUID().replaceAll('-', '');
+      const destination = resume ? existing!.root : isolated ? 'viking://user/' + user : preview.root;
       const approved = await approve('개인 공통 지식 가져오기',
-        `선택한 파일: ${file}\n원본 사용자 영역: ${preview.root}\n파일: ${preview.files}개\nSHA-256: ${sha256}\n\nNed의 개인 저장소에 가져와 모든 프로젝트에서 읽기 전용으로 검색합니다. 기존 대상은 덮어쓰지 않습니다. 벡터는 호환될 때 재사용하고, 필요하면 설정한 사내 임베딩 API로 재계산합니다. 대화/개인정보 관리 자료는 보존하되 검색 도구에는 노출하지 않습니다. 사용자 스킬은 자료로만 보존하며 실행형 플러그인으로 설치하지 않습니다.`, signal);
+        `선택한 파일: ${file}\n원본 사용자 영역: ${preview.root}\n대상: ${destination}\n파일: ${preview.files}개\nSHA-256: ${sha256}\n\n${resume ? '파일 가져오기 완료 기록이 있어 기존 자료를 덮어쓰지 않고 색인만 다시 확인·복구합니다.' : isolated ? '이전 기록과 자료를 보존하고 별도 사용자 영역에 복구합니다. SDK로 원본·복구 패키지를 검증하며 파일 내용은 그대로 유지합니다. 사용자 경로가 바뀌므로 벡터는 다시 계산합니다.' : 'Ned의 개인 저장소에 가져옵니다. 기존 대상은 덮어쓰지 않으며 벡터는 호환될 때 재사용합니다.'}\n모든 프로젝트에서 읽기 전용으로 검색합니다. 대화/개인정보 관리 자료는 보존하되 검색 도구에는 노출하지 않습니다. 사용자 스킬은 자료로만 보존하며 실행형 플러그인으로 설치하지 않습니다.`, signal);
       if (!approved || signal.aborted) throw new Error('개인 지식 가져오기를 취소했습니다.');
       const archive = path.join(this.directory, 'personal-' + sha256 + '.ovpack');
-      await rename(snapshot, archive);
-      const entry: Entry = { sha256, root: preview.root, roots: preview.roots, files: preview.files, status: 'importing', importedAt: new Date().toISOString() };
-      registry.entries.push(entry); await atomicJSON(this.file, registry);
-      let stageName = 'OV_PERSONAL_UPLOAD';
+      await copyFile(snapshot, archive, constants.COPYFILE_EXCL).catch(async (error: NodeJS.ErrnoException) => {
+        if (error.code !== 'EEXIST') throw error;
+        const stat = await lstat(archive);
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_PACK) throw new Error('보관한 원본 OVPack의 파일 형식이 바뀌었습니다. 덮어쓰지 않았습니다.');
+        const digest = createHash('sha256'); for await (const chunk of createReadStream(archive)) digest.update(chunk);
+        if (digest.digest('hex') !== sha256) throw new Error('보관한 원본 OVPack이 변경되었습니다. 덮어쓰지 않았습니다.');
+      });
+      const entry: Entry = resume ? existing! : { sha256, root: destination, roots: preview.roots.map(root => destination + root.slice(preview.root.length)), files: preview.files, status: 'importing', importedAt: new Date().toISOString(), ...(isolated ? { sourceRoot: preview.root } : {}) };
+      entry.status = 'importing'; entry.lastHttpStatus = undefined;
+      if (!resume) registry.entries.push(entry);
+      await atomicJSON(this.file, registry);
+      let stageName = 'OV_PERSONAL_PREPARE';
+      const checkpoint = async (name: string) => { stageName = name; entry.lastStage = name; await atomicJSON(this.file, registry); signal.throwIfAborted(); };
       try {
-        const form = new FormData(); form.append('file', await openAsBlob(archive), 'personal.ovpack');
-        const upload = await this.request(entry.root, '/api/v1/resources/temp_upload', { method: 'POST', body: form, signal });
-        const id = upload.result?.temp_file_id;
-        if (typeof id !== 'string') throw new Error('개인 지식 파일 전달 확인 실패');
-        stageName = 'OV_PERSONAL_IMPORT';
-        const imported = await this.request(entry.root, '/api/v1/pack/import', { method: 'POST', body: { temp_file_id: id, parent: 'viking://user', on_conflict: 'fail', vector_mode: 'auto' }, signal });
-        if (imported.result?.uri !== entry.root) throw new Error('개인 지식 가져오기 경로 확인 실패');
-        stageName = 'OV_PERSONAL_INDEX';
+        if (resume) {
+          await checkpoint('OV_PERSONAL_REINDEX');
+          for (const uri of entry.roots) await this.request(entry.root, '/api/v1/content/reindex', { method: 'POST', body: { uri, mode: 'vectors_only', wait: true }, signal });
+        } else {
+          let uploadFile = archive;
+          if (isolated) {
+            await checkpoint('OV_PERSONAL_RECOVERY');
+            const derived = path.join(this.directory, 'personal-' + sha256 + '-' + user + '.ovpack');
+            const result = await exec(this.python, ['-I', '-B', this.recovery!.script, archive, derived, user, this.recovery!.launcher, this.recovery!.tokenizers], { windowsHide: true, maxBuffer: 1024 * 1024, signal }).catch(error => {
+              this.recovery?.diagnostic?.(String(error.stderr ?? error.code ?? 'OV_RECOVERY_PROCESS')); throw error;
+            });
+            const proof = JSON.parse(result.stdout);
+            if (proof.root !== entry.root || proof.sourceRoot !== preview.root || proof.contentBytesUnchanged !== true) throw new Error('복구 패키지 검증 실패');
+            uploadFile = derived;
+          }
+          await checkpoint('OV_PERSONAL_UPLOAD');
+          const form = new FormData(); form.append('file', await openAsBlob(uploadFile), 'personal.ovpack');
+          const upload = await this.request(entry.root, '/api/v1/resources/temp_upload', { method: 'POST', body: form, signal });
+          const id = upload.result?.temp_file_id;
+          if (typeof id !== 'string') throw new Error('개인 지식 파일 전달 확인 실패');
+          await checkpoint('OV_PERSONAL_IMPORT');
+          const imported = await this.request(entry.root, '/api/v1/pack/import', { method: 'POST', body: { temp_file_id: id, parent: 'viking://user', on_conflict: 'fail', vector_mode: isolated ? 'recompute' : 'auto' }, signal });
+          if (imported.result?.uri !== entry.root) throw new Error('개인 지식 가져오기 경로 확인 실패');
+          entry.imported = true; await atomicJSON(this.file, registry);
+        }
+        await checkpoint('OV_PERSONAL_INDEX');
         await this.verifyIndex(entry, signal);
-        stageName = 'OV_PERSONAL_VERIFY';
+        await checkpoint('OV_PERSONAL_VERIFY');
         await this.request(entry.root, '/api/v1/fs/stat?uri=' + encodeURIComponent(entry.root), { signal });
         signal.throwIfAborted(); entry.status = 'ready'; await atomicJSON(this.file, registry);
         return { status: 'imported', root: entry.root, sha256, files: entry.files };
       } catch (error) {
-        entry.status = 'failed'; await atomicJSON(this.file, registry);
+        entry.status = 'failed';
         const http = (error as { status?: number })?.status;
+        entry.lastStage = stageName; if (Number.isInteger(http)) entry.lastHttpStatus = http; await atomicJSON(this.file, registry);
         const code = stageName + (Number.isInteger(http) ? ' HTTP ' + http : '');
-        throw new Error('개인 지식 가져오기를 완료하지 못했습니다. [' + code + '] 원본 OVPack과 실패 기록은 보존했습니다. 기존 대상 충돌·OVPack 검증·임베딩 연결을 확인하세요. 자동 재시도나 덮어쓰기는 하지 않습니다.');
+        throw new Error('개인 지식 가져오기를 완료하지 못했습니다. [' + code + '] 원본 OVPack과 실패 기록은 보존했습니다. 같은 파일을 다시 선택하면 복구를 확인할 수 있습니다. 기존 대상은 자동 덮어쓰기하지 않습니다.');
       }
     } finally { await rm(stage, { recursive: true, force: true }); }
   }

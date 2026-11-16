@@ -70,7 +70,7 @@ export class OpenVikingService implements KnowledgeService {
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
   state() { return structuredClone(this.value); }
   localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
-  async studioConnection() {
+  async studioConnection(): Promise<{ baseUrl: string; headers: Record<string, string> }> {
     this.ready();
     if (this.maintenance) throw new Error('자료 이관 중에는 Studio를 열 수 없습니다.');
     await this.request('/health', undefined, 3000);
@@ -169,7 +169,9 @@ export class OpenVikingService implements KnowledgeService {
     this.startupStage = 'bundle';
     const launch = await this.resolveLaunch();
     this.personal = new PersonalKnowledge(path.join(this.data, 'openviking'), launch.executable,
-      (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user));
+      (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user),
+      { launcher: launch.launcher, tokenizers: path.join(launch.cwd, 'tokenizers'), diagnostic: this.testLaunch?.diagnostic, script: this.testLaunch
+        ? path.resolve('distribution/personal-pack-recovery.py') : path.resolve(this.runtime, '../ned/personal-pack-recovery.py') });
     this.startupStage = 'configuration';
     const folder = path.join(this.data, 'openviking'); await mkdir(folder, { recursive: true, mode: 0o700 });
     this.gateway = new OpenVikingGateway(config, event => {

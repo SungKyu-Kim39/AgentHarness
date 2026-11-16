@@ -111,4 +111,25 @@ print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.a
   await current.close();current=await make('current',path.resolve('scripts/openviking-launch.py'));
   assert.ok((await current.personalRead('viking://user/default/resources/legacy-note.md')).includes('VxWorks'));
   assert.equal((await current.importPersonal(archive,async()=>{throw Error('must be idempotent');})).status,'already-imported');
+  if (includeVectors) {
+    // Reproduce the user's 0.3.7 journal: failed, no import-completion receipt,
+    // and original user data already present. Never overwrite that user root.
+    const registryFile=path.join(root,'current/openviking/personal-imports.json');
+    const registry=JSON.parse(await readFile(registryFile,'utf8'));registry.entries[0].status='failed';delete registry.entries[0].imported;
+    await writeFile(registryFile,JSON.stringify(registry));
+    const oldFile=path.join(root,'current/openviking/data/viking/ned/user/default/resources/legacy-note.md');
+    const before=await readFile(oldFile);
+    const recovered=await current.importPersonal(archive,async(_message,detail)=>{assert.match(detail,/별도 사용자 영역/);return true;}).catch(error=>assert.fail(String(error)+'\n'+diagnostics.slice(-5000)));
+    assert.match(recovered.root,/^viking:\/\/user\/ned-import-[a-f0-9]{32}$/);
+    assert.deepEqual(await readFile(oldFile),before);
+    const status=await current.personalStatus();assert.equal(status.length,2);assert.equal(status[0].status,'failed');assert.equal(status[1].status,'ready');
+    assert.ok((await current.personalRead(recovered.root+'/resources/legacy-note.md')).includes('clang'));
+    const found=JSON.parse(await current.personalSearch('compiler',5));assert.ok(found.results.some((item:any)=>item.uri.startsWith(recovered.root+'/')));
+    assert.equal((await current.importPersonal(archive,async()=>{throw Error('recovered archive must be idempotent');})).status,'already-imported');
+    const imported=JSON.parse(await readFile(registryFile,'utf8'));imported.entries[1].status='failed';await writeFile(registryFile,JSON.stringify(imported));
+    const resumed=await current.importPersonal(archive,async(_message,detail)=>{assert.match(detail,/색인만/);return true;});
+    assert.equal(resumed.root,recovered.root);assert.equal((await current.personalStatus()).length,2);
+    assert.deepEqual(await readFile(oldFile),before);
+    t.diagnostic('Legacy failed journal recovered to an isolated user; original bytes/journal retained; subsequent indexing retry reused its verified import receipt.');
+  }
 });

@@ -1,6 +1,6 @@
 import { BrowserWindow, session } from 'electron';
 import { randomUUID } from 'node:crypto';
-import { studioCsp, studioOrigin, studioRequestAllowed, type StudioConnection } from './studio-policy';
+import { studioBootstrap, studioCsp, studioHeaders, studioOrigin, studioRequestAllowed, type StudioConnection } from './studio-policy';
 
 /** Isolated UI for the already-owned sidecar. Credentials never enter page JS. */
 export class OpenVikingStudio {
@@ -24,9 +24,7 @@ export class OpenVikingStudio {
     isolated.on('will-download', event => event.preventDefault());
     isolated.webRequest.onBeforeRequest((details, answer) => answer({ cancel: !studioRequestAllowed(origin, details.url) }));
     isolated.webRequest.onBeforeSendHeaders((details, answer) => {
-      const headers = { ...details.requestHeaders };
-      for (const key of Object.keys(headers)) if (/^(authorization$|x-api-key$|x-openviking-)/i.test(key)) delete headers[key];
-      if (studioRequestAllowed(origin, details.url)) Object.assign(headers, connection.headers);
+      const headers = studioHeaders(connection, details.url, details.requestHeaders);
       answer({ cancel: !studioRequestAllowed(origin, details.url), requestHeaders: headers });
     });
     isolated.webRequest.onHeadersReceived((details, answer) => {
@@ -34,7 +32,7 @@ export class OpenVikingStudio {
       for (const key of Object.keys(headers)) if (/^content-security-policy(?:-report-only)?$/i.test(key)) delete headers[key];
       answer({ responseHeaders: { ...headers, 'Content-Security-Policy': [studioCsp], 'Referrer-Policy': ['no-referrer'] } });
     });
-    const window = new BrowserWindow({ width: 1180, height: 800, minWidth: 760, minHeight: 500, title: 'Ned · OpenViking Studio', icon,
+    const window = new BrowserWindow({ width: 1180, height: 800, minWidth: 760, minHeight: 500, show: false, title: 'Ned · OpenViking Studio', icon,
       webPreferences: { session: isolated, contextIsolation: true, sandbox: true, nodeIntegration: false, devTools: false, webSecurity: true } });
     this.window = window; window.setMenu(null);
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -45,7 +43,15 @@ export class OpenVikingStudio {
       isolated.webRequest.onBeforeRequest(null); isolated.webRequest.onBeforeSendHeaders(null); isolated.webRequest.onHeadersReceived(null);
       void isolated.clearStorageData().catch(() => {});
     });
-    try { await window.loadURL(origin + '/studio/'); }
+    try {
+      // Seed only public hints on a same-origin JSON page, before any Studio
+      // application JS can initialize or overwrite its connection store.
+      await window.loadURL(origin + '/health');
+      if (generation !== this.generation) return;
+      await window.webContents.executeJavaScript(studioBootstrap(origin));
+      await window.loadURL(origin + '/studio/');
+      if (generation === this.generation && !window.isDestroyed()) { window.show(); window.focus(); }
+    }
     catch { if (!window.isDestroyed()) window.destroy(); if (generation !== this.generation) return; throw new Error('OpenViking Studio 화면을 불러오지 못했습니다. 지식 서비스 상태를 확인하세요.'); }
   }
   close() { this.generation++; if (this.window && !this.window.isDestroyed()) this.window.destroy(); this.window = undefined; }

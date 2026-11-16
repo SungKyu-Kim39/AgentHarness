@@ -21,7 +21,8 @@ test('real engine compaction recovers from length once and commits only the fina
     if (!body.stream) { res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ id: 'test', choices: [{ index: 0, message: { role: 'assistant', content }, finish_reason: finish }] })); return; }
     res.writeHead(200, { 'Content-Type': 'text/event-stream' });
     const chunk = (delta: unknown, finish_reason: unknown) => ({ id: 'test', object: 'chat.completion.chunk', choices: [{ index: 0, delta, finish_reason }] });
-    res.end('data: ' + JSON.stringify(chunk({ content }, null)) + '\n\ndata: ' + JSON.stringify(chunk({}, finish)) + '\n\ndata: [DONE]\n\n');
+    const completion = summary && summaryCalls === 1 ? 4096 : 20;
+    res.end('data: ' + JSON.stringify(chunk({ content }, null)) + '\n\ndata: ' + JSON.stringify(chunk({}, finish)) + '\n\ndata: ' + JSON.stringify({ id: 'test', choices: [], usage: { prompt_tokens: 100, completion_tokens: completion, total_tokens: 100 + completion } }) + '\n\ndata: [DONE]\n\n');
   });
   await new Promise<void>(r => server.listen(0, '127.0.0.1', r));
   const runtime = new NativeRuntime(path.join(root, 'data'), path.join(root, 'resources'), { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
@@ -47,5 +48,6 @@ test('real engine compaction recovers from length once and commits only the fina
   const compact = data.data.find((m: any) => m.type === 'compaction');
   assert.equal(compact.status, 'completed', JSON.stringify({ compact, summaryCalls, calls: calls.map(c => ({ tools: c.tools?.length, choice: c.tool_choice, last: c.messages?.slice(-2).map((m: any) => ({ role: m.role, type: typeof m.content, text: JSON.stringify(m.content).slice(0, 260) })) })) })); assert.equal(summaryCalls, 2);
   assert.match(JSON.stringify(compact), /Keep the compiler/); assert.ok(!JSON.stringify(data).includes('TRUNCATED_DRAFT_NEVER_COMMIT'));
+  assert.equal(compact.tokens.output, 4116); assert.equal(compact.tokens.input, 200);
   assert.ok(calls.filter(c => c.tool_choice === 'none').every(c => !c.tools && c.reasoning_effort === 'none'));
 });

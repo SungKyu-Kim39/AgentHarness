@@ -11,7 +11,7 @@ function fixture(proxy=Promise.resolve(),load=()=>Promise.resolve()) {
  const isolated={setProxy:()=>proxy,setPermissionRequestHandler(){},setPermissionCheckHandler(){},on(){},clearStorageData:async()=>{cleared++;},webRequest:Object.fromEntries(['onBeforeRequest','onBeforeSendHeaders','onHeadersReceived'].map(key=>[key,handler=>{hooks[key]=handler;}]))};
  class Window extends EventEmitter {
   destroyed=false;focused=0;webContents=new EventEmitter();
-  constructor(options){super();this.options=options;this.webContents.setWindowOpenHandler=handler=>{this.popup=handler;};windows.push(this);}
+  constructor(options){super();this.options=options;this.webContents.setWindowOpenHandler=handler=>{this.popup=handler;};this.webContents.executeJavaScript=async script=>{assert.ok(!script.includes('private-run-token'));this.bootstrap=script;};windows.push(this);}
   setMenu(){}show(){}focus(){this.focused++;}isDestroyed(){return this.destroyed;}
   loadURL(url){this.url=url;return load();}destroy(){this.destroyed=true;this.emit('closed');}
  }
