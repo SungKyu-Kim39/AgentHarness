@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.7",
+  "buildRevision": "rebuild1",
+  "recordedAt": "2026-11-16T02:19:46.770686+00:00",
+  "archive": "Ned-0.3.7-rebuild1-windows-x64.tgz",
+  "bytes": 1182931028,
+  "sha256": "e88022adfe329655a5134f68c0b77b20925d26dffca3a912c38e56e6a75adc4c",
+  "files": 36,
+  "nedSourceArchiveEntries": 1021,
+  "outerPathsAscii": true,
+  "nedSourcePathsAscii": true,
+  "upstreamCorrespondingSourcesPreservedByteForByte": true,
+  "allCorrespondingSourceHashesVerified": true,
+  "sourceCommit": "b096614b23bbc7101ba1659c3313194155b24c26",
+  "installerSha256": "bae628b3cb4febe8e500e24556b674f10fcab27aa5e69b8fa2349a5c838d3eb5",
+  "detailedUserGuideIncluded": true,
+  "openVikingUpdateGuideIncluded": true
+}
