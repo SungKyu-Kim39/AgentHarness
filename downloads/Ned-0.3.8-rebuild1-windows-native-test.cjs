@@ -7947,12 +7947,13 @@ var run = (0, import_node_util4.promisify)(import_node_child_process6.execFile);
   import_strict7.default.match(await (0, import_promises14.readFile)(import_node_path15.default.join(kit, "index.html"), "utf8"), /connect-src 'none'/);
   import_strict7.default.equal(manifest.platform, "win32-x64");
 });
-(0, import_node_test7.test)("installed source-built editor has Ned menu/About content and corresponding source", { skip: process.platform !== "win32" }, async () => {
+(0, import_node_test7.test)("installed source-built editor has Ned menu/About content and corresponding-source provenance", { skip: process.platform !== "win32" }, async () => {
   const resources3 = import_node_path15.default.join(import_node_path15.default.dirname(process.execPath), "resources"), bytes = await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "zed/Zed.exe"));
   for (const text of ["About Ned", "Quit Ned", "Ned 0.3.8 \xB7 rebuild 1"]) import_strict7.default.ok(bytes.includes(Buffer.from(text)), text);
   for (const text of ["About Zed", "Quit Zed"]) import_strict7.default.ok(!bytes.includes(Buffer.from(text)), text);
   const record = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/editor-branding.json"), "utf8"));
   import_strict7.default.equal(record.modifiedSha256, (0, import_node_crypto7.createHash)("sha256").update(bytes).digest("hex"));
-  const source = record.sourceBuild.files.find((f) => f.name.endsWith(".tar.gz"));
-  import_strict7.default.equal((0, import_node_crypto7.createHash)("sha256").update(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/sources", source.name))).digest("hex"), source.sha256);
+  const changes = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/sources/NED_EDITOR_CHANGES.json"), "utf8"));
+  import_strict7.default.deepEqual(changes, record.sourceChanges);
+  import_strict7.default.match(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/sources/NED_EDITOR_SOURCE.txt"), "utf8"), /offline TGZ/);
 });

@@ -1,4 +1,4 @@
-import {readFile,writeFile,cp,mkdir} from 'node:fs/promises';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
@@ -29,13 +29,14 @@ export async function installSourceEditor(root,staged){
  await writeFile(path.join(staged,'resources/zed/Zed.exe'),branded.bytes);
  await writeFile(path.join(staged,'resources/ned/editor-branding.json'),JSON.stringify(branded.record,null,2)+'\n');
  const sources=path.join(staged,'resources/ned/sources');await mkdir(sources,{recursive:true});
- await cp(path.join(root,'downloads/editor/zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz'),path.join(sources,'zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz'));
+ await writeFile(path.join(sources,'NED_EDITOR_CHANGES.json'),JSON.stringify(input.change,null,2)+'\n');
+ await writeFile(path.join(sources,'NED_EDITOR_SOURCE.txt'),'Modified corresponding source: source/zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz in the accompanying offline TGZ.\nKeep that source archive with the distribution. Exact archive hash is recorded in ../editor-branding.json sourceBuild.files.\n');
  return branded.record;
 }
 export async function verifySourceEditor(root,resources){
  const input=await sourceEditorInputs(root),record=JSON.parse(await readFile(path.join(resources,'ned/editor-branding.json'))),bytes=await readFile(path.join(resources,'zed/Zed.exe'));
  if(record.sourceBuild?.sourceCommit!==input.build.sourceCommit||record.originalSha256!==input.files['Ned-editor-0.3.8-rebuild1.exe'].sha256||record.modifiedSha256!==sha(bytes)||JSON.stringify(record.sourceChanges)!==JSON.stringify(input.change))throw Error('Installed source-built editor provenance mismatch');
- if(sha(await readFile(path.join(resources,'ned/sources/zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz')))!==input.files['zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz'].sha256)throw Error('Installed corresponding source mismatch');
+ if(JSON.stringify(JSON.parse(await readFile(path.join(resources,'ned/sources/NED_EDITOR_CHANGES.json'))))!==JSON.stringify(input.change))throw Error('Installed editor source changes mismatch');
  verifyEditorIcon(bytes,await readFile(path.join(root,'assets/ned-icon.ico')));
- return {sourceCommit:input.build.sourceCommit,upstreamCommit:input.build.upstreamCommit,menuAndAboutFromSource:true,windowsGuiAcceptance:false};
+ return {sourceCommit:input.build.sourceCommit,upstreamCommit:input.build.upstreamCommit,menuAndAboutFromSource:true,correspondingSourceLocation:'offline TGZ source/zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz',windowsGuiAcceptance:false};
 }

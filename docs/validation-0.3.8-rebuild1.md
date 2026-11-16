@@ -12,7 +12,7 @@
 
 Zed 1.28.1 고정 소스의 두 Rust 파일과 Ned About 이미지를 수정합니다. 메뉴는 Ned·About Ned·Quit Ned로, About은 Ned 0.3.8 rebuild1과 제품 설명·Ned 아이콘으로 표시합니다. 기반 Zed 버전과 소스 정보도 유지합니다. 시작·종료 로직은 바꾸지 않았음을 원본 파일의 수정 범위 비교로 검사했습니다.
 
-Windows 원본 소스 빌드: [43966924528](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43966924528). 이 기록 작성 시 빌드 중이며, 완료·바이너리·설치 검증 전에는 배포 완료로 표시하지 않습니다. 수정 대응 소스와 빌드 입력·파일 해시는 별도로 보존합니다.
+Windows 원본 소스 빌드: [43966924528](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43966924528). 이 기록 작성 시 빌드 중이며, 완료·바이너리·설치 검증 전에는 배포 완료로 표시하지 않습니다. 수정 대응 소스는 TGZ의 source/에 보존합니다. 설치 폴더에는 작은 변경 기록과 위치·해시 안내만 두고 소스 아카이브를 중복 설치하지 않습니다.
 
 ## Astryx
 
