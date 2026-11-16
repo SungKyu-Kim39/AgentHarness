@@ -9,6 +9,7 @@ import { ProjectOpener, projectOpenCommand, dispatchProject } from './project-op
 import { requestEditorClose } from './editor-close';
 import { ConfigurationRestart } from './configuration-restart';
 import { StartupWindow } from './startup-window';
+import { OpenVikingStudio } from './studio';
 import { recordEditorExit, checkEditorFiles, editorExitPresentation } from './editor-startup';
 import { AgentOwner } from './owner';
 import { EditorNetwork, prepareEditor } from './profile';
@@ -43,6 +44,7 @@ const configurationRestart = new ConfigurationRestart(replaceConfiguration, () =
   if (trayMenu) tray.setContextMenu(trayMenu);
 });
 const startup = new StartupWindow();
+const studio = new OpenVikingStudio();
 const messageBox = (options: Electron.MessageBoxOptions) => startup.duringDialog(() => dialog.showMessageBox(options));
 const openDialog = (options: Electron.OpenDialogOptions) => startup.duringDialog(() => dialog.showOpenDialog(options));
 if (!app.requestSingleInstanceLock()) app.exit(0);
@@ -58,7 +60,7 @@ async function shutdown() {
   try {
     // Ask the editor to close normally; its own close UI protects unsaved buffers.
     if (editor && editor.exitCode === null && editor.signalCode === null) throw new Error('편집기에서 저장을 확인한 뒤 창을 닫아 주세요. 편집기 종료와 함께 Ned 서비스도 종료됩니다.');
-    await owner?.close(); await getRuntime().close(); await network.close();
+    studio.close(); await owner?.close(); await getRuntime().close(); await network.close();
     closed = true; startup.close(); tray?.destroy();
   } catch (error) {
     quitting = false;
@@ -117,6 +119,7 @@ async function start() {
   });
   if (!ready) { closed = true; startup.close(); app.quit(); return; }
   const runtime = getRuntime();
+  runtime.onKnowledgeChange(() => { if (runtime.status().knowledge?.status !== 'ready') studio.close(); });
   startup.setPhase('engine');
   const connection = await runtime.connection([path.join(resources, process.platform === 'win32' ? 'opencode-cli.exe' : 'opencode-cli')]);
   const confirmed = new Set<string>();
@@ -173,7 +176,12 @@ async function start() {
       { label: '선택한 모드는 업데이트·재시작 후에도 유지됩니다.', enabled: false },
       { label: '전체 권한: 지원 도구의 승인창 생략', enabled: false },
     ] },
-    { label: '사용 안내', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
+    { label: '사용 안내', submenu: [
+      { label: '설치와 첫 실행', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
+      { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
+      { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
+      { label: '새 스킬·MCP 추가 방법', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },
+    ] },
     { label: '권한 및 자동 승인 상태', click: async () => {
       const selected=permissionModes.find(mode=>mode.value===permissions.mode)!;
       const state=runtime.editApprovalStatus();
@@ -186,6 +194,14 @@ async function start() {
         detail: (skills?.current ? skills.current.id + ' · ' + skills.current.stage + '\n' : '') + (skills?.message ?? '개인 대화는 자동 업로드하지 않습니다.') + '\n진단: %APPDATA%\\Ned\\openviking\\skills-status.json / model-status.json' });
     } },
     { label: 'OpenViking 기본 스킬 등록 재확인', click: async () => { try { await runtime.retryKnowledgeSkills(); } catch (error) { await messageBox({ title: 'Ned 스킬', message: errorMessage(error) }); } } },
+    { label: 'OpenViking Studio 열기', click: async () => {
+      try {
+        if (quitting || configurationRestart.pending) return;
+        const connection = await runtime.studioConnection();
+        if (!quitting && !configurationRestart.pending) await studio.open(connection, icon);
+      }
+      catch (error) { await messageBox({ type: 'warning', title: 'Ned · OpenViking Studio', message: errorMessage(error) }); }
+    } },
     { id: 'config-import', label: '설정 JSON 가져와 적용 (자동 재시작)', click: async () => {
       if (configurationRestart.busy || configurationRestart.pending) return;
       const result = await openDialog({ title: '설정 JSON 가져오기 · 적용 후 자동 재시작', properties: ['openFile'], filters: [{ name: 'JSON', extensions: ['json'] }] });
@@ -235,6 +251,6 @@ start().catch(async error => {
   await app.whenReady();
   startup.close();
   await messageBox({ type: 'error', title: 'Ned 시작 실패', message: errorMessage(error) });
-  try { await owner?.close(); await getRuntime().close(); await network.close(); } catch {}
+  try { studio.close(); await owner?.close(); await getRuntime().close(); await network.close(); } catch {}
   closed = true; app.quit();
 });

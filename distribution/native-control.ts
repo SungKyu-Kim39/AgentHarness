@@ -78,6 +78,7 @@ export class NativeRuntime {
   private shutdownUnconfirmed = false;
   private approvalsPaused = false;
   private editorCheck?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
+  private knowledgeListeners = new Set<() => void>();
   setEditorCheck(check: NonNullable<NativeRuntime['editorCheck']>) { this.editorCheck = check; }
   constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean> = async () => false, private approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>, private permissions?: PermissionPolicy) {
     this.vault = new ConfigVault(root, cipher);
@@ -95,7 +96,7 @@ export class NativeRuntime {
         const gateway = new ModelGateway({ ...config, model: m }, { timeout: transport.timeout, headerTimeout: transport.headerTimeout, chunkTimeout: transport.chunkTimeout },
           event => { void atomicJSON(path.join(this.root, 'model-gateway-status.json'), event).catch(() => {}); },
           (messages, bytes) => this.tools ? automaticSkillContext(this.tools.skills, messages,
-            Math.max(0,Math.min(18000,(definition?.limit?.context ?? 32768)-(definition?.limit?.output ?? 4096)-2048-bytes))) : Promise.resolve(undefined));
+            Math.max(0,Math.min(18000,(definition?.limit?.context ?? 32768)-(definition?.limit?.output ?? 4096)-2048-bytes))) : Promise.resolve(undefined), definition?.limit?.output ?? 4096);
         await gateway.start();
         this.models.push({ provider: m.providerID ?? providerID(m.name), name: m.name, id: m.modelKey ?? m.id, gateway });
       }
@@ -111,13 +112,15 @@ export class NativeRuntime {
       const skillDirectory = managedResource(this.resources, 'skills');
       const catalog = this.tools.skills.catalog();
       this.engineConfig = JSON.stringify(engineConfiguration(config, this.models, catalog.map(s => s.id), catalog.length ? skillDirectory : undefined, this.tools));
-      this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => {}, undefined, skillDirectory);
+      this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => { for (const listener of this.knowledgeListeners) listener(); }, undefined, skillDirectory);
       await this.knowledge.configure(config);
       if (config.openViking?.enabled && this.knowledge.state().status !== 'ready')
         throw new Error(this.knowledge.state().message ?? 'OpenViking을 시작할 수 없습니다.');
     } catch (error) { await this.close(); throw error; }
   }
   async retryKnowledgeSkills() { if (!this.knowledge) throw new Error('OpenViking 설정이 필요합니다.'); await this.knowledge.retryBundledSkills(); }
+  async studioConnection() { if (!this.knowledge) throw new Error('OpenViking 설정이 필요합니다.'); return this.knowledge.studioConnection(); }
+  onKnowledgeChange(listener: () => void) { this.knowledgeListeners.add(listener); return () => this.knowledgeListeners.delete(listener); }
   permissionStatus() { return { mode: this.permissions?.mode ?? 'ask', revision: this.permissions?.revision ?? 0 }; }
   pauseApprovals(paused: boolean) { this.approvalsPaused = paused; if (paused) this.revokeEditApproval(); }
   onPermissionChange(listener: () => void) { return this.permissions?.onChange(listener) ?? (() => {}); }

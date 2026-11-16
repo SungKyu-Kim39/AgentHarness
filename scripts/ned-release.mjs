@@ -11,7 +11,7 @@ const base={name:'Ned-0.3.6-rebuild1-win-x64.exe',bytes:1176899012,sha256:'4ee7e
 const json=async file=>JSON.parse(await readFile(file,'utf8'));
 const exists=file=>access(file).then(()=>true,()=>false);
 export async function prepareRelease(root,cache,staged,version,seven,record=false) {
- if(version!=='0.3.7')throw Error('Review a new runtime baseline before the next release');
+ if(!['0.3.7','0.3.8'].includes(version))throw Error('Review a new runtime baseline before the next release');
  const baseline=await json(path.join(root,'downloads/Ned-0.3.6-rebuild1-installer-audit.json'));
  if(baseline.installer.sha256!==base.sha256||baseline.sourceCommit!==base.sourceCommit)throw Error('Wrong audited runtime baseline');
  const lockFile=path.join(root,'release-runtime-lock.json');
@@ -51,7 +51,7 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
  await cp(path.join(cache,'app/agent.cjs'),path.join(resources,'agent.cjs'));
  await cp(path.join(cache,'app/ACP-THIRD-PARTY-NOTICES.txt'),path.join(resources,'licenses/ACP-THIRD-PARTY-NOTICES.txt'));
  await rm(path.join(resources,'skills'),{recursive:true,force:true});await cp(path.join(root,'vendor/skills'),path.join(resources,'skills'),{recursive:true});
- for(const [from,to]of [['skills-lock.json','skills-lock.json'],['agent-config.example.json','agent-config.example.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/skills-0.3.7.md','SKILLS_GUIDE.md'],['docs/license-policy.md','LICENSE_POLICY.md'],['THIRD_PARTY_NOTICES.md','licenses/THIRD_PARTY_NOTICES.md']])await cp(path.join(root,from),path.join(resources,to));
+ for(const [from,to]of [['skills-lock.json','skills-lock.json'],['agent-config.example.json','agent-config.example.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/skills-0.3.7.md','SKILLS_GUIDE.md'],['docs/license-policy.md','LICENSE_POLICY.md'],['THIRD_PARTY_NOTICES.md','licenses/THIRD_PARTY_NOTICES.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(resources,to));
  await cp(path.join(root,'release-runtime-lock.json'),path.join(resources,'locks/release-runtime.json'));
  const info={schemaVersion:1,product:'Ned',version,sourceCommit,baselineRuntime:base,hostBuiltFromSource:true,acpBuiltFromPinnedSource:true,upstreamAcpSourceLockSha256:await fileHash(path.join(root,'ned-acp-lock.json')),buildDependencyLockSha256:await fileHash(path.join(root,'scripts/acp-build/package-lock.json')),hostModuleSmoke:smoke,windowsAcceptance:false};
  await writeFile(path.join(resources,'build-info.json'),JSON.stringify(info,null,2)+'\n');

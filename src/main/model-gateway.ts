@@ -2,6 +2,7 @@ import { createServer, request as httpRequest, type ClientRequest, type Server }
 import { request as httpsRequest } from 'node:https';
 import { randomBytes } from 'node:crypto';
 import type { AgentConfig } from '../shared/contracts';
+import { isCompaction, summaryRequest, summaryOutcome, summaryUsage, withSummaryUsage } from './compaction-policy';
 
 export interface ModelTransport {
   timeout?: unknown;
@@ -12,6 +13,7 @@ export interface ModelFailure {
   schemaVersion: 1; recordedAt: string; code: string; phase: string;
   elapsedMs: number; requestBytes: number; responseBytes: number; streaming: boolean;
   upstreamStatus?: number; osError?: string;
+  attempts?: number;
 }
 const duration = (value: unknown, fallback: number | false): number | false =>
   value === false ? false : typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= 86400000 ? value : fallback;
@@ -23,7 +25,7 @@ export class ModelGateway {
   private server?: Server;
   private requests = new Set<AbortController>();
   constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void,
-    private skillContext?: (messages: unknown, requestBytes: number) => Promise<string | undefined>) {}
+    private skillContext?: (messages: unknown, requestBytes: number) => Promise<string | undefined>, private outputLimit = 4096) {}
   async start() {
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== `Bearer ${this.token}`) { res.writeHead(401).end(); return; }
@@ -62,17 +64,25 @@ export class ModelGateway {
         try { body = JSON.parse(Buffer.concat(chunks).toString()); }
         catch { fail('LV_MODEL_REQUEST_JSON', '모델 요청 JSON이 올바르지 않습니다.', 400); return; }
         if (body?.model !== this.config.model.id) { finished = true; cleanup(); res.writeHead(403).end(); return; }
-        const guidance = body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
+        const compacting = isCompaction(body), policy = this.config.compaction;
+        const summaryLimit = Math.min(this.outputLimit, policy?.maxOutputTokens ?? 8192);
+        const original = body;
+        const withoutThinking = (policy?.disableQwenThinking ?? true) && /qwen/i.test(this.config.model.id);
+        if (compacting) body = summaryRequest(original, summaryLimit, false, withoutThinking);
+        const guidance = compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
         if (guidance && Array.isArray(body.messages)) body.messages = [{ role: 'system', content: guidance }, ...body.messages];
         if (abort.signal.aborted) return;
-        const bytes = Buffer.from(JSON.stringify(body));
-        requestBytes = bytes.length;
         const target = new URL(this.config.model.baseUrl.replace(/\/$/, '') + '/chat/completions');
         const totalMs = duration(this.transport.timeout, false);
         const headerMs = duration(this.transport.headerTimeout, false);
         const chunkMs = duration(this.transport.chunkTimeout, false);
         phase = 'headers';
-        timer('total', totalMs, 'LV_MODEL_TOTAL_TIMEOUT'); timer('headers', headerMs, 'LV_MODEL_HEADER_TIMEOUT');
+        timer('total', totalMs, 'LV_MODEL_TOTAL_TIMEOUT');
+        let attempt = 0, previousUsage: unknown;
+        const dispatch = (requestBody: unknown) => {
+        const bytes = Buffer.from(JSON.stringify(requestBody)); requestBytes = bytes.length;
+        const currentAttempt = ++attempt;
+        timer('headers', headerMs, 'LV_MODEL_HEADER_TIMEOUT');
         upstream = (target.protocol === 'https:' ? httpsRequest : httpRequest)(target, {
           method: 'POST', agent: false,
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.config.model.apiKey}`, 'Content-Length': String(bytes.length) },
@@ -88,27 +98,48 @@ export class ModelGateway {
           streaming = /^text\/event-stream(?:;|$)/i.test(type);
           const buffered: Buffer[] = [];
           timer('chunk', chunkMs, 'LV_MODEL_CHUNK_TIMEOUT');
-          if (streaming) res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
+          if (streaming && !compacting) res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
+          let attemptBytes = 0;
           response.on('data', (chunk: Buffer) => {
-            if (finished) return;
+            if (finished || currentAttempt !== attempt) return;
             responseBytes += chunk.length; timer('chunk', chunkMs, 'LV_MODEL_CHUNK_TIMEOUT');
-            if (!streaming) {
-              if (responseBytes > 32 * 1024 * 1024) { fail('LV_MODEL_RESPONSE_SIZE', '모델 응답 크기 제한을 초과했습니다.'); response.destroy(); return; }
+            if (!streaming || compacting) {
+              attemptBytes += chunk.length;
+              if (attemptBytes > 32 * 1024 * 1024) { fail('LV_MODEL_RESPONSE_SIZE', '모델 응답 크기 제한을 초과했습니다.'); response.destroy(); return; }
               buffered.push(chunk);
             }
           });
-          response.once('aborted', () => fail('LV_MODEL_UPSTREAM_RESET', '사내 모델이 응답을 끝내기 전에 연결을 종료했습니다.'));
-          response.once('error', error => fail('LV_MODEL_UPSTREAM_RESET', '사내 모델 응답 연결이 끊겼습니다.', 502, error));
+          response.once('aborted', () => { if (currentAttempt === attempt) fail('LV_MODEL_UPSTREAM_RESET', '사내 모델이 응답을 끝내기 전에 연결을 종료했습니다.'); });
+          response.once('error', error => { if (currentAttempt === attempt) fail('LV_MODEL_UPSTREAM_RESET', '사내 모델 응답 연결이 끊겼습니다.', 502, error); });
           response.once('end', () => {
-            if (finished) return; finished = true; cleanup();
-            if (streaming) res.end();
-            else res.writeHead(200, { 'Content-Type': type }).end(Buffer.concat(buffered));
+            if (finished || currentAttempt !== attempt) return;
+            if (compacting) {
+              const result = summaryOutcome(Buffer.concat(buffered), streaming);
+              if (result === 'length' && attempt === 1 && (policy?.retryOnLength ?? true) && !abort.signal.aborted) {
+                previousUsage = summaryUsage(Buffer.concat(buffered), streaming);
+                this.diagnostic?.({ schemaVersion: 1, recordedAt: new Date().toISOString(), code: 'NED_COMPACTION_RETRY', phase: 'body',
+                  elapsedMs: Date.now() - started, requestBytes, responseBytes, streaming, attempts: attempt });
+                const old = timers.get('chunk'); if (old) clearTimeout(old); timers.delete('chunk');
+                phase = 'headers'; dispatch(summaryRequest(original, summaryLimit, true, withoutThinking)); return;
+              }
+              if (result !== 'complete') {
+                fail(result === 'length' ? 'NED_COMPACTION_OUTPUT_LIMIT' : 'NED_COMPACTION_INCOMPLETE', result === 'length'
+                  ? '요약 출력 한도를 초과했습니다. 기존 대화는 유지합니다. 모델 limit.output과 서버 출력 한도·thinking 지원을 확인하고 요약을 다시 요청하세요.'
+                  : '완전한 요약을 확인하지 못했습니다. 기존 대화는 유지하며 잘린 결과나 도구 호출은 적용하지 않습니다.', 422); return;
+              }
+            }
+            finished = true; cleanup();
+            if (streaming && compacting) res.writeHead(200, { 'Content-Type': type, 'Cache-Control': 'no-cache' }).end(withSummaryUsage(Buffer.concat(buffered), true, previousUsage));
+            else if (streaming) res.end();
+            else res.writeHead(200, { 'Content-Type': type }).end(compacting ? withSummaryUsage(Buffer.concat(buffered), false, previousUsage) : Buffer.concat(buffered));
           });
-          if (streaming) response.pipe(res, { end: false });
+          if (streaming && !compacting) response.pipe(res, { end: false });
         });
         upstream.on('socket', socket => socket.setKeepAlive(true, 60000));
-        upstream.once('error', error => fail('LV_MODEL_CONNECTION', '사내 모델에 연결하지 못했습니다.', 502, error));
+        upstream.once('error', error => { if (currentAttempt === attempt) fail('LV_MODEL_CONNECTION', '사내 모델에 연결하지 못했습니다.', 502, error); });
         upstream.end(bytes);
+        };
+        dispatch(body);
       } catch (error) { if (!res.destroyed) fail('LV_MODEL_CONNECTION', '사내 모델 요청을 완료하지 못했습니다.', 502, error); else { finished = true; cleanup(); } }
     });
     this.server.requestTimeout = 0;

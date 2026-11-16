@@ -1,5 +1,7 @@
 # 모델 옵션과 응답 대기 설정
 
+0.3.8의 요약 전용 설정과 `Compaction summary reached the output token limit` 처리는 [요약 출력 한도 안내](compaction-troubleshooting.md)에 설명합니다. 일반 대화의 thinking 설정과 요약 전용 처리를 구분합니다.
+
 모델 JSON을 바꾼 뒤에는 알림 영역의 **설정 JSON 가져와 적용 (자동 재시작)**으로 적용합니다. 이미 저장한 설정은 EXE 옆 JSON만 편집해서는 갱신되지 않습니다. 이 문서의 옵션 호환과 대기 정책은 0.2.7부터 지원합니다.
 
 ## Thinking 강도 설정

@@ -25,6 +25,7 @@ process.env.ELECTRON_BUILDER_CACHE ??= path.join(cache,'builder-cache');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
+const fullRelease = ['0.3.7','0.3.8'].includes(version);
 if(version==='0.3.7' && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published 0.3.7 artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
@@ -136,7 +137,7 @@ async function audit() {
     let payloadHashes, completePayload;
     if(await exists(path.join(staged,'Ned.exe'))) {
       payloadHashes=Object.fromEntries(await Promise.all(compared.map(async file=>[file,await fileHash(path.join(staged,file))])));
-      if(version==='0.3.7')completePayload=await payloadInventory(staged);
+      if(fullRelease)completePayload=await payloadInventory(staged);
       await writeFile(checkpointFile,JSON.stringify({sourceCommit:buildCommit,version,installerSha256,payloadHashes,completePayload},null,2)+'\n');
     } else {
       const checkpoint=await json(checkpointFile);
@@ -156,8 +157,8 @@ async function audit() {
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
     if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
     verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
-    const baseline=revision&&version!=='0.3.7'?await rebuildBaseline(root,version,revision):undefined;
-    const released=version==='0.3.7'?await json(path.join(root,'release-runtime-lock.json')):undefined;
+    const baseline=revision&&!fullRelease?await rebuildBaseline(root,version,revision):undefined;
+    const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
     for(const name of ['openviking','mcp','rea','agent-desktop','skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
@@ -165,7 +166,7 @@ async function audit() {
       components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }
     let rebuild;
-    if(revision&&version!=='0.3.7'){
+    if(revision&&!fullRelease){
       const proof=await json(path.join(cache,revision,'provenance.json'));
       if(proof.sourceCommit!==buildCommit||proof.buildRevision!==revision)throw new Error('Stale rebuild provenance');
       const actual=await payloadInventory(extracted),generatedInstallerFiles={};
@@ -205,8 +206,9 @@ async function bundle() {
   await cp(installer,path.join(stage,path.basename(installer)));
   for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[`docs/validation-${artifactVersion}.md`,'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
-  if(version==='0.3.7')await cp(path.join(root,'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
-  if(version==='0.3.7' && revision)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
+  if(fullRelease)await cp(path.join(root,'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
+  if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
+  if(version==='0.3.8')for(const [from,to] of [['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));

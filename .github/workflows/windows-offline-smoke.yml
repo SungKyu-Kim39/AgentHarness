@@ -4,14 +4,15 @@ on:
     inputs:
       artifact_version:
         description: Exact immutable installer build
-        default: 0.3.7-rebuild1
+        default: 0.3.8
         type: choice
-        options: ['0.3.7-rebuild1', '0.3.7']
+        options: ['0.3.8', '0.3.7-rebuild1', '0.3.7']
   push:
     branches: [work]
     paths:
       - downloads/Ned-0.3.7-win-x64.exe
       - downloads/Ned-0.3.7-rebuild1-win-x64.exe
+      - downloads/Ned-0.3.8-win-x64.exe
 permissions:
   contents: read
 jobs:
@@ -19,7 +20,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     env:
-      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.7-rebuild1' }}
+      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.8' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -82,14 +83,14 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
           $group = "Ned-CI-$env:GITHUB_RUN_ID"
           "NED_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          foreach ($program in @($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'))) {
+          foreach ($program in @($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'), (Join-Path $install 'resources\opencode-cli.exe'))) {
             New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
           }
           $result = @(& $python -I -B distribution/openviking-import-check.py 2>&1)
           $exit = $LASTEXITCODE
           $result | ForEach-Object { Write-Host "$_" }
           if ($exit -ne 0 -or !($result -match 'OPENVIKING_IMPORT_OK') -or !($result -match 'TOKENIZERS_OK 7')) { throw 'Offline OpenViking/tokenizer import failed' }
-          $expectedVersion = if ($env:NED_ARTIFACT_VERSION -eq '0.3.7-rebuild1') { '0.5.5' } else { '0.5.4' }
+          $expectedVersion = if ($env:NED_ARTIFACT_VERSION -ne '0.3.7') { '0.5.5' } else { '0.5.4' }
           if (!($result -match "OPENVIKING_VERSION=$([regex]::Escape($expectedVersion))")) { throw 'Wrong bundled OpenViking version' }
           if (!($result -match 'OPENVIKING_ADAPTERS_OK')) { throw 'OpenViking queue/pack adapters failed' }
           $sdk = Join-Path $install 'resources\runtime\windows-x64\openviking\python\Lib\site-packages\ned-sdk-code.zip'
@@ -105,6 +106,7 @@ jobs:
           "NED_TEST_TOKENIZERS_DIR=$(Join-Path $install 'resources\runtime\windows-x64\openviking\tokenizers')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_SKILLS_DIR=$(Join-Path $install 'resources\ned\skills')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "NED_TEST_ENGINE=$(Join-Path $install 'resources\opencode-cli.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $files = @(Get-ChildItem $install -Recurse -File)
           $baseline = Get-Content baseline-smoke.json -Raw | ConvertFrom-Json
           [ordered]@{
@@ -121,16 +123,16 @@ jobs:
             privateDataInstallRejected=$true
             bundledRuntimeInternetBlockedByWindowsFirewall=$true
             importStepModelsPrompted=$false; intranetModelsPrompted=$false; desktopActions=0
-            namespaceTestUsesLocalSyntheticModels=($env:NED_ARTIFACT_VERSION -eq '0.3.7-rebuild1')
+            namespaceTestUsesLocalSyntheticModels=($env:NED_ARTIFACT_VERSION -ne '0.3.7')
             realWin10Win11GuiAcceptance=$false
           } | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
           Get-Content windows-offline-smoke.json
       - name: Verify 0.5.4 data migration using the installed Windows runtimes
-        if: env.NED_ARTIFACT_VERSION == '0.3.7-rebuild1'
+        if: env.NED_ARTIFACT_VERSION != '0.3.7'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-0.3.7-rebuild1-windows-namespace-test.cjs'
+          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-namespace-test.cjs'
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Namespace test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
@@ -141,11 +143,11 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify file deletion with the installed Windows Node runtime
-        if: always() && env.NED_ARTIFACT_VERSION == '0.3.7-rebuild1' && env.NED_TEST_NODE != ''
+        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-0.3.7-rebuild1-windows-delete-test.cjs'
+          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-delete-test.cjs'
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Delete test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
@@ -154,6 +156,21 @@ jobs:
           Get-Content windows-delete-test.txt
           Get-Content windows-delete-stderr.txt
           if ($run.ExitCode -ne 0) { throw 'Windows file deletion test failed' }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
+      - name: Verify real engine compaction length recovery
+        if: always() && env.NED_ARTIFACT_VERSION == '0.3.8' && env.NED_TEST_NODE != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $test = 'downloads/Ned-0.3.8-windows-compaction-test.cjs'
+          $expected = (Get-Content "$test.sha256").Split(' ')[0]
+          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Compaction test hash mismatch' }
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-compaction-test.txt -RedirectStandardError windows-compaction-stderr.txt -Wait -PassThru
+          $run.Refresh()
+          Get-Content windows-compaction-test.txt
+          Get-Content windows-compaction-stderr.txt
+          if ($run.ExitCode -ne 0) { throw 'Windows compaction test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Restore disposable runner firewall configuration
         if: always()
@@ -173,4 +190,6 @@ jobs:
             windows-namespace-stderr.txt
             windows-delete-test.txt
             windows-delete-stderr.txt
+            windows-compaction-test.txt
+            windows-compaction-stderr.txt
           if-no-files-found: ignore

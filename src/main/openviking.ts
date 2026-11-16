@@ -70,6 +70,15 @@ export class OpenVikingService implements KnowledgeService {
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
   state() { return structuredClone(this.value); }
   localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
+  async studioConnection() {
+    this.ready();
+    if (this.maintenance) throw new Error('자료 이관 중에는 Studio를 열 수 없습니다.');
+    await this.request('/health', undefined, 3000);
+    this.ready();
+    // Explicit human-operated Studio may manage this private account, including
+    // imported user areas. This connection is never exposed to model/ACP tools.
+    return { baseUrl: this.baseUrl, headers: { ...this.credentials('local-user'), 'X-OpenViking-Role': 'admin' } };
+  }
   private update(status: NonNullable<AppState['knowledge']>['status'], message?: string) { this.value.status = status; this.value.message = message; this.changed(); }
   configure(config?: AgentConfig) {
     this.namespaceAbort?.abort();
@@ -215,8 +224,8 @@ export class OpenVikingService implements KnowledgeService {
     throw new StartupFailure('OV_HEALTH_TIMEOUT', { healthStatus: lastHealthStatus, hint: startupHint(stderr) });
   }
   private credentials(user: string): Record<string, string> {
-    // Account maintenance is asserted only on the private migration connection,
-    // before model/tools are ready. Normal sessions retain USER scope checks.
+    // Migration asserts account maintenance before tools are ready. Studio adds
+    // its own human-only role separately; normal model sessions retain USER scope.
     return { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': this.account,
       'X-OpenViking-User': user, ...(this.maintenance ? { 'X-OpenViking-Role': 'admin' } : {}) };
   }

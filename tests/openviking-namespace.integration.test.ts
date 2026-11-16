@@ -105,6 +105,11 @@ with zipfile.ZipFile(sys.argv[1]) as source, zipfile.ZipFile(sys.argv[2], 'w') a
     assert.fail(JSON.stringify({ state: current.state().skills, debug }));
   }
   assert.equal(current.state().skills?.status, 'ready', JSON.stringify(current.state().skills) + diagnostics.slice(-10000));
+  const studio = await current.studioConnection();
+  assert.equal(studio.headers['X-OpenViking-Account'], 'ned'); assert.equal(studio.headers['X-OpenViking-Role'], 'admin');
+  assert.equal((current as any).credentials('local-user')['X-OpenViking-Role'], undefined, 'human Studio permission must not change model tools');
+  const studioPage = await fetch(studio.baseUrl + '/studio/', { headers: studio.headers });
+  assert.equal(studioPage.status, 200); assert.match(await studioPage.text(), /\/studio\/assets\//);
   const found = JSON.parse(await current.search('p1', 'reconnect', 3));
   assert.match(JSON.stringify(found), /viking:\/\/resources\/ned\/p1/);
   await assert.rejects(current.read('p2', 'viking://resources/ned/p1/file'));
