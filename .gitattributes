@@ -14,3 +14,7 @@ downloads/candidates/**/source/** filter=lfs diff=lfs merge=lfs -text
 # These source-probe inputs are compared to byte-pinned runtime manifests.
 scripts/sidecar-supervisor.py text eol=lf
 downloads/Ned-0.3.8-supervisor-runtime-manifest.json text eol=lf
+
+# Source-built managed editor and corresponding source.
+downloads/editor/*.exe filter=lfs diff=lfs merge=lfs -text
+downloads/editor/*.tar.gz filter=lfs diff=lfs merge=lfs -text
