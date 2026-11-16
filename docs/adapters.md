@@ -2,6 +2,8 @@
 
 Ned는 Zed, 고정 OpenCode ACP 어댑터와 앱 전용 엔진을 연결합니다. `opencode acp`로 별도 서버를 만드는 경로는 사용하지 않습니다. 구현은 `distribution/ned`, `distribution/native-control.ts`, `distribution/host-tools.ts`에 있습니다.
 
+기본 Zed Agent는 이 ACP·OpenCode 어댑터를 사용하지 않습니다. 사내 모델 전용 로컬 중계만 공유하고 Zed 자체 하네스·도구·승인으로 동작합니다. 아래 절은 Ned Agent의 추가 도구에 해당합니다. [두 Agent의 차이](zed-native-agent.md)를 참고하세요.
+
 ## ACP와 파일 편집
 
 에이전트는 로컬 파이프·소켓에서 실행별 토큰으로 호스트에 연결합니다. 호스트는 새 세션의 작업 폴더를 승인·검증한 뒤 연결합니다. 클라이언트가 추가 MCP나 디렉터리를 주입할 수 없으며 실제 모델 키도 전달하지 않습니다. 공식 어댑터의 Bun 파일 읽기 세 곳은 Node 읽기로 바꿔 번들하고 ACP 표준 출력에는 프로토콜만 기록합니다.

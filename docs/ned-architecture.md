@@ -1,12 +1,15 @@
 # Ned의 구성과 데이터 흐름
 
-Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.3.7 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
+Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.3.8 rebuild1 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
 
-Zed는 코드 편집과 탐색, 대화 화면을 제공합니다. OpenCode는 세션을 진행하고 필요한 도구를 호출합니다. Ned 호스트는 설정과 키, 승인, 프로젝트 접근, 프로세스 실행·종료와 사내 모델 연결을 관리합니다. Aegis·Conductor, 스킬 66개, OpenViking, Serena, Graphify, REA와 MCP도 이 호스트를 통해 연결합니다.
+Zed는 코드 편집과 탐색, 대화 화면을 제공합니다. Ned Agent를 선택하면 OpenCode가 세션을 진행하고 필요한 호스트 도구를 호출합니다. 기본 Zed Agent를 선택하면 Zed 자체 하네스가 도구를 선택·실행하며 OpenCode나 Ned ACP를 사용하지 않습니다. Ned 호스트는 설정과 키, 승인, 프로젝트 접근, 프로세스 실행·종료와 사내 모델 연결을 관리합니다. Aegis·Conductor, 스킬 67개, OpenViking, Serena, Graphify, REA와 MCP도 이 호스트를 통해 연결합니다.
 
 ```mermaid
 flowchart LR
   User --> Zed[Managed Zed workspace]
+  Zed --> Native[Built-in Zed agent harness]
+  Native --> Plain[Native model transport only]
+  Plain --> Qwen[Selected intranet LLM]
   Zed -->|ACP stdio| Bridge[Ned agent bridge]
   Bridge --> Host[Ned native host]
   Host --> Engine[Private OpenCode engine]
@@ -28,9 +31,19 @@ Zed에는 로컬 ACP 에이전트를 등록합니다. 브리지는 호스트가 
 
 편집기의 텔레메트리, 자동 업데이트, 확장 설치와 번들에 없는 언어 서버 다운로드를 막습니다. 이 설정이 실제로 지켜지는지는 Windows에서 DNS·TCP 요청을 관찰해 확인해야 합니다.
 
+## 기본 Zed Agent 경로
+
+`distribution/ned/zed-models.ts`는 중앙 JSON의 모델 목록을 별도의 로컬 API로 노출합니다. Zed에는 실제 사내 키 대신 실행별 로컬 토큰을 전달합니다. 모델 제공자별 주소·인증·기본 요청 옵션을 처리하며 Zed의 메시지·도구 정의·요약 요청에 Ned 지침을 넣지 않습니다. OpenCode 실행 파일이나 Ned ACP 연결이 없어도 이 모델 중계 경로는 독립적으로 동작합니다.
+
+이 Agent에는 Ned 스킬·MCP·OpenViking을 연결하지 않습니다. 파일 도구·터미널과 권한 판단은 Zed 자체 구현을 사용합니다. 폐쇄망용 편집기 설정에 따라 웹 도구와 임의 MCP 자동 연결은 끕니다. Ned 앱의 공통 서비스가 살아 있는 것과 Zed Agent의 호출 경로는 별개입니다. 다른 Ned 대화를 함께 열었다면 그 대화의 엔진은 별도로 실행될 수 있습니다.
+
+Ned Agent의 subagent 도구는 현재 허용 목록에 없습니다. 기본 Zed Agent의 spawn_agent는 Zed native Agent 내부에서 부모 모델·프로필을 이어 하위 Thread를 만듭니다. 실제 실행 수용 범위와 사용법은 [두 Agent 안내](zed-native-agent.md)에 구분했습니다.
+
 ## 파일 수정과 빌드
 
-사용자의 수동 편집·저장은 Zed의 일반 동작입니다. AI 수정은 호스트의 승인 정책을 따르며, 기준 내용과 스냅샷을 비교합니다. 쓰기 전에는 편집기 버퍼도 읽어 저장하지 않은 변경이 있는지 확인합니다.
+아래 승인·스냅샷·빌드 설명은 Ned Agent의 호스트 도구에 적용됩니다. 기본 Zed Agent는 Zed 자체 도구·권한을 사용합니다.
+
+사용자의 수동 편집·저장은 Zed의 일반 동작입니다. Ned Agent의 AI 수정은 호스트의 승인 정책을 따르며, 기준 내용과 스냅샷을 비교합니다. 쓰기 전에는 편집기 버퍼도 읽어 저장하지 않은 변경이 있는지 확인합니다.
 
 권한은 **승인 요청**, **프로젝트 파일 자동 승인**, **전체 권한** 중 선택합니다. `PermissionPolicy`가 네이티브 승인 게이트를 관리하고, 결과는 사용자 데이터의 `permissions.json`에 저장합니다. 모델 설정과 프로젝트 설정은 이 정책을 바꾸지 않습니다. 권한 변경은 연결된 대화에 반영하며 대기 중인 승인과 진행 작업에 취소 신호를 보냅니다. 모드와 관계없이 범위·충돌·버퍼·고정 대상·중지 상태를 검사합니다.
 
@@ -81,3 +94,9 @@ Windows ACP 실행은 Zed → 번들 Python 콘솔 감독 프로세스 → Elect
 Zed는 주로 GPL-3.0-or-later이며 Apache-2.0 구성 요소도 있습니다. 대응 소스와 제3자 고지를 함께 제공하며, Ned 호스트의 라이선스와 구분합니다. 최소 OS는 Windows 10 1903 이상·Windows 11 22H2 이상 x64입니다.
 
 0.3.7에서는 Windows Server 설치와 OpenViking·토크나이저·Node 로딩을 확인했습니다. 실제 사내 Windows GUI·모델 서버·네트워크·실행과 종료 검증은 [검증 기록](validation-0.3.7.md)의 범위에 따라 이어갑니다. 원본 0.3.1의 AppData와 빈 시작 화면 수정 이력은 [시작 수정 안내](ned-startup-fix-1.md)에 남겼습니다.
+
+## 편집기 표시와 Astryx
+
+0.3.8 rebuild1의 메뉴·About은 고정 Zed 소스의 두 Rust 파일을 수정해 빌드하며 Ned 이름·아이콘·제품 설명을 표시합니다. 기반 Zed의 버전·소스·라이선스와 수정 대응 소스를 함께 제공합니다.
+
+Astryx는 Ned 편집기를 다시 디자인하는 런타임이 아니라 사용자의 React UI 제작을 돕는 스킬·참조·시작 프로젝트입니다. 281개 로컬 참조와 Windows용 압축 프로젝트를 제공하며 원본 온라인 CLI를 실행하지 않습니다. 설치 파일 수 증가를 줄이기 위해 의존성은 ZIP 안에 보관합니다. [사용법](astryx.md)을 참고하세요.
