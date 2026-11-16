@@ -7936,7 +7936,7 @@ var run = (0, import_node_util4.promisify)(import_node_child_process6.execFile);
   const root = await (0, import_promises14.mkdtemp)(import_node_path15.default.join((0, import_node_os7.tmpdir)(), "ned-astryx-"));
   t.after(() => (0, import_promises14.rm)(root, { recursive: true, force: true }));
   const quote = (s) => "'" + s.replaceAll("'", "''") + "'";
-  const command = "Expand-Archive -LiteralPath " + quote(archive) + " -DestinationPath " + quote(root) + " -ErrorAction Stop";
+  const command = "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::ExtractToDirectory(" + quote(archive) + ", " + quote(root) + ")";
   await run("powershell.exe", ["-NoLogo", "-NoProfile", "-EncodedCommand", Buffer.from(command, "utf16le").toString("base64")]);
   const kit = import_node_path15.default.join(root, "Ned-Astryx"), manifest = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(kit, "NED-KIT-MANIFEST.json"), "utf8"));
   for (const file of manifest.files) import_strict7.default.equal((0, import_node_crypto7.createHash)("sha256").update(await (0, import_promises14.readFile)(import_node_path15.default.join(kit, file.path))).digest("hex"), file.sha256, file.path);
