@@ -9,7 +9,7 @@ import { configSchema } from '../src/shared/contracts';
 import { NativeRuntime, engineConfiguration, providerID } from '../distribution/native-control';
 
 test('native model bindings hide actual keys and select the configured default', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-native-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-native-')); t.after(() => rm(root, { recursive: true, force: true }));
   const config = configSchema.parse({ schemaVersion: 2, models: [
     { name: 'A', id: 'model/a', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'actual-secret-A' },
     { name: 'B', id: 'model-b', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'actual-secret-B' },
@@ -28,7 +28,7 @@ test('native model bindings hide actual keys and select the configured default',
 
 const cli = path.resolve('.cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
 test('an unconfirmed MCP stop still closes HTTP gateways and prevents native restart', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-stop-failure-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-stop-failure-')); t.after(() => rm(root, { recursive: true, force: true }));
   const runtime = new NativeRuntime(root, root, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
   const config = configSchema.parse({ schemaVersion: 2, models: [{ name: 'test', id: 'test', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'synthetic-secret' }] });
   await runtime.initialize(config);
@@ -63,7 +63,7 @@ test('OpenCode provider format accepts APIKey and preserves model aliases, IDs, 
   assert.deepEqual(configSchema.parse(JSON.parse(JSON.stringify(config))).models, config.models);
 });
 test('real v2 engine is authenticated, private and exits when the native host closes', { skip: !existsSync(cli), timeout: 120000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-v2-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-v2-')); t.after(() => rm(root, { recursive: true, force: true }));
   for (const name of ['config', 'data', 'cache', 'state']) await mkdir(path.join(root, 'runtime', name), { recursive: true });
   const config = configSchema.parse({ schemaVersion: 2, models: [{ name: 'offline-test', id: 'test-model', baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'test-only-secret' }] });
   const runtime = new NativeRuntime(root, root, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
@@ -80,7 +80,7 @@ test('real v2 engine is authenticated, private and exits when the native host cl
 });
 
 test('real v2 model selection uses wire IDs and guarded MCP edits require native approval', { skip: !existsSync(cli), timeout: 120000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-v2-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-v2-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
   const project = path.join(root, 'project'), data = path.join(root, 'data');
   await mkdir(project); await mkdir(data); await writeFile(path.join(project, 'main.c'), 'int main() { return 0; }\n');
   const calls: Array<{ url: string; body: any; auth?: string }> = []; let step = 0;
@@ -163,7 +163,7 @@ test('legacy model options and variant maps normalize to current settings/body a
 });
 
 test('real pinned engine forwards legacy thinking variants as wire fields, not options metadata', { skip: !existsSync(cli), timeout: 180000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-thinking-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-thinking-')); t.after(() => rm(root, { recursive: true, force: true }));
   const project = path.join(root, 'project'); await mkdir(project);
   const calls: any[] = []; let resetCompaction = false, sessionID = "";
   const mock = createServer(async (req, res) => {

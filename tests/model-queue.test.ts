@@ -54,7 +54,7 @@ print('VLM_QUEUE_WAIT_OK')
 });
 
 test('real engine waits beyond the former 180-second deadline and user stop closes a silent queued model request', { skip: !existsSync(cli), timeout: 300000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-long-queue-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-long-queue-')); t.after(() => rm(root, { recursive: true, force: true }));
   const project = path.join(root, 'project'); await mkdir(project);
   let hold = false, received!: () => void, closed!: () => void;
   const pending = new Promise<void>(r => { received = r; }), disconnected = new Promise<void>(r => { closed = r; });

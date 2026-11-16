@@ -28,7 +28,7 @@ test('browser proxy forwards only the approved origin and refuses writes and alt
 });
 
 test('project snapshots exclude executable configuration directories regardless of Windows casing', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-case-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-case-')); t.after(() => rm(root, { recursive: true, force: true }));
   for (const name of ['.GIT', '.OpenCode', 'Node_Modules', 'BUILD', '.VENV']) { await mkdir(path.join(root, name)); await writeFile(path.join(root, name, 'injected.txt'), 'untrusted'); }
   await writeFile(path.join(root, 'main.cpp'), 'int main() {}');
   assert.deepEqual(await new ProjectFiles(root).list(), ['main.cpp']);

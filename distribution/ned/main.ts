@@ -96,7 +96,7 @@ async function start() {
     root, resources, cipher: safeStorage, approve, permissions,
     approveEdit: async (message, detail, signal) => {
       if (configurationRestart.pending || detail.length > 60000) return { approved: false, autoApproveRequest: false };
-      const result = await messageBox({ type: 'question', title: 'Ned 파일 수정 승인', message, detail,
+      const result = await messageBox({ type: 'question', title: 'Ned 파일 변경 승인', message, detail,
         buttons: ['거절', '이번 수정 승인', '현재 대화·프로젝트 자동 승인'], defaultId: 0, cancelId: 0, noLink: true, signal,
         checkboxLabel: '이번 요청의 파일 수정 자동 승인 (새 요청·중지·재시작 시 해제)', checkboxChecked: false });
       return { approved: !signal?.aborted && (result.response === 1 || result.response === 2), autoApproveRequest: !signal?.aborted && result.response === 1 && result.checkboxChecked, autoApproveSession: !signal?.aborted && result.response === 2 };

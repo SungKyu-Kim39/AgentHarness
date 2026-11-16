@@ -25,7 +25,7 @@ process.env.ELECTRON_BUILDER_CACHE ??= path.join(cache,'builder-cache');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
-if(version==='0.3.7' && !revision && ['release','bundle'].includes(mode))throw new Error('Published 0.3.7 artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
+if(version==='0.3.7' && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published 0.3.7 artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
@@ -203,9 +203,10 @@ async function bundle() {
   const name=`Ned-${artifactVersion}-windows-x64`, stage=path.join(output,name);
   await rm(stage,{recursive:true,force:true});await mkdir(stage,{recursive:true});
   await cp(installer,path.join(stage,path.basename(installer)));
-  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[`docs/validation-${version}.md`,'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[`docs/validation-${artifactVersion}.md`,'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
   if(version==='0.3.7')await cp(path.join(root,'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
+  if(version==='0.3.7' && revision)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));

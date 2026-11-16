@@ -7,17 +7,17 @@
     "sha256": "4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252",
     "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d"
   },
-  "optimizerSha256": "1bcb92cd4ff0ef6604d3a3bc79a6fbf67d724484e337feac97744170d4cfffb1",
-  "reportSha256": "64557f21cdbed3f710caa0f5ab46e4b11dc6c46c39af7733637e7a56a64bc7c3",
+  "optimizerSha256": "6b9a223237c968bb6669e35429a2f619b8d46716c1c830f497386e4ea7256de3",
+  "reportSha256": "71fefc71899256499c3552f3856de75979be59c69413150c937c309c05f8cc61",
   "components": {
     "openviking": {
-      "originalManifestSha256": "6b62b83f14351ca5450e281410070b0f443e17f0d8a4756706f658ffba339ee7",
-      "manifestSha256": "c912cce64e3456c6a12f8c3c2810afc838c6145f03c37cb9e865a85b8d9acd23",
-      "files": 25196
+      "originalManifestSha256": "51e611182b399d6f6d2a23e3106d08b94b037a324754b138ee75c24215ed857d",
+      "manifestSha256": "e42adf91f4fc6736c85f385a49c76fb13e54130d9ec2716017b5047d513ae1b1",
+      "files": 25295
     },
     "mcp": {
       "originalManifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
-      "manifestSha256": "1803eb81043d8910ce3422ccd7b4f84e7355237095f523b519960449d14367e8",
+      "manifestSha256": "e9ca7b287740bf0de0cdef850209ba1082fdb0c5e79773e11458c0a1a72915f9",
       "files": 21028
     },
     "rea": {

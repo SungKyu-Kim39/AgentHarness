@@ -15,9 +15,9 @@ const execute = promisify(execFile);
 const executable = path.resolve('.cache/openviking/env-linux/bin/python3');
 const legacyPackage = path.resolve('.cache/openviking-050-review/package');
 
-for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includeVectors ? 'vector' : 'no-vector with broken public stat'} export imports into 0.5.4 and personal knowledge is readable from two projects`,
+for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includeVectors ? 'vector' : 'no-vector with broken public stat'} export imports into 0.5.5 and personal knowledge is readable from two projects`,
   { skip: !existsSync(executable) || !existsSync(legacyPackage), timeout: 300000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-personal-live-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-personal-live-'));
   const services:OpenVikingService[]=[];let tools:HostTools|undefined;let endpoint:ReturnType<typeof createServer>|undefined;
   t.after(async()=>{await tools?.close();for(const service of services)await service.close().catch(()=>{});endpoint?.closeAllConnections();await new Promise<void>(r=>{if(endpoint?.listening)endpoint.close(()=>r());else r();});await rm(root,{recursive:true,force:true});});
   const calls: string[] = [];
@@ -52,7 +52,7 @@ for (const includeVectors of [true, false]) test(`real OpenViking 0.5.0 ${includ
     original_vector_action = test_pack_operations.choose_vector_restore_action
     async def trace_vector_action(*args, **kwargs):
         action = await original_vector_action(*args, **kwargs)
-        print('L_VIBE_TEST_VECTOR_ACTION=' + action, file=sys.stderr, flush=True)
+        print('NED_TEST_VECTOR_ACTION=' + action, file=sys.stderr, flush=True)
         return action
     test_pack_operations.choose_vector_restore_action = trace_vector_action`));
   const make=async(name:string,script:string)=>{
@@ -88,7 +88,7 @@ print(json.dumps(m.export_user(sys.argv[2],sys.argv[3],'default','default',sys.a
   try { imported=await current.importPersonal(archive,async()=>{approvals++;return true;}); }
   catch(error) { assert.fail(String(error)+'\n'+diagnostics.slice(-15000)); }
   assert.equal(imported.status,'imported');assert.equal(approvals,1);
-  if(includeVectors) assert.ok(diagnostics.includes('L_VIBE_TEST_VECTOR_ACTION=restore'), 'SDK must restore the compatible vector snapshot\n'+diagnostics.slice(-15000));
+  if(includeVectors) assert.ok(diagnostics.includes('NED_TEST_VECTOR_ACTION=restore'), 'SDK must restore the compatible vector snapshot\n'+diagnostics.slice(-15000));
   assert.equal((await current.personalStatus())[0].root,'viking://user/default');
   const currentInternals=current as unknown as {baseUrl:string;token:string};
   const forbidden=await fetch(currentInternals.baseUrl+'/api/v1/content/write',{method:'POST',headers:{Authorization:'Bearer '+currentInternals.token,'X-API-Key':currentInternals.token,'X-OpenViking-Account':'ned','X-OpenViking-User':'local-user','Content-Type':'application/json'},body:JSON.stringify({uri:'viking://user/default/resources/legacy-note.md',content:'must not replace private knowledge',mode:'replace',wait:true,processing_mode:'vectors_only'})});

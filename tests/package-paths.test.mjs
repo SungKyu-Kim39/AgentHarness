@@ -7,7 +7,7 @@ import path from 'node:path';
 import { verifyAsciiTree, verifyAsciiTar, verifyAsciiGitTree } from '../scripts/package-paths.mjs';
 
 async function temporary(t) {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-package-paths-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-package-paths-'));
   t.after(() => rm(root, { recursive: true, force: true })); return root;
 }
 test('package names remain ASCII while Korean document content is preserved', async t => {

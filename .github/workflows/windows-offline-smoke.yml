@@ -1,16 +1,25 @@
 name: Windows offline installer smoke
 on:
   workflow_dispatch:
+    inputs:
+      artifact_version:
+        description: Exact immutable installer build
+        default: 0.3.7-rebuild1
+        type: choice
+        options: ['0.3.7-rebuild1', '0.3.7']
   push:
     branches: [work]
     paths:
       - downloads/Ned-0.3.7-win-x64.exe
+      - downloads/Ned-0.3.7-rebuild1-win-x64.exe
 permissions:
   contents: read
 jobs:
   offline-install:
     runs-on: windows-2022
     timeout-minutes: 30
+    env:
+      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.7-rebuild1' }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -32,6 +41,9 @@ jobs:
           $watch.Stop()
           $files = @(Get-ChildItem $install -Recurse -File)
           [ordered]@{ version='0.3.6-rebuild1'; installerMilliseconds=$watch.ElapsedMilliseconds; installedFiles=$files.Count; installedBytes=($files | Measure-Object Length -Sum).Sum } | ConvertTo-Json | Set-Content baseline-smoke.json -Encoding utf8
+          $oldRuntime = Join-Path $env:RUNNER_TEMP 'ned-previous-openviking'
+          Copy-Item (Join-Path $install 'resources\runtime\windows-x64\openviking') $oldRuntime -Recurse
+          "NED_TEST_PREVIOUS_PYTHON=$oldRuntime\python\python.exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $uninstall = Start-Process -FilePath (Join-Path $install 'Uninstall Ned.exe') -ArgumentList @('/S', "_?=$install") -Wait -PassThru
           $uninstall.Refresh()
           if ($uninstall.ExitCode -ne 0) { throw 'Baseline uninstall failed' }
@@ -41,9 +53,9 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $audit = Get-Content downloads/Ned-0.3.7-installer-audit.json -Raw | ConvertFrom-Json
-          $exe = Join-Path $env:RUNNER_TEMP 'Ned-0.3.7-win-x64.exe'
-          $url = "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/Ned-0.3.7-win-x64.exe"
+          $audit = Get-Content "downloads/Ned-$env:NED_ARTIFACT_VERSION-installer-audit.json" -Raw | ConvertFrom-Json
+          $exe = Join-Path $env:RUNNER_TEMP "Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
+          $url = "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
           & curl.exe --fail --location --retry 2 --output $exe $url
           if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
           if ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $audit.installer.sha256) { throw 'Installer SHA-256 mismatch' }
@@ -64,10 +76,22 @@ jobs:
           $watch.Stop()
           $python = Join-Path $install 'resources\runtime\windows-x64\openviking\python\python.exe'
           if (!(Test-Path $python)) { throw 'Installed Python missing' }
+          # Native SDK code can bypass Python socket hooks. Block Internet
+          # egress for these exact test executables on this disposable runner.
+          Get-NetFirewallProfile | Select-Object Name,Enabled | ConvertTo-Json | Set-Content firewall-before.json
+          Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+          $group = "Ned-CI-$env:GITHUB_RUN_ID"
+          "NED_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          foreach ($program in @($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'))) {
+            New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
+          }
           $result = @(& $python -I -B distribution/openviking-import-check.py 2>&1)
           $exit = $LASTEXITCODE
           $result | ForEach-Object { Write-Host "$_" }
           if ($exit -ne 0 -or !($result -match 'OPENVIKING_IMPORT_OK') -or !($result -match 'TOKENIZERS_OK 7')) { throw 'Offline OpenViking/tokenizer import failed' }
+          $expectedVersion = if ($env:NED_ARTIFACT_VERSION -eq '0.3.7-rebuild1') { '0.5.5' } else { '0.5.4' }
+          if (!($result -match "OPENVIKING_VERSION=$([regex]::Escape($expectedVersion))")) { throw 'Wrong bundled OpenViking version' }
+          if (!($result -match 'OPENVIKING_ADAPTERS_OK')) { throw 'OpenViking queue/pack adapters failed' }
           $sdk = Join-Path $install 'resources\runtime\windows-x64\openviking\python\Lib\site-packages\ned-sdk-code.zip'
           if (!(Test-Path $sdk)) { throw 'Packed SDK archive missing' }
           $stdout = Join-Path $env:RUNNER_TEMP 'ned-node.stdout.txt'
@@ -77,10 +101,13 @@ jobs:
           $node.Refresh()
           if ($node.ExitCode -ne 0 -or (Get-Content $stdout -Raw).Trim() -notmatch '^\d+\.\d+\.\d+$') { throw 'Bundled Node launch failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
+          "NED_TEST_CURRENT_PYTHON=$python" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "NED_TEST_TOKENIZERS_DIR=$(Join-Path $install 'resources\runtime\windows-x64\openviking\tokenizers')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $files = @(Get-ChildItem $install -Recurse -File)
           $baseline = Get-Content baseline-smoke.json -Raw | ConvertFrom-Json
           [ordered]@{
-            schemaVersion=1; product='Ned'; version='0.3.7'
+            schemaVersion=1; product='Ned'; version=$env:NED_ARTIFACT_VERSION; openVikingVersion=$expectedVersion
             os=[Environment]::OSVersion.Version.ToString()
             installerMilliseconds=$watch.ElapsedMilliseconds
             baselineInstallerMilliseconds=$baseline.installerMilliseconds
@@ -91,13 +118,41 @@ jobs:
             installedBytes=($files | Measure-Object Length -Sum).Sum
             openVikingImport=$true; tokenizerEncodings=7; bundledNode=$true
             privateDataInstallRejected=$true
-            modelsPrompted=$false; desktopActions=0
+            bundledRuntimeInternetBlockedByWindowsFirewall=$true
+            importStepModelsPrompted=$false; intranetModelsPrompted=$false; desktopActions=0
+            namespaceTestUsesLocalSyntheticModels=($env:NED_ARTIFACT_VERSION -eq '0.3.7-rebuild1')
             realWin10Win11GuiAcceptance=$false
           } | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
           Get-Content windows-offline-smoke.json
+      - name: Verify 0.5.4 data migration using the installed Windows runtimes
+        if: env.NED_ARTIFACT_VERSION == '0.3.7-rebuild1'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $test = 'downloads/Ned-0.3.7-rebuild1-windows-namespace-test.cjs'
+          $expected = (Get-Content "$test.sha256").Split(' ')[0]
+          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Namespace test hash mismatch' }
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-namespace-test.txt -RedirectStandardError windows-namespace-stderr.txt -Wait -PassThru
+          $run.Refresh()
+          Get-Content windows-namespace-test.txt
+          Get-Content windows-namespace-stderr.txt
+          if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
+      - name: Restore disposable runner firewall configuration
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:NED_FIREWALL_GROUP) { Get-NetFirewallRule -Group $env:NED_FIREWALL_GROUP -ErrorAction SilentlyContinue | Remove-NetFirewallRule }
+          if (Test-Path firewall-before.json) {
+            foreach ($profile in (Get-Content firewall-before.json -Raw | ConvertFrom-Json)) { Set-NetFirewallProfile -Profile $profile.Name -Enabled $profile.Enabled }
+          }
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: windows-offline-smoke-0.3.7
-          path: windows-offline-smoke.json
+          name: windows-offline-smoke-${{ env.NED_ARTIFACT_VERSION }}
+          path: |
+            windows-offline-smoke.json
+            windows-namespace-test.txt
+            windows-namespace-stderr.txt
           if-no-files-found: ignore

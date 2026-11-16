@@ -4,6 +4,8 @@ import { existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { mkdtemp, cp, mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { createServer } from 'node:http';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { OpenVikingService } from '../src/main/openviking';
@@ -11,14 +13,19 @@ import { loadBundledSkillPackages } from '../src/main/openviking-skills';
 import { previousVikingAccount, previousSkillOwner, previousSkillHash } from '../src/main/openviking-namespace';
 import { configSchema } from '../src/shared/contracts';
 
-const currentPython = path.resolve('.cache/openviking/env-linux/bin/python3');
-const previousPython = path.resolve('.cache/openviking/env-0.5.4/bin/python3');
+const currentPython = path.resolve(process.env.NED_TEST_CURRENT_PYTHON ?? '.cache/openviking/env-linux/bin/python3');
+const previousPython = path.resolve(process.env.NED_TEST_PREVIOUS_PYTHON ?? '.cache/openviking/env-0.5.4/bin/python3');
 const sha = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 test('real 0.5.4 account migrates through 0.5.5 with project/personal search, renamed packages and intact raw backup',
   { skip: !existsSync(currentPython) || !existsSync(previousPython), timeout: 300000 }, async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'ned-viking-upgrade-'));
   const services: OpenVikingService[] = []; let diagnostics = '';
   t.after(async () => { for (const service of services) await service.close(); await rm(root, { recursive: true, force: true }); });
+  const execute = promisify(execFile);
+  for (const [python, expected] of [[previousPython, '0.5.4'], [currentPython, '0.5.5']]) {
+    const result = await execute(python, ['-I', '-B', '-c', 'from importlib.metadata import version; print(version("openviking"))']);
+    assert.equal(result.stdout.trim(), expected);
+  }
   const modelRequests: string[] = [];
   const endpoint = createServer(async (req, res) => {
     let raw = ''; for await (const bytes of req) raw += bytes;
@@ -38,7 +45,7 @@ test('real 0.5.4 account migrates through 0.5.5 with project/personal search, re
   for (const entry of manifest.skills) await cp(path.join('vendor/skills', entry.directory), path.join(bundle, entry.directory), { recursive: true });
   const bytes = JSON.stringify(manifest); await writeFile(path.join(bundle, 'manifest.json'), bytes);
   await writeFile(path.join(bundle, '../skills-lock.json'), JSON.stringify({ schemaVersion: 1, count: 2, manifestSha256: sha(bytes) }));
-  await cp('vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
+  await cp(process.env.NED_TEST_TOKENIZERS_DIR ?? 'vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
   const make = (executable: string, skills?: string) => {
     const service = new OpenVikingService(root, root, () => {}, { executable, launcher: path.resolve('scripts/openviking-launch.py'), cwd: root, diagnostic: text => { diagnostics += text; } }, skills);
     services.push(service); return service;
@@ -96,4 +103,5 @@ test('real 0.5.4 account migrates through 0.5.5 with project/personal search, re
   while (['pending', 'registering'].includes(current.state().skills?.status ?? '') && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 100));
   assert.equal(current.state().skills?.status, 'ready', diagnostics.slice(-10000));
   assert.equal(modelRequests.length, before, 'unchanged restart must not re-index migrated skill packages');
+  t.diagnostic('Verified 0.5.4 -> 0.5.5; project/personal search; two renamed skills; original bytes retained; no restart re-index. Model endpoints were localhost synthetic servers only.');
 });

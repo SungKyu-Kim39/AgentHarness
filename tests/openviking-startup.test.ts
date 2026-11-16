@@ -14,7 +14,7 @@ const config = configSchema.parse({ schemaVersion: 2,
 
 for (const scenario of ['bundle', 'spawn', 'python'] as const) {
   test(`OpenViking startup identifies ${scenario} failure without persisting raw diagnostics or credentials`, async t => {
-    const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-startup-'));
+    const root = await mkdtemp(path.join(tmpdir(), 'ned-startup-'));
     const data = path.join(root, 'data'); await mkdir(data);
     let service: OpenVikingService | undefined;
     t.after(async () => { await service?.close(); await rm(root, { recursive: true, force: true }); });

@@ -113,6 +113,7 @@ export interface Proposal {
   id: string;
   callId: string;
   path: string;
+  operation?: "write" | "delete";
   before: string;
   after: string;
   baseHash: string;

@@ -24,7 +24,12 @@ def main():
         encodings = launch.configure_tokenizers(runtime / "tokenizers")
         try:
             from openviking.server.app import create_app
+            from importlib.metadata import version
             print("OPENVIKING_IMPORT_OK", flush=True)
+            print("OPENVIKING_VERSION=" + version("openviking"), flush=True)
+            launch.configure_model_queue_wait()
+            launch.configure_user_pack_import()
+            print("OPENVIKING_ADAPTERS_OK", flush=True)
             import tiktoken
             for name in encodings:
                 codec = tiktoken.get_encoding(name)

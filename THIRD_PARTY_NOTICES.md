@@ -16,6 +16,8 @@ Ned 0.3.3의 설정 보존에는 Microsoft의 jsonc-parser 3.3.1(MIT)을 사용�
 
 ## 공통 런타임
 
+0.3.7 수정 빌드 1의 OpenViking은 0.5.5(AGPL-3.0), LiteLLM은 1.103.10(MIT)입니다. 고정 wheel·대응 소스 해시는 `openviking-upgrade-lock.json`에 기록합니다. OpenViking 대응 소스는 TGZ의 `source/openviking-openviking-0.5.5-source.tar.gz`, Ned의 런처·이관·빌드 변경은 같은 묶음의 Ned 소스에 제공합니다. 라이선스 원문과 패키지 고지를 보존합니다.
+
 고정 Windows x64 0.2.3·0.2.4·0.2.5·0.2.6에서 검토한 공통 런타임 조건도 적용됩니다. OpenViking은 AGPL-3.0, Serena는 GPL-3.0-or-later, MinGit은 GPL-2.0이며 일부 라이브러리는 LGPL입니다. 각색한 differential-review는 CC-BY-SA-4.0입니다. Google Chrome과 Microsoft 런타임에는 별도 조건이 있습니다.
 
 0.2.5의 오프라인 토크나이저는 tiktoken MIT와 원본 GPT-2 Modified MIT 고지를 보존합니다. 데이터 해시와 패키지 미러 출처는 `tokenizer-runtime-lock.json`과 `tokenizers`에 있습니다.

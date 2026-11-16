@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileHash, verifyManifest, verifyInstallerAudit } from '../scripts/installer-audit.mjs';
 
 async function temporary(t) {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-installer-audit-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-installer-audit-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }

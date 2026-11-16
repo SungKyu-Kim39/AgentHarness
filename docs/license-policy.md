@@ -16,6 +16,12 @@ Ned로 업무 프로젝트를 개발하거나 개인 대화를 주고받았다�
 
 아래는 공통 런타임의 상세 검토 기록입니다. Chrome 바이너리 재배포 조건과 MSVC DLL 배포 주체의 자격 등 남은 항목도 함께 확인해야 합니다.
 
+### 0.3.7 수정 빌드 1의 OpenViking 업데이트
+
+OpenViking은 0.5.5로 올리며 AGPL-3.0 조건을 유지합니다. Windows wheel과 대응 소스의 SHA-256은 `openviking-upgrade-lock.json`에 고정합니다. 대응 소스는 TGZ의 `source/openviking-openviking-0.5.5-source.tar.gz`에 제공합니다. 런처·이관 어댑터와 빌드 스크립트는 같은 묶음의 Ned 소스에 포함합니다.
+
+OpenViking의 의존 조건에 맞춰 LiteLLM을 1.103.10으로 변경합니다. 해당 wheel의 MIT 원문과 dist-info 고지를 보존하며, 나머지 고정 패키지의 조건도 그대로 적용합니다. 이 변경은 아래에 남겨 둔 과거 0.2.x 검토 기록의 버전이나 당시 판단을 소급해 바꾸지 않습니다.
+
 ---
 
 # 기존 공통 런타임 라이선스 검토 기록

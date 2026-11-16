@@ -23,7 +23,7 @@ test(
   "real OpenCode 1.19.5 → local model → MCP → approval → verified file result",
   { skip: !existsSync("vendor/runtime/linux-x64/opencode"), timeout: 90000 },
   async (t) => {
-    const root = await mkdtemp(path.join(tmpdir(), "l-vibe-engine-"));
+    const root = await mkdtemp(path.join(tmpdir(), "ned-engine-"));
     t.after(() => rm(root, { recursive: true, force: true }));
     const project = path.join(root, "project");
     await mkdir(project);

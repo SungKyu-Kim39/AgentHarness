@@ -11,7 +11,7 @@ import { Redactor } from '../src/main/config';
 const execute = promisify(execFile);
 const python = path.resolve('.cache/openviking/env-linux/bin/python3');
 test('a late native approval cannot modify a cancelled MCP session', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-cancel-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-cancel-')); t.after(() => rm(root, { recursive: true, force: true }));
   await writeFile(path.join(root, 'main.c'), 'before\n');
   let entered!: () => void, decide!: (value: boolean) => void;
   const pending = new Promise<void>(resolve => { entered = resolve; });
@@ -24,7 +24,7 @@ test('a late native approval cannot modify a cancelled MCP session', async t => 
   assert.equal(await readFile(path.join(root, 'main.c'), 'utf8'), 'before\n');
 });
 test('pinned Graphify extracts an actual static call graph with network disabled', { skip: !existsSync(python) }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-graphify-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-graphify-')); t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(path.join(root, 'source'));
   await writeFile(path.join(root, 'source/main.py'), 'def helper():\n    return 7\n\ndef main():\n    return helper()\n');
   const { stdout } = await execute(python, ['-I', '-B', path.resolve('scripts/analysis-worker.py'), root], { timeout: 60000 });
@@ -33,7 +33,7 @@ test('pinned Graphify extracts an actual static call graph with network disabled
   assert.ok(JSON.stringify(graph).includes('helper'));
 });
 test('guarded REA runs its actual static Python bytecode inspector on a copied artifact', { skip: !existsSync('vendor/runtime/windows-x64/rea/scripts/rea.mjs') }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-rea-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-rea-')); t.after(() => rm(root, { recursive: true, force: true }));
   await writeFile(path.join(root, 'fixture.py'), 'def value():\n    return 7\n');
   await execute('python3', ['-I', '-c', 'import py_compile,sys; py_compile.compile(sys.argv[1],cfile=sys.argv[2],doraise=True)', path.join(root, 'fixture.py'), path.join(root, 'fixture.pyc')]);
   const host = new HostTools(root, path.resolve('vendor'), { project: async () => root, approve: async () => false, knowledge: () => undefined, redactor: new Redactor() });
@@ -43,7 +43,7 @@ test('guarded REA runs its actual static Python bytecode inspector on a copied a
 });
 
 test('native edit auto approval is scoped to one request and project; cancellation and new requests revoke it', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-edit-grant-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-edit-grant-')); t.after(() => rm(root, { recursive: true, force: true }));
   let project = path.join(root, 'a'); await mkdir(project); await mkdir(path.join(root, 'b'));
   let prompts = 0;
   const host = new HostTools(path.join(root, 'host'), root, { project: async () => project, approve: async () => false,
@@ -59,7 +59,7 @@ test('native edit auto approval is scoped to one request and project; cancellati
 });
 
 test('a new request invalidates a pending edit decision and cannot inherit its automatic grant', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-stale-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-stale-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
   let entered!: () => void, decide!: (value: { approved: boolean; autoApproveRequest: boolean }) => void;
   const ready = new Promise<void>(r => { entered = r; }); let prompts = 0;
   const host = new HostTools(root, root, { project: async () => root, approve: async () => false,
@@ -73,7 +73,7 @@ test('a new request invalidates a pending edit decision and cannot inherit its a
 
 
 test('queued input delivery changes the edit grant even without another prompt HTTP request', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-queued-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-queued-edit-')); t.after(() => rm(root, { recursive: true, force: true }));
   let request = 'user-one', prompts = 0;
   const host = new HostTools(root, root, { project: async () => root, request: async () => request, approve: async () => false,
     approveEdit: async () => { prompts++; return { approved: true, autoApproveRequest: true }; }, knowledge: () => undefined, redactor: new Redactor() });

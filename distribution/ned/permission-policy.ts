@@ -3,9 +3,9 @@ import { lstat, readFile } from 'node:fs/promises';
 import { atomicJSON } from '../../src/main/config';
 
 export const permissionModes = [
-  { value: 'ask', name: '승인 요청', description: '파일 수정·빌드·지식 전달·데스크톱 도구를 실행하기 전에 확인합니다.' },
-  { value: 'edits', name: '프로젝트 파일 자동 승인', description: '선택한 프로젝트의 파일 수정은 자동 승인합니다. 빌드·지식 전달·데스크톱은 확인합니다.' },
-  { value: 'full', name: '전체 권한', description: 'Ned가 지원하는 파일 수정·빌드·지식·데스크톱 도구의 승인창을 생략합니다. 재시작 후에도 유지됩니다.' },
+  { value: 'ask', name: '승인 요청', description: '파일 생성·수정·삭제와 빌드·지식 전달·데스크톱 도구를 실행하기 전에 확인합니다.' },
+  { value: 'edits', name: '프로젝트 파일 자동 승인', description: '선택한 프로젝트의 파일 생성·수정·삭제는 자동 승인합니다. 빌드·지식 전달·데스크톱은 확인합니다.' },
+  { value: 'full', name: '전체 권한', description: '지원하는 파일 생성·수정·삭제와 빌드·지식·데스크톱 도구의 승인창을 생략합니다. 재시작 후에도 유지됩니다.' },
 ] as const;
 export type PermissionMode = typeof permissionModes[number]['value'];
 export function permissionMode(value: unknown): PermissionMode {

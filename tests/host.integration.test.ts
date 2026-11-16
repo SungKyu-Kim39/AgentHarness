@@ -13,7 +13,7 @@ test(
   "real engine repetition stops; manual replay stays in the same session without tools",
   { skip: !existsSync("vendor/runtime/linux-x64/opencode"), timeout: 90000 },
   async (t) => {
-    const root = await mkdtemp(path.join(tmpdir(), "l-vibe-host-"));
+    const root = await mkdtemp(path.join(tmpdir(), "ned-host-"));
     let cleanupHost: Host | undefined;
     let cleanupModel: ReturnType<typeof createServer> | undefined;
     t.after(async () => {
@@ -138,7 +138,7 @@ test(
   },
 );
 test("malformed history is preserved and cannot be overwritten by new work", async (t) => {
-  const root = await mkdtemp(path.join(tmpdir(), "l-vibe-corrupt-"));
+  const root = await mkdtemp(path.join(tmpdir(), "ned-corrupt-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const original = '{"schemaVersion":1,"projects":[],"sessions":[null]}';
   await writeFile(path.join(root, "history.json"), original);

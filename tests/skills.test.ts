@@ -12,7 +12,7 @@ import { configSchema } from '../src/shared/contracts';
 const additions = ['agent-desktop', 'agent-desktop-windows', 'cpp-pro', 'cpp-testing', 'legacy-modernizer', 'codebase-onboarding', 'api-design', 'database-migrations', 'error-handling-patterns', 'architecture-decision-records', 'differential-review', 'session-handoff', 'explore-data', 'validate-data', 'data-visualization', 'statistical-analysis', 'ab-testing', 'web-design-guidelines'];
 
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-offline-skills-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-offline-skills-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const project = path.join(root, 'project'), resources = path.join(root, 'resources');
   await mkdir(project); await cp('vendor/skills', path.join(resources, 'ned/skills'), { recursive: true });

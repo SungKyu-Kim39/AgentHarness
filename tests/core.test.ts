@@ -58,7 +58,7 @@ export function testCipher(): Cipher {
   };
 }
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
-  const root = await mkdtemp(path.join(tmpdir(), "l-vibe-test-"));
+  const root = await mkdtemp(path.join(tmpdir(), "ned-test-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   return root;
 }

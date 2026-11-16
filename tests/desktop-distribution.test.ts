@@ -14,7 +14,7 @@ const project = path.resolve('.');
 const original = path.join(project, '.cache/opencode-desktop/source');
 const lock = JSON.parse(await readFile(path.join(project, 'upstream-lock.json'), 'utf8')) as { files: Record<string, string> };
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-distribution-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-distribution-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   for (const file of Object.keys(lock.files)) { await mkdir(path.dirname(path.join(root, file)), { recursive: true }); await cp(path.join(original, file), path.join(root, file)); }
   return root;
@@ -41,7 +41,7 @@ test('mixed upstream versions are rejected before any Desktop file is changed', 
   assert.equal(existsSync(path.join(root, '.l-vibe-patches.json')), false);
 });
 test('startup scopes configuration to app data and leaves HOME/USERPROFILE unchanged', async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-native-env-'));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-native-env-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const moduleURL = pathToFileURL(path.join(project, 'distribution/l-vibe-environment.ts')).href;
   const program = `import { configureLVibeEnvironment } from ${JSON.stringify(moduleURL)}; configureLVibeEnvironment(${JSON.stringify(root)}); console.log(JSON.stringify({home:process.env.HOME,profile:process.env.USERPROFILE,config:process.env.XDG_CONFIG_HOME,content:JSON.parse(process.env.OPENCODE_CONFIG_CONTENT),external:process.env.OPENCODE_CONFIG}));`;

@@ -7,6 +7,7 @@ import { ensureEditorInstructions, koreanInstructions } from '../distribution/ne
 import { prepareEditor } from '../distribution/ned/profile';
 import { configSchema } from '../src/shared/contracts';
 import { engineConfiguration } from '../distribution/native-control';
+import { automaticSkillPolicy } from '../src/main/skill-routing';
 
 test('initial profile includes the exact Korean block; repeated startup preserves custom text without duplication', async t => {
  const root = await mkdtemp(path.join(tmpdir(), 'ned-korean-')); t.after(() => rm(root, { recursive: true, force: true }));
@@ -23,7 +24,10 @@ test('initial profile includes the exact Korean block; repeated startup preserve
  assert.equal(await readFile(path.join(directory, 'AGENTS.md'), 'utf8'), crlf);
  const config = configSchema.parse({ model: { baseUrl: 'http://127.0.0.1:19350/v1', apiKey: 'synthetic', id: 'coding' } });
  const models: any = [{ provider: 'intranet', name: 'Coding', id: 'coding', gateway: { baseUrl: 'http://127.0.0.1:19351/v1', token: 'local' } }];
- assert.ok(engineConfiguration(config, models).agents.build.system.endsWith(koreanInstructions));
+ const system = engineConfiguration(config, models).agents.build.system;
+ assert.ok(system.includes('\n\n' + koreanInstructions + '\n\n'));
+ assert.equal(system.split(koreanInstructions).length - 1, 1);
+ assert.ok(system.includes(automaticSkillPolicy));
 });
 
 test('missing instruction file is created, while a linked file outside the profile is preserved', async t => {

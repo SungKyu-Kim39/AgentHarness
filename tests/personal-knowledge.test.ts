@@ -11,7 +11,7 @@ import type { SkillTransport } from '../src/main/openviking-skills';
 const execute = promisify(execFile);
 const rootURI = 'viking://user/default';
 async function fixture(t: { after(fn: () => Promise<unknown>): void }, user = 'default', unsafe = false) {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-personal-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-personal-')); t.after(() => rm(root, { recursive: true, force: true }));
   const archive = path.join(root, 'legacy.ovpack');
   const paths = ['memories/preference.md', 'resources/design.md', 'skills/example/SKILL.md', 'sessions/past.json', 'privacy/current.json', 'peers/codex.tool@local/memories/entity.md'];
   await execute('python3', ['-I', '-B', '-c', `import json,sys,zipfile

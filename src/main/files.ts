@@ -8,6 +8,7 @@ import {
   writeFile,
   rename,
   unlink,
+  link,
   mkdir,
 } from "node:fs/promises";
 import type { Proposal } from "../shared/contracts";
@@ -142,6 +143,40 @@ export class ProjectFiles {
     }
     const target = await this.resolve(proposal.path, true);
     signal?.throwIfAborted();
+    if (proposal.operation === "delete") {
+      const held = path.join(path.dirname(target), `.ned-delete-${randomUUID()}.tmp`);
+      let captured = false;
+      try {
+        await this.resolve(proposal.path, true);
+        signal?.throwIfAborted();
+        // Capture the directory entry atomically, then verify the captured bytes.
+        // A concurrent replacement is restored without overwriting a new file.
+        await rename(target, held); captured = true;
+        await this.resolve(proposal.path, true);
+        const stat = await lstat(held);
+        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_FILE ||
+          !(await readFile(held)).equals(Buffer.from(proposal.before, "utf8"))) {
+          proposal.status = "conflict";
+          throw new Error("승인 후 외부 변경을 발견해 삭제를 중단했습니다.");
+        }
+        signal?.throwIfAborted();
+        await unlink(held); captured = false;
+        const exists = await lstat(target).then(() => true, (error: NodeJS.ErrnoException) => {
+          if (error.code === "ENOENT") return false;
+          throw error;
+        });
+        if (exists) throw new Error("원래 파일은 삭제됐지만 같은 경로에 새 파일이 생겼습니다. 자동 재삭제하지 말고 확인하세요.");
+        proposal.status = "applied";
+        proposal.result = `삭제 확인 · 원본 SHA-256 ${hash(proposal.before)}`;
+        return proposal.result;
+      } catch (error) {
+        if (captured) {
+          try { await link(held, target); await unlink(held); }
+          catch { throw new Error(`삭제를 완료하지 못했습니다. 원래 항목을 ${path.basename(held)}에 보존했습니다. 새 파일을 덮어쓰지 않았습니다.`); }
+        }
+        throw error;
+      }
+    }
     await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
     await this.resolve(proposal.path, true);
     const temp = path.join(
@@ -175,5 +210,12 @@ export class ProjectFiles {
     } finally {
       await unlink(temp).catch(() => {});
     }
+  }
+  async proposeDelete(callId: string, relative: string): Promise<Proposal> {
+    const proposal = await this.propose(callId, relative, "");
+    if (!proposal.baseHash.startsWith("file:")) throw new Error("삭제할 파일이 없습니다.");
+    const bytes = await readFile(await this.resolve(relative, true));
+    if (!bytes.equals(Buffer.from(proposal.before, "utf8"))) throw new Error("UTF-8 텍스트 파일만 삭제할 수 있습니다. 외부 변경 여부도 확인하세요.");
+    return { ...proposal, operation: "delete" };
   }
 }

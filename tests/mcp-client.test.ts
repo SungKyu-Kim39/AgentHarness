@@ -25,7 +25,7 @@ input.on('line',line=>{
 });
 `;
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
-  const root = await mkdtemp(path.join(tmpdir(), 'l-vibe-private-mcp-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-private-mcp-')); t.after(() => rm(root, { recursive: true, force: true }));
   const client = new PrivateMcpClient({ executable: process.execPath, args: ['-e', server], cwd: root, env: {}, allowedTools: ['read', 'hang'], timeout: 5000 });
   t.after(() => client.close()); return client;
 }
