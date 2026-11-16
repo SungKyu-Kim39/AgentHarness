@@ -4869,7 +4869,7 @@ var PythonProjects = class {
 var installation = process.env.NED_TEST_CONDA_ROOT;
 var resources = process.env.NED_TEST_RESOURCES;
 (0, import_node_test.test)("installed Windows Conda activates, runs literal arguments, reuses the project choice and terminates child processes", { skip: process.platform !== "win32" || !installation || !resources, timeout: 18e4 }, async (t) => {
-  const root = await (0, import_promises4.mkdtemp)(import_node_path5.default.join((0, import_node_os.tmpdir)(), "ned-conda-native-")), project = import_node_path5.default.join(root, "project with spaces");
+  const root = await (0, import_promises4.realpath)(await (0, import_promises4.mkdtemp)(import_node_path5.default.join((0, import_node_os.tmpdir)(), "ned-conda-native-"))), project = import_node_path5.default.join(root, "project with spaces");
   await (0, import_promises4.mkdir)(project);
   let choices = 0, current;
   t.after(async () => {

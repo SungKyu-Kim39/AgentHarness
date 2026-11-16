@@ -1,13 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PythonProjects } from '../distribution/python-projects';
 const installation = process.env.NED_TEST_CONDA_ROOT, resources = process.env.NED_TEST_RESOURCES;
 test('installed Windows Conda activates, runs literal arguments, reuses the project choice and terminates child processes', { skip: process.platform !== 'win32' || !installation || !resources, timeout: 180000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'ned-conda-native-')), project = path.join(root, 'project with spaces'); await mkdir(project);
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'ned-conda-native-'))), project = path.join(root, 'project with spaces'); await mkdir(project);
   let choices = 0, current: PythonProjects | undefined;
   t.after(async () => { await current?.close(); await rm(root, { recursive: true, force: true }); });
   const options = { approve: async () => true, choose: async (_p: string, envs: any[]) => { choices++; const base = envs.find(e => path.resolve(e.prefix).toLowerCase() === path.resolve(installation!).toLowerCase()); assert.ok(base, 'preinstalled Conda base must be found by production discovery'); return base.id; }, knowledge: () => undefined };
