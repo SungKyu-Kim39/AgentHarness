@@ -415,8 +415,7 @@ jobs:
           for(const s of ['About Zed','Quit Zed'])if(exe.includes(Buffer.from(s)))throw Error('Old compiled menu: '+s);
           const files=['Ned-editor-0.3.8-rebuild1.exe','zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz'].map(name=>{const bytes=fs.readFileSync(p.join(folder,name));return {name,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex')}});
           const result={schemaVersion:1,product:'Ned editor',version:'0.3.8',buildRevision:'rebuild1',sourceCommit:process.env.NED_EDITOR_BUILD_SHA,upstreamVersion:'1.28.1',upstreamCommit:'e8bc16acee5ae1937600d571d441c4b5d7b0d288',os:'Windows Server 2022',rust:'1.98.1',profile:'release; upstream bundle config; debug symbols disabled; 2 build jobs',files,windowsGuiAcceptance:false};
-          fs.writeFileSync(p.join(folder,'build.json'),JSON.stringify(result,null,2)+'
-');console.log(JSON.stringify(result));
+          fs.writeFileSync(p.join(folder,'build.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
           '@ | node
           if ($LASTEXITCODE -ne 0) { throw 'Built editor validation failed' }
       - name: Save component artifacts without replacing previous files
