@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.8",
+  "recordedAt": "2026-11-16T12:58:24.569483+00:00",
+  "archive": "Ned-0.3.8-windows-x64.tgz",
+  "bytes": 1837611541,
+  "sha256": "dcc0c46cf970811168770e609c4de9540c00643724cb6986bd57bc8778be951c",
+  "files": 44,
+  "nedSourceArchiveEntries": 1069,
+  "outerPathsAscii": true,
+  "nedSourcePathsAscii": true,
+  "upstreamCorrespondingSourcesPreservedByteForByte": true,
+  "allCorrespondingSourceHashesVerified": true,
+  "sourceCommit": "35e7771c1d5dc731953aa10b436bd2a423c87303",
+  "installerSha256": "860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27",
+  "guidesIncluded": [
+    "LICENSE_POLICY.md",
+    "OPENVIKING_UPDATE.md",
+    "READINESS.json",
+    "THIRD_PARTY_NOTICES.md",
+    "USER_GUIDE.md",
+    "VALIDATION_REPORT.md",
+    "agent-config.json",
+    "compaction-troubleshooting.md",
+    "extension-guide.md",
+    "git-and-binary-analysis.md",
+    "openviking-personal-migration.md",
+    "openviking-studio.md",
+    "python-conda.md"
+  ]
+}
