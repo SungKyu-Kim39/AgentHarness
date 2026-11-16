@@ -27,3 +27,9 @@ OpenViking은 사용자 폴더에서 실행하며 스킬 등록, 선택한 자�
 개발 MCP는 Serena, Git, Playwright, MarkItDown, Chrome DevTools, DuckDB Local 여섯 종입니다. 도구 허용 목록, 파일 경로와 읽기·실행 범위는 호스트에서 검사합니다. 공개 도구 ID는 `ned_host_*`, 제품 표시는 Ned를 사용합니다.
 
 `inspect_build`는 설치된 VS2017/2019와 프로젝트 구성을 읽습니다. `build_project`는 발견한 구성에서 선택한 MSBuild를 고정 인자로 실행하며 네이티브 권한 정책을 따릅니다. 일반 셸, 패키지 설치와 임의 실행 플러그인은 제공하지 않습니다.
+
+## Python과 Conda
+
+`inspect_python`은 고정 설치 위치·Conda 레지스트리와 환경 목록을 조사합니다. `choose_python_environment`는 모델이 고른 ID를 받아 저장하는 도구가 아니라 실제 Ned 선택창을 열고 사용자의 결정을 받습니다. 정규화한 프로젝트 경로별로 선택을 저장하며 환경이 없어진 경우 자동 전환하지 않습니다. 활성 OpenViking에는 선택별 참고 문서를 색인하지만 실행 권한과 인터프리터는 로컬 선택 기록·현재 파일에서 확인합니다.
+
+`run_python`은 고정 배치와 JSON 요청으로 환경을 활성화한 뒤 해당 Python에서 저장된 프로젝트 코드를 실행합니다. 지원 작업은 run·compile·test·wheel·pyinstaller이며 임의 실행 파일·셸·환경 덮어쓰기는 받지 않습니다. 명령 권한과 승인 후 입력 해시를 확인하고 Job Object 감독기로 자식을 소유합니다. 실행이 길어지면 작업 ID를 반환하고 `python_run_status`로 실제 완료를 확인합니다. `stop_python_run`·세션 중지·권한 변경·앱 종료는 소유한 작업을 중지합니다. [사용 안내](python-conda.md)에 상세 범위를 설명합니다.
