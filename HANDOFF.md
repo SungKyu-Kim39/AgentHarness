@@ -2,6 +2,14 @@
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.7 수정 빌드 1**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
+## 진행 중인 0.3.8
+
+`work`에는 요약 출력 한도 복구, OpenViking Studio, 실패 OVPack의 원본 보존 재시도, Git 스테이징·커밋, Ghidra/Java, 전체 권한의 외부 읽기와 프로젝트별 Conda 환경 선택이 있습니다. 0.3.8 설치 파일은 아직 공개하지 않았습니다. 이전 소스의 비공개 후보 EXE는 최신 HTTP 400·Python 변경을 포함하지 않으므로 배포하면 안 됩니다. 최종 소스 커밋에서 `ned:release`와 `bundle:offline`을 다시 실행하고 Windows 검사를 마친 뒤 게시합니다.
+
+첫 대화 HTTP 400의 서버 원인은 아직 미확정입니다. 두 번째 system 메시지 생성은 수정했고 0.3.7용 [호환성·안전한 진단 패치](docs/first-chat-http-400.md)를 공개했습니다. 사용자 로그의 모델 실패와 임베딩 성공은 약 5시간 차이이므로 동시 부하를 원인으로 단정하지 않습니다. 임의의 모델 대기 제한을 추가하지 않습니다.
+
+Conda는 실제 사용자 선택을 `%APPDATA%\Ned\python-projects`에 저장하고 OpenViking에 참고 기록으로 반영합니다. Linux 실제 SDK 색인·검색과 선택/실행기 검사는 통과했습니다. `python-source-probe` Windows 작업은 기존 0.3.7 런타임과 현재 소스만 검사하는 별도 작업이며 0.3.8 설치본 수용 검사로 합산하지 않습니다. [기능 안내](docs/python-conda.md)와 [0.3.8 검증 기록](docs/validation-0.3.8.md)을 이어서 갱신합니다.
+
 ## 현재 수정 빌드
 
 [수정 빌드 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1)를 공개 prerelease로 게시했습니다. 첨부 서버는 작은 체크섬에도 HTTP 401을 반환하므로, EXE·TGZ는 릴리스 본문의 고정 Git LFS 링크에서 받습니다. [릴리스 상태](downloads/Ned-0.3.7-rebuild1-release-state.json)에 공개 페이지·메타데이터 확인과 첨부 실패를 구분해 기록했습니다.
