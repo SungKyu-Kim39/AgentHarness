@@ -140,7 +140,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify file deletion with the installed Windows Node runtime
-        if: env.NED_ARTIFACT_VERSION == '0.3.7-rebuild1'
+        if: always() && env.NED_ARTIFACT_VERSION == '0.3.7-rebuild1' && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'

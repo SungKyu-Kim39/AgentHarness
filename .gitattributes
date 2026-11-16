@@ -3,3 +3,5 @@ vendor/skills/** -whitespace
 .agents/skills/**/references/upstream.md -whitespace
 downloads/*.exe filter=lfs diff=lfs merge=lfs -text
 downloads/*.tgz filter=lfs diff=lfs merge=lfs -text
+# Generated native test fixtures have byte-pinned SHA-256 records.
+downloads/*-windows-*-test.cjs text eol=lf
