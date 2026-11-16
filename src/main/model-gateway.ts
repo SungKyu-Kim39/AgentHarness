@@ -3,6 +3,7 @@ import { request as httpsRequest } from 'node:https';
 import { randomBytes } from 'node:crypto';
 import type { AgentConfig } from '../shared/contracts';
 import { isCompaction, summaryRequest, summaryOutcome, summaryUsage, withSummaryUsage } from './compaction-policy';
+import { classifyModelHttpError, modelRequestShape, modelHttpExplanation } from './model-http-error';
 
 export interface ModelTransport {
   timeout?: unknown;
@@ -14,6 +15,8 @@ export interface ModelFailure {
   elapsedMs: number; requestBytes: number; responseBytes: number; streaming: boolean;
   upstreamStatus?: number; osError?: string;
   attempts?: number;
+  httpError?: ReturnType<typeof classifyModelHttpError>;
+  requestShape?: ReturnType<typeof modelRequestShape>;
 }
 const duration = (value: unknown, fallback: number | false): number | false =>
   value === false ? false : typeof value === 'number' && Number.isInteger(value) && value > 0 && value <= 86400000 ? value : fallback;
@@ -34,12 +37,14 @@ export class ModelGateway {
       const started = Date.now(); const timers = new Map<string, ReturnType<typeof setTimeout>>();
       let upstream: ClientRequest | undefined, finished = false, phase = 'request';
       let requestBytes = 0, responseBytes = 0, streaming = false, upstreamStatus: number | undefined;
+      let httpError: ModelFailure['httpError'], requestShape: ModelFailure['requestShape'];
       const cleanup = () => { for (const t of timers.values()) clearTimeout(t); timers.clear(); this.requests.delete(abort); };
       const fail = (code: string, message: string, http = 502, error?: unknown) => {
         if (finished) return; finished = true; cleanup();
         const osCode = (error as NodeJS.ErrnoException)?.code;
         this.diagnostic?.({ schemaVersion: 1, recordedAt: new Date().toISOString(), code, phase, elapsedMs: Date.now()-started,
           requestBytes, responseBytes, streaming, ...(upstreamStatus ? { upstreamStatus } : {}),
+          ...(httpError ? { httpError } : {}), ...(requestShape ? { requestShape } : {}),
           ...(typeof osCode === 'string' && /^[A-Z0-9_]{1,32}$/.test(osCode) ? { osError: osCode } : {}) });
         upstream?.destroy();
         if (res.destroyed) return;
@@ -70,7 +75,16 @@ export class ModelGateway {
         const withoutThinking = (policy?.disableQwenThinking ?? true) && /qwen/i.test(this.config.model.id);
         if (compacting) body = summaryRequest(original, summaryLimit, false, withoutThinking);
         const guidance = compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
-        if (guidance && Array.isArray(body.messages)) body.messages = [{ role: 'system', content: guidance }, ...body.messages];
+        if (guidance && Array.isArray(body.messages)) {
+          const first = body.messages[0];
+          // Several OpenAI-compatible chat templates accept only one initial
+          // system message. Retain the host policy and append reviewed guidance.
+          if (first?.role === 'system' && typeof first.content === 'string')
+            body.messages = [{ ...first, content: first.content + '\n\n' + guidance }, ...body.messages.slice(1)];
+          else if (first?.role === 'system' && Array.isArray(first.content) && first.content.every((part: any) => part?.type === 'text' && typeof part.text === 'string'))
+            body.messages = [{ ...first, content: [...first.content, { type: 'text', text: guidance }] }, ...body.messages.slice(1)];
+          else body.messages = [{ role: 'system', content: guidance }, ...body.messages];
+        }
         if (abort.signal.aborted) return;
         const target = new URL(this.config.model.baseUrl.replace(/\/$/, '') + '/chat/completions');
         const totalMs = duration(this.transport.timeout, false);
@@ -80,6 +94,7 @@ export class ModelGateway {
         timer('total', totalMs, 'LV_MODEL_TOTAL_TIMEOUT');
         let attempt = 0, previousUsage: unknown;
         const dispatch = (requestBody: unknown) => {
+        requestShape = modelRequestShape(requestBody);
         const bytes = Buffer.from(JSON.stringify(requestBody)); requestBytes = bytes.length;
         const currentAttempt = ++attempt;
         timer('headers', headerMs, 'LV_MODEL_HEADER_TIMEOUT');
@@ -91,7 +106,17 @@ export class ModelGateway {
           const old = timers.get('headers'); if (old) clearTimeout(old); timers.delete('headers');
           upstreamStatus = response.statusCode ?? 502;
           if (upstreamStatus < 200 || upstreamStatus >= 300) {
-            response.resume(); fail('LV_MODEL_HTTP', `사내 모델 HTTP ${upstreamStatus}`, upstreamStatus >= 400 ? upstreamStatus : 502); return;
+            const chunks: Buffer[] = []; let size = 0, reported = false;
+            const report = () => {
+              if (reported || finished || currentAttempt !== attempt) return; reported = true; clearTimeout(errorTimer);
+              httpError = classifyModelHttpError(Buffer.concat(chunks).toString('utf8'));
+              fail('LV_MODEL_HTTP', `사내 모델 HTTP ${upstreamStatus}: ${modelHttpExplanation(httpError.reason)}`, upstreamStatus! >= 400 ? upstreamStatus : 502);
+            };
+            // Only collect an already-rejected HTTP response, never time model generation.
+            const errorTimer = setTimeout(report, 2000);
+            timers.set('http-error', errorTimer);
+            response.on('data', (chunk: Buffer) => { size += chunk.length; responseBytes += chunk.length; if (size <= 65536) chunks.push(chunk); else report(); });
+            response.once('end', report); response.once('error', report); response.once('aborted', report); return;
           }
           phase = 'body';
           const type = String(response.headers['content-type'] ?? 'application/json');

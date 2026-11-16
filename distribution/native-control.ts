@@ -94,7 +94,7 @@ export class NativeRuntime {
         const definition = m.modelKey ? provider?.models[m.modelKey] : undefined;
         const transport = { ...provider?.settings, ...definition?.settings };
         const gateway = new ModelGateway({ ...config, model: m }, { timeout: transport.timeout, headerTimeout: transport.headerTimeout, chunkTimeout: transport.chunkTimeout },
-          event => { void atomicJSON(path.join(this.root, 'model-gateway-status.json'), event).catch(() => {}); },
+          event => { void atomicJSON(path.join(this.root, 'model-gateway-status.json'), { ...event, diagnosticRevision: 1, skillRegistration: this.knowledge?.state().skills?.status ?? 'unavailable', knowledgeRequests: this.knowledge?.modelActivity() ?? { completion: 0, embedding: 0 } }).catch(() => {}); },
           (messages, bytes) => this.tools ? automaticSkillContext(this.tools.skills, messages,
             Math.max(0,Math.min(18000,(definition?.limit?.context ?? 32768)-(definition?.limit?.output ?? 4096)-2048-bytes))) : Promise.resolve(undefined), definition?.limit?.output ?? 4096);
         await gateway.start();

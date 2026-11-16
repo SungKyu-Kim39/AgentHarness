@@ -70,6 +70,7 @@ export class OpenVikingService implements KnowledgeService {
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
   state() { return structuredClone(this.value); }
   localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
+  modelActivity() { return this.gateway?.activity() ?? { completion: 0, embedding: 0 }; }
   async studioConnection(): Promise<{ baseUrl: string; headers: Record<string, string> }> {
     this.ready();
     if (this.maintenance) throw new Error('자료 이관 중에는 Studio를 열 수 없습니다.');

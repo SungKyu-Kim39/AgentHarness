@@ -43,7 +43,7 @@ test('the real model transport activates guidance in the same request without ch
   const response=await fetch(gateway.baseUrl+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+gateway.token},body:JSON.stringify({model:'test',messages,tools,parallel_tool_calls:true,chat_template_kwargs:{enable_thinking:false}})});
   assert.equal(response.status,200);await response.text();assert.equal(calls,1);
   assert.match(received.messages[0].content,/Automatically loaded: diagnosing-bugs/);
-  assert.deepEqual(received.messages.slice(1),messages);assert.deepEqual(received.tools,tools);assert.equal(received.parallel_tool_calls,true);assert.deepEqual(received.chat_template_kwargs,{enable_thinking:false});
+  assert.match(received.messages[0].content,/^Existing host policy\n\n/);assert.deepEqual(received.messages.slice(1),messages.slice(1));assert.equal(received.messages.filter((m:any)=>m.role==='system').length,1);assert.deepEqual(received.tools,tools);assert.equal(received.parallel_tool_calls,true);assert.deepEqual(received.chat_template_kwargs,{enable_thinking:false});
   const replay=await fetch(gateway.baseUrl+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+gateway.token},body:JSON.stringify({model:'test',messages,tool_choice:'none'})});
   assert.equal(replay.status,200);await replay.text();assert.equal(calls,2);assert.deepEqual(received.messages,messages);
 });
