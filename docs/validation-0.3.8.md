@@ -55,3 +55,7 @@ Python 작업은 PC의 기존 Conda 환경을 조사하고 실제 사용자 선�
 첫 Windows 소스 검사에서는 Conda가 선택한 Python을 실제로 실행해 기대한 값과 한글·셸 특수문자 인자를 반환했습니다. 그러나 감독 프로세스의 stdin 감시 daemon이 Python 종료 시 BufferedReader 잠금과 충돌해 성공을 실패로 바꾸는 오류가 나왔습니다. Python 작업용 감독기를 별도 배포하고 출력 flush 뒤 실제 자식 종료 코드를 OS 종료로 전달하도록 수정했습니다. Conda 활성화에 필요한 고정 Windows PowerShell·Wbem 경로도 추가했습니다. 부모 stdin을 열린 채 유지한 자연 종료 0·7 회귀 검사를 통과했으며, 기존 고정 런타임 파일 자체를 무단 수정하지 않습니다.
 
 최신 Linux 전체 회귀 검사는 199건 중 189건 통과·10건 환경별 건너뜀·실패 0건입니다(851.117초). TypeScript와 기본 스킬 66개 검증도 통과했습니다. [Windows 소스 검사 43861408322](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43861408322)에서는 실제 preinstalled Conda 활성화, 공백 경로와 한글/특수문자 인자, 실제 종료 코드, 저장된 환경 재사용과 Job Object의 손자 프로세스 종료를 확인했습니다. 이 검사는 기존 설치본의 실행기와 현재 소스를 조합한 검사이며, 새 0.3.8 설치본 검사는 별도로 기록합니다. 중간 검사의 짧은 Windows 임시 경로와 긴 경로 비교 오류는 실제 경로 정규화로 바로잡았습니다.
+
+첫 0.3.8 설치 후보(`1bc5b3a049c4`)의 [Windows 실행 43863840513](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43863840513)은 설치·SDK 로딩·이관·삭제·Ghidra·대규모 패키지·Conda 검사를 통과했지만 요약·Git fixture가 잘못된 임시/리소스 경로로 실패했습니다. 해당 검사는 경로를 정규화하고 실제 설치 리소스를 사용하도록 수정했습니다. 이 후보를 정식 다운로드로 게시하지 않았습니다.
+
+추가 조사에서는 기존 공통 감독기의 자연 종료 오류도 실제로 재현했습니다. Python 전용 감독기뿐 아니라 Git·빌드·Graphify 등이 공유하는 Ned 소유의 `sidecar-supervisor.py`도 같은 수정으로 교체합니다. 순수 SDK 파일은 그대로 두고 검토한 단일 파일 변경을 최적화 보고서·manifest·release-runtime-lock에 기록합니다. 원본과 다른 배포 manifest를 무단 허용하지 않습니다. 변환은 같은 입력에 재적용해도 기록이 바뀌지 않으며, manifest와 다른 파일은 교체 전에 거절하는 검사도 통과했습니다.

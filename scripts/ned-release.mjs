@@ -6,6 +6,7 @@ import { createHash } from 'node:crypto';
 import { createPackage } from '@electron/asar';
 import { fileHash,verifyManifest } from './installer-audit.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
+import { updateReleaseSupervisor } from './release-supervisor.mjs';
 
 const base={name:'Ned-0.3.6-rebuild1-win-x64.exe',bytes:1176899012,sha256:'4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252',sourceCommit:'5dab50279b91fdb0bb135793df699b57410c6e3d'};
 const json=async file=>JSON.parse(await readFile(file,'utf8'));
@@ -19,6 +20,7 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
  if(!record){
   const lock=await json(lockFile),proof=await json(path.join(staged,'resources/ned/runtime-optimization.json'));
   if(lock.version!==version||lock.baseline.sha256!==base.sha256||lock.optimizerSha256!==await fileHash(path.join(root,'scripts/optimize-runtime.py'))||lock.reportSha256!==await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')))throw Error('Stale prepared runtime; run release-prepare and review its lock first');
+  if(version==='0.3.8'&&lock.supervisorSha256!==await fileHash(path.join(root,'scripts/sidecar-supervisor.py')))throw Error('Stale process supervisor; rebuild and review its runtime manifest');
   if(version==='0.3.8'&&JSON.stringify(lock.ghidraInputs)!==JSON.stringify(await ghidraInputs(root)))throw Error('Stale Ghidra inputs; rebuild and review its runtime manifest');
   for(const [name,item]of Object.entries(lock.components))await verifyManifest(path.join(staged,'resources/runtime/windows-x64',name),item.manifestSha256,name==='mcp');
   return {lock,proof};
@@ -38,7 +40,8 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
   const ghidraManifest=path.join(staged,'resources/runtime/windows-x64/ghidra/manifest.json');
   proof.components.ghidra={originalManifestSha256:await fileHash(ghidraManifest),manifestSha256:await fileHash(ghidraManifest),files:(await json(ghidraManifest)).files.length};
  }
- const lock={schemaVersion:1,version,baseline:base,optimizerSha256:await fileHash(path.join(root,'scripts/optimize-runtime.py')),reportSha256:await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')),components:proof.components,ghidraInputs:await ghidraInputs(root)};
+ const supervisorSha256=version==='0.3.8'?await updateReleaseSupervisor(root,staged,proof):undefined;
+ const lock={schemaVersion:1,version,supervisorSha256,baseline:base,optimizerSha256:await fileHash(path.join(root,'scripts/optimize-runtime.py')),reportSha256:await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')),components:proof.components,ghidraInputs:await ghidraInputs(root)};
  await writeFile(lockFile,JSON.stringify(lock,null,2)+'\n');
  console.log(`Runtime prepared: ${proof.payloadFilesAvoided} file writes and ${proof.installedBytesAvoided} installed bytes avoided.`);
  return {lock,proof};

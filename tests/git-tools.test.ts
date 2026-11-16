@@ -2,14 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { GitTools } from '../distribution/git-tools';
 const exec = promisify(execFile);
 const binary = process.env.NED_TEST_GIT ?? (process.platform === 'win32' ? undefined : '/usr/bin/git');
 async function fixture(t: { after(fn: () => Promise<void>): void }, approve: ConstructorParameters<typeof GitTools>[2] = async () => true) {
-  const root = await mkdtemp(path.join(tmpdir(), 'ned-git-test-')), project = path.join(root, 'project');
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'ned-git-test-'))), project = path.join(root, 'project');
   await mkdir(project); const git = (args: string[]) => exec(binary!, args, { cwd: project, env: { ...process.env, GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: path.join(root, 'missing'), GIT_TERMINAL_PROMPT: '0' } });
   await git(['init', '-b', 'main']); await git(['config', 'user.name', 'Ned Git Fixture']); await git(['config', 'user.email', 'fixture@example.invalid']);
   const tools = new GitTools(root, process.env.NED_TEST_RESOURCES ?? '', approve, async () => {}, binary);

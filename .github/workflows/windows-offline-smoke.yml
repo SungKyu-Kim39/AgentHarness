@@ -11,6 +11,10 @@ on:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
         default: ''
+      runtime_source_probe:
+        description: Validate the reviewed supervisor replacement on the old immutable candidate (not new installer acceptance)
+        type: boolean
+        default: false
   push:
     branches: [work]
     paths:
@@ -138,6 +142,24 @@ jobs:
             realWin10Win11GuiAcceptance=$false
           } | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
           Get-Content windows-offline-smoke.json
+      - name: Apply the reviewed common supervisor for source validation only
+        if: inputs.runtime_source_probe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:NED_CANDIDATE_SOURCE -ne '1bc5b3a049c4eafa7bbd163dd231bd8d5ba5b168') { throw 'Unreviewed source probe donor' }
+          $lock = Get-Content release-runtime-lock.json -Raw | ConvertFrom-Json
+          $resources = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources'
+          $runtime = Join-Path $resources 'runtime\windows-x64\openviking'
+          if ((Get-FileHash (Join-Path $runtime 'manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'd11f6caf6e1b807f74a87213c7a0f9654e2ac6b582ec1c7c4b3765c19edf2cb3') { throw 'Probe donor changed' }
+          if ((Get-FileHash scripts/sidecar-supervisor.py -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.supervisorSha256) { throw 'Supervisor source mismatch' }
+          if ((Get-FileHash downloads/Ned-0.3.8-supervisor-runtime-manifest.json -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.components.openviking.manifestSha256) { throw 'Supervisor manifest mismatch' }
+          Copy-Item scripts/sidecar-supervisor.py (Join-Path $runtime 'sidecar-supervisor.py') -Force
+          Copy-Item downloads/Ned-0.3.8-supervisor-runtime-manifest.json (Join-Path $runtime 'manifest.json') -Force
+          $proof = Get-Content windows-offline-smoke.json -Raw | ConvertFrom-Json
+          $proof | Add-Member -NotePropertyName runtimeSourceOverride -NotePropertyValue $true
+          $proof | Add-Member -NotePropertyName newInstallerAcceptance -NotePropertyValue $false
+          $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Verify 0.5.4 data migration using the installed Windows runtimes
         if: env.NED_ARTIFACT_VERSION != '0.3.7'
         shell: pwsh
@@ -243,7 +265,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: windows-offline-smoke-${{ env.NED_ARTIFACT_VERSION }}
+          name: ${{ inputs.runtime_source_probe && 'windows-runtime-source-probe-0.3.8' || format('windows-offline-smoke-{0}', env.NED_ARTIFACT_VERSION) }}
           path: |
             windows-offline-smoke.json
             windows-namespace-test.txt

@@ -1,0 +1,19 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
+import {updateReleaseSupervisor} from '../scripts/release-supervisor.mjs';
+import {fileHash} from '../scripts/installer-audit.mjs';
+test('reviewed supervisor transformation preserves other runtime bytes and is idempotent; tampering is rejected',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-supervisor-release-')),stage=path.join(root,'stage'),runtime=path.join(stage,'resources/runtime/windows-x64/openviking');
+ t.after(()=>rm(root,{recursive:true,force:true}));
+ await mkdir(path.join(root,'scripts'));await mkdir(runtime,{recursive:true});await mkdir(path.join(stage,'resources/ned'));
+ const target=path.join(runtime,'sidecar-supervisor.py'),source=path.join(root,'scripts/sidecar-supervisor.py');
+ await writeFile(target,'old owner');await writeFile(source,'new reviewed owner');await writeFile(path.join(runtime,'unchanged'),'third party bytes');
+ const original=await fileHash(target),proof={components:{openviking:{originalManifestSha256:'upstream-pinned',manifestSha256:'before',files:2}}};
+ await writeFile(path.join(runtime,'manifest.json'),JSON.stringify({files:[{path:'sidecar-supervisor.py',sha256:original},{path:'unchanged',sha256:await fileHash(path.join(runtime,'unchanged'))}]}));
+ const next=await updateReleaseSupervisor(root,stage,proof);assert.equal(next,await fileHash(source));assert.equal(proof.supervisorUpdate.previousSha256,original);assert.equal(proof.components.openviking.originalManifestSha256,'upstream-pinned');assert.equal(await readFile(path.join(runtime,'unchanged'),'utf8'),'third party bytes');
+ const record=await readFile(path.join(stage,'resources/ned/runtime-optimization.json'),'utf8');await updateReleaseSupervisor(root,stage,proof);assert.equal(await readFile(path.join(stage,'resources/ned/runtime-optimization.json'),'utf8'),record);
+ await writeFile(target,'unexpected replacement');await assert.rejects(updateReleaseSupervisor(root,stage,proof),/pinned runtime manifest/);assert.equal(await readFile(target,'utf8'),'unexpected replacement');
+});

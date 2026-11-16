@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdtemp, mkdir, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, rm, realpath } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -9,7 +9,7 @@ import { NativeRuntime } from '../distribution/native-control';
 import { configSchema } from '../src/shared/contracts';
 const cli = path.resolve(process.env.NED_TEST_ENGINE ?? '.cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode');
 test('real engine compaction recovers from length once and commits only the final summary', { skip: !existsSync(cli), timeout: 90000 }, async t => {
-  const root = await mkdtemp(path.join(tmpdir(), 'ned-compact-')); const project = path.join(root, 'project'); await mkdir(project);
+  const root = await realpath(await mkdtemp(path.join(tmpdir(), 'ned-compact-'))); const project = path.join(root, 'project'); await mkdir(project);
   let summaryCalls = 0; const calls: any[] = [];
   const server = createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
@@ -25,7 +25,7 @@ test('real engine compaction recovers from length once and commits only the fina
     res.end('data: ' + JSON.stringify(chunk({ content }, null)) + '\n\ndata: ' + JSON.stringify(chunk({}, finish)) + '\n\ndata: ' + JSON.stringify({ id: 'test', choices: [], usage: { prompt_tokens: 100, completion_tokens: completion, total_tokens: 100 + completion } }) + '\n\ndata: [DONE]\n\n');
   });
   await new Promise<void>(r => server.listen(0, '127.0.0.1', r));
-  const runtime = new NativeRuntime(path.join(root, 'data'), path.join(root, 'resources'), { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
+  const runtime = new NativeRuntime(path.join(root, 'data'), process.platform === 'win32' ? path.dirname(cli) : path.join(root, 'resources'), { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
   t.after(async () => { await runtime.close(); server.closeAllConnections(); await new Promise<void>(r => server.close(() => r())); await rm(root, { recursive: true, force: true }); });
   await runtime.initialize(configSchema.parse({ model: { providerID: 'p', model: 'm' }, providers: { p: { settings: { baseURL: `http://127.0.0.1:${(server.address() as any).port}/v1`, apiKey: 'synthetic' }, models: { m: { modelID: 'Qwen-test', limit: { context: 32768, output: 4096 } } } } } }));
   await runtime.authorizeProject(project); const connection = await runtime.connection([cli]);

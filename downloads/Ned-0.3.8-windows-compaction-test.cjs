@@ -8973,11 +8973,11 @@ var release_runtime_lock_default = {
     sourceCommit: "5dab50279b91fdb0bb135793df699b57410c6e3d"
   },
   optimizerSha256: "6b9a223237c968bb6669e35429a2f619b8d46716c1c830f497386e4ea7256de3",
-  reportSha256: "f3828cc1c2ff1a02e435297ce5ec5f6f843e62ab33d89e0a6c87b54a4bd6a537",
+  reportSha256: "8b1d4091206bba375e5d603868fb40544c03f4e84461d772b665f52c48e1baf2",
   components: {
     openviking: {
       originalManifestSha256: "bd4d0e02913ce85d78d8b26b4cc016001043982ba280c2793b9bc0cf7a766d71",
-      manifestSha256: "d11f6caf6e1b807f74a87213c7a0f9654e2ac6b582ec1c7c4b3765c19edf2cb3",
+      manifestSha256: "8ee132a83b1bd421620a5b8f4f5ae97c868d2b33a8e2b1a871e001825b2de7a0",
       files: 25295
     },
     mcp: {
@@ -9006,7 +9006,8 @@ var release_runtime_lock_default = {
     "scripts/bundle-ghidra.py": "143686cd4a89d17b9bcbdba34a43a9344f3458bdf1f4602860b5492039d3aa29",
     "scripts/CompileGhidraGuard.java": "692dcdce5c3394580746b1e85824a857241f4c3666f3f661286373668b8b59e6",
     "distribution/NedOfflineNetworkGuard.java": "f88062fdb7dabbdb416bfdf1b8e320f538aef643d3d34fa308595badcaa25e0a"
-  }
+  },
+  supervisorSha256: "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7"
 };
 
 // src/main/runtime-pins.ts
@@ -13849,7 +13850,7 @@ var NativeRuntime = class {
 // tests/compaction.integration.test.ts
 var cli = import_node_path20.default.resolve(process.env.NED_TEST_ENGINE ?? ".cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode");
 (0, import_node_test.test)("real engine compaction recovers from length once and commits only the final summary", { skip: !(0, import_node_fs5.existsSync)(cli), timeout: 9e4 }, async (t) => {
-  const root = await (0, import_promises19.mkdtemp)(import_node_path20.default.join((0, import_node_os.tmpdir)(), "ned-compact-"));
+  const root = await (0, import_promises19.realpath)(await (0, import_promises19.mkdtemp)(import_node_path20.default.join((0, import_node_os.tmpdir)(), "ned-compact-")));
   const project = import_node_path20.default.join(root, "project");
   await (0, import_promises19.mkdir)(project);
   let summaryCalls = 0;
@@ -13873,7 +13874,7 @@ var cli = import_node_path20.default.resolve(process.env.NED_TEST_ENGINE ?? ".ca
     res.end("data: " + JSON.stringify(chunk({ content: content2 }, null)) + "\n\ndata: " + JSON.stringify(chunk({}, finish)) + "\n\ndata: " + JSON.stringify({ id: "test", choices: [], usage: { prompt_tokens: 100, completion_tokens: completion, total_tokens: 100 + completion } }) + "\n\ndata: [DONE]\n\n");
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
-  const runtime = new NativeRuntime(import_node_path20.default.join(root, "data"), import_node_path20.default.join(root, "resources"), { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: (b) => b.toString() });
+  const runtime = new NativeRuntime(import_node_path20.default.join(root, "data"), process.platform === "win32" ? import_node_path20.default.dirname(cli) : import_node_path20.default.join(root, "resources"), { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: (b) => b.toString() });
   t.after(async () => {
     await runtime.close();
     server.closeAllConnections();
