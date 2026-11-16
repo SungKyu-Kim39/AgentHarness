@@ -1,0 +1,88 @@
+name: Publish verified Ned release assets
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Immutable artifact version
+        required: true
+        default: '0.3.8'
+      validation_run:
+        description: Successful Windows offline smoke run ID
+        required: true
+permissions:
+  contents: write
+  actions: read
+jobs:
+  upload:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      NED_VERSION: ${{ inputs.version }}
+      NED_VALIDATION_RUN: ${{ inputs.validation_run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          lfs: false
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify published files and Windows validation
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readFile, mkdir, writeFile,copyFile} from 'node:fs/promises';
+          import {createReadStream,createWriteStream} from 'node:fs';
+          import {Readable} from 'node:stream';
+          import {pipeline} from 'node:stream/promises';
+          import {createHash} from 'node:crypto';
+          import {execFileSync} from 'node:child_process';
+          const version=process.env.NED_VERSION;
+          if(version!=='0.3.8'||!/^\d+$/.test(process.env.NED_VALIDATION_RUN))throw Error('Unreviewed release inputs');
+          const validation=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/actions/runs/${process.env.NED_VALIDATION_RUN}`],{encoding:'utf8'}));
+          if(validation.conclusion!=='success'||validation.path!=='.github/workflows/windows-offline-smoke.yml'||validation.head_branch!=='work')throw Error('Windows validation did not succeed');
+          const artifacts=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/actions/runs/${process.env.NED_VALIDATION_RUN}/artifacts`],{encoding:'utf8'}));
+          if(!artifacts.artifacts.some(a=>a.name==='windows-offline-smoke-'+version&&!a.expired&&a.size_in_bytes>0))throw Error('Windows validation artifact version mismatch');
+          const prefix='Ned-'+version;
+          const audit=JSON.parse(await readFile('downloads/'+prefix+'-installer-audit.json'));
+          const bundle=JSON.parse(await readFile('downloads/'+prefix+'-bundle-manifest.json'));
+          if(audit.version!==version||bundle.version!==version||audit.sourceCommit!==bundle.sourceCommit)throw Error('Inconsistent release provenance');
+          const tag=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/commits/v${version}`],{encoding:'utf8'}));
+          if(tag.sha!==audit.sourceCommit||bundle.installer.sha256!==audit.installer.sha256||audit.payloadComparison?.allStagedBytesVerified!==true)throw Error('Tag or complete installer provenance mismatch');
+          execFileSync('git',['merge-base','--is-ancestor',validation.head_sha,process.env.GITHUB_SHA]);
+          execFileSync('git',['diff','--exit-code',validation.head_sha,process.env.GITHUB_SHA,'--','downloads/'+prefix+'-win-x64.exe','downloads/'+prefix+'-installer-audit.json']);
+          await mkdir('release-assets');
+          const files=[prefix+'-win-x64.exe',prefix+'-windows-x64.tgz',prefix+'-win-x64.exe.sha256',prefix+'-windows-x64.tgz.sha256',prefix+'-installer-audit.json',prefix+'-bundle-manifest.json',prefix+'-payload-manifest.json'];
+          const hash=async file=>{const h=createHash('sha256');for await(const b of createReadStream(file))h.update(b);return h.digest('hex');};
+          for(const file of files){
+            if(file.endsWith('.exe')||file.endsWith('.tgz')){
+              const response=await fetch(`https://media.githubusercontent.com/media/${process.env.GH_REPO}/${process.env.GITHUB_SHA}/downloads/${file}`);
+              if(!response.ok)throw Error('Download failed: '+file);
+              await pipeline(Readable.fromWeb(response.body),createWriteStream('release-assets/'+file));
+            }else await copyFile('downloads/'+file,'release-assets/'+file);
+            const actual=await hash('release-assets/'+file);
+            const expected=file.endsWith('-win-x64.exe')?audit.installer.sha256:file.endsWith('-windows-x64.tgz')?bundle.sha256:await hash('downloads/'+file);
+            if(actual!==expected)throw Error('Hash mismatch: '+file);
+            console.log(file,actual);
+          }
+          await writeFile('release-assets/list.json',JSON.stringify(files));
+          JS
+      - name: Upload without replacing existing assets
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import {readFile} from 'node:fs/promises';
+          import {createReadStream} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          import {execFileSync} from 'node:child_process';
+          const tag='v'+process.env.NED_VERSION;
+          const release=JSON.parse(execFileSync('gh',['api',`repos/${process.env.GH_REPO}/releases/tags/${tag}`],{encoding:'utf8'}));
+          if(release.draft)throw Error('Publish the verified release notes first');
+          const files=JSON.parse(await readFile('release-assets/list.json'));
+          for(const file of files){
+            const old=release.assets.find(a=>a.name===file);
+            if(old){const h=createHash('sha256');for await(const b of createReadStream('release-assets/'+file))h.update(b);if(old.digest!=='sha256:'+h.digest('hex'))throw Error('Existing asset differs: '+file);continue;}
+            execFileSync('gh',['release','upload',tag,'release-assets/'+file],{stdio:'inherit'});
+          }
+          console.log('Immutable release assets uploaded.');
+          JS
