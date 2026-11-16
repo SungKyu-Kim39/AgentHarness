@@ -287,7 +287,7 @@ export class NativeRuntime {
       this.tools?.close(), this.stopEngine(), this.knowledge?.close(), this.zedModels?.close(),
       ...this.models.map(m => m.gateway.close()),
     ]);
-    this.tools = undefined; this.models = [];
+    this.tools = undefined; this.models = []; this.zedModels = undefined;
     if (results.some(result => result.status === 'rejected')) {
       this.shutdownUnconfirmed = true;
       throw new Error('일부 서비스 종료를 확인하지 못했습니다. 새 실행을 차단합니다.');

@@ -55,4 +55,5 @@ test('closing a queued native model request reaches the upstream and leaves no p
  const f=await fixture(t);f.queue();const pending=fetch(f.connection.baseUrl+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+f.connection.token},body:JSON.stringify({model:f.connection.defaultModel,messages:[]})});
  const caught=assert.rejects(pending);await f.entered;const ports=f.broker.ports();await f.broker.close();await caught;await f.cancelled;
  for(const port of ports)await assert.rejects(fetch('http://127.0.0.1:'+port));
+ await assert.rejects(f.broker.start(),/중지/);
 });

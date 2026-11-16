@@ -13381,6 +13381,7 @@ var ZedModels = class {
   stopped = false;
   ready;
   start() {
+    if (this.stopped) return Promise.reject(Error("Zed \uBAA8\uB378 \uC5F0\uACB0\uC744 \uC911\uC9C0\uD588\uC2B5\uB2C8\uB2E4."));
     return this.ready ??= this.boot();
   }
   async boot() {
@@ -13988,6 +13989,7 @@ var NativeRuntime = class {
     ]);
     this.tools = void 0;
     this.models = [];
+    this.zedModels = void 0;
     if (results.some((result) => result.status === "rejected")) {
       this.shutdownUnconfirmed = true;
       throw new Error("\uC77C\uBD80 \uC11C\uBE44\uC2A4 \uC885\uB8CC\uB97C \uD655\uC778\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uC0C8 \uC2E4\uD589\uC744 \uCC28\uB2E8\uD569\uB2C8\uB2E4.");

@@ -22,7 +22,7 @@ export class ZedModels {
   private stopped=false;
   private ready?: Promise<ZedConnection>;
   constructor(private config:AgentConfig,private diagnostic?:(failure:ModelFailure)=>void){}
-  start(){return this.ready??=this.boot();}
+  start(){if(this.stopped)return Promise.reject(Error('Zed 모델 연결을 중지했습니다.'));return this.ready??=this.boot();}
   private async boot():Promise<ZedConnection>{
     const models=this.config.models??[{...this.config.model,name:this.config.model.id}];
     const entries=new Map<string,{id:string;gateway:ModelGateway;options:Record<string,unknown>}>();
