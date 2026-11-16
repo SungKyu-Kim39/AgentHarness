@@ -1,23 +1,39 @@
 import path from 'node:path';
 import { mkdir } from 'node:fs/promises';
-import { createServer, type Server } from 'node:http';
+import { createServer, request, type ClientRequest, type Server } from 'node:http';
+import type { ZedConnection } from './zed-models';
 import { agentLaunch } from './agent-launch';
 import { ensureEditorInstructions } from './editor-instructions';
 import { editorPreferences, ensureEditorKeymap, writeEditorPreferences } from './editor-preferences';
 
-/** All managed editor HTTP and CONNECT requests are denied. Agent traffic uses stdio. */
+/** Editor HTTP is limited to the run-owned native-agent model endpoint. */
 export class EditorNetwork {
   private server?: Server;
-  async start() {
-    this.server = createServer((_req, res) => res.writeHead(403).end('Ned offline editor'));
+  private active = new Set<ClientRequest>();
+  async start(modelBaseUrl?: string) {
+    const allowed = modelBaseUrl ? new URL(modelBaseUrl) : undefined;
+    if (allowed && (allowed.protocol !== 'http:' || allowed.hostname !== '127.0.0.1' || allowed.pathname !== '/v1' || allowed.username || allowed.password || allowed.search || allowed.hash)) throw new Error('앱 소유의 로컬 Zed 모델 주소만 허용합니다.');
+    this.server = createServer((req, res) => {
+      let target: URL;
+      try { target = new URL(req.url ?? ''); } catch { res.writeHead(403).end(); return; }
+      if (!allowed || req.method !== 'POST' || target.origin !== allowed.origin || target.pathname !== '/v1/chat/completions' || target.search || target.hash || target.username || target.password) { res.writeHead(403).end('Ned offline editor'); return; }
+      const operation = request(allowed.origin + '/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(req.headers.authorization ? { Authorization: req.headers.authorization } : {}) } }, response => {
+        res.writeHead(response.statusCode ?? 502, { 'Content-Type': response.headers['content-type'] ?? 'application/json', 'Cache-Control': 'no-store' });
+        response.on('error', () => res.destroy()); response.pipe(res);
+      });
+      this.active.add(operation); operation.once('close', () => this.active.delete(operation));
+      operation.on('error', () => { if (!res.headersSent) res.writeHead(502).end(); else res.destroy(); });
+      res.once('close', () => operation.destroy()); req.once('aborted', () => operation.destroy()); req.pipe(operation);
+    });
+    this.server.requestTimeout = 0;
     this.server.on('connect', (_req, socket) => { socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n', () => socket.destroy()); });
     await new Promise<void>((resolve, reject) => { this.server!.once('error', reject); this.server!.listen(0, '127.0.0.1', resolve); });
     const address = this.server.address(); if (!address || typeof address === 'string') throw new Error('Editor proxy failed');
     return 'http://127.0.0.1:' + address.port;
   }
-  async close() { this.server?.closeAllConnections(); await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); }); }
+  async close() { for (const operation of this.active) operation.destroy(); this.server?.closeAllConnections(); await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); }); }
 }
-export function editorSettings(executable: string, agent: string, descriptor: string, proxy: string, clangd?: string, platform: NodeJS.Platform = process.platform) {
+export function editorSettings(executable: string, agent: string, descriptor: string, proxy: string, clangd?: string, platform: NodeJS.Platform = process.platform, native?: Pick<ZedConnection, 'baseUrl' | 'models' | 'defaultModel'>) {
   return {
     telemetry: { diagnostics: false, metrics: false }, auto_update: false,
     restore_on_startup: 'launchpad',
@@ -36,20 +52,21 @@ export function editorSettings(executable: string, agent: string, descriptor: st
     lsp: clangd ? { clangd: { binary: { path: clangd, arguments: ['--background-index', '--clang-tidy=false'], ignore_system_version: false } } } : {},
     collaboration_panel: { button: false }, notification_panel: { button: false },
     title_bar: { show_onboarding_banner: false, show_sign_in: false },
-    agent: { default_profile: 'ask', enable_feedback: false },
+    agent: { default_profile: native ? 'write' : 'ask', enable_feedback: false, ...(native ? { default_model: { provider: 'Intranet', model: native.defaultModel }, profiles: Object.fromEntries(['write', 'ask', 'minimal'].map(id => [id, { enable_all_context_servers: false, context_servers: {}, tools: { fetch: false, search_web: false } }])) } : {}) },
+    ...(native ? { language_models: { openai_compatible: { Intranet: { api_url: native.baseUrl, available_models: native.models } } } } : {}),
     agent_servers: { Ned: { type: 'custom', ...agentLaunch(executable, agent, descriptor) } },
     context_servers: {}, session: { trust_all_worktrees: false, restore_unsaved_buffers: true }, prettier: { allowed: false },
     // No per-user shell startup or shell environment extraction for the agent.
     load_direnv: 'disabled',
   };
 }
-export async function prepareEditor(root: string, executable: string, resources: string, descriptor: string, proxy: string) {
+export async function prepareEditor(root: string, executable: string, resources: string, descriptor: string, proxy: string, native?: ZedConnection) {
   const data = path.join(root, 'editor'), home = path.join(data, 'home');
   await mkdir(path.join(data, 'config'), { recursive: true, mode: 0o700 });
   await ensureEditorInstructions(path.join(data, 'config'));
   for (const directory of ['home', 'home/AppData/Local', 'home/AppData/Roaming', 'home/AppData/LocalLow', 'home/Desktop', 'home/Documents', 'home/Downloads', 'roaming', 'local', 'config-home', 'data', 'cache', 'state', 'tmp']) await mkdir(path.join(data, directory), { recursive: true, mode: 0o700 });
   const clangd = process.platform === 'win32' ? path.join(resources, 'runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe') : undefined;
-  const settings = await editorPreferences(data,editorSettings(executable,path.join(resources,'ned/agent.cjs'),descriptor,proxy,clangd));
+  const settings = await editorPreferences(data,editorSettings(executable,path.join(resources,'ned/agent.cjs'),descriptor,proxy,clangd,process.platform,native));
   await writeEditorPreferences(path.join(data,'config/settings.json'),settings);
   await ensureEditorKeymap(path.join(data,'config/keymap.json'));
   const env: NodeJS.ProcessEnv = {};
@@ -63,5 +80,6 @@ export async function prepareEditor(root: string, executable: string, resources:
     TEMP: path.join(data, 'tmp'), TMP: path.join(data, 'tmp'),
     HTTP_PROXY: proxy, HTTPS_PROXY: proxy, ALL_PROXY: proxy, http_proxy: proxy, https_proxy: proxy, all_proxy: proxy, NO_PROXY: '', no_proxy: '',
     DO_NOT_TRACK: '1', OTEL_SDK_DISABLED: 'true',
+    ...(native ? { INTRANET_API_KEY: native.token } : {}),
   } };
 }

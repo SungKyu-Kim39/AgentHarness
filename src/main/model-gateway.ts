@@ -28,7 +28,7 @@ export class ModelGateway {
   private server?: Server;
   private requests = new Set<AbortController>();
   constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void,
-    private skillContext?: (messages: unknown, requestBytes: number) => Promise<string | undefined>, private outputLimit = 4096) {}
+    private skillContext?: (messages: unknown, requestBytes: number) => Promise<string | undefined>, private outputLimit = 4096, private behavior: 'ned' | 'native' = 'ned') {}
   async start() {
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== `Bearer ${this.token}`) { res.writeHead(401).end(); return; }
@@ -69,12 +69,12 @@ export class ModelGateway {
         try { body = JSON.parse(Buffer.concat(chunks).toString()); }
         catch { fail('LV_MODEL_REQUEST_JSON', '모델 요청 JSON이 올바르지 않습니다.', 400); return; }
         if (body?.model !== this.config.model.id) { finished = true; cleanup(); res.writeHead(403).end(); return; }
-        const compacting = isCompaction(body), policy = this.config.compaction;
+        const compacting = this.behavior === 'ned' && isCompaction(body), policy = this.config.compaction;
         const summaryLimit = Math.min(this.outputLimit, policy?.maxOutputTokens ?? 8192);
         const original = body;
         const withoutThinking = (policy?.disableQwenThinking ?? true) && /qwen/i.test(this.config.model.id);
         if (compacting) body = summaryRequest(original, summaryLimit, false, withoutThinking);
-        const guidance = compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
+        const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
         if (guidance && Array.isArray(body.messages)) {
           const first = body.messages[0];
           // Several OpenAI-compatible chat templates accept only one initial

@@ -57,6 +57,14 @@ export async function editorPreferences(data: string, managed: Record<string, an
       for (const [language,settings] of Object.entries(value)) desired.languages[language] = { ...desired.languages[language], ...(settings as object) };
     } else desired[key] = object(value) ? { ...desired[key], ...value } : value;
   }
+  // Retain native Zed choices only while they still name a managed model.
+  const native = managed.language_models?.openai_compatible?.Intranet;
+  if (native && chosen.language_models?.openai_compatible?.Intranet && object(chosen.agent)) {
+    if (['write','ask','minimal'].includes(chosen.agent.default_profile)) desired.agent.default_profile=chosen.agent.default_profile;
+    const selected=chosen.agent.default_model;
+    if (object(selected) && selected.provider==='Intranet' && native.available_models.some((m: any)=>m.name===selected.model))
+      desired.agent.default_model=Object.fromEntries(['provider','model','enable_thinking','effort','speed'].filter(k=>Object.hasOwn(selected,k)).map(k=>[k,selected[k]]));
+  }
   const bom=original?.startsWith('\ufeff')?'\ufeff':'';
   let updated=(original ?? '{}\n').slice(bom.length);
   if (!parseTree(updated,[],{allowTrailingComma:true,allowEmptyContent:true})) updated+='\n{}\n';

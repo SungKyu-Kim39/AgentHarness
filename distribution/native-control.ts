@@ -11,6 +11,7 @@ import { HostTools, hostTools, type EditDecision } from './host-tools';
 import { SidecarProxy } from './sidecar-proxy';
 import { managedResource } from './ned/resources';
 import { koreanInstructions } from './ned/editor-instructions';
+import { ZedModels } from './ned/zed-models';
 import { permissionMode, type PermissionPolicy } from './ned/permission-policy';
 import type { PythonSelector } from './python-projects';
 import { automaticSkillContext, automaticSkillPolicy } from '../src/main/skill-routing';
@@ -66,6 +67,7 @@ export class NativeRuntime {
   readonly vault: ConfigVault;
   private models: ModelBinding[] = [];
   private knowledge?: OpenVikingService;
+  private zedModels?: ZedModels;
   private child?: ChildProcessWithoutNullStreams;
   private current?: Credentials;
   private backend?: Credentials;
@@ -112,7 +114,7 @@ export class NativeRuntime {
       this.tools = new HostTools(this.root, this.resources, { project: id => this.sessionProject(id), request: id => this.sessionRequest(id), permissionSignal: () => this.permissions?.signal, fullAccess: () => this.permissions?.mode === 'full', approve: (message, detail, signal) => this.approveOperation(redactor.text(message), redactor.text(detail), signal), approveEdit: (message, detail, signal) => this.approveFile(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor, validateEdit: (session, project, proposal, signal) => this.editorCheck?.(session, project, proposal, signal) ?? Promise.resolve(),
         choosePython: (project, environments, signal) => this.pythonSelector ? this.pythonSelector(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창을 사용할 수 없습니다.')),
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
-        reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
+        reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...(this.zedModels?.ports() ?? []), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
       });
       await this.tools.start();
       const skillDirectory = managedResource(this.resources, 'skills');
@@ -123,6 +125,11 @@ export class NativeRuntime {
       if (config.openViking?.enabled && this.knowledge.state().status !== 'ready')
         throw new Error(this.knowledge.state().message ?? 'OpenViking을 시작할 수 없습니다.');
     } catch (error) { await this.close(); throw error; }
+  }
+  async zedConnection() {
+    if (!this.config || this.shutdownUnconfirmed) throw new Error('모델 설정을 먼저 확인하세요.');
+    this.zedModels ??= new ZedModels(this.config, event => { void atomicJSON(path.join(this.root, 'zed-model-status.json'), { ...event, source: 'zed-native' }).catch(() => {}); });
+    return this.zedModels.start();
   }
   async retryKnowledgeSkills() { if (!this.knowledge) throw new Error('OpenViking 설정이 필요합니다.'); await this.knowledge.retryBundledSkills(); }
   async studioConnection() { if (!this.knowledge) throw new Error('OpenViking 설정이 필요합니다.'); return this.knowledge.studioConnection(); }
@@ -277,7 +284,7 @@ export class NativeRuntime {
   }
   async close() {
     const results = await Promise.allSettled([
-      this.tools?.close(), this.stopEngine(), this.knowledge?.close(),
+      this.tools?.close(), this.stopEngine(), this.knowledge?.close(), this.zedModels?.close(),
       ...this.models.map(m => m.gateway.close()),
     ]);
     this.tools = undefined; this.models = [];

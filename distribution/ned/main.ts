@@ -137,8 +137,9 @@ async function start() {
   });
   const descriptor = await owner.start();
   runtime.setEditorCheck((session, directory, proposal, signal) => owner!.checkBuffer(session, directory, proposal, signal));
-  const proxy = await network.start();
-  const profile = await prepareEditor(root, process.execPath, resources, descriptor, proxy);
+  const nativeZed = await runtime.zedConnection();
+  const proxy = await network.start(nativeZed.baseUrl);
+  const profile = await prepareEditor(root, process.execPath, resources, descriptor, proxy, nativeZed);
   const binary = path.join(resources, process.platform === 'win32' ? 'zed/Zed.exe' : 'zed/zed.app/libexec/zed-editor');
   await access(binary);
   const icon = path.join(resources, 'ned', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
