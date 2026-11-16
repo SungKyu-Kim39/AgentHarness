@@ -10,6 +10,7 @@ import { VisualStudioBuild } from './vs-build';
 import { GitTools } from './git-tools';
 import { ExternalRead } from './external-read';
 import { ReaGhidra } from './rea-ghidra';
+import { PythonProjects, type PythonSelector } from './python-projects';
 import { ProjectFiles } from '../src/main/files';
 import { atomicJSON, Redactor } from '../src/main/config';
 import { OfflineSkills } from '../src/main/skills';
@@ -43,6 +44,11 @@ export const hostTools: ToolSpec[] = [
   { name: 'build_project', description: 'Run an inspected VS2017/2019 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.', inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: 'integer', minimum: 0 } }, ['target', 'configuration', 'platform', 'toolchain']) },
   { name: 'git_stage', description: 'Stage explicit project file paths with bundled Git under the native command permission policy. Supports additions, modifications and tracked deletions. Preserves other staged files. No hooks, shell, custom/LFS filters or network. Stages approved file bytes without EOL conversion.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 } }, ['paths']) },
   { name: 'git_commit', description: 'Commit only the explicit selected staged paths. Preserves other staged changes. Native command permission policy applies. Author comes from repository-local user.name/user.email or user-provided author, never invent it. No hooks, signing, push or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 }, message: string, author: object({ name: string, email: string }, ['name', 'email']) }, ['paths', 'message']) },
+  { name: 'inspect_python', description: 'Discover existing Conda installations/environments in fixed OS locations, installation registry and .conda/environments.txt. Uses offline conda info only after native command permission. Does not install anything or use the bundled OpenViking Python for project execution.', inputSchema: object({}) },
+  { name: 'choose_python_environment', description: 'Ask the USER in a native Ned selection window which existing Conda environment this project should keep using. Full execution permission does not answer this choice. Reuses the saved choice unless replace=true for an explicit user environment-change request. Mirrors the choice to project OpenViking knowledge; knowledge text never grants execution authority.', inputSchema: object({ replace: { type: 'boolean' } }) },
+  { name: 'run_python', description: 'Activate the user-selected Conda environment and start a project Python task under native command permission. Returns a job ID; use python_run_status to verify completion and exit code. Actions: run .py script, compile .py, test with installed pytest, wheel with installed build --no-isolation, or package a .py with installed PyInstaller. No dependency installation, arbitrary interpreter, shell or environment override. Args are JSON data, never inserted into a shell command.', inputSchema: object({ action: { type: 'string', enum: ['run', 'compile', 'test', 'wheel', 'pyinstaller'] }, script: string, args: { type: 'array', items: string, maxItems: 100 }, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }, ['action']) },
+  { name: 'python_run_status', description: 'Read a Python job owned by this conversation/project; omit id to recover this session/project’s job list. Optionally wait up to 30 seconds. running is not success. Returns confirmed exit code and bounded output when finished.', inputSchema: object({ id: string, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }) },
+  { name: 'stop_python_run', description: 'Stop one Python job owned by this conversation/project and confirm child process termination. Does not stop unrelated Python, Conda or OpenViking processes.', inputSchema: object({ id: string }, ['id']) },
   ...extensionTools,
   ...desktopTools,
 ];
@@ -66,11 +72,14 @@ export class HostTools {
   readonly desktop: DesktopTools;
   readonly git: GitTools;
   readonly ghidra: ReaGhidra;
+  readonly python: PythonProjects;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
     fullAccess?: () => boolean;
+    choosePython?: PythonSelector;
+    locateConda?: (project: string, signal?: AbortSignal) => Promise<string | undefined>;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
     validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
@@ -84,6 +93,7 @@ export class HostTools {
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
     this.git = new GitTools(root, resources, options.approve, () => this.extensions.verifyRuntime());
     this.ghidra = new ReaGhidra(root, resources, options.approve);
+    this.python = new PythonProjects(root, resources, { approve: options.approve, choose: (project, environments, signal) => options.choosePython ? options.choosePython(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창이 연결되지 않았습니다.')), locate: options.locateConda, knowledge: options.knowledge, permissionSignal: options.permissionSignal });
   }
   async start() {
     await this.skills.load();
@@ -136,6 +146,16 @@ export class HostTools {
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
+    if (name === 'inspect_python') { z.object({}).strict().parse(args); return JSON.stringify(await this.python.inspect(project, signal)); }
+    if (name === 'choose_python_environment') { const input = z.object({ replace: z.boolean().default(false) }).strict().parse(args); return JSON.stringify(await this.python.choose(project, input.replace, signal)); }
+    if (name === 'run_python') {
+      const input = z.object({ action: z.enum(['run', 'compile', 'test', 'wheel', 'pyinstaller']), script: pathArg.optional(), args: z.array(z.string().max(4096).refine(s => !s.includes('\0'))).max(100).default([]), waitMs: z.number().int().min(0).max(30000).default(15000) }).strict().parse(args);
+      const request = await this.options.request?.(session);
+      const current = async () => this.accepting && !this.cancelled.has(session) && this.runs.get(session) === run && await this.options.project(session) === project && (!this.options.request || await this.options.request(session) === request);
+      return JSON.stringify(await this.python.start(session, project, input, signal, current));
+    }
+    if (name === 'python_run_status') { const input = z.object({ id: z.string().uuid().optional(), waitMs: z.number().int().min(0).max(30000).default(30000) }).strict().parse(args); return JSON.stringify(input.id ? await this.python.status(session, project, input.id, input.waitMs, signal) : this.python.list(session, project)); }
+    if (name === 'stop_python_run') { const input = z.object({ id: z.string().uuid() }).strict().parse(args); return JSON.stringify(await this.python.stop(session, project, input.id)); }
     if (name === 'rea_ghidra') {
       const input = z.object({ path: pathArg, operation: z.enum(['functions', 'decompile', 'assembly', 'callers', 'callees', 'references', 'info']), procedure: z.string().min(1).max(1024).optional() }).strict().parse(args);
       return this.ghidra.call(session, project, input, signal);
@@ -292,7 +312,7 @@ export class HostTools {
     this.revokeEditApproval();
     this.accepting = false; this.editGrant = undefined; this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
-    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close()]); }
+    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close(), this.python.close()]); }
     finally {
       for (const child of this.children) child.kill('SIGKILL');
       await Promise.allSettled(this.active);
@@ -304,9 +324,11 @@ export class HostTools {
     if (this.sessionEditGrant?.session === session) this.revokeEditApproval();
     void this.desktop.cancel(session).catch(() => {});
     void this.ghidra.cancel(session).catch(() => {});
+    this.python.cancel(session);
     this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
     for (const child of this.children) child.kill('SIGKILL');
   }
   resumeSession(session: string) { if(this.sessionEditGrant && this.sessionEditGrant.session!==session)this.revokeEditApproval(); this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
+  waitPythonStop(session: string) { return this.python.stopped(session); }
 }

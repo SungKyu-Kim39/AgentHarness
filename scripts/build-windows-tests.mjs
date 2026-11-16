@@ -9,6 +9,7 @@ const entries = {
   delete: ['tests/delete-file.test.ts'],
   compaction: ['tests/compaction.integration.test.ts'],
   native: ['tests/git-tools.test.ts', 'tests/external-read.test.ts', 'tests/personal-pack-recovery.test.ts', 'tests/ghidra-network.test.ts', 'tests/rea-ghidra.integration.test.ts'],
+  python: ['tests/python-windows.integration.test.ts'],
 };
 for (const [name, files] of Object.entries(entries)) {
   const output = `downloads/Ned-${version}-windows-${name}-test.cjs`;

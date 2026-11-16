@@ -6937,6 +6937,51 @@ async function atomicJSON(file, value) {
 // src/main/openviking-gateway.ts
 var import_node_http2 = require("node:http");
 var import_node_crypto2 = require("node:crypto");
+
+// src/main/model-http-error.ts
+var fields = ["messages", "tools", "tool_choice", "parallel_tool_calls", "max_tokens", "max_completion_tokens", "reasoning_effort", "chat_template_kwargs", "response_format", "stream", "stream_options", "temperature", "model"];
+function modelRequestShape(body) {
+  const messages = Array.isArray(body?.messages) ? body.messages : [];
+  const roles = Object.fromEntries(["system", "developer", "user", "assistant", "tool"].map((role) => [role, messages.filter((m) => m?.role === role).length]));
+  return {
+    messages: messages.length,
+    roles,
+    tools: Array.isArray(body?.tools) ? body.tools.length : 0,
+    fields: fields.filter((field) => Object.hasOwn(body ?? {}, field)),
+    streaming: body?.stream === true,
+    ...Number.isSafeInteger(body?.max_tokens) ? { maxTokens: body.max_tokens } : {},
+    ...Number.isSafeInteger(body?.max_completion_tokens) ? { maxCompletionTokens: body.max_completion_tokens } : {}
+  };
+}
+function classifyModelHttpError(raw) {
+  let value;
+  try {
+    value = JSON.parse(raw.slice(0, 65536));
+  } catch {
+    return { reason: "unclassified" };
+  }
+  const error = value?.error ?? value;
+  const text = [error?.message, error?.type, typeof error?.code === "string" ? error.code : void 0].filter((v) => typeof v === "string").join(" ").slice(0, 16e3).toLowerCase();
+  const param = typeof error?.param === "string" && fields.includes(error.param) ? error.param : void 0;
+  const reason = /too many|overload|server.{0,16}busy|concurren|queue.{0,30}(?:full|limit|exceed)|rate.?limit|capacity.{0,16}(?:exceed|limit)|max_num_seqs/.test(text) ? "capacity" : /out of memory|insufficient.{0,16}memory|kv.?cache.{0,30}(?:full|space|memory|exceed)/.test(text) ? "memory" : /context.{0,30}(?:length|limit|window)|input.{0,20}token.{0,20}(?:exceed|limit|long)|prompt.{0,20}(?:too long|exceed)/.test(text) ? "context-limit" : /max_(?:completion_)?tokens.{0,60}(?:exceed|greater|less|must|limit|maximum)|max.?output.?tokens/.test(text) ? "output-limit" : /(?:system|developer).{0,40}(?:message|role)|roles? must alternate|chat.{0,12}template/.test(text) ? "message-format" : /tool.{0,50}(?:schema|parser|choice|required|support|invalid)|function.{0,25}(?:schema|name|invalid)/.test(text) ? "tool-format" : /model.{0,50}(?:not found|does not exist|unknown|invalid|not available)/.test(text) ? "model-id" : /extra inputs|extra_forbidden|unsupported|unknown parameter|unrecognized|not permitted|unexpected keyword|reasoning_effort/.test(text) ? "unsupported-option" : /unauthori|api.?key|authentication|permission denied/.test(text) ? "authentication" : "unclassified";
+  return { reason, ...param ? { field: param } : {} };
+}
+function modelHttpExplanation(reason) {
+  return {
+    capacity: "\uC11C\uBC84\uAC00 \uB3D9\uC2DC \uC694\uCCAD\xB7\uB300\uAE30\uC5F4 \uD55C\uB3C4\uC640 \uAD00\uB828\uB41C \uC624\uB958\uB97C \uBC18\uD658\uD588\uC2B5\uB2C8\uB2E4.",
+    memory: "\uC11C\uBC84\uAC00 \uBAA8\uB378 \uBA54\uBAA8\uB9AC\xB7KV \uCE90\uC2DC \uBD80\uC871\uC744 \uBC18\uD658\uD588\uC2B5\uB2C8\uB2E4.",
+    "context-limit": "\uC11C\uBC84\uAC00 \uC785\uB825 \uBB38\uB9E5 \uD55C\uB3C4 \uCD08\uACFC\uB97C \uBC18\uD658\uD588\uC2B5\uB2C8\uB2E4.",
+    "output-limit": "\uC11C\uBC84\uAC00 \uCD9C\uB825 \uD1A0\uD070 \uC124\uC815\uC744 \uAC70\uC808\uD588\uC2B5\uB2C8\uB2E4.",
+    "message-format": "\uC11C\uBC84\uAC00 \uBA54\uC2DC\uC9C0 \uC5ED\uD560\xB7\uB300\uD654 \uD15C\uD50C\uB9BF \uD615\uC2DD\uC744 \uAC70\uC808\uD588\uC2B5\uB2C8\uB2E4.",
+    "tool-format": "\uC11C\uBC84\uAC00 \uB3C4\uAD6C \uC815\uC758\xB7\uB3C4\uAD6C \uC120\uD0DD \uD615\uC2DD\uC744 \uAC70\uC808\uD588\uC2B5\uB2C8\uB2E4.",
+    "model-id": "\uC11C\uBC84\uAC00 \uBAA8\uB378 ID\uB97C \uAC70\uC808\uD588\uC2B5\uB2C8\uB2E4.",
+    "unsupported-option": "\uC11C\uBC84\uAC00 \uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 \uC694\uCCAD \uC635\uC158\uC744 \uAC70\uC808\uD588\uC2B5\uB2C8\uB2E4.",
+    authentication: "\uC11C\uBC84\uAC00 \uC778\uC99D\xB7\uC811\uADFC \uAD8C\uD55C\uC744 \uAC70\uC808\uD588\uC2B5\uB2C8\uB2E4.",
+    unclassified: "\uC11C\uBC84\uC758 \uAD6C\uCCB4\uC801\uC778 \uAC70\uC808 \uC0AC\uC720\uB97C \uC548\uC804\uD558\uAC8C \uBD84\uB958\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4."
+  }[reason] ?? "";
+}
+
+// src/main/openviking-gateway.ts
 var OpenVikingGateway = class {
   constructor(config, diagnostic) {
     this.config = config;
@@ -6946,6 +6991,10 @@ var OpenVikingGateway = class {
   baseUrl = "";
   server;
   pending = /* @__PURE__ */ new Set();
+  counts = { completion: 0, embedding: 0 };
+  activity() {
+    return { ...this.counts };
+  }
   async start() {
     if (!this.config.openViking) throw new Error("OpenViking \uC784\uBCA0\uB529 \uC124\uC815\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.");
     this.server = (0, import_node_http2.createServer)(async (req, res) => {
@@ -6959,11 +7008,14 @@ var OpenVikingGateway = class {
         res.writeHead(403).end();
         return;
       }
-      const report = (code, httpStatus) => this.diagnostic?.({ schemaVersion: 1, recordedAt: (/* @__PURE__ */ new Date()).toISOString(), kind: embedding ? "embedding" : "completion", code, ...httpStatus ? { httpStatus } : {} });
+      let httpError, shape;
+      const report = (code, httpStatus) => this.diagnostic?.({ schemaVersion: 1, recordedAt: (/* @__PURE__ */ new Date()).toISOString(), kind: embedding ? "embedding" : "completion", code, ...httpStatus ? { httpStatus } : {}, ...httpError ? { httpError } : {}, ...shape ? { requestShape: shape } : {} });
       const target = embedding ? this.config.openViking.embedding : this.config.openViking.vlm ?? this.config.model;
       const controller = new AbortController();
       this.pending.add(controller);
       res.once("close", () => controller.abort());
+      const kind = embedding ? "embedding" : "completion";
+      this.counts[kind]++;
       try {
         const chunks = [];
         let size = 0;
@@ -6973,6 +7025,7 @@ var OpenVikingGateway = class {
           chunks.push(chunk);
         }
         const body = JSON.parse(Buffer.concat(chunks).toString());
+        shape = modelRequestShape(body);
         if (body.model !== target.id) {
           res.writeHead(403).end();
           return;
@@ -6992,8 +7045,9 @@ var OpenVikingGateway = class {
           body: JSON.stringify(body)
         });
         if (!upstream.ok) {
+          httpError = classifyModelHttpError(await upstream.text());
           report("OV_MODEL_HTTP", upstream.status);
-          res.writeHead(502).end(JSON.stringify({ error: { message: `\uC0AC\uB0B4 ${embedding ? "\uC784\uBCA0\uB529" : "\uBAA8\uB378"} HTTP ${upstream.status}` } }));
+          res.writeHead(502).end(JSON.stringify({ error: { message: `\uC0AC\uB0B4 ${embedding ? "\uC784\uBCA0\uB529" : "\uBAA8\uB378"} HTTP ${upstream.status}: ${modelHttpExplanation(httpError.reason)}` } }));
           return;
         }
         if (embedding) {
@@ -7025,6 +7079,7 @@ var OpenVikingGateway = class {
         if (!res.headersSent) res.writeHead(502).end('{"error":{"message":"\uC9C0\uC2DD \uBAA8\uB378 \uC5F0\uACB0 \uC624\uB958"}}');
         else res.destroy();
       } finally {
+        this.counts[kind]--;
         this.pending.delete(controller);
       }
     });
@@ -7845,6 +7900,9 @@ var OpenVikingService = class {
   }
   localPorts() {
     return [this.baseUrl, this.gateway?.baseUrl].filter((u) => !!u).map((u) => Number(new URL(u).port));
+  }
+  modelActivity() {
+    return this.gateway?.activity() ?? { completion: 0, embedding: 0 };
   }
   async studioConnection() {
     this.ready();

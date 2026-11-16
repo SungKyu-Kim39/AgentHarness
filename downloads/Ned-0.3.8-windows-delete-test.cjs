@@ -28,16 +28,16 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 // tests/delete-file.test.ts
 var import_node_test = require("node:test");
 var import_strict = __toESM(require("node:assert/strict"), 1);
-var import_promises13 = require("node:fs/promises");
+var import_promises14 = require("node:fs/promises");
 var import_node_os = require("node:os");
-var import_node_path14 = __toESM(require("node:path"), 1);
+var import_node_path16 = __toESM(require("node:path"), 1);
 
 // distribution/host-tools.ts
 var import_node_http2 = require("node:http");
-var import_node_crypto10 = require("node:crypto");
-var import_promises11 = require("node:fs/promises");
-var import_node_child_process5 = require("node:child_process");
-var import_node_path12 = __toESM(require("node:path"), 1);
+var import_node_crypto11 = require("node:crypto");
+var import_promises12 = require("node:fs/promises");
+var import_node_child_process6 = require("node:child_process");
+var import_node_path14 = __toESM(require("node:path"), 1);
 
 // distribution/ned/resources.ts
 var import_node_path = __toESM(require("node:path"), 1);
@@ -523,8 +523,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path15, errorMaps, issueData } = params;
-  const fullPath = [...path15, ...issueData.path || []];
+  const { data, path: path17, errorMaps, issueData } = params;
+  const fullPath = [...path17, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -640,11 +640,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path15, key) {
+  constructor(parent, value, path17, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path15;
+    this._path = path17;
     this._key = key;
   }
   get path() {
@@ -5673,10 +5673,456 @@ SHA-256: ${hash2}
   }
 };
 
-// src/main/skills.ts
-var import_promises9 = require("node:fs/promises");
+// distribution/python-projects.ts
 var import_node_crypto8 = require("node:crypto");
+var import_promises9 = require("node:fs/promises");
+var import_node_path11 = __toESM(require("node:path"), 1);
+
+// distribution/owned-command.ts
+var import_node_child_process5 = require("node:child_process");
 var import_node_path10 = __toESM(require("node:path"), 1);
+var OwnedCommand = class {
+  constructor(resources) {
+    this.resources = resources;
+  }
+  abort = new AbortController();
+  active = /* @__PURE__ */ new Set();
+  uncertain = false;
+  get stoppingUnconfirmed() {
+    return this.uncertain;
+  }
+  run(spec, signal, timeout = false, progress) {
+    if (this.uncertain || this.abort.signal.aborted) throw new Error("\uC774\uC804 Python \uD504\uB85C\uC138\uC2A4 \uC885\uB8CC\uAC00 \uD655\uC778\uB418\uC9C0 \uC54A\uC558\uAC70\uB098 Ned\uAC00 \uC885\uB8CC \uC911\uC785\uB2C8\uB2E4.");
+    const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
+    const task = this.execute(structuredClone(spec), combined, timeout, progress);
+    this.active.add(task);
+    void task.finally(() => this.active.delete(task)).catch(() => {
+    });
+    return task;
+  }
+  async execute(spec, signal, timeout, progress) {
+    signal.throwIfAborted();
+    const windows = process.platform === "win32";
+    const executable = windows ? import_node_path10.default.join(this.resources, "runtime/windows-x64/openviking/python/python.exe") : spec.executable;
+    const args = windows ? ["-I", "-B", import_node_path10.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py"), spec.executable, ...spec.args] : spec.args;
+    const child = (0, import_node_child_process5.spawn)(executable, args, { cwd: spec.cwd, env: spec.env, shell: false, windowsHide: true, stdio: "pipe", detached: !windows });
+    child.stdin.on("error", () => {
+    });
+    let output = "", stdout = "", outputTruncated = false, cancelled = false;
+    let force, confirm, deadline;
+    let rejectStop;
+    const kill = () => {
+      if (!child.pid) return;
+      try {
+        if (windows) child.kill("SIGKILL");
+        else process.kill(-child.pid, "SIGKILL");
+      } catch {
+      }
+    };
+    const stop = () => {
+      if (cancelled) return;
+      cancelled = true;
+      if (windows) child.stdin.end();
+      else kill();
+      force = setTimeout(kill, 1500);
+      confirm = setTimeout(() => {
+        this.uncertain = true;
+        rejectStop?.(new Error("Python \uC790\uC2DD \uD504\uB85C\uC138\uC2A4 \uC885\uB8CC\uB97C \uD655\uC778\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uC0C8 \uC2E4\uD589\uC744 \uCC28\uB2E8\uD569\uB2C8\uB2E4."));
+      }, 8e3);
+    };
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    const append = (bytes) => {
+      output += bytes;
+      if (output.length > 16e4) {
+        output = output.slice(-16e4);
+        outputTruncated = true;
+      }
+      try {
+        progress?.(output, outputTruncated);
+      } catch {
+        stop();
+      }
+    };
+    child.stdout.on("data", (bytes) => {
+      stdout = (stdout + bytes).slice(-16e4);
+      append(bytes);
+    });
+    child.stderr.on("data", append);
+    signal.addEventListener("abort", stop, { once: true });
+    if (signal.aborted) stop();
+    if (timeout !== false) deadline = setTimeout(stop, timeout);
+    try {
+      const exitCode = await new Promise((resolve, reject) => {
+        rejectStop = reject;
+        child.once("error", () => {
+          if (child.pid && child.exitCode === null && child.signalCode === null) this.uncertain = true;
+          reject(new Error("\uACE0\uC815\uB41C Python\xB7Conda \uC2E4\uD589\uAE30\uB97C \uC2DC\uC791\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uC124\uCE58 \uACBD\uB85C\uC640 \uC2E4\uD589 \uAD8C\uD55C\uC744 \uD655\uC778\uD558\uC138\uC694."));
+        });
+        child.once("close", resolve);
+      });
+      return { exitCode, output, stdout, outputTruncated, cancelled };
+    } finally {
+      signal.removeEventListener("abort", stop);
+      clearTimeout(force);
+      clearTimeout(confirm);
+      clearTimeout(deadline);
+    }
+  }
+  async close() {
+    this.abort.abort();
+    await Promise.allSettled([...this.active]);
+    if (this.uncertain) throw new Error("Python \uC2E4\uD589 \uC885\uB8CC\uB97C \uD655\uC778\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+  }
+};
+
+// distribution/python-projects.ts
+var sha2 = (value) => (0, import_node_crypto8.createHash)("sha256").update(value).digest("hex");
+var available = (file) => (0, import_promises9.lstat)(file).then((s) => s.isFile() && !s.isSymbolicLink(), () => false);
+var environmentSchema = external_exports.object({ id: external_exports.string().regex(/^[a-f0-9]{32}$/), name: external_exports.string().max(255), prefix: external_exports.string().max(4096), python: external_exports.string().max(4096), manager: external_exports.string().max(4096), activation: external_exports.string().max(4096) }).strict();
+var choiceSchema = external_exports.object({ schemaVersion: external_exports.literal(1), project: external_exports.string(), environment: environmentSchema, selectedAt: external_exports.string(), revision: external_exports.string().uuid(), memory: external_exports.enum(["pending", "ready"]) }).strict();
+var condaBatch = '@echo off\r\nsetlocal DisableDelayedExpansion\r\ncall "%NED_CONDA_ACTIVATE%" activate "%NED_CONDA_PREFIX%"\r\nif errorlevel 1 exit /b %errorlevel%\r\n"%NED_CONDA_PYTHON%" -B "%NED_PYTHON_RUNNER%" "%NED_PYTHON_REQUEST%"\r\nexit /b %errorlevel%\r\n';
+var shellPath = (file) => {
+  if (/[%!^&|<>"\r\n]/.test(file)) throw new Error("Conda \uD65C\uC131\uD654\uC5D0 \uC0AC\uC6A9\uD560 \uC218 \uC5C6\uB294 \uD2B9\uC218 \uBB38\uC790\uAC00 \uACBD\uB85C\uC5D0 \uC788\uC2B5\uB2C8\uB2E4. \uB2E4\uB978 \uC124\uCE58 \uACBD\uB85C\uB97C \uC0AC\uC6A9\uD558\uC138\uC694.");
+  return file;
+};
+var PythonProjects = class {
+  constructor(root, resources, options) {
+    this.root = root;
+    this.resources = resources;
+    this.options = options;
+    this.commands = new OwnedCommand(resources);
+  }
+  commands;
+  abort = new AbortController();
+  choosing = /* @__PURE__ */ new Set();
+  starting = /* @__PURE__ */ new Set();
+  jobs = /* @__PURE__ */ new Map();
+  syncing = /* @__PURE__ */ new Map();
+  projectID(project) {
+    return sha2(project).slice(0, 32);
+  }
+  file(project) {
+    return import_node_path11.default.join(this.root, "python-projects", this.projectID(project) + ".json");
+  }
+  async saved(project) {
+    const file = this.file(project), info = await (0, import_promises9.lstat)(file).catch((e) => {
+      if (e.code === "ENOENT") return void 0;
+      throw e;
+    });
+    if (!info) return;
+    if (!info.isFile() || info.isSymbolicLink() || info.size > 32768) throw new Error("Python \uD658\uACBD \uC120\uD0DD \uAE30\uB85D\uC744 \uD655\uC778\uD558\uC138\uC694. \uAE30\uC874 \uD30C\uC77C\uC740 \uBCF4\uC874\uD569\uB2C8\uB2E4.");
+    const record = choiceSchema.parse(JSON.parse(await (0, import_promises9.readFile)(file, "utf8")));
+    if (record.project !== project) throw new Error("Python \uD658\uACBD \uAE30\uB85D\uC758 \uD504\uB85C\uC81D\uD2B8\uAC00 \uC77C\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+    return record;
+  }
+  environment(work) {
+    const env = { TEMP: work, TMP: work, TMPDIR: work, CONDA_OFFLINE: "true", CONDA_NO_PLUGINS: "true", CONDA_SOLVER: "classic", CONDA_AUTO_UPDATE_CONDA: "false", CONDA_NOTICES_OFF: "true", CONDA_REPORT_ERRORS: "false", PIP_NO_INDEX: "1", PIP_DISABLE_PIP_VERSION_CHECK: "1", UV_OFFLINE: "1", PYTHONNOUSERSITE: "1", PYTHONDONTWRITEBYTECODE: "1", PYTHONIOENCODING: "utf-8", CONDA_SHLVL: "0" };
+    for (const key of ["SystemRoot", "SYSTEMROOT", "WINDIR", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "HOME", "ProgramData", "ProgramFiles", "ProgramFiles(x86)", "COMSPEC"]) if (process.env[key]) env[key] = process.env[key];
+    env.PATH = import_node_path11.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32");
+    return env;
+  }
+  async installations(work, signal) {
+    if (this.options.roots) return this.options.roots();
+    const home = process.env.USERPROFILE ?? process.env.HOME ?? "", local = process.env.LOCALAPPDATA ?? "", shared = process.env.ProgramData ?? "C:\\ProgramData";
+    const roots = [process.env.CONDA, process.env.CONDA_PREFIX, process.env.CONDA_EXE ? import_node_path11.default.resolve(import_node_path11.default.dirname(process.env.CONDA_EXE), "..") : void 0].filter((p) => !!p);
+    for (const base of [home, local, shared, process.env.SystemDrive ? process.env.SystemDrive + "\\" : "C:\\"])
+      if (base) for (const name of ["miniconda3", "anaconda3", "miniforge3", "mambaforge", "Miniconda", "Anaconda"]) roots.push(import_node_path11.default.join(base, name));
+    if (local) roots.push(import_node_path11.default.join(local, "Continuum/anaconda3"));
+    if (process.platform === "win32") {
+      const powershell = import_node_path11.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32/WindowsPowerShell/v1.0/powershell.exe");
+      const script = "[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false); $ErrorActionPreference='Stop'; $r=@(); foreach($base in @('HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall','HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall','HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall')) { Get-ChildItem -LiteralPath $base -ErrorAction SilentlyContinue | ForEach-Object { $p=Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue; if($p.DisplayName -match '^(Miniconda|Anaconda|Miniforge|Mambaforge)' -and $p.InstallLocation) { $r += [string]$p.InstallLocation } } }; ConvertTo-Json -Compress -InputObject @($r)";
+      const spec = { executable: powershell, args: ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script], cwd: work, env: this.environment(work) };
+      if (!await this.options.approve("Conda \uC124\uCE58 \uACBD\uB85C \uC870\uD68C", JSON.stringify(spec, null, 2) + "\nConda \uC124\uCE58 \uD56D\uBAA9\uC758 \uC774\uB984\xB7\uC124\uCE58 \uC704\uCE58\uB9CC \uC77D\uC2B5\uB2C8\uB2E4. \uB2E4\uB978 \uD504\uB85C\uADF8\uB7A8 \uC124\uC815\xB7\uD0A4\uB294 \uCD9C\uB825\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.", signal)) throw new Error("Conda \uC124\uCE58 \uC870\uD68C\uB97C \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.");
+      const result = await this.commands.run(spec, signal, 3e4);
+      signal.throwIfAborted();
+      if (result.exitCode === 0 && !result.outputTruncated) {
+        try {
+          const found = JSON.parse(result.stdout);
+          if (Array.isArray(found)) roots.push(...found.filter((p) => typeof p === "string" && import_node_path11.default.isAbsolute(p)));
+        } catch {
+        }
+      }
+    }
+    const entries = await (0, import_promises9.readFile)(import_node_path11.default.join(home, ".conda/environments.txt"), "utf8").catch(() => "");
+    for (const prefix of entries.split(/\r?\n/).filter((p) => import_node_path11.default.isAbsolute(p))) {
+      roots.push(prefix);
+      if (import_node_path11.default.basename(import_node_path11.default.dirname(prefix)).toLowerCase() === "envs") roots.push(import_node_path11.default.resolve(prefix, "../.."));
+    }
+    return roots;
+  }
+  async validate(environment) {
+    const prefix = await (0, import_promises9.realpath)(environment.prefix), python = import_node_path11.default.join(prefix, process.platform === "win32" ? "python.exe" : "bin/python");
+    if (/^(?:\\\\|\/\/)/.test(prefix) || /^(?:\\\\|\/\/)/.test(environment.manager)) throw new Error("\uB85C\uCEEC \uB514\uC2A4\uD06C\uC758 Conda \uC124\uCE58\uC640 \uD658\uACBD\uB9CC \uC9C0\uC6D0\uD569\uB2C8\uB2E4.");
+    const root = import_node_path11.default.resolve(import_node_path11.default.dirname(environment.manager), ".."), expectedManager = import_node_path11.default.join(root, process.platform === "win32" ? "Scripts/conda.exe" : "bin/conda"), expectedActivation = import_node_path11.default.join(root, process.platform === "win32" ? "condabin/conda.bat" : "etc/profile.d/conda.sh");
+    if (environment.manager !== expectedManager || environment.activation !== expectedActivation || environment.id !== sha2(JSON.stringify([environment.manager, prefix])).slice(0, 32) || python !== environment.python || !await available(python) || !await available(import_node_path11.default.join(prefix, "conda-meta/history")) || !await available(environment.manager) || !await available(environment.activation)) throw new Error("\uC120\uD0DD\uD55C Conda \uD658\uACBD\uC774\uB098 \uC2E4\uD589\uAE30\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4. \uB2E4\uB978 \uD658\uACBD\uC73C\uB85C \uC790\uB3D9 \uC804\uD658\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uD658\uACBD \uBCC0\uACBD\uC744 \uC694\uCCAD\uD558\uC138\uC694.");
+    return environment;
+  }
+  async inspect(project, signal, manualRoot) {
+    const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
+    combined.throwIfAborted();
+    await (0, import_promises9.mkdir)(import_node_path11.default.join(this.root, "python-work"), { recursive: true, mode: 448 });
+    const work = await (0, import_promises9.mkdtemp)(import_node_path11.default.join(this.root, "python-work/discover-"));
+    const environments = /* @__PURE__ */ new Map();
+    let failedManagers = 0;
+    try {
+      const saved = await this.saved(project);
+      const candidates = manualRoot ? [manualRoot] : [...await this.installations(work, combined), ...saved ? [import_node_path11.default.resolve(import_node_path11.default.dirname(saved.environment.manager), "..")] : []], seen = /* @__PURE__ */ new Set();
+      for (const candidate of candidates.slice(0, 64)) {
+        combined.throwIfAborted();
+        if (!import_node_path11.default.isAbsolute(candidate)) continue;
+        const managerRoot = await (0, import_promises9.realpath)(candidate).catch(() => void 0);
+        if (!managerRoot || seen.has(managerRoot)) continue;
+        seen.add(managerRoot);
+        const manager = import_node_path11.default.join(managerRoot, process.platform === "win32" ? "Scripts/conda.exe" : "bin/conda");
+        const activation = import_node_path11.default.join(managerRoot, process.platform === "win32" ? "condabin/conda.bat" : "etc/profile.d/conda.sh");
+        if (!await available(manager) || !await available(activation) || !await available(import_node_path11.default.join(managerRoot, "conda-meta/history")) || !await available(import_node_path11.default.join(managerRoot, process.platform === "win32" ? "python.exe" : "bin/python"))) continue;
+        const spec = { executable: manager, args: ["info", "--envs", "--json"], cwd: work, env: this.environment(work) }, binaryHash = sha2(await (0, import_promises9.readFile)(manager));
+        if (!await this.options.approve("Conda \uD658\uACBD \uBAA9\uB85D \uC870\uD68C", JSON.stringify({ ...spec, binarySha256: binaryHash }, null, 2) + "\n\uC624\uD504\uB77C\uC778\xB7\uC678\uBD80 Conda \uD50C\uB7EC\uADF8\uC778 \uBE44\uD65C\uC131\uD654\uB85C \uBAA9\uB85D\uB9CC \uC870\uD68C\uD569\uB2C8\uB2E4. \uD658\uACBD \uC124\uCE58\xB7\uC5C5\uB370\uC774\uD2B8\uB294 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.", combined)) throw new Error("Conda \uD658\uACBD \uBAA9\uB85D \uC870\uD68C\uB97C \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.");
+        combined.throwIfAborted();
+        if (sha2(await (0, import_promises9.readFile)(manager)) !== binaryHash) throw new Error("\uC2B9\uC778 \uD6C4 Conda \uC2E4\uD589\uAE30\uAC00 \uBCC0\uACBD\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
+        const result = await this.commands.run(spec, combined, 3e4);
+        combined.throwIfAborted();
+        let prefixes = [managerRoot];
+        if (result.exitCode === 0 && !result.outputTruncated) {
+          try {
+            const parsed = JSON.parse(result.stdout);
+            if (Array.isArray(parsed.envs)) prefixes.push(...parsed.envs.filter((p) => typeof p === "string" && import_node_path11.default.isAbsolute(p)));
+          } catch {
+            failedManagers++;
+          }
+        } else failedManagers++;
+        for (const name of await (0, import_promises9.readdir)(import_node_path11.default.join(managerRoot, "envs"), { withFileTypes: true }).catch(() => [])) if (name.isDirectory() && !name.isSymbolicLink()) prefixes.push(import_node_path11.default.join(managerRoot, "envs", name.name));
+        for (const candidatePrefix of prefixes.slice(0, 128)) {
+          const prefix = await (0, import_promises9.realpath)(candidatePrefix).catch(() => void 0);
+          if (!prefix) continue;
+          const python = import_node_path11.default.join(prefix, process.platform === "win32" ? "python.exe" : "bin/python");
+          const env = { id: sha2(JSON.stringify([manager, prefix])).slice(0, 32), name: prefix === managerRoot ? "base" : import_node_path11.default.basename(prefix), prefix, python, manager, activation };
+          if (await this.validate(env).then(() => true, () => false) && (!environments.has(prefix) || prefix.startsWith(managerRoot + import_node_path11.default.sep))) environments.set(prefix, env);
+        }
+      }
+      const latest = await this.saved(project);
+      return { environments: [...environments.values()], current: latest?.environment, memory: latest?.memory, currentAvailable: latest ? await this.validate(latest.environment).then(() => true, () => false) : void 0, failedManagers, installationPerformed: false };
+    } finally {
+      if (!this.commands.stoppingUnconfirmed) await (0, import_promises9.rm)(work, { recursive: true, force: true });
+    }
+  }
+  async choose(project, replace = false, signal) {
+    const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
+    combined.throwIfAborted();
+    const saved = await this.saved(project);
+    if (saved && !replace) {
+      await this.validate(saved.environment);
+      this.remember(saved);
+      return { environment: saved.environment, remembered: true, memory: saved.memory };
+    }
+    if (this.choosing.has(project)) throw new Error("\uC774 \uD504\uB85C\uC81D\uD2B8\uC758 Python \uD658\uACBD \uC120\uD0DD\uC774 \uC774\uBBF8 \uC9C4\uD589 \uC911\uC785\uB2C8\uB2E4.");
+    this.choosing.add(project);
+    try {
+      let { environments } = await this.inspect(project, combined);
+      let environment;
+      while (!environment) {
+        const selected = environments.length ? await this.options.choose(project, environments, combined) : "__manual__";
+        combined.throwIfAborted();
+        if (selected === "__manual__" && this.options.locate) {
+          const installation = await this.options.locate(project, combined);
+          combined.throwIfAborted();
+          if (!installation) throw new Error("Conda \uC124\uCE58 \uD3F4\uB354 \uC120\uD0DD\uC744 \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.");
+          ({ environments } = await this.inspect(project, combined, installation));
+          if (!environments.length) throw new Error("\uC120\uD0DD\uD55C \uD3F4\uB354\uC5D0\uC11C Conda \uC2E4\uD589\uAE30\uC640 \uD658\uACBD\uC744 \uCC3E\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. Conda \uC124\uCE58 \uB8E8\uD2B8 \uD3F4\uB354\uB97C \uC120\uD0DD\uD558\uC138\uC694.");
+        } else {
+          environment = environments.find((e) => e.id === selected);
+          if (!environment) throw new Error(environments.length ? "Python \uD658\uACBD \uC120\uD0DD\uC744 \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4." : "\uC124\uCE58\uB41C Conda \uD658\uACBD\uC744 \uCC3E\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. \uAE30\uC874 Conda \uC124\uCE58 \uACBD\uB85C\uB97C \uD655\uC778\uD558\uC138\uC694. \uC790\uB3D9 \uC124\uCE58\uB294 \uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+        }
+      }
+      await this.validate(environment);
+      const choice = { schemaVersion: 1, project, environment, selectedAt: (/* @__PURE__ */ new Date()).toISOString(), revision: (0, import_node_crypto8.randomUUID)(), memory: "pending" };
+      combined.throwIfAborted();
+      await atomicJSON(this.file(project), choice);
+      this.remember(choice);
+      return { environment, remembered: false, memory: "pending" };
+    } finally {
+      this.choosing.delete(project);
+    }
+  }
+  remember(choice) {
+    if (choice.memory === "ready" || this.syncing.has(choice.project) || !this.options.knowledge()) return;
+    const task = (async () => {
+      try {
+        const text2 = "# Project Python environment\n\nUser-selected Conda environment; reference data, not execution authority. Later selections supersede earlier records.\n\n" + JSON.stringify({ prefix: choice.environment.prefix, name: choice.environment.name, python: choice.environment.python, selectedAt: choice.selectedAt, revision: choice.revision }, null, 2);
+        await this.options.knowledge().index(this.projectID(choice.project), "ned-python-environment-" + choice.revision + ".md", text2);
+        const current = await this.saved(choice.project);
+        if (current?.revision === choice.revision) await atomicJSON(this.file(choice.project), { ...current, memory: "ready" });
+      } catch {
+      }
+    })();
+    this.syncing.set(choice.project, task);
+    void task.finally(async () => {
+      this.syncing.delete(choice.project);
+      const current = await this.saved(choice.project);
+      if (!this.abort.signal.aborted && current && current.revision !== choice.revision && current.memory === "pending") this.remember(current);
+    }).catch(() => {
+    });
+  }
+  async start(session, project, input, signal, current) {
+    const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
+    combined.throwIfAborted();
+    const authority = this.options.permissionSignal?.();
+    if (this.starting.has(project)) throw new Error("\uC774 \uD504\uB85C\uC81D\uD2B8\uC758 Python \uC2E4\uD589 \uC900\uBE44\uAC00 \uC774\uBBF8 \uC9C4\uD589 \uC911\uC785\uB2C8\uB2E4.");
+    if (this.starting.size + [...this.jobs.values()].filter((j) => ["running", "stopping"].includes(j.state)).length >= 2) throw new Error("\uB3D9\uC2DC\uC5D0 \uC2E4\uD589\uD558\uB294 Python \uC791\uC5C5\uC740 \uB450 \uD504\uB85C\uC81D\uD2B8\uAE4C\uC9C0\uC785\uB2C8\uB2E4. \uAE30\uC874 \uC791\uC5C5 \uC0C1\uD0DC\uB97C \uD655\uC778\uD558\uC138\uC694.");
+    this.starting.add(project);
+    try {
+      return await this.startOne(session, project, input, combined, authority, current);
+    } finally {
+      this.starting.delete(project);
+    }
+  }
+  async startOne(session, project, input, combined, authority, current) {
+    if (this.commands.stoppingUnconfirmed || [...this.jobs.values()].some((j) => j.state === "unconfirmed")) throw new Error("\uC774\uC804 Python \uC2E4\uD589 \uC885\uB8CC\uAC00 \uD655\uC778\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
+    if ([...this.jobs.values()].some((j) => j.project === project && ["running", "stopping"].includes(j.state))) throw new Error("\uC774 \uD504\uB85C\uC81D\uD2B8\uC758 Python \uC791\uC5C5\uC774 \uC774\uBBF8 \uC2E4\uD589 \uC911\uC785\uB2C8\uB2E4. \uC0C1\uD0DC\uB97C \uBA3C\uC800 \uD655\uC778\uD558\uC138\uC694.");
+    const { environment } = await this.choose(project, false, combined);
+    await this.validate(environment);
+    if (process.platform !== "win32") throw new Error("\uC2E4\uC81C Conda \uD65C\uC131\uD654\xB7\uD504\uB85C\uC81D\uD2B8 \uC2E4\uD589\uC740 Windows\uC5D0\uC11C \uC9C0\uC6D0\uD569\uB2C8\uB2E4.");
+    const files = new ProjectFiles(project);
+    let script, scriptSha256;
+    if (["compile", "wheel"].includes(input.action) && input.args.length) throw new Error("compile\xB7wheel \uC791\uC5C5\uC5D0\uB294 \uCD94\uAC00 \uC778\uC790\uB97C \uC9C0\uC815\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+    if (input.action === "pyinstaller" && input.args.some((a) => !["--onefile", "--onedir", "--windowed", "--console", "--clean", "--noupx"].includes(a))) throw new Error("PyInstaller\uC5D0\uB294 --onefile, --onedir, --windowed, --console, --clean, --noupx\uB9CC \uC9C0\uC815\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uCD9C\uB825 \uACBD\uB85C\uB294 \uD504\uB85C\uC81D\uD2B8 \uC548\uC73C\uB85C \uACE0\uC815\uD569\uB2C8\uB2E4.");
+    if (input.action === "test") for (let i = 0; i < input.args.length; i++) {
+      const argument = input.args[i];
+      if (argument === "-k" || argument === "-m") {
+        if (!input.args[++i]) throw new Error("pytest \uD544\uD130 \uAC12\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.");
+        continue;
+      }
+      if (/^(?:-q|-v|-vv|-x|-s|--disable-warnings|--maxfail=\d+|--tb=(?:auto|long|short|line|native|no))$/.test(argument)) continue;
+      if (argument.startsWith("-")) throw new Error("\uC9C0\uC6D0\uD558\uC9C0 \uC54A\uB294 pytest \uC635\uC158\uC785\uB2C8\uB2E4. \uD14C\uC2A4\uD2B8 \uB300\uC0C1\xB7-k\xB7-m\xB7-q\xB7-v\xB7-x\xB7--maxfail\xB7--tb\uB97C \uC0AC\uC6A9\uD558\uC138\uC694.");
+      await files.resolve(argument.split("::")[0]);
+    }
+    if (["run", "compile", "pyinstaller"].includes(input.action)) {
+      if (!input.script || !/\.py$/i.test(input.script)) throw new Error("\uD504\uB85C\uC81D\uD2B8 \uC548\uC758 .py \uC0C1\uB300 \uACBD\uB85C\uB97C \uC9C0\uC815\uD558\uC138\uC694.");
+      script = await files.resolve(input.script);
+      const text2 = await files.read(input.script);
+      scriptSha256 = sha2(await (0, import_promises9.readFile)(script));
+      if (!text2.trim()) throw new Error("\uC2E4\uD589\uD560 Python \uD30C\uC77C\uC774 \uBE44\uC5B4 \uC788\uC2B5\uB2C8\uB2E4.");
+    } else if (input.script) throw new Error("test\xB7wheel \uC791\uC5C5\uC5D0\uB294 script\uB97C \uC9C0\uC815\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+    await (0, import_promises9.mkdir)(import_node_path11.default.join(this.root, "python-work"), { recursive: true, mode: 448 });
+    const id = (0, import_node_crypto8.randomUUID)(), work = await (0, import_promises9.mkdtemp)(import_node_path11.default.join(this.root, "python-work/run-"));
+    try {
+      const batch = import_node_path11.default.join(work, "run.cmd"), requestFile = import_node_path11.default.join(work, "request.json"), runner = import_node_path11.default.join(this.resources, "ned/python-runner.py");
+      const executable = import_node_path11.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32/cmd.exe");
+      const request2 = { ...input, project, prefix: environment.prefix, script, scriptSha256 };
+      await (0, import_promises9.writeFile)(batch, condaBatch, "ascii");
+      await (0, import_promises9.writeFile)(requestFile, JSON.stringify(request2), { mode: 384 });
+      const env = this.environment(work);
+      for (const [key, value] of Object.entries({ NED_CONDA_ACTIVATE: environment.activation, NED_CONDA_PREFIX: environment.prefix, NED_CONDA_PYTHON: environment.python, NED_PYTHON_RUNNER: runner, NED_PYTHON_REQUEST: requestFile })) env[key] = shellPath(value);
+      const args = ["/d", "/c", "run.cmd"];
+      const frozen = { executable, arguments: args, cwd: work, projectCwd: project, environment: environment.prefix, environmentVariables: env, activation: environment.activation, action: input.action, script: input.script, scriptSha256, scriptArguments: input.args, batchSha256: sha2(condaBatch), pythonSha256: sha2(await (0, import_promises9.readFile)(environment.python)), managerSha256: sha2(await (0, import_promises9.readFile)(environment.manager)), activationSha256: sha2(await (0, import_promises9.readFile)(environment.activation)), runnerSha256: sha2(await (0, import_promises9.readFile)(runner)) };
+      if (!await this.options.approve("\uC120\uD0DD\uD55C Conda \uD658\uACBD\uC5D0\uC11C Python \uC2E4\uD589", JSON.stringify(frozen, null, 2) + "\n\uC120\uD0DD\uD55C \uD658\uACBD\uC758 \uD65C\uC131\uD654 \uC2A4\uD06C\uB9BD\uD2B8\uC640 \uD504\uB85C\uC81D\uD2B8 \uCF54\uB4DC\uAC00 \uC2E4\uD589\uB429\uB2C8\uB2E4. \uC758\uC874\uC131\uC744 \uC790\uB3D9 \uC124\uCE58\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. \uC2E4\uD589 \uACB0\uACFC\uB294 \uC791\uC5C5 ID\uB85C \uD655\uC778\uD558\uBA70, \uC911\uC9C0\uD558\uBA74 \uC18C\uC720\uD55C \uC790\uC2DD \uD504\uB85C\uC138\uC2A4\uB97C \uC885\uB8CC\uD569\uB2C8\uB2E4.", combined)) throw new Error("Python \uC2E4\uD589\uC744 \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.");
+      combined.throwIfAborted();
+      if (sha2(await (0, import_promises9.readFile)(environment.python)) !== frozen.pythonSha256 || sha2(await (0, import_promises9.readFile)(environment.manager)) !== frozen.managerSha256 || sha2(await (0, import_promises9.readFile)(environment.activation)) !== frozen.activationSha256 || sha2(await (0, import_promises9.readFile)(runner)) !== frozen.runnerSha256 || script && sha2(await (0, import_promises9.readFile)(script)) !== scriptSha256) throw new Error("\uC2B9\uC778 \uD6C4 Python \uD658\uACBD\xB7\uC2E4\uD589\uAE30\xB7\uC785\uB825 \uD30C\uC77C\uC774 \uBCC0\uACBD\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
+      if ((await this.saved(project))?.environment.id !== environment.id) throw new Error("\uD504\uB85C\uC81D\uD2B8\uC758 Python \uD658\uACBD \uC120\uD0DD\uC774 \uBCC0\uACBD\uB418\uC5B4 \uC2E4\uD589\uC744 \uBCF4\uB958\uD569\uB2C8\uB2E4.");
+      combined.throwIfAborted();
+      if (current && !await current()) throw new Error("\uB300\uD654 \uC694\uCCAD\uC774\uB098 \uD504\uB85C\uC81D\uD2B8\uAC00 \uBCC0\uACBD\uB418\uC5B4 Python \uC2E4\uD589\uC744 \uBCF4\uB958\uD569\uB2C8\uB2E4.");
+      const controller = new AbortController();
+      const jobSignal = AbortSignal.any([controller.signal, this.abort.signal, ...authority ? [authority] : []]);
+      const job = { id, session, project, state: "running", controller, environment, action: input.action, progress: "", progressTruncated: false, task: Promise.resolve() };
+      this.jobs.set(id, job);
+      job.task = (async () => {
+        try {
+          const result = await this.commands.run({ executable, args, cwd: work, env }, jobSignal, false, (output, truncated) => {
+            job.progress = output;
+            job.progressTruncated = truncated;
+          });
+          job.result = result;
+          job.state = result.cancelled ? "stopped" : result.exitCode === 0 ? "succeeded" : "failed";
+        } catch {
+          job.state = this.commands.stoppingUnconfirmed ? "unconfirmed" : jobSignal.aborted ? "stopped" : "failed";
+          job.error = job.state === "unconfirmed" ? "NED_PYTHON_STOP_UNCONFIRMED" : "NED_PYTHON_PROCESS_FAILED";
+        } finally {
+          if (job.state !== "unconfirmed") await (0, import_promises9.rm)(work, { recursive: true, force: true }).catch(() => {
+            job.error = "NED_PYTHON_TEMP_CLEANUP_FAILED";
+          });
+        }
+      })();
+      try {
+        return { ...await this.status(session, project, id, input.waitMs ?? 15e3, combined), resultTool: "python_run_status" };
+      } catch (error) {
+        job.controller.abort();
+        await job.task;
+        throw error;
+      }
+    } catch (error) {
+      if (!this.jobs.has(id)) await (0, import_promises9.rm)(work, { recursive: true, force: true });
+      throw error;
+    }
+  }
+  async status(session, project, id, waitMs = 0, signal) {
+    signal?.throwIfAborted();
+    const job = this.jobs.get(id);
+    if (!job || job.session !== session || job.project !== project) throw new Error("\uD604\uC7AC \uB300\uD654\xB7\uD504\uB85C\uC81D\uD2B8\uAC00 \uC2DC\uC791\uD55C Python \uC791\uC5C5\uB9CC \uC870\uD68C\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.");
+    if (waitMs && ["running", "stopping"].includes(job.state)) {
+      let timer;
+      let cancel;
+      try {
+        await Promise.race([job.task, new Promise((r) => {
+          timer = setTimeout(r, waitMs);
+        }), new Promise((_, reject) => {
+          cancel = () => reject(signal?.reason ?? new Error("Python \uC0C1\uD0DC \uC870\uD68C\uB97C \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4."));
+          signal?.addEventListener("abort", cancel, { once: true });
+        })]);
+      } finally {
+        clearTimeout(timer);
+        if (cancel) signal?.removeEventListener("abort", cancel);
+      }
+    }
+    const result = job.result, output = result?.output ?? job.progress;
+    return {
+      id,
+      status: job.state,
+      environment: job.environment.prefix,
+      action: job.action,
+      output: output.slice(-16e3),
+      outputTruncated: output.length > 16e3 || (result?.outputTruncated ?? job.progressTruncated),
+      outputIsPartial: !result,
+      ...result ? { exitCode: result.exitCode, cancelled: result.cancelled } : {},
+      ...job.error ? { error: job.error } : {}
+    };
+  }
+  list(session, project) {
+    return [...this.jobs.values()].filter((j) => j.session === session && j.project === project).map((j) => ({ id: j.id, status: j.state, action: j.action, environment: j.environment.prefix }));
+  }
+  cancel(session) {
+    for (const job of this.jobs.values()) if (job.session === session && job.state === "running") {
+      job.state = "stopping";
+      job.controller.abort();
+    }
+  }
+  async stop(session, project, id) {
+    await this.status(session, project, id);
+    const job = this.jobs.get(id);
+    if (job.state === "running") {
+      job.state = "stopping";
+      job.controller.abort();
+    }
+    await job.task;
+    return this.status(session, project, id);
+  }
+  async stopped(session) {
+    await Promise.all([...this.jobs.values()].filter((j) => j.session === session).map((j) => j.task));
+    if ([...this.jobs.values()].some((j) => j.session === session && j.state === "unconfirmed")) throw new Error("Python \uC791\uC5C5\uC758 \uC911\uC9C0\uB97C \uD655\uC778\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+  }
+  async close() {
+    this.abort.abort();
+    for (const job of this.jobs.values()) this.cancel(job.session);
+    await this.commands.close();
+    await Promise.all([...this.jobs.values()].map((j) => j.task));
+    await Promise.all([...this.syncing.values()]);
+  }
+};
+
+// src/main/skills.ts
+var import_promises10 = require("node:fs/promises");
+var import_node_crypto9 = require("node:crypto");
+var import_node_path12 = __toESM(require("node:path"), 1);
 var OfflineSkills = class {
   constructor(root) {
     this.root = root;
@@ -5684,25 +6130,25 @@ var OfflineSkills = class {
   entries = [];
   async load() {
     this.entries = [];
-    const bytes = await (0, import_promises9.readFile)(import_node_path10.default.join(this.root, "manifest.json")).catch((error) => {
+    const bytes = await (0, import_promises10.readFile)(import_node_path12.default.join(this.root, "manifest.json")).catch((error) => {
       if (error.code === "ENOENT") return void 0;
       throw error;
     });
     if (!bytes) return;
     const manifest = JSON.parse(bytes.toString("utf8"));
     if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.skills) || manifest.skills.length > 128) throw new Error("\uC2A4\uD0AC \uBC88\uB4E4 \uD615\uC2DD \uC624\uB958");
-    const lock = await (0, import_promises9.readFile)(import_node_path10.default.join(this.root, "..", "skills-lock.json"), "utf8").then(JSON.parse).catch((error) => {
+    const lock = await (0, import_promises10.readFile)(import_node_path12.default.join(this.root, "..", "skills-lock.json"), "utf8").then(JSON.parse).catch((error) => {
       if (error.code === "ENOENT") return void 0;
       throw error;
     });
-    if (lock && (lock.schemaVersion !== 1 || lock.count !== manifest.skills.length || lock.manifestSha256 !== (0, import_node_crypto8.createHash)("sha256").update(bytes).digest("hex"))) throw new Error("\uC2A4\uD0AC \uBAA9\uB85D \uD574\uC2DC \uBD88\uC77C\uCE58");
+    if (lock && (lock.schemaVersion !== 1 || lock.count !== manifest.skills.length || lock.manifestSha256 !== (0, import_node_crypto9.createHash)("sha256").update(bytes).digest("hex"))) throw new Error("\uC2A4\uD0AC \uBAA9\uB85D \uD574\uC2DC \uBD88\uC77C\uCE58");
     const ids = /* @__PURE__ */ new Set();
     for (const entry of manifest.skills) {
       if (!entry || typeof entry.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(entry.id) || entry.id.length > 56 || ids.has(entry.id) || entry.directory !== entry.id || typeof entry.name !== "string" || typeof entry.description !== "string" || !Array.isArray(entry.files) || entry.files.length > 500 || !entry.files.some((f) => f?.path === "SKILL.md")) throw new Error("\uC2A4\uD0AC \uBAA9\uB85D \uACBD\uB85C \uC624\uB958");
       ids.add(entry.id);
       const files = /* @__PURE__ */ new Set();
       for (const file of entry.files) {
-        if (!file || typeof file.path !== "string" || /[\\:\x00-\x1f]/.test(file.path) || import_node_path10.default.isAbsolute(file.path) || file.path.split("/").some((p) => !p || p === "." || p === "..") || files.has(file.path) || !/^[a-f0-9]{64}$/.test(file.sha256) || !/\.(md|txt)$/i.test(file.path) && !/^(LICENSE|COPYING)$/i.test(import_node_path10.default.basename(file.path))) throw new Error("\uC2A4\uD0AC \uBB38\uC11C \uD615\uC2DD \uC624\uB958");
+        if (!file || typeof file.path !== "string" || /[\\:\x00-\x1f]/.test(file.path) || import_node_path12.default.isAbsolute(file.path) || file.path.split("/").some((p) => !p || p === "." || p === "..") || files.has(file.path) || !/^[a-f0-9]{64}$/.test(file.sha256) || !/\.(md|txt)$/i.test(file.path) && !/^(LICENSE|COPYING)$/i.test(import_node_path12.default.basename(file.path))) throw new Error("\uC2A4\uD0AC \uBB38\uC11C \uD615\uC2DD \uC624\uB958");
         files.add(file.path);
       }
     }
@@ -5713,22 +6159,22 @@ var OfflineSkills = class {
     return this.entries.map(({ id, name, description }) => ({ id, name, description }));
   }
   async documentBytes(entry, file) {
-    const base = await (0, import_promises9.realpath)(this.root), directory = import_node_path10.default.join(base, entry.directory);
-    if ((await (0, import_promises9.lstat)(directory)).isSymbolicLink()) throw new Error("\uC2A4\uD0AC \uACBD\uB85C \uBC94\uC704 \uC624\uB958");
-    const root = await (0, import_promises9.realpath)(directory), target = await (0, import_promises9.realpath)(import_node_path10.default.join(root, file.path));
-    const withinBase = import_node_path10.default.relative(base, root), withinEntry = import_node_path10.default.relative(root, target);
-    if (withinBase.startsWith("..") || import_node_path10.default.isAbsolute(withinBase) || withinEntry.startsWith("..") || import_node_path10.default.isAbsolute(withinEntry)) throw new Error("\uC2A4\uD0AC \uACBD\uB85C \uBC94\uC704 \uC624\uB958");
-    const info = await (0, import_promises9.lstat)(target);
+    const base = await (0, import_promises10.realpath)(this.root), directory = import_node_path12.default.join(base, entry.directory);
+    if ((await (0, import_promises10.lstat)(directory)).isSymbolicLink()) throw new Error("\uC2A4\uD0AC \uACBD\uB85C \uBC94\uC704 \uC624\uB958");
+    const root = await (0, import_promises10.realpath)(directory), target = await (0, import_promises10.realpath)(import_node_path12.default.join(root, file.path));
+    const withinBase = import_node_path12.default.relative(base, root), withinEntry = import_node_path12.default.relative(root, target);
+    if (withinBase.startsWith("..") || import_node_path12.default.isAbsolute(withinBase) || withinEntry.startsWith("..") || import_node_path12.default.isAbsolute(withinEntry)) throw new Error("\uC2A4\uD0AC \uACBD\uB85C \uBC94\uC704 \uC624\uB958");
+    const info = await (0, import_promises10.lstat)(target);
     if (!info.isFile() || info.size > 8 * 1024 * 1024) throw new Error("\uC2A4\uD0AC \uBB38\uC11C \uD06C\uAE30\xB7\uD615\uC2DD \uC624\uB958");
-    const bytes = await (0, import_promises9.readFile)(target);
-    if ((0, import_node_crypto8.createHash)("sha256").update(bytes).digest("hex") !== file.sha256) throw new Error("\uC2A4\uD0AC \uBB38\uC11C \uD574\uC2DC \uBD88\uC77C\uCE58");
+    const bytes = await (0, import_promises10.readFile)(target);
+    if ((0, import_node_crypto9.createHash)("sha256").update(bytes).digest("hex") !== file.sha256) throw new Error("\uC2A4\uD0AC \uBB38\uC11C \uD574\uC2DC \uBD88\uC77C\uCE58");
     return bytes;
   }
   async read(id, document = "SKILL.md", offset = 0) {
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > 8 * 1024 * 1024) throw new Error("\uC2A4\uD0AC \uBB38\uC11C \uC704\uCE58 \uC624\uB958");
     const entry = this.entries.find((e) => e.id === id);
     const file = entry?.files.find((f) => f.path === document);
-    if (!entry || !file || !/\.(md|txt)$/i.test(document) && !/^(LICENSE|COPYING)$/i.test(import_node_path10.default.basename(document))) throw new Error("\uAC80\uD1A0\uB41C \uBC88\uB4E4 \uC2A4\uD0AC \uBB38\uC11C\uB9CC \uC77D\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.");
+    if (!entry || !file || !/\.(md|txt)$/i.test(document) && !/^(LICENSE|COPYING)$/i.test(import_node_path12.default.basename(document))) throw new Error("\uAC80\uD1A0\uB41C \uBC88\uB4E4 \uC2A4\uD0AC \uBB38\uC11C\uB9CC \uC77D\uC744 \uC218 \uC788\uC2B5\uB2C8\uB2E4.");
     const bytes = await this.documentBytes(entry, file);
     const text2 = bytes.toString("utf8"), next = offset + 32e3;
     const documents = entry.files.slice(0, 30).map((f) => f.path).join(", ") + (entry.files.length > 30 ? `; \uCD1D ${entry.files.length}\uAC1C. ${entry.files.some((f) => f.path === "REFERENCES.md") ? "\uC804\uCCB4 \uCC38\uC870 \uACBD\uB85C\uB294 REFERENCES.md\uB97C \uC77D\uC73C\uC138\uC694." : "\uBCF8\uBB38\uC758 \uAD00\uB828 \uCC38\uC870 \uACBD\uB85C\uB97C \uC0AC\uC6A9\uD558\uC138\uC694."}` : "");
@@ -5744,10 +6190,10 @@ ${text2.slice(offset, next)}${next < text2.length ? `
 };
 
 // src/main/mcp-extensions.ts
-var import_node_path11 = __toESM(require("node:path"), 1);
-var import_promises10 = require("node:fs/promises");
+var import_node_path13 = __toESM(require("node:path"), 1);
+var import_promises11 = require("node:fs/promises");
 var import_node_fs2 = require("node:fs");
-var import_node_crypto9 = require("node:crypto");
+var import_node_crypto10 = require("node:crypto");
 var import_node_url2 = require("node:url");
 
 // src/main/browser-proxy.ts
@@ -7577,20 +8023,20 @@ var McpExtensions = class {
   verified;
   paths() {
     if (this.options.paths) return this.options.paths;
-    const base = import_node_path11.default.join(this.resources, "runtime/windows-x64/mcp");
-    return { python: () => import_node_path11.default.join(base, "python/python.exe"), site: (service) => import_node_path11.default.join(base, "site", service), git: import_node_path11.default.join(base, "git/cmd/git.exe"), clangd: import_node_path11.default.join(base, "clangd/clangd_23.1.0/bin/clangd.exe"), browser: import_node_path11.default.join(base, "browser/chrome-win64/chrome.exe"), node: import_node_path11.default.join(base, "node"), pythonWorker: import_node_path11.default.join(base, "mcp-python-worker.py"), nodeWorker: import_node_path11.default.join(base, "mcp-node-worker.cjs"), supervisor: import_node_path11.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py") };
+    const base = import_node_path13.default.join(this.resources, "runtime/windows-x64/mcp");
+    return { python: () => import_node_path13.default.join(base, "python/python.exe"), site: (service) => import_node_path13.default.join(base, "site", service), git: import_node_path13.default.join(base, "git/cmd/git.exe"), clangd: import_node_path13.default.join(base, "clangd/clangd_23.1.0/bin/clangd.exe"), browser: import_node_path13.default.join(base, "browser/chrome-win64/chrome.exe"), node: import_node_path13.default.join(base, "node"), pythonWorker: import_node_path13.default.join(base, "mcp-python-worker.py"), nodeWorker: import_node_path13.default.join(base, "mcp-node-worker.cjs"), supervisor: import_node_path13.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py") };
   }
   verify() {
     if (this.options.paths) return Promise.resolve();
     return this.verified ??= (async () => {
-      const base = import_node_path11.default.join(this.resources, "runtime/windows-x64/mcp");
-      const bytes = await (0, import_promises10.readFile)(import_node_path11.default.join(base, "manifest.json"));
-      if (!matchesPinnedRuntimeManifest("mcp", (0, import_node_crypto9.createHash)("sha256").update(bytes).digest("hex"), mcp_runtime_lock_default.manifestSha256)) throw new Error("MCP \uBC88\uB4E4 manifest\uAC00 \uACE0\uC815\uB41C \uBE4C\uB4DC\uC640 \uB2E4\uB985\uB2C8\uB2E4.");
+      const base = import_node_path13.default.join(this.resources, "runtime/windows-x64/mcp");
+      const bytes = await (0, import_promises11.readFile)(import_node_path13.default.join(base, "manifest.json"));
+      if (!matchesPinnedRuntimeManifest("mcp", (0, import_node_crypto10.createHash)("sha256").update(bytes).digest("hex"), mcp_runtime_lock_default.manifestSha256)) throw new Error("MCP \uBC88\uB4E4 manifest\uAC00 \uACE0\uC815\uB41C \uBE4C\uB4DC\uC640 \uB2E4\uB985\uB2C8\uB2E4.");
       const manifest = JSON.parse(bytes.toString());
       if (!manifest.complete) throw new Error("MCP \uB7F0\uD0C0\uC784 \uBC88\uB4E4\uC774 \uC644\uC131\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
       const expected = /* @__PURE__ */ new Set(["manifest.json", ...manifest.files.map((f) => f.path)]);
       const visit = async (folder = "") => {
-        for (const entry of await (0, import_promises10.readdir)(import_node_path11.default.join(base, folder), { withFileTypes: true })) {
+        for (const entry of await (0, import_promises11.readdir)(import_node_path13.default.join(base, folder), { withFileTypes: true })) {
           const relative2 = folder ? folder + "/" + entry.name : entry.name;
           if (entry.isSymbolicLink()) throw new Error("MCP \uB7F0\uD0C0\uC784 \uB9C1\uD06C\uB294 \uD5C8\uC6A9\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
           if (entry.isDirectory()) await visit(relative2);
@@ -7599,16 +8045,16 @@ var McpExtensions = class {
       };
       await visit();
       for (const item of manifest.files) {
-        if (typeof item.path !== "string" || item.path.includes("\\") || item.path.split("/").some((p) => !p || p === ".." || p === ".") || import_node_path11.default.isAbsolute(item.path)) throw new Error("MCP manifest \uACBD\uB85C \uC624\uB958");
-        const file = import_node_path11.default.join(base, item.path);
-        const stat = await (0, import_promises10.lstat)(file);
-        if (!stat.isFile() || stat.isSymbolicLink() || (0, import_node_crypto9.createHash)("sha256").update(await (0, import_promises10.readFile)(file)).digest("hex") !== item.sha256) throw new Error("MCP \uB7F0\uD0C0\uC784 \uBB34\uACB0\uC131 \uAC80\uC0AC \uC2E4\uD328");
+        if (typeof item.path !== "string" || item.path.includes("\\") || item.path.split("/").some((p) => !p || p === ".." || p === ".") || import_node_path13.default.isAbsolute(item.path)) throw new Error("MCP manifest \uACBD\uB85C \uC624\uB958");
+        const file = import_node_path13.default.join(base, item.path);
+        const stat = await (0, import_promises11.lstat)(file);
+        if (!stat.isFile() || stat.isSymbolicLink() || (0, import_node_crypto10.createHash)("sha256").update(await (0, import_promises11.readFile)(file)).digest("hex") !== item.sha256) throw new Error("MCP \uB7F0\uD0C0\uC784 \uBB34\uACB0\uC131 \uAC80\uC0AC \uC2E4\uD328");
       }
     })();
   }
   async copy(source, target, budget, max = 64 * 1024 * 1024) {
-    if (!(await (0, import_promises10.lstat)(source)).isFile()) throw new Error("MCP \uC785\uB825\uC740 \uC77C\uBC18 \uD30C\uC77C\uC774\uC5B4\uC57C \uD569\uB2C8\uB2E4.");
-    const file = await (0, import_promises10.open)(source, import_node_fs2.constants.O_RDONLY | (import_node_fs2.constants.O_NOFOLLOW ?? 0));
+    if (!(await (0, import_promises11.lstat)(source)).isFile()) throw new Error("MCP \uC785\uB825\uC740 \uC77C\uBC18 \uD30C\uC77C\uC774\uC5B4\uC57C \uD569\uB2C8\uB2E4.");
+    const file = await (0, import_promises11.open)(source, import_node_fs2.constants.O_RDONLY | (import_node_fs2.constants.O_NOFOLLOW ?? 0));
     try {
       const stat = await file.stat();
       if (!stat.isFile() || stat.size > max || budget.bytes + stat.size > 256 * 1024 * 1024) throw new Error("MCP \uBCF5\uC0AC \uC785\uB825 \uD06C\uAE30 \uC81C\uD55C\uC744 \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4.");
@@ -7625,40 +8071,40 @@ var McpExtensions = class {
       }
       const data = Buffer.concat(chunks);
       budget.bytes += data.length;
-      await (0, import_promises10.mkdir)(import_node_path11.default.dirname(target), { recursive: true, mode: 448 });
-      await (0, import_promises10.writeFile)(target, data, { mode: 384 });
+      await (0, import_promises11.mkdir)(import_node_path13.default.dirname(target), { recursive: true, mode: 448 });
+      await (0, import_promises11.writeFile)(target, data, { mode: 384 });
     } finally {
       await file.close();
     }
   }
   async snapshot(project, work, git = false, budget = { bytes: 0 }) {
     const files = new ProjectFiles(project);
-    const source = import_node_path11.default.join(work, "source");
-    await (0, import_promises10.mkdir)(source, { recursive: true, mode: 448 });
+    const source = import_node_path13.default.join(work, "source");
+    await (0, import_promises11.mkdir)(source, { recursive: true, mode: 448 });
     for (const relative2 of await files.list()) {
       if (!git && (relative2.split("/").some((p) => [".serena", ".clangd", ".cache", ".vscode", ".idea"].includes(p.toLowerCase())) || /(^|\/)(opencode\.jsonc?|\.mcp\.json|compile_flags\.txt)$/i.test(relative2))) continue;
       const original = await files.resolve(relative2);
-      const stat = await (0, import_promises10.lstat)(original);
-      if (stat.isFile() && stat.size <= 2 * 1024 * 1024) await this.copy(original, import_node_path11.default.join(source, relative2), budget, 2 * 1024 * 1024);
+      const stat = await (0, import_promises11.lstat)(original);
+      if (stat.isFile() && stat.size <= 2 * 1024 * 1024) await this.copy(original, import_node_path13.default.join(source, relative2), budget, 2 * 1024 * 1024);
     }
     if (git) {
       const metadata = await files.resolve(".git");
-      if (!(await (0, import_promises10.lstat)(metadata)).isDirectory()) throw new Error("\uD504\uB85C\uC81D\uD2B8 \uC548\uC758 \uC77C\uBC18 .git \uB514\uB809\uD130\uB9AC\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4. \uC678\uBD80 worktree\uB294 \uC9C0\uC6D0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
+      if (!(await (0, import_promises11.lstat)(metadata)).isDirectory()) throw new Error("\uD504\uB85C\uC81D\uD2B8 \uC548\uC758 \uC77C\uBC18 .git \uB514\uB809\uD130\uB9AC\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4. \uC678\uBD80 worktree\uB294 \uC9C0\uC6D0\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
       let count = 0;
       const visit = async (relative2, depth) => {
         if (depth > 12) throw new Error("Git \uBA54\uD0C0\uB370\uC774\uD130 \uAE4A\uC774 \uC81C\uD55C \uCD08\uACFC");
         const resolved = await files.resolve(".git/" + relative2);
-        const stat = await (0, import_promises10.lstat)(resolved);
-        if (stat.isDirectory()) for (const entry of await (0, import_promises10.readdir)(resolved)) await visit(relative2 + "/" + entry, depth + 1);
+        const stat = await (0, import_promises11.lstat)(resolved);
+        if (stat.isDirectory()) for (const entry of await (0, import_promises11.readdir)(resolved)) await visit(relative2 + "/" + entry, depth + 1);
         else {
           if (++count > 2e4 || /(^|\/)(alternates|http-alternates|commondir|gitdir|config|hooks)$/.test(relative2)) throw new Error("\uC678\uBD80 Git \uC800\uC7A5\uC18C \uC5F0\uACB0 \uB610\uB294 \uBE44\uC815\uC0C1 \uBA54\uD0C0\uB370\uC774\uD130\uB294 \uD5C8\uC6A9\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
-          await this.copy(resolved, import_node_path11.default.join(source, ".git", relative2), budget);
+          await this.copy(resolved, import_node_path13.default.join(source, ".git", relative2), budget);
         }
       };
       for (const relative2 of ["HEAD", "index", "objects", "refs", "packed-refs", "shallow"]) {
-        if (await (0, import_promises10.access)(import_node_path11.default.join(metadata, relative2)).then(() => true, () => false)) await visit(relative2, 0);
+        if (await (0, import_promises11.access)(import_node_path13.default.join(metadata, relative2)).then(() => true, () => false)) await visit(relative2, 0);
       }
-      await (0, import_promises10.writeFile)(import_node_path11.default.join(source, ".git/config"), "[core]\nrepositoryformatversion = 0\nbare = false\nfilemode = false\nhooksPath = /dev/null\n");
+      await (0, import_promises11.writeFile)(import_node_path13.default.join(source, ".git/config"), "[core]\nrepositoryformatversion = 0\nbare = false\nfilemode = false\nhooksPath = /dev/null\n");
     }
     return source;
   }
@@ -7667,9 +8113,9 @@ var McpExtensions = class {
     signal?.throwIfAborted();
     await this.verify();
     signal?.throwIfAborted();
-    const base = import_node_path11.default.join(this.root, "mcp-work");
-    await (0, import_promises10.mkdir)(base, { recursive: true, mode: 448 });
-    const work = await (0, import_promises10.mkdtemp)(import_node_path11.default.join(base, "run-"));
+    const base = import_node_path13.default.join(this.root, "mcp-work");
+    await (0, import_promises11.mkdir)(base, { recursive: true, mode: 448 });
+    const work = await (0, import_promises11.mkdtemp)(import_node_path13.default.join(base, "run-"));
     const paths = this.paths();
     const files = new ProjectFiles(project);
     let client;
@@ -7703,7 +8149,7 @@ var McpExtensions = class {
         if (a.operation !== "overview" && !a.symbol) throw new Error("\uC2EC\uBCFC \uC774\uB984\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.");
         await files.resolve(a.path);
         const source = await this.snapshot(project, work);
-        await (0, import_promises10.access)(import_node_path11.default.join(source, a.path));
+        await (0, import_promises11.access)(import_node_path13.default.join(source, a.path));
         service = "serena";
         tool = { overview: "get_symbols_overview", definition: "find_symbol", references: "find_referencing_symbols" }[a.operation];
         parameters = { relative_path: a.path, max_answer_chars: 5e4, ...a.operation === "overview" ? { depth: 1 } : a.operation === "definition" ? { name_path_pattern: a.symbol, include_body: true } : { name_path: a.symbol } };
@@ -7711,7 +8157,7 @@ var McpExtensions = class {
       } else if (name === "document_read") {
         const a = external_exports.object({ path: relative }).strict().parse(args);
         if (!/\.(pdf|docx|pptx|xlsx|xls|csv|tsv|txt|md|html?)$/i.test(a.path)) throw new Error("\uC9C0\uC6D0\uD558\uB294 \uB85C\uCEEC \uBB38\uC11C \uD615\uC2DD\uC774 \uC544\uB2D9\uB2C8\uB2E4.");
-        const input = import_node_path11.default.join(work, "input", import_node_path11.default.basename(a.path));
+        const input = import_node_path13.default.join(work, "input", import_node_path13.default.basename(a.path));
         await this.copy(await files.resolve(a.path), input, { bytes: 0 });
         service = "markitdown";
         tool = "convert_to_markdown";
@@ -7724,7 +8170,7 @@ var McpExtensions = class {
         const budget = { bytes: 0 };
         for (const [i, relative2] of a.paths.entries()) {
           if (!/\.(csv|tsv|parquet|duckdb)$/i.test(relative2)) throw new Error("CSV/TSV/Parquet/\uB85C\uCEEC DuckDB\uB9CC \uC9C0\uC6D0\uD569\uB2C8\uB2E4.");
-          const target = import_node_path11.default.join(work, "input", String(i) + import_node_path11.default.extname(relative2).toLowerCase());
+          const target = import_node_path13.default.join(work, "input", String(i) + import_node_path13.default.extname(relative2).toLowerCase());
           await this.copy(await files.resolve(relative2), target, budget);
           inputs.push(target);
         }
@@ -7739,7 +8185,7 @@ var McpExtensions = class {
         performance = a.performance;
         if (performance && a.backend !== "devtools") throw new Error("\uC131\uB2A5 trace\uB294 DevTools backend\uC5D0\uC11C\uB9CC \uC9C0\uC6D0\uD569\uB2C8\uB2E4.");
         const url = BrowserProxy.target(a.url, this.options.reservedPorts?.());
-        await (0, import_promises10.access)(paths.browser).catch(() => {
+        await (0, import_promises11.access)(paths.browser).catch(() => {
           throw new Error("\uACE0\uC815 \uBE0C\uB77C\uC6B0\uC800 \uBC88\uB4E4\uC774 \uC5C6\uC2B5\uB2C8\uB2E4. \uC9C1\uC6D0 PC\uC5D0\uC11C \uB2E4\uC6B4\uB85C\uB4DC\uD558\uAC70\uB098 \uAC1C\uC778 \uBE0C\uB77C\uC6B0\uC800\uB97C \uC7AC\uC0AC\uC6A9\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
         });
         if (!await this.options.approve("\uB85C\uCEEC \uAC1C\uBC1C \uD398\uC774\uC9C0 \uAC80\uC99D \uC2B9\uC778", `\uB3C4\uAD6C: ${a.backend} MCP
@@ -7759,14 +8205,14 @@ var McpExtensions = class {
       } else throw new Error("\uB4F1\uB85D\uB418\uC9C0 \uC54A\uC740 \uD655\uC7A5 \uB3C4\uAD6C\uC785\uB2C8\uB2E4.");
       signal?.throwIfAborted();
       if (this.stopped) throw new Error("\uC571\uC774 \uC911\uC9C0\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
-      const config = import_node_path11.default.join(work, "worker.json");
-      await (0, import_promises10.writeFile)(config, JSON.stringify({ service, work, site: paths.site(service), project, git: paths.git, clangd: paths.clangd, trace: !!this.options.paths, ...extra }), { mode: 384 });
+      const config = import_node_path13.default.join(work, "worker.json");
+      await (0, import_promises11.writeFile)(config, JSON.stringify({ service, work, site: paths.site(service), project, git: paths.git, clangd: paths.clangd, trace: !!this.options.paths, ...extra }), { mode: 384 });
       const node = ["playwright", "devtools"].includes(service);
       const executable = node ? process.execPath : paths.python(service);
       const argv = node ? [paths.nodeWorker, config] : ["-I", "-B", paths.pythonWorker, config];
       const binary = process.platform === "win32" ? paths.python(service) : executable;
       const launchArgs = process.platform === "win32" ? ["-I", "-B", paths.supervisor, executable, ...argv] : argv;
-      const env = { HOME: work, USERPROFILE: work, APPDATA: work, LOCALAPPDATA: work, PATH: import_node_path11.default.dirname(paths.git), TEMP: work, TMP: work, ELECTRON_RUN_AS_NODE: "1", PYTHONDONTWRITEBYTECODE: "1", DO_NOT_TRACK: "1" };
+      const env = { HOME: work, USERPROFILE: work, APPDATA: work, LOCALAPPDATA: work, PATH: import_node_path13.default.dirname(paths.git), TEMP: work, TMP: work, ELECTRON_RUN_AS_NODE: "1", PYTHONDONTWRITEBYTECODE: "1", DO_NOT_TRACK: "1" };
       for (const key of ["SystemRoot", "SYSTEMROOT", "WINDIR"]) if (process.env[key]) env[key] = process.env[key];
       const allowedTools = service === "playwright" ? ["browser_navigate", "browser_snapshot", "browser_console_messages", "browser_take_screenshot", "browser_close"] : service === "devtools" ? ["navigate_page", "take_snapshot", "list_console_messages", "take_screenshot", "performance_start_trace", "close_page"] : service === "git" ? [tool, "ned_snapshot_tracked_paths"] : [tool];
       client = new PrivateMcpClient({ executable: binary, args: launchArgs, cwd: work, env, allowedTools, timeout: 9e4, diagnostic: this.options.diagnostic });
@@ -7784,13 +8230,13 @@ var McpExtensions = class {
             if (error.code === "ENOENT") return void 0;
             throw error;
           });
-          const target = import_node_path11.default.join(work, "source", relative2);
-          if (original && !await (0, import_promises10.access)(target).then(() => true, () => false)) await this.copy(original, target, gitBudget);
+          const target = import_node_path13.default.join(work, "source", relative2);
+          if (original && !await (0, import_promises11.access)(target).then(() => true, () => false)) await this.copy(original, target, gitBudget);
         }
       }
       const result = await client.call(tool, parameters, signal);
       if (service === "serena") {
-        const context = await (0, import_promises10.readFile)(import_node_path11.default.join(work, "analysis-context.json"), "utf8").catch(() => "{}");
+        const context = await (0, import_promises11.readFile)(import_node_path13.default.join(work, "analysis-context.json"), "utf8").catch(() => "{}");
         result.content.unshift({ type: "text", text: "Compilation context: " + context });
       }
       if (node && !result.isError) {
@@ -7822,7 +8268,7 @@ ${note}
       } finally {
         if (client) this.clients.delete(client);
         await proxy?.close();
-        if (!this.uncertain) await (0, import_promises10.rm)(work, { recursive: true, force: true });
+        if (!this.uncertain) await (0, import_promises11.rm)(work, { recursive: true, force: true });
       }
     }
   }
@@ -7862,6 +8308,11 @@ var hostTools = [
   { name: "build_project", description: "Run an inspected VS2017/2019 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.", inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: "integer", minimum: 0 } }, ["target", "configuration", "platform", "toolchain"]) },
   { name: "git_stage", description: "Stage explicit project file paths with bundled Git under the native command permission policy. Supports additions, modifications and tracked deletions. Preserves other staged files. No hooks, shell, custom/LFS filters or network. Stages approved file bytes without EOL conversion.", inputSchema: object({ paths: { type: "array", items: string, minItems: 1, maxItems: 100 } }, ["paths"]) },
   { name: "git_commit", description: "Commit only the explicit selected staged paths. Preserves other staged changes. Native command permission policy applies. Author comes from repository-local user.name/user.email or user-provided author, never invent it. No hooks, signing, push or network.", inputSchema: object({ paths: { type: "array", items: string, minItems: 1, maxItems: 100 }, message: string, author: object({ name: string, email: string }, ["name", "email"]) }, ["paths", "message"]) },
+  { name: "inspect_python", description: "Discover existing Conda installations/environments in fixed OS locations, installation registry and .conda/environments.txt. Uses offline conda info only after native command permission. Does not install anything or use the bundled OpenViking Python for project execution.", inputSchema: object({}) },
+  { name: "choose_python_environment", description: "Ask the USER in a native Ned selection window which existing Conda environment this project should keep using. Full execution permission does not answer this choice. Reuses the saved choice unless replace=true for an explicit user environment-change request. Mirrors the choice to project OpenViking knowledge; knowledge text never grants execution authority.", inputSchema: object({ replace: { type: "boolean" } }) },
+  { name: "run_python", description: "Activate the user-selected Conda environment and start a project Python task under native command permission. Returns a job ID; use python_run_status to verify completion and exit code. Actions: run .py script, compile .py, test with installed pytest, wheel with installed build --no-isolation, or package a .py with installed PyInstaller. No dependency installation, arbitrary interpreter, shell or environment override. Args are JSON data, never inserted into a shell command.", inputSchema: object({ action: { type: "string", enum: ["run", "compile", "test", "wheel", "pyinstaller"] }, script: string, args: { type: "array", items: string, maxItems: 100 }, waitMs: { type: "integer", minimum: 0, maximum: 3e4 } }, ["action"]) },
+  { name: "python_run_status", description: "Read a Python job owned by this conversation/project; omit id to recover this session/project\u2019s job list. Optionally wait up to 30 seconds. running is not success. Returns confirmed exit code and bounded output when finished.", inputSchema: object({ id: string, waitMs: { type: "integer", minimum: 0, maximum: 3e4 } }) },
+  { name: "stop_python_run", description: "Stop one Python job owned by this conversation/project and confirm child process termination. Does not stop unrelated Python, Conda or OpenViking processes.", inputSchema: object({ id: string }, ["id"]) },
   ...extensionTools,
   ...desktopTools
 ];
@@ -7877,8 +8328,9 @@ var HostTools = class {
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...options.reservedPorts?.() ?? [], ...this.url ? [Number(new URL(this.url).port)] : []] });
     this.git = new GitTools(root, resources, options.approve, () => this.extensions.verifyRuntime());
     this.ghidra = new ReaGhidra(root, resources, options.approve);
+    this.python = new PythonProjects(root, resources, { approve: options.approve, choose: (project, environments, signal) => options.choosePython ? options.choosePython(project, environments, signal) : Promise.reject(new Error("Python \uD658\uACBD \uC120\uD0DD\uCC3D\uC774 \uC5F0\uACB0\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.")), locate: options.locateConda, knowledge: options.knowledge, permissionSignal: options.permissionSignal });
   }
-  token = (0, import_node_crypto10.randomBytes)(32).toString("hex");
+  token = (0, import_node_crypto11.randomBytes)(32).toString("hex");
   url = "";
   server;
   accepting = true;
@@ -7898,6 +8350,7 @@ var HostTools = class {
   desktop;
   git;
   ghidra;
+  python;
   async start() {
     await this.skills.load();
     this.server = (0, import_node_http2.createServer)(async (req, res) => {
@@ -7976,9 +8429,31 @@ var HostTools = class {
     this.runs.set(session, run);
     const project = await this.options.project(session), files = new ProjectFiles(project);
     this.activateEditScope(session, project);
-    const projectID = (0, import_node_crypto10.createHash)("sha256").update(project).digest("hex").slice(0, 32);
+    const projectID = (0, import_node_crypto11.createHash)("sha256").update(project).digest("hex").slice(0, 32);
     if (extensionTools.some((t) => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
+    if (name === "inspect_python") {
+      external_exports.object({}).strict().parse(args);
+      return JSON.stringify(await this.python.inspect(project, signal));
+    }
+    if (name === "choose_python_environment") {
+      const input = external_exports.object({ replace: external_exports.boolean().default(false) }).strict().parse(args);
+      return JSON.stringify(await this.python.choose(project, input.replace, signal));
+    }
+    if (name === "run_python") {
+      const input = external_exports.object({ action: external_exports.enum(["run", "compile", "test", "wheel", "pyinstaller"]), script: pathArg.optional(), args: external_exports.array(external_exports.string().max(4096).refine((s) => !s.includes("\0"))).max(100).default([]), waitMs: external_exports.number().int().min(0).max(3e4).default(15e3) }).strict().parse(args);
+      const request2 = await this.options.request?.(session);
+      const current = async () => this.accepting && !this.cancelled.has(session) && this.runs.get(session) === run && await this.options.project(session) === project && (!this.options.request || await this.options.request(session) === request2);
+      return JSON.stringify(await this.python.start(session, project, input, signal, current));
+    }
+    if (name === "python_run_status") {
+      const input = external_exports.object({ id: external_exports.string().uuid().optional(), waitMs: external_exports.number().int().min(0).max(3e4).default(3e4) }).strict().parse(args);
+      return JSON.stringify(input.id ? await this.python.status(session, project, input.id, input.waitMs, signal) : this.python.list(session, project));
+    }
+    if (name === "stop_python_run") {
+      const input = external_exports.object({ id: external_exports.string().uuid() }).strict().parse(args);
+      return JSON.stringify(await this.python.stop(session, project, input.id));
+    }
     if (name === "rea_ghidra") {
       const input = external_exports.object({ path: pathArg, operation: external_exports.enum(["functions", "decompile", "assembly", "callers", "callees", "references", "info"]), procedure: external_exports.string().min(1).max(1024).optional() }).strict().parse(args);
       return this.ghidra.call(session, project, input, signal);
@@ -8039,7 +8514,7 @@ var HostTools = class {
         const policyEpoch = this.editPolicyEpoch;
         const editSignal = signal ? AbortSignal.any([signal, this.editPolicyAbort.signal]) : this.editPolicyAbort.signal;
         const request2 = await this.options.request?.(session);
-        const proposal = deleting ? await files.proposeDelete((0, import_node_crypto10.randomUUID)(), a.path) : await files.propose((0, import_node_crypto10.randomUUID)(), a.path, a.content ?? "");
+        const proposal = deleting ? await files.proposeDelete((0, import_node_crypto11.randomUUID)(), a.path) : await files.propose((0, import_node_crypto11.randomUUID)(), a.path, a.content ?? "");
         await this.options.validateEdit?.(session, project, proposal, editSignal);
         const preview = deleting && proposal.before.length > 2e4 ? proposal.before.slice(0, 2e4) + "\n(\uC774\uD558 \uC0DD\uB7B5 \xB7 \uC6D0\uBCF8 \uC804\uCCB4\uB294 \uC2A4\uB0C5\uC0F7\uC5D0 \uBCF4\uAD00)" : proposal.before;
         const detail = `\uB300\uD654: ${session}
@@ -8061,7 +8536,7 @@ ${deleting ? "(\uD30C\uC77C\uC774 \uC0AD\uC81C\uB429\uB2C8\uB2E4. \uC6D0\uBCF8\u
         if (decision.autoApproveRequest) this.editGrant = { session, project, run, request: request2 };
         await this.options.validateEdit?.(session, project, proposal, editSignal);
         if (this.editPolicyEpoch !== policyEpoch || !this.accepting || editSignal.aborted || this.cancelled.has(session) || this.runs.get(session) !== run || this.options.request && await this.options.request(session) !== request2) throw new Error("\uC694\uCCAD\uC774 \uBC14\uB00C\uC5B4 \uD30C\uC77C \uC218\uC815\uC744 \uBCF4\uB958\uD569\uB2C8\uB2E4.");
-        await atomicJSON(import_node_path12.default.join(this.root, "snapshots", session, proposal.id + ".json"), proposal);
+        await atomicJSON(import_node_path14.default.join(this.root, "snapshots", session, proposal.id + ".json"), proposal);
         try {
           await files.apply(proposal, editSignal);
         } catch (error) {
@@ -8075,7 +8550,7 @@ ${deleting ? "(\uD30C\uC77C\uC774 \uC0AD\uC81C\uB429\uB2C8\uB2E4. \uC6D0\uBCF8\u
     }
     if (name === "read_methodology") {
       const a = external_exports.object({ name: external_exports.enum(["aegis", "conductor"]) }).strict().parse(args);
-      return (0, import_promises11.readFile)(import_node_path12.default.join(managedResource(this.resources, "methodology"), a.name + ".md"), "utf8");
+      return (0, import_promises12.readFile)(import_node_path14.default.join(managedResource(this.resources, "methodology"), a.name + ".md"), "utf8");
     }
     if (name === "skill_catalog") {
       external_exports.object({}).strict().parse(args);
@@ -8116,9 +8591,9 @@ ${deleting ? "(\uD30C\uC77C\uC774 \uC0AD\uC81C\uB429\uB2C8\uB2E4. \uC6D0\uBCF8\u
 ${text2}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(session)) throw new Error("\uC0C9\uC778\uC744 \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.");
       return knowledge.index(projectID, a.path, text2);
     }
-    const tempRoot = import_node_path12.default.join(this.root, "analysis");
-    await (0, import_promises11.mkdir)(tempRoot, { recursive: true, mode: 448 });
-    const temp = await (0, import_promises11.mkdtemp)(import_node_path12.default.join(tempRoot, "run-"));
+    const tempRoot = import_node_path14.default.join(this.root, "analysis");
+    await (0, import_promises12.mkdir)(tempRoot, { recursive: true, mode: 448 });
+    const temp = await (0, import_promises12.mkdtemp)(import_node_path14.default.join(tempRoot, "run-"));
     try {
       if (name === "graphify_analyze") {
         const a = external_exports.object({ paths: external_exports.array(pathArg).min(1).max(50) }).strict().parse(args);
@@ -8127,33 +8602,33 @@ ${text2}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(s
           const text2 = await files.read(relative2);
           size += Buffer.byteLength(text2);
           if (size > 20 * 1024 * 1024) throw new Error("\uBD84\uC11D \uC785\uB825\uC740 \uCD1D 20 MiB \uC774\uD558\uB85C \uC81C\uD55C\uB429\uB2C8\uB2E4.");
-          const target = import_node_path12.default.join(temp, "source", relative2);
-          await (0, import_promises11.mkdir)(import_node_path12.default.dirname(target), { recursive: true });
-          await (0, import_promises11.writeFile)(target, text2);
+          const target = import_node_path14.default.join(temp, "source", relative2);
+          await (0, import_promises12.mkdir)(import_node_path14.default.dirname(target), { recursive: true });
+          await (0, import_promises12.writeFile)(target, text2);
         }
         return await this.graphify(temp);
       }
       if (name === "rea_inspect") {
         const a = external_exports.object({ path: pathArg, kind: external_exports.enum(["go", "rust", "python-pyc", "electron-fuses", "model"]) }).strict().parse(args);
         const source = await files.resolve(a.path);
-        const stat = await (0, import_promises11.lstat)(source);
+        const stat = await (0, import_promises12.lstat)(source);
         if (!stat.isFile() || stat.size > 64 * 1024 * 1024) throw new Error("\uC815\uC801 \uBD84\uC11D \uB300\uC0C1\uC740 64 MiB \uC774\uD558 \uC77C\uBC18 \uD30C\uC77C\uB9CC \uD5C8\uC6A9\uD569\uB2C8\uB2E4.");
-        const target = import_node_path12.default.join(temp, import_node_path12.default.basename(source));
-        await (0, import_promises11.copyFile)(source, target);
+        const target = import_node_path14.default.join(temp, import_node_path14.default.basename(source));
+        await (0, import_promises12.copyFile)(source, target);
         return await this.rea(target, a.kind);
       }
       throw new Error("\uB4F1\uB85D\uB418\uC9C0 \uC54A\uC740 \uB3C4\uAD6C\uC785\uB2C8\uB2E4.");
     } finally {
-      await (0, import_promises11.rm)(temp, { recursive: true, force: true });
+      await (0, import_promises12.rm)(temp, { recursive: true, force: true });
     }
   }
   graphify(folder) {
-    const executable = import_node_path12.default.join(this.resources, "runtime/windows-x64/openviking/python/python.exe");
-    const script = import_node_path12.default.join(this.resources, "runtime/windows-x64/openviking/analysis-worker.py");
+    const executable = import_node_path14.default.join(this.resources, "runtime/windows-x64/openviking/python/python.exe");
+    const script = import_node_path14.default.join(this.resources, "runtime/windows-x64/openviking/analysis-worker.py");
     return new Promise((resolve, reject) => {
-      const supervisor = import_node_path12.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py");
+      const supervisor = import_node_path14.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py");
       const args = process.platform === "win32" ? ["-I", "-B", supervisor, executable, "-I", "-B", script, folder] : ["-I", "-B", script, folder];
-      const child = (0, import_node_child_process5.spawn)(executable, args, { windowsHide: true, cwd: folder, env: { SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HF_HUB_OFFLINE: "1", DO_NOT_TRACK: "1" }, stdio: ["pipe", "pipe", "pipe"] });
+      const child = (0, import_node_child_process6.spawn)(executable, args, { windowsHide: true, cwd: folder, env: { SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HF_HUB_OFFLINE: "1", DO_NOT_TRACK: "1" }, stdio: ["pipe", "pipe", "pipe"] });
       this.children.add(child);
       child.once("exit", () => this.children.delete(child));
       child.once("error", () => this.children.delete(child));
@@ -8181,12 +8656,12 @@ ${text2}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(s
   }
   async rea(file, kind) {
     const tool = { go: "inspect_go_binary", rust: "inspect_rust_binary", "python-pyc": "inspect_python_pyc", "electron-fuses": "inspect_electron_fuses", model: "inspect_model_artifact" }[kind];
-    const script = import_node_path12.default.join(this.resources, "runtime/windows-x64/rea/scripts/rea.mjs");
-    const python = import_node_path12.default.join(this.resources, "runtime/windows-x64/openviking/python/python.exe");
-    const supervisor = import_node_path12.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py");
+    const script = import_node_path14.default.join(this.resources, "runtime/windows-x64/rea/scripts/rea.mjs");
+    const python = import_node_path14.default.join(this.resources, "runtime/windows-x64/openviking/python/python.exe");
+    const supervisor = import_node_path14.default.join(this.resources, "runtime/windows-x64/openviking/sidecar-supervisor.py");
     const binary = process.platform === "win32" ? python : process.execPath;
     const argv = process.platform === "win32" ? ["-I", "-B", supervisor, process.execPath, script, "--mcp"] : [script, "--mcp"];
-    const child = (0, import_node_child_process5.spawn)(binary, argv, { cwd: import_node_path12.default.dirname(file), windowsHide: true, stdio: "pipe", env: { ELECTRON_RUN_AS_NODE: "1", SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HOME: import_node_path12.default.dirname(file), USERPROFILE: import_node_path12.default.dirname(file), APPDATA: import_node_path12.default.dirname(file), LOCALAPPDATA: import_node_path12.default.dirname(file), PATH: "", DO_NOT_TRACK: "1" } });
+    const child = (0, import_node_child_process6.spawn)(binary, argv, { cwd: import_node_path14.default.dirname(file), windowsHide: true, stdio: "pipe", env: { ELECTRON_RUN_AS_NODE: "1", SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HOME: import_node_path14.default.dirname(file), USERPROFILE: import_node_path14.default.dirname(file), APPDATA: import_node_path14.default.dirname(file), LOCALAPPDATA: import_node_path14.default.dirname(file), PATH: "", DO_NOT_TRACK: "1" } });
     this.children.add(child);
     child.once("exit", () => this.children.delete(child));
     child.once("error", () => this.children.delete(child));
@@ -8257,7 +8732,7 @@ ${text2}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(s
     this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
     try {
-      await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close()]);
+      await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close(), this.python.close()]);
     } finally {
       for (const child of this.children) child.kill("SIGKILL");
       await Promise.allSettled(this.active);
@@ -8274,6 +8749,7 @@ ${text2}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(s
     });
     void this.ghidra.cancel(session).catch(() => {
     });
+    this.python.cancel(session);
     this.cancelled.add(session);
     this.editGrant = void 0;
     this.runs.delete(session);
@@ -8287,11 +8763,14 @@ ${text2}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(s
     this.runs.set(session, Symbol());
     this.cancelled.delete(session);
   }
+  waitPythonStop(session) {
+    return this.python.stopped(session);
+  }
 };
 
 // distribution/ned/permission-policy.ts
-var import_node_path13 = __toESM(require("node:path"), 1);
-var import_promises12 = require("node:fs/promises");
+var import_node_path15 = __toESM(require("node:path"), 1);
+var import_promises13 = require("node:fs/promises");
 var permissionModes = [
   { value: "ask", name: "\uC2B9\uC778 \uC694\uCCAD", description: "\uD30C\uC77C \uC0DD\uC131\xB7\uC218\uC815\xB7\uC0AD\uC81C\uC640 \uBE4C\uB4DC\xB7\uC9C0\uC2DD \uC804\uB2EC\xB7\uB370\uC2A4\uD06C\uD1B1 \uB3C4\uAD6C\uB97C \uC2E4\uD589\uD558\uAE30 \uC804\uC5D0 \uD655\uC778\uD569\uB2C8\uB2E4." },
   { value: "edits", name: "\uD504\uB85C\uC81D\uD2B8 \uD30C\uC77C \uC790\uB3D9 \uC2B9\uC778", description: "\uC120\uD0DD\uD55C \uD504\uB85C\uC81D\uD2B8\uC758 \uD30C\uC77C \uC0DD\uC131\xB7\uC218\uC815\xB7\uC0AD\uC81C\uB294 \uC790\uB3D9 \uC2B9\uC778\uD569\uB2C8\uB2E4. \uBE4C\uB4DC\xB7\uC9C0\uC2DD \uC804\uB2EC\xB7\uB370\uC2A4\uD06C\uD1B1\uC740 \uD655\uC778\uD569\uB2C8\uB2E4." },
@@ -8312,7 +8791,7 @@ var PermissionPolicy = class {
   listeners = /* @__PURE__ */ new Set();
   file;
   constructor(root) {
-    this.file = import_node_path13.default.join(root, "permissions.json");
+    this.file = import_node_path15.default.join(root, "permissions.json");
   }
   get mode() {
     return this.current;
@@ -8333,7 +8812,7 @@ var PermissionPolicy = class {
     for (const listener of this.listeners) listener();
   }
   async load() {
-    const stat = await (0, import_promises12.lstat)(this.file).catch((error) => {
+    const stat = await (0, import_promises13.lstat)(this.file).catch((error) => {
       if (error.code === "ENOENT") return void 0;
       throw error;
     });
@@ -8341,7 +8820,7 @@ var PermissionPolicy = class {
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 4096) throw new Error("Ned \uAD8C\uD55C \uC124\uC815 \uD30C\uC77C\uC744 \uD655\uC778\uD558\uC138\uC694. \uAE30\uC874 \uD30C\uC77C\uC744 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4.");
     let saved;
     try {
-      saved = JSON.parse(await (0, import_promises12.readFile)(this.file, "utf8"));
+      saved = JSON.parse(await (0, import_promises13.readFile)(this.file, "utf8"));
     } catch {
       throw new Error("Ned \uAD8C\uD55C \uC124\uC815\uC758 JSON \uBB38\uBC95\uC744 \uD655\uC778\uD558\uC138\uC694. \uAE30\uC874 \uD30C\uC77C\uC744 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4.");
     }
@@ -8363,7 +8842,7 @@ var PermissionPolicy = class {
       this.controller = new AbortController();
       const revision = this.generation + 1;
       try {
-        const stat = await (0, import_promises12.lstat)(this.file).catch((error) => {
+        const stat = await (0, import_promises13.lstat)(this.file).catch((error) => {
           if (error.code === "ENOENT") return void 0;
           throw error;
         });
@@ -8399,9 +8878,9 @@ var PermissionPolicy = class {
 
 // tests/delete-file.test.ts
 async function fixture(t, overrides = {}) {
-  const root = await (0, import_promises13.mkdtemp)(import_node_path14.default.join((0, import_node_os.tmpdir)(), "ned-delete-"));
-  const project = import_node_path14.default.join(root, "project"), data = import_node_path14.default.join(root, "data");
-  await (0, import_promises13.mkdir)(project);
+  const root = await (0, import_promises14.mkdtemp)(import_node_path16.default.join((0, import_node_os.tmpdir)(), "ned-delete-"));
+  const project = import_node_path16.default.join(root, "project"), data = import_node_path16.default.join(root, "data");
+  await (0, import_promises14.mkdir)(project);
   const host = new HostTools(data, root, {
     project: async () => project,
     knowledge: () => void 0,
@@ -8411,7 +8890,7 @@ async function fixture(t, overrides = {}) {
   });
   t.after(async () => {
     await host.close();
-    await (0, import_promises13.rm)(root, { recursive: true, force: true });
+    await (0, import_promises14.rm)(root, { recursive: true, force: true });
   });
   return { root, project, data, host };
 }
@@ -8433,34 +8912,34 @@ async function fixture(t, overrides = {}) {
     checks++;
   } });
   const original = "\uFEFF\uC6D0\uB798 \uB0B4\uC6A9\r\n";
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "obsolete.cpp"), original);
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "obsolete.cpp"), original);
   const work = f.host.call("delete_file", { path: "obsolete.cpp" }, "s");
   await ready;
-  import_strict.default.equal(await (0, import_promises13.readFile)(import_node_path14.default.join(f.project, "obsolete.cpp"), "utf8"), original);
+  import_strict.default.equal(await (0, import_promises14.readFile)(import_node_path16.default.join(f.project, "obsolete.cpp"), "utf8"), original);
   approve(true);
   const result = JSON.parse(await work);
   import_strict.default.equal(result.status, "deleted");
   import_strict.default.equal(result.after, null);
   import_strict.default.equal(checks, 2);
-  await import_strict.default.rejects((0, import_promises13.lstat)(import_node_path14.default.join(f.project, "obsolete.cpp")), { code: "ENOENT" });
-  const snapshot = JSON.parse(await (0, import_promises13.readFile)(import_node_path14.default.join(f.data, "snapshots/s", result.snapshot + ".json"), "utf8"));
+  await import_strict.default.rejects((0, import_promises14.lstat)(import_node_path16.default.join(f.project, "obsolete.cpp")), { code: "ENOENT" });
+  const snapshot = JSON.parse(await (0, import_promises14.readFile)(import_node_path16.default.join(f.data, "snapshots/s", result.snapshot + ".json"), "utf8"));
   import_strict.default.equal(snapshot.operation, "delete");
   import_strict.default.equal(snapshot.before, original);
   import_strict.default.deepEqual(Buffer.from(snapshot.before), Buffer.from(original));
-  import_strict.default.deepEqual(await (0, import_promises13.readdir)(f.project), []);
+  import_strict.default.deepEqual(await (0, import_promises14.readdir)(f.project), []);
 });
 (0, import_node_test.test)("empty files are removed; empty propose_edit content still creates an empty file", async (t) => {
   const f = await fixture(t);
   await f.host.call("propose_edit", { path: "empty.txt", content: "" }, "s");
-  import_strict.default.equal((await (0, import_promises13.lstat)(import_node_path14.default.join(f.project, "empty.txt"))).size, 0);
+  import_strict.default.equal((await (0, import_promises14.lstat)(import_node_path16.default.join(f.project, "empty.txt"))).size, 0);
   import_strict.default.equal(JSON.parse(await f.host.call("delete_file", { path: "empty.txt" }, "s")).status, "deleted");
   await import_strict.default.rejects(f.host.call("delete_file", { path: "empty.txt" }, "s"), /없습니다/);
 });
 (0, import_node_test.test)("denial, cancellation and unsaved editor changes never remove the file", async (t) => {
   const denied = await fixture(t, { approve: async () => false });
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(denied.project, "keep.txt"), "keep");
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(denied.project, "keep.txt"), "keep");
   await import_strict.default.rejects(denied.host.call("delete_file", { path: "keep.txt" }, "s"), /거절/);
-  import_strict.default.equal(await (0, import_promises13.readFile)(import_node_path14.default.join(denied.project, "keep.txt"), "utf8"), "keep");
+  import_strict.default.equal(await (0, import_promises14.readFile)(import_node_path16.default.join(denied.project, "keep.txt"), "utf8"), "keep");
   let entered, decide;
   const ready = new Promise((r) => {
     entered = r;
@@ -8471,31 +8950,31 @@ async function fixture(t, overrides = {}) {
       decide = r;
     });
   } });
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(cancelled.project, "keep.txt"), "keep");
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(cancelled.project, "keep.txt"), "keep");
   const pending = cancelled.host.call("delete_file", { path: "keep.txt" }, "s");
   await ready;
   cancelled.host.cancelSession("s");
   decide(true);
   await import_strict.default.rejects(pending, /중지/);
-  import_strict.default.equal(await (0, import_promises13.readFile)(import_node_path14.default.join(cancelled.project, "keep.txt"), "utf8"), "keep");
+  import_strict.default.equal(await (0, import_promises14.readFile)(import_node_path16.default.join(cancelled.project, "keep.txt"), "utf8"), "keep");
   let checks = 0;
   const dirty = await fixture(t, { validateEdit: async () => {
     if (++checks === 2) throw new Error("\uBBF8\uC800\uC7A5 \uBC84\uD37C");
   } });
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(dirty.project, "keep.txt"), "keep");
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(dirty.project, "keep.txt"), "keep");
   await import_strict.default.rejects(dirty.host.call("delete_file", { path: "keep.txt" }, "s"), /미저장/);
-  import_strict.default.equal(await (0, import_promises13.readFile)(import_node_path14.default.join(dirty.project, "keep.txt"), "utf8"), "keep");
+  import_strict.default.equal(await (0, import_promises14.readFile)(import_node_path16.default.join(dirty.project, "keep.txt"), "utf8"), "keep");
 });
 (0, import_node_test.test)("a file changed during approval survives and requires a fresh proposal", async (t) => {
   let project = "";
   const f = await fixture(t, { approve: async () => {
-    await (0, import_promises13.writeFile)(import_node_path14.default.join(project, "keep.txt"), "external change");
+    await (0, import_promises14.writeFile)(import_node_path16.default.join(project, "keep.txt"), "external change");
     return true;
   } });
   project = f.project;
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "keep.txt"), "approved original");
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "keep.txt"), "approved original");
   await import_strict.default.rejects(f.host.call("delete_file", { path: "keep.txt" }, "s"), /외부 변경/);
-  import_strict.default.equal(await (0, import_promises13.readFile)(import_node_path14.default.join(f.project, "keep.txt"), "utf8"), "external change");
+  import_strict.default.equal(await (0, import_promises14.readFile)(import_node_path16.default.join(f.project, "keep.txt"), "utf8"), "external change");
 });
 (0, import_node_test.test)("protection covers folders, links, settings, invalid UTF-8 and binary/oversized files before approval", async (t) => {
   let prompts = 0;
@@ -8503,25 +8982,25 @@ async function fixture(t, overrides = {}) {
     prompts++;
     return true;
   } });
-  await (0, import_promises13.mkdir)(import_node_path14.default.join(f.project, "folder"));
-  await (0, import_promises13.mkdir)(import_node_path14.default.join(f.project, ".zed"));
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, ".zed/settings.json"), "{}");
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "bad.bin"), Buffer.from([0, 1, 2]));
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "invalid.txt"), Buffer.from([255, 254, 128]));
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "large.txt"), "x".repeat(2 * 1024 * 1024 + 1));
-  const outside = import_node_path14.default.join(f.root, "outside.txt");
-  await (0, import_promises13.writeFile)(outside, "outside");
-  await (0, import_promises13.symlink)(outside, import_node_path14.default.join(f.project, "link.txt"));
+  await (0, import_promises14.mkdir)(import_node_path16.default.join(f.project, "folder"));
+  await (0, import_promises14.mkdir)(import_node_path16.default.join(f.project, ".zed"));
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, ".zed/settings.json"), "{}");
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "bad.bin"), Buffer.from([0, 1, 2]));
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "invalid.txt"), Buffer.from([255, 254, 128]));
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "large.txt"), "x".repeat(2 * 1024 * 1024 + 1));
+  const outside = import_node_path16.default.join(f.root, "outside.txt");
+  await (0, import_promises14.writeFile)(outside, "outside");
+  await (0, import_promises14.symlink)(outside, import_node_path16.default.join(f.project, "link.txt"));
   for (const name of ["folder", ".zed/settings.json", "bad.bin", "invalid.txt", "large.txt", "link.txt", "../outside.txt", "missing.txt"]) {
     await import_strict.default.rejects(f.host.call("delete_file", { path: name }, "s"), name);
   }
   import_strict.default.equal(prompts, 0);
-  import_strict.default.equal(await (0, import_promises13.readFile)(outside, "utf8"), "outside");
+  import_strict.default.equal(await (0, import_promises14.readFile)(outside, "utf8"), "outside");
 });
 (0, import_node_test.test)("persistent edits/full permission modes cover deletion without an extra prompt", async (t) => {
   for (const mode of ["ask", "edits", "full"]) {
-    const policyRoot = await (0, import_promises13.mkdtemp)(import_node_path14.default.join((0, import_node_os.tmpdir)(), "ned-delete-policy-"));
-    t.after(() => (0, import_promises13.rm)(policyRoot, { recursive: true, force: true }));
+    const policyRoot = await (0, import_promises14.mkdtemp)(import_node_path16.default.join((0, import_node_os.tmpdir)(), "ned-delete-policy-"));
+    t.after(() => (0, import_promises14.rm)(policyRoot, { recursive: true, force: true }));
     const policy = new PermissionPolicy(policyRoot);
     await policy.set(mode);
     let prompts = 0;
@@ -8532,7 +9011,7 @@ async function fixture(t, overrides = {}) {
         return { approved: false, autoApproveRequest: false };
       })
     });
-    await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "old.txt"), "old");
+    await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "old.txt"), "old");
     if (mode === "ask") {
       await import_strict.default.rejects(f.host.call("delete_file", { path: "old.txt" }, "s"), /거절/);
       import_strict.default.equal(prompts, 1);
@@ -8550,25 +9029,25 @@ async function fixture(t, overrides = {}) {
     import_strict.default.match(detail, /이하 생략/);
     return true;
   } });
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "large-source.txt"), original);
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "large-source.txt"), original);
   const result = JSON.parse(await f.host.call("delete_file", { path: "large-source.txt" }, "s"));
   import_strict.default.equal(result.before, original);
 });
 (0, import_node_test.test)("a rejected deletion proposal never behaves as a file rewrite", async (t) => {
   const f = await fixture(t);
   const files = new ProjectFiles(f.project);
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "keep.txt"), "keep");
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "keep.txt"), "keep");
   const proposal = await files.proposeDelete("call", "keep.txt");
   proposal.status = "rejected";
   await import_strict.default.rejects(files.apply(proposal), /유효한 대기/);
-  import_strict.default.equal(await (0, import_promises13.readFile)(import_node_path14.default.join(f.project, "keep.txt"), "utf8"), "keep");
+  import_strict.default.equal(await (0, import_promises14.readFile)(import_node_path16.default.join(f.project, "keep.txt"), "utf8"), "keep");
 });
 (0, import_node_test.test)("a failed recovery snapshot prevents deletion", async (t) => {
   const f = await fixture(t);
-  await (0, import_promises13.mkdir)(f.data, { recursive: true });
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.data, "snapshots"), "not a directory");
-  await (0, import_promises13.writeFile)(import_node_path14.default.join(f.project, "keep.txt"), "recoverable original");
+  await (0, import_promises14.mkdir)(f.data, { recursive: true });
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.data, "snapshots"), "not a directory");
+  await (0, import_promises14.writeFile)(import_node_path16.default.join(f.project, "keep.txt"), "recoverable original");
   await import_strict.default.rejects(f.host.call("delete_file", { path: "keep.txt" }, "s"));
-  import_strict.default.equal(await (0, import_promises13.readFile)(import_node_path14.default.join(f.project, "keep.txt"), "utf8"), "recoverable original");
-  import_strict.default.deepEqual(await (0, import_promises13.readdir)(f.project), ["keep.txt"]);
+  import_strict.default.equal(await (0, import_promises14.readFile)(import_node_path16.default.join(f.project, "keep.txt"), "utf8"), "recoverable original");
+  import_strict.default.deepEqual(await (0, import_promises14.readdir)(f.project), ["keep.txt"]);
 });

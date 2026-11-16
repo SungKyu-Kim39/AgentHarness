@@ -6,7 +6,7 @@ on:
         description: Exact immutable installer build
         default: 0.3.8
         type: choice
-        options: ['0.3.8', '0.3.7-rebuild1', '0.3.7']
+        options: ['0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe']
   push:
     branches: [work]
     paths:
@@ -17,6 +17,7 @@ permissions:
   contents: read
 jobs:
   offline-install:
+    if: inputs.artifact_version != 'python-source-probe'
     runs-on: windows-2022
     timeout-minutes: 30
     env:
@@ -220,3 +221,70 @@ jobs:
             windows-native-test.txt
             windows-native-stderr.txt
           if-no-files-found: ignore
+
+  python-source-probe:
+    if: inputs.artifact_version == 'python-source-probe'
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          lfs: false
+          persist-credentials: false
+      - name: Install the immutable 0.3.7 runtime for a source-only Python probe
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $audit = Get-Content downloads/Ned-0.3.7-installer-audit.json -Raw | ConvertFrom-Json
+          $exe = Join-Path $env:RUNNER_TEMP 'Ned-python-probe-runtime.exe'
+          & curl.exe --fail --location --retry 2 --output $exe 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/refs/heads/work/downloads/Ned-0.3.7-win-x64.exe'
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $audit.installer.sha256) { throw 'Probe runtime hash mismatch' }
+          $install = Join-Path $env:RUNNER_TEMP 'ned-python-probe-runtime'
+          $process = Start-Process $exe -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          $process.Refresh()
+          if ($process.ExitCode -ne 0) { throw 'Probe runtime installation failed' }
+          $resources = Join-Path $env:RUNNER_TEMP 'ned-python-source-resources'
+          New-Item -ItemType Directory -Path (Join-Path $resources 'ned') -Force | Out-Null
+          New-Item -ItemType Junction -Path (Join-Path $resources 'runtime') -Target (Join-Path $install 'resources\runtime') | Out-Null
+          Copy-Item distribution/python-runner.py (Join-Path $resources 'ned\python-runner.py')
+          $candidates = @($env:CONDA, 'C:\Miniconda', 'C:\Miniconda3', 'C:\ProgramData\Miniconda3') | Where-Object { $_ }
+          $conda = $candidates | Where-Object { Test-Path (Join-Path $_ 'Scripts\conda.exe') } | Select-Object -First 1
+          if (!$conda) { throw 'This source probe requires preinstalled Windows Conda' }
+          "NED_TEST_CONDA_ROOT=$conda" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "CONDA=$conda" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          "NED_TEST_RESOURCES=$resources" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          Get-NetFirewallProfile | Select-Object Name,Enabled | ConvertTo-Json | Set-Content python-firewall-before.json
+          Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+          $group = "Ned-Python-CI-$env:GITHUB_RUN_ID"
+          "NED_PYTHON_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          foreach ($program in @((Join-Path $install 'Ned.exe'), (Join-Path $resources 'runtime\windows-x64\openviking\python\python.exe'), (Join-Path $conda 'python.exe'), (Join-Path $conda 'Scripts\conda.exe'))) {
+            New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
+          }
+      - name: Run current source with actual Conda and the fixed process supervisor
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $test = 'downloads/Ned-0.3.8-windows-python-test.cjs'
+          $expected = (Get-Content "$test.sha256").Split(' ')[0]
+          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Python probe hash mismatch' }
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-source-test.txt -RedirectStandardError windows-python-source-stderr.txt -Wait -PassThru
+          $run.Refresh()
+          Get-Content windows-python-source-test.txt
+          Get-Content windows-python-source-stderr.txt
+          if ($run.ExitCode -ne 0) { throw 'Windows Python source probe failed' }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
+      - name: Restore source-probe firewall
+        if: always()
+        shell: pwsh
+        run: |
+          if ($env:NED_PYTHON_FIREWALL_GROUP) { Get-NetFirewallRule -Group $env:NED_PYTHON_FIREWALL_GROUP -ErrorAction SilentlyContinue | Remove-NetFirewallRule }
+          if (Test-Path python-firewall-before.json) { foreach ($profile in (Get-Content python-firewall-before.json -Raw | ConvertFrom-Json)) { Set-NetFirewallProfile -Profile $profile.Name -Enabled $profile.Enabled } }
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: windows-python-source-probe
+          path: |
+            windows-python-source-test.txt
+            windows-python-source-stderr.txt

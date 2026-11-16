@@ -99,6 +99,8 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       {from:path.join(root,'distribution/personal-pack-recovery.py'),to:'ned/personal-pack-recovery.py'},
       {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
+      {from:path.join(root,'distribution/python-runner.py'),to:'ned/python-runner.py'},
+      {from:path.join(root,'docs/python-conda.md'),to:'ned/python-conda.md'},
       {from:path.join(root,'docs/git-and-binary-analysis.md'),to:'ned/git-and-binary-analysis.md'},
       {from:path.join(root,'LICENSE'),to:'ned/licenses/Ned-MIT.txt'},
       {from:path.join(root,'node_modules/jsonc-parser/LICENSE.md'),to:'ned/licenses/jsonc-parser-MIT.txt'},
@@ -211,7 +213,7 @@ async function bundle() {
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
   if(fullRelease)await cp(path.join(root,'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
-  if(version==='0.3.8')for(const [from,to] of [['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
+  if(version==='0.3.8')for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));

@@ -1,0 +1,37 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { PythonProjects } from '../distribution/python-projects';
+const installation = process.env.NED_TEST_CONDA_ROOT, resources = process.env.NED_TEST_RESOURCES;
+test('installed Windows Conda activates, runs literal arguments, reuses the project choice and terminates child processes', { skip: process.platform !== 'win32' || !installation || !resources, timeout: 180000 }, async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-conda-native-')), project = path.join(root, 'project with spaces'); await mkdir(project);
+  let choices = 0, current: PythonProjects | undefined;
+  t.after(async () => { await current?.close(); await rm(root, { recursive: true, force: true }); });
+  const options = { approve: async () => true, choose: async (_p: string, envs: any[]) => { choices++; const base = envs.find(e => path.resolve(e.prefix).toLowerCase() === path.resolve(installation!).toLowerCase()); assert.ok(base, 'preinstalled Conda base must be found by production discovery'); return base.id; }, knowledge: () => undefined };
+  current = new PythonProjects(root, resources!, options);
+  const source = path.join(project, 'hello script.py');
+  await writeFile(path.join(project, 'helper.py'), 'value=11\n');
+  await writeFile(source, 'import os,sys,json,helper\nprint(json.dumps(dict(prefix=sys.prefix,activated=os.environ.get("CONDA_PREFIX"),cwd=os.getcwd(),args=sys.argv[1:],value=helper.value)))\n');
+  const args = ['literal & not-a-command', '%PATH%', '한국어'];
+  const run = await current.start('session-a', project, { action: 'run', script: 'hello script.py', args });
+  let status: Awaited<ReturnType<PythonProjects['status']>>;
+  do { status = await current.status('session-a', project, run.id, 1000); } while (status.status === 'running');
+  assert.equal(status.status, 'succeeded', status.output); assert.equal(status.exitCode, 0);
+  const result = JSON.parse(status.output!.trim().split(/\r?\n/).reverse().find(line=>line.startsWith('{'))!); assert.equal(result.value, 11); assert.deepEqual(result.args, args); assert.equal(path.resolve(result.prefix).toLowerCase(), path.resolve(result.activated).toLowerCase()); assert.equal(path.resolve(result.cwd), path.resolve(project));
+  await current.close(); current = new PythonProjects(root, resources!, { ...options, choose: async () => { throw new Error('environment must stay remembered'); } });
+  assert.equal((await current.choose(project)).remembered, true); assert.equal(choices, 1);
+  const childFile = path.join(project, 'child-pid.txt');
+  await writeFile(source, 'import os,sys,subprocess,time,pathlib\np=subprocess.Popen([sys.executable,"-c","import time;time.sleep(120)"])\npathlib.Path("child-pid.txt").write_text(str(p.pid))\ntime.sleep(120)\n');
+  const long = await current.start('session-a', project, { action: 'run', script: 'hello script.py', args: [], waitMs: 0 });
+  const deadline = Date.now() + 30000;
+  while (!existsSync(childFile) && Date.now() < deadline) await new Promise(r => setTimeout(r, 100));
+  assert.ok(existsSync(childFile), 'project process must really start'); const pid = Number(await readFile(childFile, 'utf8'));
+  const stopped = await current.stop('session-a', project, long.id); assert.equal(stopped.status, 'stopped');
+  const end = Date.now() + 3000; let alive = true;
+  while (alive && Date.now() < end) { try { process.kill(pid, 0); await new Promise(r => setTimeout(r, 50)); } catch { alive = false; } }
+  assert.equal(alive, false, 'owned grandchild must terminate');
+  t.diagnostic('Actual preinstalled Conda and selected Python ran a saved project script with metacharacter/Unicode argv; remembered choice survived recreation and the Windows Job Object stopped its grandchild.');
+});

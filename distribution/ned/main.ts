@@ -10,6 +10,7 @@ import { requestEditorClose } from './editor-close';
 import { ConfigurationRestart } from './configuration-restart';
 import { StartupWindow } from './startup-window';
 import { OpenVikingStudio } from './studio';
+import { selectPythonEnvironment } from './python-selector';
 import { recordEditorExit, checkEditorFiles, editorExitPresentation } from './editor-startup';
 import { AgentOwner } from './owner';
 import { EditorNetwork, prepareEditor } from './profile';
@@ -119,6 +120,12 @@ async function start() {
   });
   if (!ready) { closed = true; startup.close(); app.quit(); return; }
   const runtime = getRuntime();
+  runtime.setPythonSelector((project, environments, signal) => startup.duringDialog(() => selectPythonEnvironment(resources, project, environments, signal)),
+    async (_project, signal) => {
+      signal?.throwIfAborted();
+      const result = await startup.duringDialog(() => dialog.showOpenDialog({ title: 'Conda 설치 루트 폴더 선택', buttonLabel: 'Conda 설치 폴더 선택', properties: ['openDirectory', 'dontAddToRecent'] }));
+      signal?.throwIfAborted(); return result.canceled ? undefined : result.filePaths[0];
+    });
   runtime.onKnowledgeChange(() => { if (runtime.status().knowledge?.status !== 'ready') studio.close(); });
   startup.setPhase('engine');
   const connection = await runtime.connection([path.join(resources, process.platform === 'win32' ? 'opencode-cli.exe' : 'opencode-cli')]);
@@ -181,6 +188,7 @@ async function start() {
       { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
       { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
       { label: '새 스킬·MCP 추가 방법', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },
+      { label: 'Python·Conda 실행과 환경 기억', click: () => { void shell.openPath(path.join(resources, 'ned/python-conda.md')); } },
       { label: 'Git 커밋·Ghidra·외부 자료 읽기', click: () => { void shell.openPath(path.join(resources, 'ned/git-and-binary-analysis.md')); } },
     ] },
     { label: '권한 및 자동 승인 상태', click: async () => {
