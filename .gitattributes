@@ -5,3 +5,7 @@ downloads/*.exe filter=lfs diff=lfs merge=lfs -text
 downloads/*.tgz filter=lfs diff=lfs merge=lfs -text
 # Generated native test fixtures have byte-pinned SHA-256 records.
 downloads/*-windows-*-test.cjs text eol=lf
+
+# Candidate binaries stay immutable until installed Windows validation passes.
+downloads/candidates/**/*.exe filter=lfs diff=lfs merge=lfs -text
+downloads/candidates/**/*.tgz filter=lfs diff=lfs merge=lfs -text
