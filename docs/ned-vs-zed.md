@@ -18,6 +18,7 @@ Zed 자체도 AI 기능과 외부 에이전트 연결을 지원합니다. 비교
 | 에이전트 | Zed 자체 AI 또는 사용자가 연결한 에이전트 | Ned 전용 OpenCode 또는 기본 Zed Agent 선택 |
 | 모델 설정 | 연결 방식에 맞춰 개별 설정 | 중앙 JSON에서 여러 LLM과 단일 임베딩 설정 |
 | 도구 준비 | 필요한 도구·런타임 선정과 설치 | 검토한 런타임과 도구를 반입 묶음에 포함 |
+| 하위 작업 | 선택한 하네스와 도구에 따름 | Ned의 조사·지정 파일 구현 하위 Agent 또는 Zed 자체 하위 Agent |
 | 작업 지침 | 개인이나 조직이 준비 | 기본 스킬 67개와 Aegis·Conductor 어댑터 |
 | 코드·자료 분석 | 선택한 도구 구성에 따름 | Serena·clangd, Graphify, REA와 개발 MCP 6종 |
 | 지식 검색 | 별도 서비스 연결과 운영 | OpenViking 실행·종료, 스킬 등록, 자료 색인·검색 |
@@ -51,6 +52,8 @@ flowchart LR
 Zed는 편집과 대화 화면을, OpenCode는 세션과 에이전트 실행을 맡습니다. Ned 호스트는 키를 보관하고 프로젝트 접근과 도구 승인, 서비스 실행·종료를 관리합니다. 사내 LLM과 임베딩 API가 계산을 담당하므로 모델 가중치는 EXE에 들어 있지 않습니다.
 
 스킬은 작업 절차를 안내하고, 연결된 도구는 실제 파일과 실행 결과를 제공합니다. Aegis·Conductor의 지침과 관련 트랙을 읽어 계획을 세울 수 있고, Serena·clangd로 심볼을 조사하거나 Graphify·REA로 지원하는 정적 분석을 수행할 수 있습니다. 개발 MCP는 Serena, Git, Playwright, MarkItDown, Chrome DevTools, DuckDB Local입니다. 도구마다 Ned에서 허용한 기능만 연결합니다.
+
+Ned Agent는 [서브에이전트](subagents.md)로 조사와 구현을 실제 하위 세션에 나눠 맡길 수 있습니다. 부모 권한을 상속하고 동시에 두 작업을 실행합니다. 기본 Zed Agent는 OpenCode·Ned 도구와 연결하지 않으며 Zed 자체 하네스와 하위 Agent를 사용합니다. [두 Agent 안내](zed-native-agent.md)에서 경계를 비교할 수 있습니다.
 
 ## 사용하면서 달라지는 점
 

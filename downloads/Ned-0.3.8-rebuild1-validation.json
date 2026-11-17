@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.8",
+  "buildRevision": "rebuild1",
+  "sourceCommit": "c4d1edb",
+  "recordedAt": "2026-11-17T02:44:11.167980+00:00",
+  "os": "linux",
+  "modelEndpointKind": "synthetic-loopback-openai-compatible; no intranet models prompted",
+  "typecheck": "passed",
+  "hostBuild": "passed",
+  "offlineSkillsVerified": 67,
+  "fullTests": {
+    "tests": 211,
+    "passed": 199,
+    "failed": 0,
+    "skipped": 12,
+    "seconds": 690.850151948,
+    "command": "ELECTRON_BUILDER_CACHE=\"$PWD/.cache/ned/builder-cache\" npm test"
+  },
+  "nativeZedSourceProbe": {
+    "runId": 43974417593,
+    "passed": 4,
+    "newInstallerAcceptance": false
+  },
+  "sourceEditorBuild": {
+    "runId": 43966924528,
+    "commit": "0b05464",
+    "passed": true,
+    "windowsGuiAcceptance": false
+  },
+  "releaseReady": false
+}
