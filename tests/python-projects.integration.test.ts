@@ -44,6 +44,9 @@ test('the selected project interpreter is actually indexed and recalled by OpenV
   }
   assert.equal(found, true, JSON.stringify(result));
   assert.ok(calls.slice(before).length > 0); assert.ok(calls.slice(before).every(route => ['/v1/embeddings', '/v1/chat/completions'].includes(route)));
+  const connection=await service.studioConnection();
+  const settled=await fetch(connection.baseUrl+'/api/v1/system/wait',{method:'POST',headers:{...connection.headers,'Content-Type':'application/json'},body:'{}'});
+  assert.equal(settled.status,200);
   const completed = calls.length;
   projects = new PythonProjects(root, '', { approve: async () => true, roots: async () => [installation], choose: async () => { throw new Error('Saved choice must be reused'); }, knowledge: () => service });
   assert.equal((await projects.choose(project)).remembered, true); await projects.close(); projects = undefined; assert.equal(calls.length, completed);

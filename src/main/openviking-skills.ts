@@ -10,12 +10,13 @@ import { previousSkillOwner, previousSkillHash } from './openviking-namespace';
 const digest = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 export const bundledSkillsRoot = 'viking://agent/skills';
 export interface SkillRegistration {
+  previousRegistered?: number; checked?: number; reused?: number; installed?: number; updated?: number; indexStatus?: 'not-indexed' | 'unverified' | 'indexing' | 'ready';
   status: 'pending' | 'registering' | 'ready' | 'error';
   registered: number; total: number; conflicts: string[]; failed: string[]; message?: string;
   current?: { id: string; stage: string }; errors?: Array<{ id: string; stage: string; code: string; httpStatus?: number }>;
 }
 export type SkillTransport = (route: string, options?: { method?: 'GET' | 'POST' | 'PUT'; body?: unknown; signal?: AbortSignal }) => Promise<any>;
-interface Package { id: string; name: string; hash: string; archive: Buffer; body: string; files: Map<string, Buffer>; source: string; commit: string }
+interface Package { id: string; name: string; description: string; hash: string; archive: Buffer; body: string; files: Map<string, Buffer>; source: string; commit: string }
 interface RecordEntry { bundleHash: string; revision: string }
 interface RegistrationState { schemaVersion: 1; entries: Record<string, RecordEntry> }
 const bodyOf = (text: string) => text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, '').trim();
@@ -39,9 +40,9 @@ function archive(files: Map<string, Buffer>, name: string) {
   return Buffer.concat([...local, directory, end]);
 }
 
-export async function loadBundledSkillPackages(root: string): Promise<Package[]> {
+export async function loadBundledSkillPackages(root: string, lockFile = path.join(root, '..', 'skills-lock.json')): Promise<Package[]> {
   const manifestBytes = await readFile(path.join(root, 'manifest.json'));
-  const lock = JSON.parse(await readFile(path.join(root, '..', 'skills-lock.json'), 'utf8'));
+  const lock = JSON.parse(await readFile(lockFile, 'utf8'));
   const manifest = JSON.parse(manifestBytes.toString('utf8'));
   if (lock.schemaVersion !== 1 || lock.manifestSha256 !== digest(manifestBytes) || manifest.schemaVersion !== 1 || !Array.isArray(manifest.skills) || lock.count !== manifest.skills.length) throw new Error('기본 스킬 목록 무결성 오류');
   const base = await realpath(root), ids = new Set<string>(); const packages: Package[] = [];
@@ -63,7 +64,7 @@ export async function loadBundledSkillPackages(root: string): Promise<Package[]>
     files.set('SKILL.md', Buffer.from(`---\nname: ${name}\ndescription: ${JSON.stringify(entry.description)}\n---\n\n${body}\n`));
     files.set('NED-BUNDLE.json', Buffer.from(JSON.stringify({ schemaVersion: 1, id: entry.id, source: entry.source, commit: entry.commit, license: entry.license, files: entry.files }, null, 2) + '\n'));
     const bytes = archive(files, name);
-    packages.push({ id: entry.id, name, hash: digest(bytes), archive: bytes, body, files, source: entry.source, commit: entry.commit });
+    packages.push({ id: entry.id, name, description: entry.description, hash: digest(bytes), archive: bytes, body, files, source: entry.source, commit: entry.commit });
   }
   return packages;
 }
@@ -109,7 +110,7 @@ export async function registerBundledSkills(options: { bundle: string; stateFile
       let remote = await installed(transport, pkg.name, signal); const record = saved.entries[pkg.id];
       const owner = remote?.source?.ned_owner ?? remote?.source?.[previousSkillOwner];
       const remoteHash = remote?.source?.ned_bundle_sha256 ?? remote?.source?.[previousSkillHash];
-      if (remote && (owner !== 'bundled-skills' || (record && (record.revision !== remote.revision || record.bundleHash !== remoteHash)))) {
+      if (remote && (owner !== 'bundled-skills' || (record && (record.bundleHash !== remoteHash || (record.revision !== remote.revision && !matches(pkg, remote)))))) {
         state.conflicts.push(pkg.id); publish(); continue;
       }
       if (remote && remote.source?.ned_bundle_sha256 === pkg.hash && !matches(pkg, remote)) {

@@ -20,7 +20,7 @@ async function fixture(t: any) {
       ],
     ]),
     notifications: any[] = [],
-    created: any[] = [],
+    created: any[] = [], prompts: any[] = [],
     pending = new Map<string, Array<() => void>>();
   let request = "msg_request",
     stopFails = false;
@@ -45,6 +45,7 @@ async function fixture(t: any) {
       throw Object.assign(Error("missing"), { status: 404 });
     const info = sessions.get(id);
     if (route.endsWith("/prompt")) {
+      prompts.push(body);
       info.running = true;
       return { data: { id: "msg_child" } };
     }
@@ -110,6 +111,7 @@ async function fixture(t: any) {
     project,
     sessions,
     created,
+    prompts,
     notifications,
     api,
     wait,
@@ -352,4 +354,20 @@ test("stopping during admission rejects the old request, and long child results 
     1000,
   );
   assert.ok(!("result" in (await f.agents.status("root"))[0]));
+});
+
+test('Goldfish gets a fresh reviewer request and host refuses memory, edits, secret files and non-EGM skills',async t=>{
+ const f=await fixture(t);
+ await assert.rejects(f.agents.spawn('root',{role:'goldfish',reviewer:'unknown',title:'review',prompt:'target',writePaths:[]}),/검토자/);
+ await assert.rejects(f.agents.spawn('root',{role:'goldfish',reviewer:'structural',title:'review',prompt:'target',writePaths:['a.ts']}),/읽기 전용/);
+ const job=await f.agents.spawn('root',{role:'goldfish',reviewer:'structural',title:'구조 검토',prompt:'Review only src/a.ts with the provided design.',writePaths:[]});
+ await f.wait(()=>f.sessions.get(job.id)?.running);
+ assert.equal(f.created[0].agent,'ned-goldfish');assert.equal(f.created[0].messages,undefined);
+ assert.match(f.prompts[0].text,/references\/bundle\/agents\/structural.md/);
+ assert.equal((await f.agents.scope(job.id,'read_file',{path:'src/a.ts'})).session,'root');
+ assert.equal((await f.agents.scope(job.id,'read_skill',{id:'egm-review-loop'})).session,'root');
+ for(const tool of ['propose_edit','delete_file','knowledge_search','personal_knowledge_search','spawn_subagent','build_project'])await assert.rejects(f.agents.scope(job.id,tool,{path:'src/a.ts'}),/Goldfish/);
+ await assert.rejects(f.agents.scope(job.id,'read_skill',{id:'session-handoff'}),/EGM/);
+ for(const file of ['.env','sub/AGENTS.md','CLAUDE.md'])await assert.rejects(f.agents.scope(job.id,'read_file',{path:file}),/Goldfish/);
+ f.complete(job.id,'Required reads completed; no structural findings.');await f.wait(()=>f.notifications.length===1);
 });

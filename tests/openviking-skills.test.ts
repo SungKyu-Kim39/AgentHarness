@@ -57,6 +57,7 @@ test('bundle updates replace pristine app copies and preserve externally edited 
   await f.saveManifest(); await server.refresh();
   assert.equal((await registerBundledSkills(o)).status, 'ready'); assert.ok(server.writes.includes('PUT:cpp-testing'));
   server.remote.get('ned-cpp-testing').revision = 'external-edit';
+  server.remote.get('ned-cpp-testing').content = 'USER MODIFIED CONTENT';
   server.remote.get('ned-ab-testing').source.ned_owner = 'user';
   const before = server.writes.length, result = await registerBundledSkills(o);
   assert.deepEqual(result.conflicts.sort(), ['ab-testing', 'cpp-testing']); assert.equal(server.writes.length, before);
@@ -81,4 +82,10 @@ test('skill failures expose only stage, fixed code and HTTP status and remain re
  const result=await registerBundledSkills({...o,transport:async(route,opts)=>{if(opts?.method==='POST' && !(opts.body instanceof FormData))throw Object.assign(new Error('unauthorized secret-key https://private'),{status:401});return server.transport(route,opts);}});
  assert.equal(result.status,'error');assert.equal(result.errors?.length,2);assert.ok(result.errors?.every(e=>e.stage==='import'&&e.code==='OV_AUTH'&&e.httpStatus===401));
  assert.ok(!JSON.stringify(result).includes('secret-key'));assert.equal((await registerBundledSkills(o)).status,'ready');
+});
+
+test('SDK regenerated summaries do not turn an unchanged owned package into a conflict',async t=>{
+ const f=await fixture(t),server=await fakeServer(f.bundle),o=options(f,server);await registerBundledSkills(o);
+ server.remote.get('ned-cpp-testing').revision='generated-summary-changed';
+ assert.equal((await registerBundledSkills(o)).status,'ready');assert.equal(server.writes.length,2);
 });

@@ -49,11 +49,27 @@ test('native editor settings contain only a run credential and preserve valid Ze
  for(const secret of ['PRIVATE_FIRST_KEY','PRIVATE_SECOND_KEY',f.connection.token])assert.ok(!JSON.stringify(saved).includes(secret));
  saved.agent.default_profile='ask';saved.agent.default_model.model=f.connection.models[0].name;saved.buffer_font_size=23;saved.agent.dock='left';await writeFile(file,JSON.stringify(saved));
  await prepareEditor(root,'/Ned.exe','/resources','/descriptor',f.proxy,{...f.connection,baseUrl:'http://127.0.0.1:12345/v1',token:'next-run-token'});
- saved=JSON.parse(await readFile(file,'utf8'));assert.equal(saved.agent.default_profile,'ask');assert.equal(saved.agent.default_model.model,f.connection.models[0].name);assert.equal(saved.buffer_font_size,23);assert.equal(saved.agent.dock,'left');assert.equal(saved.language_models.openai_compatible.Intranet.api_url,'http://127.0.0.1:12345/v1');
+ saved=JSON.parse(await readFile(file,'utf8'));assert.equal(saved.agent.default_profile,'ask');assert.equal(saved.agent.default_model.model,f.connection.models[0].name);assert.equal(saved.buffer_font_size,23);assert.equal(saved.agent.dock,'left');assert.equal(saved.language_models.openai_compatible.Intranet.api_url,f.proxy+'/v1');
 });
 test('closing a queued native model request reaches the upstream and leaves no private model listeners', {timeout:10000},async t=>{
  const f=await fixture(t);f.queue();const pending=fetch(f.connection.baseUrl+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+f.connection.token},body:JSON.stringify({model:f.connection.defaultModel,messages:[]})});
  const caught=assert.rejects(pending);await f.entered;const ports=f.broker.ports();await f.broker.close();await caught;await f.cancelled;
  for(const port of ports)await assert.rejects(fetch('http://127.0.0.1:'+port));
  await assert.rejects(f.broker.start(),/중지/);
+});
+
+test('native first message works through configured local editor endpoint in origin and absolute proxy forms',async t=>{
+ const f=await fixture(t);
+ const direct=await fetch(f.proxy+'/v1/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+f.connection.token,'Content-Type':'application/json'},body:JSON.stringify({model:f.connection.defaultModel,messages:[{role:'user',content:'first message'}]})});
+ assert.equal(direct.status,200);assert.equal(f.calls.length,1);
+ assert.equal((await f.post({model:f.connection.defaultModel,messages:[]},f.proxy+'/v1/chat/completions')).status,200);assert.equal(f.calls.length,2);
+ const denied=await fetch(f.proxy+'/v1/models');assert.equal(denied.status,403);
+ const noToken=await fetch(f.proxy+'/v1/chat/completions',{method:'POST',body:'{}'});assert.equal(noToken.status,401);
+ assert.equal(f.calls.length,2);
+});
+
+test('origin-form HTTP proxy requests with the owned model Host header are accepted',async t=>{
+ const f=await fixture(t);const data=JSON.stringify({model:f.connection.defaultModel,messages:[]});
+ const status=await new Promise<number>((resolve,reject)=>{const r=request(f.proxy,{method:'POST',path:'/v1/chat/completions',headers:{Host:new URL(f.connection.baseUrl).host,Authorization:'Bearer '+f.connection.token,'Content-Type':'application/json'}},res=>{res.resume();res.once('end',()=>resolve(res.statusCode!));});r.once('error',reject);r.end(data);});
+ assert.equal(status,200);assert.equal(f.calls.length,1);
 });

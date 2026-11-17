@@ -10,3 +10,6 @@ agent-config.json
 !agent-config.example.json
 test-results/
 __pycache__/
+
+# Rebuilt and verified by skills:seed before host packaging.
+vendor/skill-seed/

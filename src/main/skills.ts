@@ -6,7 +6,7 @@ export interface SkillEntry { id: string; name: string; description: string; dir
 export class OfflineSkills {
   private entries: SkillEntry[] = [];
   constructor(private root: string) {}
-  async load() {
+  async load(progress?: (done:number,total:number)=>void) {
     this.entries = [];
     const bytes = await readFile(path.join(this.root, 'manifest.json')).catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return undefined; throw error; });
     if (!bytes) return;
@@ -24,7 +24,13 @@ export class OfflineSkills {
         files.add(file.path);
       }
     }
-    for (const entry of manifest.skills as SkillEntry[]) for (const file of entry.files) await this.documentBytes(entry,file);
+    const documents=(manifest.skills as SkillEntry[]).flatMap(entry=>entry.files.map(file=>({entry,file})));
+    let next=0,done=0,failed=false;
+    progress?.(0,documents.length);
+    const settled=await Promise.allSettled(Array.from({length:Math.min(4,documents.length)},async()=>{
+      try{while(!failed&&next<documents.length){const {entry,file}=documents[next++];await this.documentBytes(entry,file);progress?.(++done,documents.length);}}catch(error){failed=true;throw error;}
+    }));
+    const failure=settled.find(result=>result.status==='rejected');if(failure?.status==='rejected')throw failure.reason;
     this.entries = manifest.skills;
   }
   catalog() { return this.entries.map(({ id, name, description }) => ({ id, name, description })); }

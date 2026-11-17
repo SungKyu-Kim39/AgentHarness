@@ -49,7 +49,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'run_python', description: 'Activate the user-selected Conda environment and start a project Python task under native command permission. Returns a job ID; use python_run_status to verify completion and exit code. Actions: run .py script, compile .py, test with installed pytest, wheel with installed build --no-isolation, or package a .py with installed PyInstaller. No dependency installation, arbitrary interpreter, shell or environment override. Args are JSON data, never inserted into a shell command.', inputSchema: object({ action: { type: 'string', enum: ['run', 'compile', 'test', 'wheel', 'pyinstaller'] }, script: string, args: { type: 'array', items: string, maxItems: 100 }, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }, ['action']) },
   { name: 'python_run_status', description: 'Read a Python job owned by this conversation/project; omit id to recover this session/project’s job list. Optionally wait up to 30 seconds. running is not success. Returns confirmed exit code and bounded output when finished.', inputSchema: object({ id: string, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }) },
   { name: 'stop_python_run', description: 'Stop one Python job owned by this conversation/project and confirm child process termination. Does not stop unrelated Python, Conda or OpenViking processes.', inputSchema: object({ id: string }, ['id']) },
-  {name:'spawn_subagent',description:'Delegate a self-contained research or implementation task to a real child agent. Uses the parent model/project and current native permissions. At most two child agents run across Ned; further tasks queue. Research is read-only. Workers require exact disjoint project-relative writePaths. No nested delegation, shell/build/Git writes/environment choices/desktop actions in children. Completion is reported back to this conversation automatically. Include all context; children do not see the parent transcript.',inputSchema:object({role:{type:'string',enum:['research','worker']},title:{type:'string',maxLength:200},prompt:{type:'string',maxLength:32000},writePaths:{type:'array',items:string,maxItems:100}},['role','title','prompt'])},
+  {name:'spawn_subagent',description:'Delegate a self-contained research or implementation task to a real child agent. Uses the parent model/project and current native permissions. At most two child agents run across Ned; further tasks queue. Research is read-only. Workers require exact disjoint project-relative writePaths. No nested delegation, shell/build/Git writes/environment choices/desktop actions in children. Completion is reported back to this conversation automatically. Include all context; children do not see the parent transcript.',inputSchema:object({role:{type:'string',enum:['research','worker','goldfish']},title:{type:'string',maxLength:200},prompt:{type:'string',maxLength:32000},reviewer:{type:'string',enum:['codebase_details','comprehension','design_critic','implementation_readiness','inventive_catalyst','structural','style','zoom_out']},writePaths:{type:'array',items:string,maxItems:100}},['role','title','prompt'])},
   {name:'subagent_status',description:'Inspect this conversation’s real child-agent states and confirmed results. Omit id for the latest 50 task metadata records. Supply id for a result page of up to 32000 characters; follow nextOffset using offset. Completion notifications arrive automatically; avoid polling. waitMs may wait up to 30 seconds without limiting child model generation.',inputSchema:object({id:string,waitMs:{type:'integer',minimum:0,maximum:30000},offset:{type:'integer',minimum:0,maximum:10000000}})},
   {name:'stop_subagent',description:'Stop an owned child task and confirm its engine loop is idle. Never stops another conversation’s tasks. An unconfirmed stop prevents further work.',inputSchema:object({id:string},['id'])},
   ...extensionTools,
@@ -79,7 +79,7 @@ export class HostTools {
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal}>;
-    subagents?: {spawn(parent:string,input:{role:'research'|'worker';title:string;prompt:string;writePaths:string[]},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
+    subagents?: {spawn(parent:string,input:{role:'research'|'worker'|'goldfish';reviewer?:string;title:string;prompt:string;writePaths:string[]},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
     fullAccess?: () => boolean;
@@ -100,8 +100,8 @@ export class HostTools {
     this.ghidra = new ReaGhidra(root, resources, options.approve);
     this.python = new PythonProjects(root, resources, { approve: options.approve, choose: (project, environments, signal) => options.choosePython ? options.choosePython(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창이 연결되지 않았습니다.')), locate: options.locateConda, knowledge: options.knowledge, permissionSignal: options.permissionSignal });
   }
-  async start() {
-    await this.skills.load();
+  async start(progress?: (done:number,total:number)=>void) {
+    await this.skills.load(progress);
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== 'Bearer ' + this.token) { res.writeHead(401).end(); return; }
       if (req.url !== '/mcp' || req.method !== 'POST' || !this.accepting) { res.writeHead(405).end(); return; }
@@ -154,7 +154,7 @@ export class HostTools {
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
     if(['spawn_subagent','subagent_status','stop_subagent'].includes(name)){
       const agents=this.options.subagents;if(!agents)throw Error('하위 Agent 실행기가 준비되지 않았습니다.');
-      if(name==='spawn_subagent'){const a=z.object({role:z.enum(['research','worker']),title:z.string().trim().min(1).max(200),prompt:z.string().trim().min(1).max(32000),writePaths:z.array(pathArg).max(100).default([])}).strict().parse(args);return JSON.stringify(await agents.spawn(session,a,signal));}
+      if(name==='spawn_subagent'){const a=z.object({role:z.enum(['research','worker','goldfish']),reviewer:z.enum(['codebase_details','comprehension','design_critic','implementation_readiness','inventive_catalyst','structural','style','zoom_out']).optional(),title:z.string().trim().min(1).max(200),prompt:z.string().trim().min(1).max(32000),writePaths:z.array(pathArg).max(100).default([])}).strict().parse(args);return JSON.stringify(await agents.spawn(session,a,signal));}
       if(name==='subagent_status'){const a=z.object({id:z.string().max(128).optional(),waitMs:z.number().int().min(0).max(30000).default(0),offset:z.number().int().min(0).max(10000000).default(0)}).strict().parse(args);return JSON.stringify(await agents.status(session,a.id,a.waitMs,a.offset));}
       const a=z.object({id:z.string().max(128)}).strict().parse(args);return JSON.stringify(await agents.stop(session,a.id));
     }

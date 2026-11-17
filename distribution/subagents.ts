@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { atomicJSON } from "../src/main/config";
-export type SubagentRole = "research" | "worker";
+export type SubagentRole = "research" | "worker" | "goldfish";
 type State =
   | "queued"
   | "running"
@@ -18,6 +18,7 @@ type Entry = {
   role: SubagentRole;
   title: string;
   writes: string[];
+  reviewer?: string;
   state: State;
   createdAt: number;
   endedAt?: number;
@@ -54,6 +55,8 @@ export const subagentReadTools = new Set([
   "data_query",
   "browser_check",
 ]);
+export const goldfishReadTools = new Set(["read_file", "list_files", "read_skill"]);
+export const goldfishReviewers = new Set(["codebase_details","comprehension","design_critic","implementation_readiness","inventive_catalyst","structural","style","zoom_out"]);
 const editing = new Set(["propose_edit", "delete_file"]);
 const active = (j: Job) =>
   ["queued", "running", "unconfirmed"].includes(j.state);
@@ -116,7 +119,8 @@ export class Subagents {
         !valid(j.id) ||
         !valid(j.parent) ||
         !valid(j.request) ||
-        !["research", "worker"].includes(j.role) ||
+        !["research", "worker", "goldfish"].includes(j.role) ||
+        (j.role === "goldfish" && (!goldfishReviewers.has(j.reviewer) || j.writes?.length !== 0)) ||
         typeof j.title !== "string" ||
         j.title.length > 200 ||
         typeof j.project !== "string" ||
@@ -144,6 +148,7 @@ export class Subagents {
         request: j.request,
         project: j.project,
         role: j.role,
+        reviewer: j.reviewer,
         title: j.title,
         writes: j.writes,
         state: j.state,
@@ -209,6 +214,11 @@ export class Subagents {
         (await this.request(j.parent)) !== j.request
       )
         throw Error("하위 Agent의 부모 요청·프로젝트 범위가 바뀌었습니다.");
+      if(j.role === "goldfish") {
+        if(!goldfishReadTools.has(tool))throw Error("Goldfish는 지정 자료를 읽고 검토 결과만 반환합니다.");
+        if(tool === "read_skill" && !String((args as any)?.id ?? "").startsWith("egm-"))throw Error("Goldfish는 EGM 지침만 읽을 수 있습니다.");
+        if(tool === "read_file" && /(?:^|[\\/])(?:\.env(?:\..*)?|AGENTS\.md|CLAUDE\.md|GEMINI\.md)$/i.test(String((args as any)?.path ?? "")))throw Error("Goldfish의 비밀·자동 프로젝트 지침 읽기를 차단했습니다.");
+      }
       if (
         !subagentReadTools.has(tool) &&
         !(j.role === "worker" && editing.has(tool))
@@ -252,6 +262,7 @@ export class Subagents {
       role: SubagentRole;
       title: string;
       prompt: string;
+      reviewer?: string;
       writePaths: string[];
     },
     signal?: AbortSignal,
@@ -271,6 +282,7 @@ export class Subagents {
       writes = [...new Set(input.writePaths.map(relative))];
     if (input.role === "worker" && !writes.length)
       throw Error("구현 하위 Agent에는 수정할 파일을 지정하세요.");
+    if (input.role === "goldfish" && (!goldfishReviewers.has(input.reviewer ?? "") || writes.length)) throw Error("Goldfish 검토자와 읽기 전용 범위를 확인하세요.");
     if (input.role === "research" && writes.length)
       throw Error("조사 하위 Agent에는 수정 파일을 할당할 수 없습니다.");
     if (
@@ -297,11 +309,12 @@ export class Subagents {
       request,
       project,
       role: input.role,
+      reviewer: input.reviewer,
       title: input.title,
       writes,
       state: "queued",
       createdAt: Date.now(),
-      prompt: input.prompt,
+      prompt: input.role === "goldfish" ? `Read read_skill id=egm-review-loop document=references/bundle/agents/${input.reviewer}.md in full first. Use only the target and explicitly supplied references. No parent history or memory is available. Return evidence and incomplete required reads.\n\n${input.prompt}` : input.prompt,
       model: info.model,
       abort: new AbortController(),
     };
@@ -363,7 +376,9 @@ export class Subagents {
         {
           text:
             "Ned 하위 작업입니다. 부모 프로젝트·권한을 따르세요. 보고서는 한국어로 작성하세요. 재위임·빌드·Git 변경·환경 선택·데스크톱 조작은 주 Agent에게 맡기세요. " +
-            (j.role === "research"
+            (j.role === "goldfish"
+              ? "독립 EGM Goldfish 검토입니다. 제공한 자료만 읽고 검토 결과를 반환하세요. 프로젝트를 수정하거나 기억을 조회하지 마세요."
+              : j.role === "research"
               ? "조사 전용이며 프로젝트를 수정하지 마세요."
               : "수정 가능한 정확한 파일: " +
                 j.writes.join(", ") +

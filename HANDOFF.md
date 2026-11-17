@@ -2,6 +2,28 @@
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.8 수정 빌드 1**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
+## 0.3.9 구현 후보
+
+사용자가 누적 요구와 구현을 승인했습니다. `codex/ned-0.3.9` 작업 트리에서 기본 스킬의
+사전 준비·변경분 적용, 지식 서비스의 비동기 시작, 단계·경과 시간·파일 검사 진행,
+Studio 표시 확인·실패 재시도, CMD/PowerShell 선택, 개인 Zed Agent DB 가져오기,
+EGM 7종과 읽기 전용 Goldfish 역할을 구현했습니다. 스킬은 74종입니다.
+Zed 필수 프로필 name·capability와 첫 메시지 프록시 경로 호환성도 보완했습니다.
+[변경 사항](docs/changes-0.3.9.md), [검증 기록](docs/validation-0.3.9.md)을 먼저 읽습니다.
+
+현재 변경은 소스 구현 후보이며 설치 파일·릴리스는 게시하지 않았습니다. 실제 Windows GUI와
+사내 모델 수용, 0.3.9 소스 빌드 편집기 반입과 runtime lock/설치 감사는 남았습니다.
+Linux 전체 229건 중 199건 통과·30건 제외·실패 0건이며 후속 SDK·데이터 대상 8건과
+실제 Chromium Studio 표시를 확인했습니다. 이전 배포물과 태그는 그대로 보존합니다. 새 편집기 작업은 version별 artifact와 build 메타데이터를
+만들며 원격 work 브랜치에 자동 커밋하는 방식을 제거했습니다.
+
+스킬은 `scripts/prepare-skill-seed.ts`가 생성하고 `src/main/skill-seed.ts`가 서비스 정지 중
+배치합니다. 로컬 준비와 벡터 색인은 구분합니다. YAML 2.8.1 ISC를 고정해 SDK 직렬화 차이와
+사용자 메타데이터 수정을 구분합니다. 수정본·추가 파일은 보존하며 교체 기록으로 중단을 복구합니다.
+개인 대화는 `distribution/ned/zed-history.ts`에서 원본 readOnly SQLite snapshot과 트랜잭션으로
+병합합니다. 직렬화 0.3.0만 지원하고 모델·sandbox 승인은 초기화합니다.
+Goldfish는 새로운 호스트 소유 세션과 제한된 읽기 도구를 사용하고 자동 스킬 주입을 생략합니다.
+
 ## 0.3.8 rebuild1 배포 기준
 
 [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1)의 EXE·TGZ·체크섬·감사 자료 7개를 게시했고 인증 없는 전체 다운로드 해시를 확인했습니다. [다운로드 안내](downloads/README.md), [배포 상태](downloads/Ned-0.3.8-rebuild1-release-state.json), [검증 기록](docs/validation-0.3.8-rebuild1.md)을 기준으로 이어갑니다.

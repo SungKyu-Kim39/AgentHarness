@@ -53,3 +53,16 @@ The reviewed skill is pinned to 5a3fd39483c1890150dbb46372f65e5a82739373. Npm Co
 ## Source-built Ned editor — 0.3.8 rebuild1
 
 Based on Zed 1.28.1, commit e8bc16acee5ae1937600d571d441c4b5d7b0d288. Ned contributors modify crates/zed/src/zed/app_menus.rs and crates/zed/src/zed.rs for Ned menus/About, add the Ned About image, then replace Windows icon resources. The original licenses remain applicable. Modified corresponding source is supplied as zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz alongside the original source and Cargo.lock. This source build is distinct from the earlier icon-only modification of the vendor binary. No upstream endorsement is implied.
+
+## Ned 0.3.9 EGM 자료
+
+Google elephant-goldfish-model 0.1.1, Apache-2.0,
+https://github.com/google/elephant-goldfish-model,
+commit `72d06f52a2482885d9a64bd24b291c6e8628942c`의 7개 워크플로와
+검토자·검토 기준·설계 지침을 포함합니다. 각 패키지의 LICENSE와 `egm-lock.json`의
+파일 해시를 보존합니다. Ned용 어댑터는 변경된 자료이며 원본 설치기·외부 의존성을
+직원 PC에서 실행하지 않습니다.
+
+YAML 2.8.1 (Eemeli Aro, ISC)을 기본 스킬의 YAML 메타데이터 비교에 사용합니다.
+SDK가 직렬화 형식만 바꾼 경우와 사용자가 실제 메타데이터를 수정한 경우를 구별합니다.
+버전·무결성은 package-lock.json에 고정하고 라이선스 원문을 설치 자료의 yaml-ISC.txt에 보존합니다.

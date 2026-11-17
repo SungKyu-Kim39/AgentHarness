@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { build } from 'esbuild';
 import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import path from 'node:path';
@@ -9,6 +10,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const upstream = path.join(root, '.cache/opencode/source');
 const output = path.join(root, '.cache/ned/app');
 await mkdir(output, { recursive: true });
+execFileSync(process.execPath,['--import','tsx',path.join(root,'scripts/prepare-skill-seed.ts')],{cwd:root,stdio:'inherit'});
 const version = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).version;
 const lock = JSON.parse(await readFile(path.join(root, 'upstream-lock.json'), 'utf8'));
 const common = { bundle: true, platform: 'node', format: 'cjs', target: 'node22', logLevel: 'info', legalComments: 'eof' };

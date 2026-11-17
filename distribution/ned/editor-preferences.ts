@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { supportedTerminal } from './terminal';
 import { lstat, readFile, writeFile, rename, unlink } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { parse, parseTree, modify, applyEdits, type ParseError, type Node } from 'jsonc-parser';
@@ -57,6 +58,7 @@ export async function editorPreferences(data: string, managed: Record<string, an
       for (const [language,settings] of Object.entries(value)) desired.languages[language] = { ...desired.languages[language], ...(settings as object) };
     } else desired[key] = object(value) ? { ...desired[key], ...value } : value;
   }
+  if (supportedTerminal(chosen.terminal?.shell)) { desired.terminal ??= {}; desired.terminal.shell = chosen.terminal.shell; }
   // Retain native Zed choices only while they still name a managed model.
   const native = managed.language_models?.openai_compatible?.Intranet;
   if (native && chosen.language_models?.openai_compatible?.Intranet && object(chosen.agent)) {

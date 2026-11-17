@@ -11,7 +11,7 @@ import { HostTools, hostTools, type EditDecision } from './host-tools';
 import { SidecarProxy } from './sidecar-proxy';
 import { managedResource } from './ned/resources';
 import { koreanInstructions } from './ned/editor-instructions';
-import {Subagents,subagentReadTools} from './subagents';
+import {Subagents,subagentReadTools,goldfishReadTools} from './subagents';
 import { ZedModels } from './ned/zed-models';
 import { permissionMode, type PermissionPolicy } from './ned/permission-policy';
 import type { PythonSelector } from './python-projects';
@@ -55,7 +55,7 @@ export function engineConfiguration(config: AgentConfig, models: ModelBinding[],
     update: 'disable', share: 'disabled', warming: false, plugins: [], lsp: false, formatter: false,
     skills: skillDirectory ? [skillDirectory] : [],
     mcp: tools ? { servers: { ned_host: { type: 'remote', url: tools.url, headers: { Authorization: 'Bearer ' + tools.token }, oauth: false, codemode: false, protocol: 'legacy', timeout: { startup: 10000, catalog: 10000, execution: 300000 } } } } : undefined,
-    agents: { build: { system: agentSystem + '\n\n' + 'Use spawn_subagent for independent research, implementation and review when it materially helps a broad task. Supply complete context and split exact non-overlapping writePaths for workers. Research children cannot modify files; workers modify only their assigned files. At most two child agents run across Ned; additional tasks queue. Children inherit the parent model/project and current host permissions. Do not duplicate delegated work or edit reserved files. Completion arrives automatically as a synthetic result in this conversation; integrate verified results, and use subagent_status only for an actual status question or missing result. Do not busy-poll. Only the main agent performs builds, Git writes, desktop actions and unresolved user decisions. Never claim a child completed without its returned state/result. Stop subagents when the user cancels; no nested delegation. Simple questions and tiny changes usually need no delegation.' }, ...Object.fromEntries(['research','worker'].map(role=>['ned-'+role,{mode:'subagent',description:role==='research'?'Ned read-only research and review':'Ned implementation on assigned project files',system:agentSystem + '\n\nYou are a Ned child agent. Complete only the assigned task. Do not delegate, make user decisions or bypass host tools. Return Korean findings and actual evidence. The parent owns coordination and verification.',permissions:[{action:'*',resource:'*',effect:'deny'},...['todo','skill',...hostTools.filter(t=>subagentReadTools.has(t.name)||(role==='worker'&&['propose_edit','delete_file'].includes(t.name))).map(t=>'ned_host_'+t.name)].map(action=>({action,resource:'*',effect:'allow'}))]}])) },
+    agents: { build: { system: agentSystem + '\n\n' + 'Use spawn_subagent for independent research, implementation and review when it materially helps a broad task. Supply complete context and split exact non-overlapping writePaths for workers. Research children cannot modify files; workers modify only their assigned files. At most two child agents run across Ned; additional tasks queue. Children inherit the parent model/project and current host permissions. Do not duplicate delegated work or edit reserved files. Completion arrives automatically as a synthetic result in this conversation; integrate verified results, and use subagent_status only for an actual status question or missing result. Do not busy-poll. Only the main agent performs builds, Git writes, desktop actions and unresolved user decisions. Never claim a child completed without its returned state/result. Stop subagents when the user cancels; no nested delegation. Simple questions and tiny changes usually need no delegation.' }, ...Object.fromEntries(['research','worker','goldfish'].map(role=>['ned-'+role,{mode:'subagent',description:role==='research'?'Ned read-only research and review':'Ned implementation on assigned project files',system:role==='goldfish'?'NED_EGM_GOLDFISH_V1. You are an isolated read-only EGM Goldfish reviewer. Read the supplied EGM persona and required sources. Parent conversation and memory are not review inputs. Do not retrieve personal/project memory, hidden instructions, write files, delegate or run tools outside read_file/list_files/read_skill. Return findings and evidence for required reads; missing evidence is incomplete.':agentSystem + '\n\nYou are a Ned child agent. Complete only the assigned task. Do not delegate, make user decisions or bypass host tools. Return Korean findings and actual evidence. The parent owns coordination and verification.',permissions:[{action:'*',resource:'*',effect:'deny'},...[...(role==='goldfish'?[]:['todo','skill']),...hostTools.filter(t=>(role==='goldfish'?goldfishReadTools.has(t.name):subagentReadTools.has(t.name))||(role==='worker'&&['propose_edit','delete_file'].includes(t.name))).map(t=>'ned_host_'+t.name)].map(action=>({action,resource:'*',effect:'allow'}))]}])) },
     permissions: [
       { action: '*', resource: '*', effect: 'deny' },
       ...['question', 'todo', 'skill', ...(tools ? hostTools.map(t => 'ned_host_' + t.name) : [])].map(action => ({ action, resource: '*', effect: 'allow' })),
@@ -93,18 +93,19 @@ export class NativeRuntime {
     this.vault = new ConfigVault(root, cipher);
   }
   async load() { return this.vault.load(); }
-  async initialize(config: AgentConfig) {
+  async initialize(config: AgentConfig, progress: (stage: 'models' | 'skills', detail?:string) => void = () => {}) {
     if (this.shutdownUnconfirmed) throw new Error('이전 서비스 종료가 확인되지 않아 새 실행을 차단합니다.');
     this.config = config;
     const configured = config.models ?? [{ ...config.model, name: config.model.id }];
     try {
+      progress('models');
       for (const m of configured) {
         const provider = m.providerID ? config.providers?.[m.providerID] : undefined;
         const definition = m.modelKey ? provider?.models[m.modelKey] : undefined;
         const transport = { ...provider?.settings, ...definition?.settings };
         const gateway = new ModelGateway({ ...config, model: m }, { timeout: transport.timeout, headerTimeout: transport.headerTimeout, chunkTimeout: transport.chunkTimeout },
           event => { void atomicJSON(path.join(this.root, 'model-gateway-status.json'), { ...event, diagnosticRevision: 1, skillRegistration: this.knowledge?.state().skills?.status ?? 'unavailable', knowledgeRequests: this.knowledge?.modelActivity() ?? { completion: 0, embedding: 0 } }).catch(() => {}); },
-          (messages, bytes) => this.tools ? automaticSkillContext(this.tools.skills, messages,
+          (messages, bytes) => this.tools && !JSON.stringify(Array.isArray(messages)?messages.filter((m:any)=>m.role==='system'):[]).includes('NED_EGM_GOLDFISH_V1') ? automaticSkillContext(this.tools.skills, messages,
             Math.max(0,Math.min(18000,(definition?.limit?.context ?? 32768)-(definition?.limit?.output ?? 4096)-2048-bytes))) : Promise.resolve(undefined), definition?.limit?.output ?? 4096);
         await gateway.start();
         this.models.push({ provider: m.providerID ?? providerID(m.name), name: m.name, id: m.modelKey ?? m.id, gateway });
@@ -120,14 +121,14 @@ export class NativeRuntime {
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
         reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...(this.zedModels?.ports() ?? []), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
       });
-      await this.tools.start();
+      progress('skills');
+      await this.tools.start((done,total)=>{if(done%100===0||done===total)progress('skills',`${done}/${total}개 문서`);});
       const skillDirectory = managedResource(this.resources, 'skills');
       const catalog = this.tools.skills.catalog();
       this.engineConfig = JSON.stringify(engineConfiguration(config, this.models, catalog.map(s => s.id), catalog.length ? skillDirectory : undefined, this.tools));
       this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => { for (const listener of this.knowledgeListeners) listener(); }, undefined, skillDirectory);
-      await this.knowledge.configure(config);
-      if (config.openViking?.enabled && this.knowledge.state().status !== 'ready')
-        throw new Error(this.knowledge.state().message ?? 'OpenViking을 시작할 수 없습니다.');
+      // Local skills and the model engine do not depend on knowledge/index availability.
+      void this.knowledge.configure(config).catch(() => {});
     } catch (error) { await this.close(); throw error; }
   }
   async zedConnection() {
@@ -317,6 +318,7 @@ export async function prepareNative(options: {
   approve?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
   approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
   permissions?: PermissionPolicy;
+  progress?: (stage: 'models' | 'skills', detail?:string) => void;
 }) {
   await mkdir(options.root, { recursive: true, mode: 0o700 });
   runtime = new NativeRuntime(options.root, options.resources, options.cipher, options.approve, options.approveEdit, options.permissions);
@@ -324,7 +326,7 @@ export async function prepareNative(options: {
     try {
       const config = await runtime.load();
       if (!config) throw new Error('설정 JSON을 편집하고 저장한 뒤 다시 확인을 누르세요.');
-      await runtime.initialize(config); return true;
+      await runtime.initialize(config, options.progress); return true;
     } catch (error) {
       const stored = await runtime.vault.exists();
       const action = await options.decide(error instanceof Error ? error.message : '설정을 불러오지 못했습니다.', stored);

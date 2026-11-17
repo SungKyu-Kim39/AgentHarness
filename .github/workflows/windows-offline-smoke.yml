@@ -364,7 +364,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 360
     permissions:
-      contents: write
+      contents: read
     env:
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
@@ -378,7 +378,7 @@ jobs:
         with:
           lfs: false
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
       - name: Prepare the pinned source and Ned UI changes
         shell: pwsh
         run: |
@@ -395,7 +395,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Source extraction failed' }
           & node scripts/patch-ned-editor.mjs $source
           if ($LASTEXITCODE -ne 0) { throw 'Editor patch failed' }
-          & tar.exe -czf (Join-Path $out 'zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz') -C $source .
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $artifact = $version + $(if ($env:NED_BUILD_REVISION) { '-' + $env:NED_BUILD_REVISION } else { '' })
+          "NED_EDITOR_ARTIFACT=$artifact" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          & tar.exe -czf (Join-Path $out "zed-ned-editor-source-v1.28.1-$artifact.tar.gz") -C $source .
           if ($LASTEXITCODE -ne 0) { throw 'Corresponding source packaging failed' }
           "NED_EDITOR_SOURCE=$source" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_EDITOR_OUTPUT=$out" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
@@ -411,7 +414,7 @@ jobs:
           Set-Location $env:NED_EDITOR_SOURCE
           & cargo --config .cargo/bundle-config.toml build --release --locked --package zed --target x86_64-pc-windows-msvc
           if ($LASTEXITCODE -ne 0) { throw 'Editor source build failed' }
-          Copy-Item target/x86_64-pc-windows-msvc/release/zed.exe (Join-Path $env:NED_EDITOR_OUTPUT 'Ned-editor-0.3.8-rebuild1.exe')
+          Copy-Item target/x86_64-pc-windows-msvc/release/zed.exe (Join-Path $env:NED_EDITOR_OUTPUT "Ned-editor-${env:NED_EDITOR_ARTIFACT}.exe")
       - name: Check visible menu strings and record binary provenance
         shell: pwsh
         run: |
@@ -419,38 +422,22 @@ jobs:
           $env:NED_EDITOR_BUILD_SHA = $env:GITHUB_SHA
           @'
           const fs=require('node:fs'),p=require('node:path'),crypto=require('node:crypto');
-          const folder=process.env.NED_EDITOR_OUTPUT;
-          const exe=fs.readFileSync(p.join(folder,'Ned-editor-0.3.8-rebuild1.exe'));
-          for(const s of ['About Ned','Quit Ned','Ned 0.3.8 · rebuild 1'])if(!exe.includes(Buffer.from(s)))throw Error('Missing compiled UI: '+s);
+          const folder=process.env.NED_EDITOR_OUTPUT,version=JSON.parse(fs.readFileSync('package.json')).version,revision=process.env.NED_BUILD_REVISION||'',artifact=process.env.NED_EDITOR_ARTIFACT;
+          const binary=`Ned-editor-${artifact}.exe`,archive=`zed-ned-editor-source-v1.28.1-${artifact}.tar.gz`,about=`Ned ${version}`+(revision?' · rebuild '+revision.slice(7):'');
+          const exe=fs.readFileSync(p.join(folder,binary));
+          for(const s of ['About Ned','Quit Ned',about])if(!exe.includes(Buffer.from(s)))throw Error('Missing compiled UI: '+s);
           for(const s of ['About Zed','Quit Zed'])if(exe.includes(Buffer.from(s)))throw Error('Old compiled menu: '+s);
-          const files=['Ned-editor-0.3.8-rebuild1.exe','zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz'].map(name=>{const bytes=fs.readFileSync(p.join(folder,name));return {name,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex')}});
-          const result={schemaVersion:1,product:'Ned editor',version:'0.3.8',buildRevision:'rebuild1',sourceCommit:process.env.NED_EDITOR_BUILD_SHA,upstreamVersion:'1.28.1',upstreamCommit:'e8bc16acee5ae1937600d571d441c4b5d7b0d288',os:'Windows Server 2022',rust:'1.98.1',profile:'release; upstream bundle config; debug symbols disabled; 2 build jobs',files,windowsGuiAcceptance:false};
-          fs.writeFileSync(p.join(folder,'build.json'),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
+          const files=[binary,archive].map(name=>{const bytes=fs.readFileSync(p.join(folder,name));return {name,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex')}});
+          const result={schemaVersion:1,product:'Ned editor',version,buildRevision:revision||undefined,sourceCommit:process.env.NED_EDITOR_BUILD_SHA,upstreamVersion:'1.28.1',upstreamCommit:'e8bc16acee5ae1937600d571d441c4b5d7b0d288',os:'Windows Server 2022',rust:'1.98.1',profile:'release; upstream bundle config; debug symbols disabled; 2 build jobs',files,windowsGuiAcceptance:false};
+          fs.writeFileSync(p.join(folder,`build-${artifact}.json`),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));
           '@ | node
           if ($LASTEXITCODE -ne 0) { throw 'Built editor validation failed' }
-      - name: Save component artifacts without replacing previous files
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $inputs = @('scripts/patch-ned-editor.mjs','ned-editor-source-lock.json','assets/ned-icon.png')
-          git fetch origin work
-          git diff --exit-code $env:GITHUB_SHA origin/work -- $inputs
-          if ($LASTEXITCODE -ne 0) { throw 'Editor inputs changed during the build' }
-          git checkout -B work origin/work
-          git lfs install --local
-          $destination = 'downloads/editor'
-          New-Item -ItemType Directory $destination -Force | Out-Null
-          foreach ($name in @('Ned-editor-0.3.8-rebuild1.exe','zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz','build.json')) {
-            $target = Join-Path $destination $name
-            if (Test-Path $target) { throw "Immutable editor component already exists: $name" }
-            Copy-Item (Join-Path $env:NED_EDITOR_OUTPUT $name) $target
-          }
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add downloads/editor
-          git commit -m 'build: record source-built Ned editor menus and About window'
-          git push origin work
-          if ($LASTEXITCODE -ne 0) { throw 'Editor component publication failed' }
+      - name: Upload versioned components for review
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ned-editor-${{ env.NED_EDITOR_ARTIFACT }}-${{ github.sha }}
+          path: ${{ env.NED_EDITOR_OUTPUT }}
+          if-no-files-found: error
 
   native-agent-source-probe:
     if: inputs.artifact_version == 'native-agent-source-probe'

@@ -8,6 +8,9 @@ import { editorLaunch } from './editor-launch';
 import { ProjectOpener, projectOpenCommand, dispatchProject } from './project-open';
 import { requestEditorClose } from './editor-close';
 import { ConfigurationRestart } from './configuration-restart';
+import { atomicJSON } from '../../src/main/config';
+import { importZedHistory } from './zed-history';
+import { setDefaultTerminal } from './terminal';
 import { StartupWindow } from './startup-window';
 import { OpenVikingStudio } from './studio';
 import { selectPythonEnvironment } from './python-selector';
@@ -30,7 +33,7 @@ const launcherData = bootstrap ? path.join(process.env.LOCALAPPDATA ?? appData, 
 mkdirSync(launcherData, { recursive: true, mode: 0o700 }); app.setPath('userData', launcherData);
 const resources = app.isPackaged ? process.resourcesPath : path.resolve(process.env.NED_DEV_RESOURCES ?? '.cache/ned/resources');
 let tray: Tray | undefined, editor: ChildProcess | undefined, owner: AgentOwner | undefined;
-const network = new EditorNetwork();
+const network = new EditorNetwork(code => { void atomicJSON(path.join(root,'editor-network-status.json'),{schemaVersion:1,recordedAt:new Date().toISOString(),code}).catch(()=>{}); });
 let quitting = false, closed = false;
 let trayMenu: Menu | undefined;
 const configurationRestart = new ConfigurationRestart(replaceConfiguration, () => requestEditorClose(editor), () => {
@@ -45,7 +48,7 @@ const configurationRestart = new ConfigurationRestart(replaceConfiguration, () =
   if (trayMenu) tray.setContextMenu(trayMenu);
 });
 const startup = new StartupWindow();
-const studio = new OpenVikingStudio();
+const studio = new OpenVikingStudio(event => { void atomicJSON(path.join(root,'openviking/studio-status.json'),{schemaVersion:1,recordedAt:new Date().toISOString(),...event}).catch(()=>{}); });
 const messageBox = (options: Electron.MessageBoxOptions) => startup.duringDialog(() => dialog.showMessageBox(options));
 const openDialog = (options: Electron.OpenDialogOptions) => startup.duringDialog(() => dialog.showOpenDialog(options));
 if (!app.requestSingleInstanceLock()) app.exit(0);
@@ -96,7 +99,7 @@ async function start() {
   };
   startup.setPhase('configuration');
   const ready = await prepareNative({
-    root, resources, cipher: safeStorage, approve, permissions,
+    root, resources, cipher: safeStorage, approve, permissions, progress: (phase,detail) => startup.setPhase(phase,detail),
     approveEdit: async (message, detail, signal) => {
       if (configurationRestart.pending || detail.length > 60000) return { approved: false, autoApproveRequest: false };
       const result = await messageBox({ type: 'question', title: 'Ned 파일 변경 승인', message, detail,
@@ -139,6 +142,7 @@ async function start() {
   runtime.setEditorCheck((session, directory, proposal, signal) => owner!.checkBuffer(session, directory, proposal, signal));
   const nativeZed = await runtime.zedConnection();
   const proxy = await network.start(nativeZed.baseUrl);
+  startup.setPhase('profile');
   const profile = await prepareEditor(root, process.execPath, resources, descriptor, proxy, nativeZed);
   const binary = path.join(resources, process.platform === 'win32' ? 'zed/Zed.exe' : 'zed/zed.app/libexec/zed-editor');
   await access(binary);
@@ -184,10 +188,24 @@ async function start() {
       { label: '선택한 모드는 업데이트·재시작 후에도 유지됩니다.', enabled: false },
       { label: '전체 권한: 지원 도구의 승인창 생략', enabled: false },
     ] },
+    { label: '기본 터미널', submenu: [
+      ...(['powershell','cmd'] as const).map(kind => ({label: kind === 'cmd' ? '명령 프롬프트 (CMD)' : 'PowerShell', click: async () => { try { await setDefaultTerminal(profile.data,kind); await messageBox({title:'Ned 터미널',message:'새 터미널부터 선택한 셸을 사용합니다. 작업 선택창에서도 Ned: CMD / Ned: PowerShell을 열 수 있습니다.'}); } catch(error){await messageBox({type:'error',title:'Ned 터미널',message:errorMessage(error)});} } })),
+    ] },
+    { label: '기존 Zed Agent 대화 가져오기', click: async () => {
+      const chosen=await openDialog({title:'기존 Zed의 threads.db 선택',defaultPath:path.join(process.env.LOCALAPPDATA ?? root,'Zed/threads/threads.db'),properties:['openFile'],filters:[{name:'Zed 대화 DB',extensions:['db']}]});
+      if(chosen.canceled)return;
+      const decision=await messageBox({title:'Zed 대화 가져오기',message:'원본을 변경하지 않고 Ned 대화에 병합합니다. 같은 ID의 다른 대화는 덮어쓰지 않습니다.',detail:'기존 Zed를 종료하세요. Ned DB는 먼저 백업합니다. 가져온 대화는 Ned 재시작 후 목록에서 확인할 수 있습니다. 이전 모델 선택과 승인 권한은 승계하지 않습니다.',buttons:['취소','가져오기'],defaultId:0,cancelId:0});
+      if(decision.response!==1)return;
+      try { const report=await importZedHistory(chosen.filePaths[0],profile.data);await messageBox({title:'Ned 대화 가져오기',message:`가져오기 ${report.imported}개 · 중복 ${report.duplicates}개 · 충돌 ${report.conflicts}개 · 지원하지 않는 항목 ${report.unsupported}개`,detail:'Ned를 재시작하면 대화 목록에 반영됩니다. 백업은 Ned 편집기 데이터의 history-backups 폴더에 보존됩니다.'}); }
+      catch(error){await messageBox({type:'error',title:'Ned 대화 가져오기',message:errorMessage(error)});}
+    } },
     { label: '사용 안내', submenu: [
       { label: '설치와 첫 실행', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
       { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
       { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
+      { label: '0.3.9 변경 사항', click: () => { void shell.openPath(path.join(resources, 'ned/changes-0.3.9.md')); } },
+      { label: '기존 Zed 대화 가져오기 안내', click: () => { void shell.openPath(path.join(resources, 'ned/zed-history-import.md')); } },
+      { label: 'EGM 설계·검토 사용', click: () => { void shell.openPath(path.join(resources, 'ned/egm.md')); } },
       { label: '새 스킬·MCP 추가 방법', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },
       { label: 'Python·Conda 실행과 환경 기억', click: () => { void shell.openPath(path.join(resources, 'ned/python-conda.md')); } },
       { label: 'Git 커밋·Ghidra·외부 자료 읽기', click: () => { void shell.openPath(path.join(resources, 'ned/git-and-binary-analysis.md')); } },
@@ -200,8 +218,8 @@ async function start() {
     { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: () => setPermission('ask') },
     { label: 'OpenViking / 기본 스킬 등록 상태', click: async () => {
       const state = runtime.status().knowledge, skills = state?.skills;
-      await messageBox({ title: 'Ned 지식 서비스', message: skills ? `OpenViking 스킬 ${skills.registered}/${skills.total} · ${skills.status}` : `OpenViking ${state?.status ?? '설정 필요'}`,
-        detail: (skills?.current ? skills.current.id + ' · ' + skills.current.stage + '\n' : '') + (skills?.message ?? '개인 대화는 자동 업로드하지 않습니다.') + '\n진단: %APPDATA%\\Ned\\openviking\\skills-status.json / model-status.json' });
+      await messageBox({ title: 'Ned 지식 서비스', message: skills ? `기본 스킬 자료 ${skills.total}개 · ${skills.status}` : `OpenViking ${state?.status ?? '설정 필요'}`,
+        detail: (skills?.current ? skills.current.id + ' · ' + skills.current.stage + '\n' : '') + (skills?.message ?? '개인 대화는 자동 업로드하지 않습니다.') + '\n지식 서비스: ' + (state?.message ?? state?.status ?? 'unconfigured') + '\n진단: %APPDATA%\\Ned\\openviking\\skills-status.json / model-status.json' });
     } },
     { label: 'OpenViking 기본 스킬 등록 재확인', click: async () => { try { await runtime.retryKnowledgeSkills(); } catch (error) { await messageBox({ title: 'Ned 스킬', message: errorMessage(error) }); } } },
     { label: 'OpenViking Studio 열기', click: async () => {
@@ -235,7 +253,7 @@ async function start() {
   startup.setPhase('editor');
   const launch = editorLaunch(profile.data);
   editor = spawn(binary, launch.args, { cwd: launch.cwd, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });
-  editor.once('spawn', () => startup.close());
+  editor.once('spawn', () => { void startup.saveTiming(root); startup.close(); });
   const startedAt = Date.now(); let diagnostic = '', spawnError: string | undefined;
   // Bounded in-memory classification; upstream text is never saved or displayed.
   const collect = (bytes: Buffer) => { diagnostic = (diagnostic + bytes.toString()).slice(-65536); };

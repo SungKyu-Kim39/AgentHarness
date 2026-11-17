@@ -6,7 +6,7 @@ import type {AgentConfig} from '../../src/shared/contracts';
 export interface ZedConnection {
   baseUrl: string;
   token: string;
-  models: {name:string;display_name:string;max_tokens:number;max_output_tokens:number;capabilities:{tools:boolean;images:boolean;parallel_tool_calls:boolean;chat_completions:true;max_tokens_parameter:true}}[];
+  models: {name:string;display_name:string;max_tokens:number;max_output_tokens:number;capabilities:{tools:boolean;images:boolean;parallel_tool_calls:boolean;prompt_cache_key:false;interleaved_reasoning:false;chat_completions:true;max_tokens_parameter:true}}[];
   defaultModel: string;
 }
 function wireOptions(options: Record<string,unknown>) {
@@ -39,7 +39,7 @@ export class ZedModels {
         const options=wireOptions({...settings,...definition?.body});
         entries.set(name,{id:model.id,gateway,options});
         catalog.push({name,display_name:model.name,max_tokens:definition?.limit?.context??32768,max_output_tokens:definition?.limit?.output??4096,
-          capabilities:{tools:definition?.capabilities?.tools??true,images:!!definition?.capabilities?.input?.includes('image'),parallel_tool_calls:!!options.parallel_tool_calls,chat_completions:true,max_tokens_parameter:true}});
+          capabilities:{prompt_cache_key:false,interleaved_reasoning:false,tools:definition?.capabilities?.tools??true,images:!!definition?.capabilities?.input?.includes('image'),parallel_tool_calls:!!options.parallel_tool_calls,chat_completions:true,max_tokens_parameter:true}});
       }
       const token=randomBytes(32).toString('hex');
       this.server=createServer(async(req,res)=>{

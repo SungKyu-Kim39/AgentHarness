@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 const run=file=>execFileSync(process.execPath,[file],{stdio:'inherit'});
 const filename='vendor/skills/manifest.json';
-const previous=JSON.parse(await readFile(filename)),astryx=previous.skills.find(s=>s.id==='astryx');
+const previous=JSON.parse(await readFile(filename)),astryx=previous.skills.find(s=>s.id==='astryx'),extras=previous.skills.filter(s=>s.id==='astryx'||s.id.startsWith('egm-'));
 if(!astryx)throw Error('Restore the reviewed Astryx static adapter before rebuilding all skills');
 execFileSync(process.execPath,['scripts/bundle-skills.mjs','verify'],{stdio:'inherit'});
 const backup=await mkdtemp(path.join(tmpdir(),'ned-skills-build-'));
@@ -16,7 +16,7 @@ try {
 execFileSync(process.execPath,['scripts/bundle-skills.mjs','fetch'],{stdio:'inherit'});
 run('scripts/bundle-reviewed-skills.mjs');
 const manifest=JSON.parse(await readFile(filename));if(manifest.skills.some(s=>s.id==='astryx'))throw Error('Duplicate Astryx skill');
-manifest.skills.push(astryx);const bytes=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(filename,bytes);
+for(const entry of extras){if(manifest.skills.some(s=>s.id===entry.id))throw Error('Duplicate reviewed extension skill');manifest.skills.push(entry);await cp(path.join(backup,'0',entry.directory),path.join('vendor/skills',entry.directory),{recursive:true});}const bytes=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(filename,bytes);
 const lock=JSON.parse(await readFile('skills-lock.json'));lock.count=manifest.skills.length;lock.manifestSha256=createHash('sha256').update(bytes).digest('hex');await writeFile('skills-lock.json',JSON.stringify(lock,null,2)+'\n');
 run('scripts/adapt-subagent-skills.mjs');
 execFileSync(process.execPath,['scripts/bundle-skills.mjs','verify'],{stdio:'inherit'});

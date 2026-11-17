@@ -50,7 +50,7 @@ test('all new OpenViking packages, metadata filenames and project URIs use Ned',
  const root = await mkdtemp(path.join(tmpdir(), 'ned-package-names-')); t.after(() => rm(root, { recursive: true, force: true }));
  await cp('vendor/skills', path.join(root, 'skills'), { recursive: true }); await cp('skills-lock.json', path.join(root, 'skills-lock.json'));
  const packages = await loadBundledSkillPackages(path.join(root, 'skills'));
- assert.equal(packages.length, 67);
+ assert.equal(packages.length, 74);
  for (const pkg of packages) {
   assert.equal(pkg.name, 'ned-' + pkg.id);
   assert.ok(pkg.files.has('NED-BUNDLE.json'));
@@ -58,4 +58,12 @@ test('all new OpenViking packages, metadata filenames and project URIs use Ned',
   assert.doesNotMatch(pkg.archive.toString('utf8'), /l[_-]vibe/i, pkg.id);
  }
  assert.equal(knowledgeRoot('p1'), 'viking://resources/ned/p1');
+});
+
+test('Goldfish engine configuration exposes only project reads and EGM reads without the normal memory guidance',()=>{
+ const config=configSchema.parse({model:{baseUrl:'http://127.0.0.1:9/v1',apiKey:'synthetic',id:'test'}});
+ const models:any=[{provider:'ned_test',name:'test',id:'test',gateway:{baseUrl:'http://127.0.0.1:19/v1',token:'local-only'}}];
+ const engine=engineConfiguration(config,models,[],undefined,{url:'http://127.0.0.1:29',token:'local-only'});
+ const goldfish=(engine.agents as any)['ned-goldfish'];assert.match(goldfish.system,/NED_EGM_GOLDFISH_V1/);assert.doesNotMatch(goldfish.system,/personal_knowledge_search|automaticSkillPolicy/);
+ assert.deepEqual(goldfish.permissions.filter((p:any)=>p.effect==='allow').map((p:any)=>p.action).sort(),['ned_host_list_files','ned_host_read_file','ned_host_read_skill']);
 });
