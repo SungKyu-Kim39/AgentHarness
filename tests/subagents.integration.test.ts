@@ -20,7 +20,6 @@ test(
       project = path.join(root, "project");
     await mkdir(project);
     await writeFile(path.join(project, "main.c"), "int main() { return 0; }\n");
-    t.after(() => rm(root, { recursive: true, force: true }));
     let parentSpawned = false,
       queueChild = false,
       childQueued!: () => void;
@@ -144,10 +143,6 @@ test(
       );
     });
     await new Promise<void>((r) => model.listen(0, "127.0.0.1", r));
-    t.after(() => {
-      model.closeAllConnections();
-      model.close();
-    });
     const url = "http://127.0.0.1:" + (model.address() as any).port + "/v1",
       config = configSchema.parse({
         model: {
@@ -171,7 +166,17 @@ test(
         return true;
       },
     );
-    t.after(() => runtime.close());
+    // Windows cannot unlink the live engine's SQLite files. Close owned
+    // services before deleting their workspace, even if an assertion fails.
+    t.after(async () => {
+      try {
+        await runtime.close();
+      } finally {
+        model.closeAllConnections();
+        await new Promise<void>((resolve) => model.close(() => resolve()));
+        await rm(root, { recursive: true, force: true });
+      }
+    });
     runtime.setEditorCheck(async (session) => {
       editorChecks.push(session);
     });

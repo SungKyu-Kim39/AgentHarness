@@ -227,7 +227,7 @@ jobs:
           # Start-Process -Wait waits for an entire Windows process tree and
           # can hide completed test output behind a leftover descendant. Bound
           # this synthetic CI fixture and always retain its diagnostic output.
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-native-test.txt -RedirectStandardError windows-native-stderr.txt -PassThru
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-native-test.txt -RedirectStandardError windows-native-stderr.txt -PassThru
           try {
             if (!$run.WaitForExit(720000)) {
               & taskkill.exe /PID $run.Id /T /F | Out-Null

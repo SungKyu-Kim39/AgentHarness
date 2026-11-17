@@ -17139,7 +17139,6 @@ var engine = process.env.NED_TEST_ENGINE ?? import_node_path33.default.resolve(
     const root = await (0, import_promises31.mkdtemp)(import_node_path33.default.join((0, import_node_os9.tmpdir)(), "ned-real-subagents-")), project = import_node_path33.default.join(root, "project");
     await (0, import_promises31.mkdir)(project);
     await (0, import_promises31.writeFile)(import_node_path33.default.join(project, "main.c"), "int main() { return 0; }\n");
-    t.after(() => (0, import_promises31.rm)(root, { recursive: true, force: true }));
     let parentSpawned = false, queueChild = false, childQueued;
     const pending = new Promise((r) => childQueued = r);
     let childDisconnected;
@@ -17242,10 +17241,6 @@ var engine = process.env.NED_TEST_ENGINE ?? import_node_path33.default.resolve(
       );
     });
     await new Promise((r) => model.listen(0, "127.0.0.1", r));
-    t.after(() => {
-      model.closeAllConnections();
-      model.close();
-    });
     const url = "http://127.0.0.1:" + model.address().port + "/v1", config = configSchema.parse({
       model: {
         baseUrl: url,
@@ -17267,7 +17262,15 @@ var engine = process.env.NED_TEST_ENGINE ?? import_node_path33.default.resolve(
         return true;
       }
     );
-    t.after(() => runtime.close());
+    t.after(async () => {
+      try {
+        await runtime.close();
+      } finally {
+        model.closeAllConnections();
+        await new Promise((resolve) => model.close(() => resolve()));
+        await (0, import_promises31.rm)(root, { recursive: true, force: true });
+      }
+    });
     runtime.setEditorCheck(async (session) => {
       editorChecks.push(session);
     });
