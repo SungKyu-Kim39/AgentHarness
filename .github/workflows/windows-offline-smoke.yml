@@ -481,6 +481,26 @@ jobs:
           & curl.exe --fail --location --retry 2 --output $kit "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/astryx/$($lock.archive.name)"
           if ($LASTEXITCODE -ne 0 -or (Get-FileHash $kit -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.archive.sha256) { throw 'Astryx download mismatch' }
           "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Diagnose the source-built editor loader separately
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $record = Get-Content downloads/editor/build.json -Raw | ConvertFrom-Json
+          $entry = $record.files | Where-Object { $_.name -eq 'Ned-editor-0.3.8-rebuild1.exe' }
+          $editor = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources\zed\Zed.exe'
+          & curl.exe --fail --location --retry 2 --output $editor "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/editor/$($entry.name)"
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $editor -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'Source editor integrity mismatch' }
+          $stdout = Join-Path $env:RUNNER_TEMP 'editor-loader.stdout'
+          $stderr = Join-Path $env:RUNNER_TEMP 'editor-loader.stderr'
+          $probe = Start-Process -FilePath $editor -ArgumentList @('--printenv') -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
+          $exited = $probe.WaitForExit(15000)
+          if (!$exited) { & taskkill.exe /PID $probe.Id /T /F | Out-Null }
+          $probe.Refresh()
+          $status = [ordered]@{ schemaVersion=1; sourceOnly=$true; exited=$exited; exitCode=$probe.ExitCode; stdoutBytes=(Get-Item $stdout).Length; stderrBytes=(Get-Item $stderr).Length; editorSha256=$entry.sha256 }
+          $status | ConvertTo-Json | Set-Content editor-loader-status.json -Encoding utf8
+          $status | ConvertTo-Json
+          Remove-Item $stdout,$stderr -Force
+          if (!$exited -or $probe.ExitCode -ne 0) { throw 'Source editor loader probe failed' }
       - name: Exercise new native-agent transport and real Windows Astryx build
         shell: pwsh
         run: |
@@ -504,6 +524,7 @@ jobs:
         with:
           name: native-agent-source-probe
           path: |
+            editor-loader-status.json
             native-source-test.txt
             native-source-stderr.txt
             native-source-status.json
