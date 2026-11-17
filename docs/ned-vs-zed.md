@@ -1,6 +1,6 @@
 # Ned와 Zed는 어떻게 다른가
 
-Ned의 편집 화면은 Zed입니다. 파일을 열고 코드를 수정하며 패널을 배치하는 기능은 Zed가 담당합니다. Ned는 여기에 전용 OpenCode 엔진, 사내 모델 설정, 개발 도구와 스킬, OpenViking을 연결하고 한 번에 설치할 수 있도록 묶었습니다. 이 글은 0.3.8 rebuild1 기본 배포 구성을 기준으로 설명합니다.
+Ned의 편집 화면은 Zed입니다. 파일을 열고 코드를 수정하며 패널을 배치하는 기능은 Zed가 담당합니다. Ned는 여기에 전용 OpenCode 엔진, 사내 모델 설정, 개발 도구와 스킬, OpenViking을 연결하고 한 번에 설치할 수 있도록 묶었습니다. 이 글은 0.3.9 기본 배포 구성을 기준으로 설명합니다.
 
 Aegis·Conductor·Serena·Graphify·REA·OpenViking·agent-desktop이 각각 무엇인지, 스킬 74개를 언제 쓰면 좋은지는 [Ned 상세 사용 안내서](ned-user-guide.md)에 요청 예시와 함께 설명했습니다. 이 글에서는 구성과 운영의 차이를 요약합니다.
 

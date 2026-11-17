@@ -1,5 +1,5 @@
 // Reuse audited fixed runtimes, rebuild all Ned-authored executable JS from current source.
-import { readFile,writeFile,mkdir,rm,cp,access } from 'node:fs/promises';
+import { readFile,writeFile,mkdir,rm,cp,access,readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -73,6 +73,7 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
   await cp(astryxFile,path.join(resources,'astryx/astryx-offline-lock.json'));
   for(const file of ['astryx.md','zed-native-agent.md','subagents.md',...(version==='0.3.9'?['egm.md','zed-history-import.md','changes-0.3.9.md','validation-0.3.9.md']:[])])await cp(path.join(root,'docs',file),path.join(resources,file));
  }
+ if(version==='0.3.9')for(const file of await readdir(path.join(root,'docs')))if(file.endsWith('.md'))await cp(path.join(root,'docs',file),path.join(resources,file));
  if(version==='0.3.9')await cp(path.join(root,'node_modules/yaml/LICENSE'),path.join(resources,'licenses/yaml-ISC.txt'));
  if(version==='0.3.9')for(const file of ['egm-lock.json','studio-assets-lock.json'])await cp(path.join(root,file),path.join(resources,'locks',file));
  await cp(path.join(root,'release-runtime-lock.json'),path.join(resources,'locks/release-runtime.json'));
