@@ -17806,6 +17806,14 @@ var bridge = resources3 ? import_node_path35.default.join(resources3, "ned/agent
       false,
       "the initial ACP prompt must end before releasing the child"
     );
+    await import_strict11.default.rejects(
+      rpc("session/load", {
+        sessionId: session.sessionId,
+        cwd: project,
+        mcpServers: [{ name: "untrusted", command: "no", args: [], env: [] }]
+      }),
+      /Ned-managed/
+    );
     releaseChild();
     const end = Date.now() + 6e3;
     const text3 = () => updates.filter(
@@ -17818,6 +17826,27 @@ var bridge = resources3 ? import_node_path35.default.join(resources3, "ned/agent
       text3().split("PARENT_UI_CONFIRMED").length - 1,
       1,
       "the editor must receive the late parent answer once"
+    );
+    updates.length = 0;
+    await rpc("session/load", {
+      sessionId: session.sessionId,
+      cwd: project,
+      mcpServers: []
+    });
+    import_strict11.default.equal(
+      text3().split("PARENT_UI_CONFIRMED").length - 1,
+      1,
+      "history replay stays complete and is not duplicated by the live feed"
+    );
+    updates.length = 0;
+    await rpc("session/prompt", {
+      sessionId: session.sessionId,
+      prompt: [{ type: "text", text: "Confirm the findings again." }]
+    });
+    import_strict11.default.equal(
+      text3().split("PARENT_UI_CONFIRMED").length - 1,
+      1,
+      "normal prompts still stream once after a reload"
     );
   }
 );
