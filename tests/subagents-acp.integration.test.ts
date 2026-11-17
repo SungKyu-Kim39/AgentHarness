@@ -39,18 +39,16 @@ test(
         all = JSON.stringify(body.messages),
         child = all.includes("You are a Ned child agent");
       if (!body.stream || !body.tools?.length) {
-        res
-          .writeHead(200, { "Content-Type": "application/json" })
-          .end(
-            JSON.stringify({
-              choices: [
-                {
-                  message: { role: "assistant", content: "제목" },
-                  finish_reason: "stop",
-                },
-              ],
-            }),
-          );
+        res.writeHead(200, { "Content-Type": "application/json" }).end(
+          JSON.stringify({
+            choices: [
+              {
+                message: { role: "assistant", content: "제목" },
+                finish_reason: "stop",
+              },
+            ],
+          }),
+        );
         return;
       }
       let delta: any = {
