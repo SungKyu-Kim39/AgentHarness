@@ -224,11 +224,21 @@ jobs:
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Native test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-native-test.txt -RedirectStandardError windows-native-stderr.txt -Wait -PassThru
-          $run.Refresh()
-          Get-Content windows-native-test.txt
-          Get-Content windows-native-stderr.txt
-          if ($run.ExitCode -ne 0) { throw 'Windows native operations test failed' }
+          # Start-Process -Wait waits for an entire Windows process tree and
+          # can hide completed test output behind a leftover descendant. Bound
+          # this synthetic CI fixture and always retain its diagnostic output.
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-native-test.txt -RedirectStandardError windows-native-stderr.txt -PassThru
+          try {
+            if (!$run.WaitForExit(720000)) {
+              & taskkill.exe /PID $run.Id /T /F | Out-Null
+              throw 'Windows native fixture exceeded its CI budget; see retained output'
+            }
+            $run.Refresh()
+            if ($run.ExitCode -ne 0) { throw 'Windows native operations test failed' }
+          } finally {
+            Get-Content windows-native-test.txt -ErrorAction SilentlyContinue
+            Get-Content windows-native-stderr.txt -ErrorAction SilentlyContinue
+          }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify installed Python tools with a preinstalled Conda environment
         if: always() && startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') && env.NED_TEST_NODE != ''
