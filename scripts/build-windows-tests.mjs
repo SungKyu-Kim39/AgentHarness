@@ -12,7 +12,7 @@ const entries = {
   namespace: ['tests/openviking-namespace.integration.test.ts'],
   delete: ['tests/delete-file.test.ts'],
   compaction: ['tests/compaction.integration.test.ts'],
-  native: ['tests/git-tools.test.ts', 'tests/external-read.test.ts', 'tests/personal-pack-recovery.test.ts', 'tests/ghidra-network.test.ts', 'tests/rea-ghidra.integration.test.ts','tests/zed-native.test.ts','tests/astryx-windows.integration.test.ts','tests/subagents.test.ts','tests/subagents.integration.test.ts'],
+  native: ['tests/git-tools.test.ts', 'tests/external-read.test.ts', 'tests/personal-pack-recovery.test.ts', 'tests/ghidra-network.test.ts', 'tests/rea-ghidra.integration.test.ts','tests/zed-native.test.ts','tests/astryx-windows.integration.test.ts','tests/subagents.test.ts','tests/subagents.integration.test.ts','tests/message-delivery.test.ts','tests/subagents-acp.integration.test.ts'],
   python: ['tests/python-windows.integration.test.ts'],
 };
 for (const [name, files] of Object.entries(entries)) {

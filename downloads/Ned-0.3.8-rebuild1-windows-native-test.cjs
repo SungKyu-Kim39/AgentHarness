@@ -235,9 +235,9 @@ var ProjectFiles = class {
 var digest = (bytes) => (0, import_node_crypto2.createHash)("sha256").update(bytes).digest("hex");
 var oid = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/;
 var GitTools = class {
-  constructor(root, resources3, approve, verify, binary2 = import_node_path2.default.join(resources3, "runtime/windows-x64/mcp/git/cmd/git.exe")) {
+  constructor(root, resources4, approve, verify, binary2 = import_node_path2.default.join(resources4, "runtime/windows-x64/mcp/git/cmd/git.exe")) {
     this.root = root;
-    this.resources = resources3;
+    this.resources = resources4;
     this.approve = approve;
     this.verify = verify;
     this.binary = binary2;
@@ -1053,9 +1053,9 @@ var operations = {
   info: "procedure_info"
 };
 var ReaGhidra = class {
-  constructor(root, resources3, approve, launch) {
+  constructor(root, resources4, approve, launch) {
     this.root = root;
-    this.resources = resources3;
+    this.resources = resources4;
     this.approve = approve;
     this.launch = launch;
   }
@@ -1861,10 +1861,10 @@ function agentLaunch(executable, agent, descriptor, platform = process.platform)
   if (platform !== "win32") return { command: executable, args: [agent, descriptor], env };
   const paths = import_node_path10.default.win32;
   if (![executable, agent, descriptor].every((value) => paths.isAbsolute(value))) throw new Error("Managed agent paths must be absolute");
-  const resources3 = paths.dirname(paths.dirname(agent));
+  const resources4 = paths.dirname(paths.dirname(agent));
   return {
-    command: paths.join(resources3, "runtime/windows-x64/openviking/python/python.exe"),
-    args: ["-I", "-B", paths.join(resources3, "runtime/windows-x64/openviking/sidecar-supervisor.py"), executable, agent, descriptor],
+    command: paths.join(resources4, "runtime/windows-x64/openviking/python/python.exe"),
+    args: ["-I", "-B", paths.join(resources4, "runtime/windows-x64/openviking/sidecar-supervisor.py"), executable, agent, descriptor],
     env
   };
 }
@@ -2699,12 +2699,12 @@ function parseTree(text3, errors = [], options = ParseOptions.DEFAULT) {
   }
   return result;
 }
-function findNodeAtLocation(root, path34) {
+function findNodeAtLocation(root, path36) {
   if (!root) {
     return void 0;
   }
   let node = root;
-  for (let segment of path34) {
+  for (let segment of path36) {
     if (typeof segment === "string") {
       if (node.type !== "object" || !Array.isArray(node.children)) {
         return void 0;
@@ -3058,14 +3058,14 @@ function getNodeType(value) {
 
 // node_modules/jsonc-parser/lib/esm/impl/edit.js
 function setProperty(text3, originalPath, value, options) {
-  const path34 = originalPath.slice();
+  const path36 = originalPath.slice();
   const errors = [];
   const root = parseTree(text3, errors);
   let parent = void 0;
   let lastSegment = void 0;
-  while (path34.length > 0) {
-    lastSegment = path34.pop();
-    parent = findNodeAtLocation(root, path34);
+  while (path36.length > 0) {
+    lastSegment = path36.pop();
+    parent = findNodeAtLocation(root, path36);
     if (parent === void 0 && value !== void 0) {
       if (typeof lastSegment === "string") {
         value = { [lastSegment]: value };
@@ -3252,8 +3252,8 @@ var ParseErrorCode;
   ParseErrorCode2[ParseErrorCode2["InvalidEscapeCharacter"] = 15] = "InvalidEscapeCharacter";
   ParseErrorCode2[ParseErrorCode2["InvalidCharacter"] = 16] = "InvalidCharacter";
 })(ParseErrorCode || (ParseErrorCode = {}));
-function modify(text3, path34, value, options) {
-  return setProperty(text3, path34, value, options);
+function modify(text3, path36, value, options) {
+  return setProperty(text3, path36, value, options);
 }
 function applyEdits(text3, edits) {
   let sortedEdits = edits.slice(0).sort((a, b) => {
@@ -3522,13 +3522,13 @@ function editorSettings(executable, agent, descriptor, proxy, clangd, platform =
     load_direnv: "disabled"
   };
 }
-async function prepareEditor(root, executable, resources3, descriptor, proxy, native) {
+async function prepareEditor(root, executable, resources4, descriptor, proxy, native) {
   const data = import_node_path13.default.join(root, "editor"), home = import_node_path13.default.join(data, "home");
   await (0, import_promises12.mkdir)(import_node_path13.default.join(data, "config"), { recursive: true, mode: 448 });
   await ensureEditorInstructions(import_node_path13.default.join(data, "config"));
   for (const directory2 of ["home", "home/AppData/Local", "home/AppData/Roaming", "home/AppData/LocalLow", "home/Desktop", "home/Documents", "home/Downloads", "roaming", "local", "config-home", "data", "cache", "state", "tmp"]) await (0, import_promises12.mkdir)(import_node_path13.default.join(data, directory2), { recursive: true, mode: 448 });
-  const clangd = process.platform === "win32" ? import_node_path13.default.join(resources3, "runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe") : void 0;
-  const settings = await editorPreferences(data, editorSettings(executable, import_node_path13.default.join(resources3, "ned/agent.cjs"), descriptor, proxy, clangd, process.platform, native));
+  const clangd = process.platform === "win32" ? import_node_path13.default.join(resources4, "runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe") : void 0;
+  const settings = await editorPreferences(data, editorSettings(executable, import_node_path13.default.join(resources4, "ned/agent.cjs"), descriptor, proxy, clangd, process.platform, native));
   await writeEditorPreferences(import_node_path13.default.join(data, "config/settings.json"), settings);
   await ensureEditorKeymap(import_node_path13.default.join(data, "config/keymap.json"));
   const env = {};
@@ -4040,8 +4040,8 @@ function getErrorMap() {
 
 // node_modules/zod/v3/helpers/parseUtil.js
 var makeIssue = (params) => {
-  const { data, path: path34, errorMaps, issueData } = params;
-  const fullPath = [...path34, ...issueData.path || []];
+  const { data, path: path36, errorMaps, issueData } = params;
+  const fullPath = [...path36, ...issueData.path || []];
   const fullIssue = {
     ...issueData,
     path: fullPath
@@ -4157,11 +4157,11 @@ var errorUtil;
 
 // node_modules/zod/v3/types.js
 var ParseInputLazyPath = class {
-  constructor(parent, value, path34, key) {
+  constructor(parent, value, path36, key) {
     this._cachedPath = [];
     this.parent = parent;
     this.data = value;
-    this._path = path34;
+    this._path = path36;
     this._key = key;
   }
   get path() {
@@ -7931,7 +7931,7 @@ var astryx_offline_lock_default = {
 // tests/astryx-windows.integration.test.ts
 var run = (0, import_node_util4.promisify)(import_node_child_process6.execFile);
 (0, import_node_test7.test)("installed Windows Astryx starter builds using bundled Node and native esbuild without npm or the upstream CLI", { skip: process.platform !== "win32", timeout: 12e4 }, async (t) => {
-  const resources3 = import_node_path15.default.join(import_node_path15.default.dirname(process.execPath), "resources"), archive2 = import_node_path15.default.join(resources3, "ned/astryx", astryx_offline_lock_default.archive.name);
+  const resources4 = import_node_path15.default.join(import_node_path15.default.dirname(process.execPath), "resources"), archive2 = import_node_path15.default.join(resources4, "ned/astryx", astryx_offline_lock_default.archive.name);
   import_strict7.default.equal((0, import_node_crypto7.createHash)("sha256").update(await (0, import_promises14.readFile)(archive2)).digest("hex"), astryx_offline_lock_default.archive.sha256);
   const root = await (0, import_promises14.mkdtemp)(import_node_path15.default.join((0, import_node_os7.tmpdir)(), "ned-astryx-"));
   t.after(() => (0, import_promises14.rm)(root, { recursive: true, force: true }));
@@ -7948,15 +7948,15 @@ var run = (0, import_node_util4.promisify)(import_node_child_process6.execFile);
   import_strict7.default.equal(manifest.platform, "win32-x64");
 });
 (0, import_node_test7.test)("installed source-built editor has Ned menu/About content and corresponding-source provenance", { skip: process.platform !== "win32", timeout: 3e4 }, async () => {
-  const resources3 = import_node_path15.default.join(import_node_path15.default.dirname(process.execPath), "resources"), bytes = await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "zed/Zed.exe"));
+  const resources4 = import_node_path15.default.join(import_node_path15.default.dirname(process.execPath), "resources"), bytes = await (0, import_promises14.readFile)(import_node_path15.default.join(resources4, "zed/Zed.exe"));
   for (const text3 of ["About Ned", "Quit Ned", "Ned 0.3.8 \xB7 rebuild 1"]) import_strict7.default.ok(bytes.includes(Buffer.from(text3)), text3);
   for (const text3 of ["About Zed", "Quit Zed"]) import_strict7.default.ok(!bytes.includes(Buffer.from(text3)), text3);
-  const record = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/editor-branding.json"), "utf8"));
+  const record = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(resources4, "ned/editor-branding.json"), "utf8"));
   import_strict7.default.equal(record.modifiedSha256, (0, import_node_crypto7.createHash)("sha256").update(bytes).digest("hex"));
-  const changes = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/sources/NED_EDITOR_CHANGES.json"), "utf8"));
+  const changes = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(resources4, "ned/sources/NED_EDITOR_CHANGES.json"), "utf8"));
   import_strict7.default.deepEqual(changes, record.sourceChanges);
-  import_strict7.default.match(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/sources/NED_EDITOR_SOURCE.txt"), "utf8"), /offline TGZ/);
-  const loaded = await run(import_node_path15.default.join(resources3, "zed/Zed.exe"), ["--printenv"], { env: { ...process.env, ELECTRON_RUN_AS_NODE: void 0 }, timeout: 15e3, maxBuffer: 4 * 1024 * 1024 });
+  import_strict7.default.match(await (0, import_promises14.readFile)(import_node_path15.default.join(resources4, "ned/sources/NED_EDITOR_SOURCE.txt"), "utf8"), /offline TGZ/);
+  const loaded = await run(import_node_path15.default.join(resources4, "zed/Zed.exe"), ["--printenv"], { env: { ...process.env, ELECTRON_RUN_AS_NODE: void 0 }, timeout: 15e3, maxBuffer: 4 * 1024 * 1024 });
   import_strict7.default.equal(loaded.stderr, "");
 });
 
@@ -12998,9 +12998,9 @@ function permittedDesktopWindow(w) {
   return Number.isInteger(w.pid) && w.pid > 0 && w.pid !== process.pid && typeof w.id === "string" && !!w.id && typeof w.app_name === "string" && !/ned|l-vibe|zed|opencode|agent-desktop|electron|powershell|terminal|cmd(?:\.exe)?$|conhost|openconsole|explorer|credential|consent|taskmgr|regedit|mmc|rundll32/i.test(w.app_name);
 }
 var DesktopTools = class {
-  constructor(root, resources3, approve) {
+  constructor(root, resources4, approve) {
     this.root = root;
-    this.resources = resources3;
+    this.resources = resources4;
     this.approve = approve;
   }
   sessions = /* @__PURE__ */ new Map();
@@ -13216,8 +13216,8 @@ function configurations(text3, solution) {
   }).filter((p) => p.platform && safeName(p.configuration) && safeName(p.platform));
 }
 var VisualStudioBuild = class _VisualStudioBuild {
-  constructor(resources3, approve, discover = _VisualStudioBuild.discover) {
-    this.resources = resources3;
+  constructor(resources4, approve, discover = _VisualStudioBuild.discover) {
+    this.resources = resources4;
     this.approve = approve;
     this.discover = discover;
   }
@@ -13363,8 +13363,8 @@ var import_node_path28 = __toESM(require("node:path"), 1);
 var import_node_child_process11 = require("node:child_process");
 var import_node_path27 = __toESM(require("node:path"), 1);
 var OwnedCommand = class {
-  constructor(resources3) {
-    this.resources = resources3;
+  constructor(resources4) {
+    this.resources = resources4;
   }
   abort = new AbortController();
   active = /* @__PURE__ */ new Set();
@@ -13468,11 +13468,11 @@ var shellPath = (file) => {
   return file;
 };
 var PythonProjects = class {
-  constructor(root, resources3, options) {
+  constructor(root, resources4, options) {
     this.root = root;
-    this.resources = resources3;
+    this.resources = resources4;
     this.options = options;
-    this.commands = new OwnedCommand(resources3);
+    this.commands = new OwnedCommand(resources4);
   }
   commands;
   abort = new AbortController();
@@ -15690,9 +15690,9 @@ var extensionTools = [
 ];
 var relative2 = external_exports.string().min(1).max(4096);
 var McpExtensions = class {
-  constructor(root, resources3, options) {
+  constructor(root, resources4, options) {
     this.root = root;
-    this.resources = resources3;
+    this.resources = resources4;
     this.options = options;
   }
   verifyRuntime() {
@@ -16003,17 +16003,17 @@ var hostTools = [
 ];
 var pathArg = external_exports.string().min(1).max(4096);
 var HostTools = class {
-  constructor(root, resources3, options) {
+  constructor(root, resources4, options) {
     this.root = root;
-    this.resources = resources3;
+    this.resources = resources4;
     this.options = options;
-    this.desktop = new DesktopTools(root, resources3, options.approve);
-    this.builds = new VisualStudioBuild(resources3, options.approve);
-    this.skills = new OfflineSkills(managedResource(resources3, "skills"));
-    this.extensions = new McpExtensions(root, resources3, { approve: options.approve, reservedPorts: () => [...options.reservedPorts?.() ?? [], ...this.url ? [Number(new URL(this.url).port)] : []] });
-    this.git = new GitTools(root, resources3, options.approve, () => this.extensions.verifyRuntime());
-    this.ghidra = new ReaGhidra(root, resources3, options.approve);
-    this.python = new PythonProjects(root, resources3, { approve: options.approve, choose: (project, environments, signal) => options.choosePython ? options.choosePython(project, environments, signal) : Promise.reject(new Error("Python \uD658\uACBD \uC120\uD0DD\uCC3D\uC774 \uC5F0\uACB0\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.")), locate: options.locateConda, knowledge: options.knowledge, permissionSignal: options.permissionSignal });
+    this.desktop = new DesktopTools(root, resources4, options.approve);
+    this.builds = new VisualStudioBuild(resources4, options.approve);
+    this.skills = new OfflineSkills(managedResource(resources4, "skills"));
+    this.extensions = new McpExtensions(root, resources4, { approve: options.approve, reservedPorts: () => [...options.reservedPorts?.() ?? [], ...this.url ? [Number(new URL(this.url).port)] : []] });
+    this.git = new GitTools(root, resources4, options.approve, () => this.extensions.verifyRuntime());
+    this.ghidra = new ReaGhidra(root, resources4, options.approve);
+    this.python = new PythonProjects(root, resources4, { approve: options.approve, choose: (project, environments, signal) => options.choosePython ? options.choosePython(project, environments, signal) : Promise.reject(new Error("Python \uD658\uACBD \uC120\uD0DD\uCC3D\uC774 \uC5F0\uACB0\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.")), locate: options.locateConda, knowledge: options.knowledge, permissionSignal: options.permissionSignal });
   }
   token = (0, import_node_crypto21.randomBytes)(32).toString("hex");
   url = "";
@@ -16739,9 +16739,9 @@ function engineConfiguration(config, models, skills = [], skillDirectory, tools)
   };
 }
 var NativeRuntime = class {
-  constructor(root, resources3, cipher, approve = async () => false, approveEdit, permissions) {
+  constructor(root, resources4, cipher, approve = async () => false, approveEdit, permissions) {
     this.root = root;
-    this.resources = resources3;
+    this.resources = resources4;
     this.approve = approve;
     this.approveEdit = approveEdit;
     this.permissions = permissions;
@@ -17347,6 +17347,477 @@ var engine = process.env.NED_TEST_ENGINE ?? import_node_path33.default.resolve(
       calls.length,
       after,
       "stopping a child must not wake the cancelled parent"
+    );
+  }
+);
+
+// tests/message-delivery.test.ts
+var import_node_test10 = require("node:test");
+var import_strict10 = __toESM(require("node:assert/strict"), 1);
+
+// distribution/ned/message-delivery.ts
+var MessageDelivery = class {
+  replayed = /* @__PURE__ */ new Set();
+  ignore(session, id) {
+    const key = session + ":" + id;
+    this.messages.delete(key);
+    this.replayed.add(key);
+    if (this.replayed.size > 4096)
+      this.replayed.delete(this.replayed.values().next().value);
+  }
+  messages = /* @__PURE__ */ new Map();
+  chunk(session, id, text3, source) {
+    const key = session + ":" + id;
+    if (this.replayed.has(key)) return source === "acp" ? text3 : "";
+    const offsets = this.messages.get(key) ?? {
+      acp: 0,
+      event: 0,
+      delivered: 0
+    };
+    const previous = offsets[source];
+    offsets[source] += text3.length;
+    const delta = text3.slice(Math.max(0, offsets.delivered - previous));
+    offsets.delivered = Math.max(offsets.delivered, offsets[source]);
+    this.messages.delete(key);
+    this.messages.set(key, offsets);
+    if (this.messages.size > 4096)
+      this.messages.delete(this.messages.keys().next().value);
+    return delta;
+  }
+  reset(session) {
+    for (const key of this.replayed)
+      if (key.startsWith(session + ":")) this.replayed.delete(key);
+    for (const key of this.messages.keys())
+      if (key.startsWith(session + ":")) this.messages.delete(key);
+  }
+};
+
+// tests/message-delivery.test.ts
+(0, import_node_test10.test)("shared engine and ACP text merge once across unequal Korean chunks, history reload and isolated sessions", () => {
+  const d = new MessageDelivery();
+  import_strict10.default.equal(d.chunk("a", "m", "\uAC00\uB098\uB2E4", "event"), "\uAC00\uB098\uB2E4");
+  import_strict10.default.equal(d.chunk("a", "m", "\uAC00", "acp"), "");
+  import_strict10.default.equal(d.chunk("a", "m", "\uB098\uB2E4\uB77C", "acp"), "\uB77C");
+  import_strict10.default.equal(d.chunk("a", "m", "\uB77C", "event"), "");
+  import_strict10.default.equal(d.chunk("a", "m", "\uB9C8", "event"), "\uB9C8");
+  import_strict10.default.equal(d.chunk("b", "m", "\uAC00\uB098\uB2E4", "acp"), "\uAC00\uB098\uB2E4");
+  d.ignore("a", "old");
+  import_strict10.default.equal(d.chunk("a", "old", "history", "acp"), "history");
+  import_strict10.default.equal(d.chunk("a", "old", "late", "event"), "");
+  d.reset("a");
+  import_strict10.default.equal(d.chunk("a", "m", "\uAC00\uB098\uB2E4\uB77C\uB9C8", "acp"), "\uAC00\uB098\uB2E4\uB77C\uB9C8");
+  import_strict10.default.equal(d.chunk("b", "m", "\uAC00\uB098\uB2E4", "event"), "");
+});
+
+// tests/subagents-acp.integration.test.ts
+var import_node_test11 = require("node:test");
+var import_strict11 = __toESM(require("node:assert/strict"), 1);
+var import_node_http12 = require("node:http");
+var import_promises33 = require("node:fs/promises");
+var import_node_fs10 = require("node:fs");
+var import_node_os10 = require("node:os");
+var import_node_path35 = __toESM(require("node:path"), 1);
+var import_node_child_process14 = require("node:child_process");
+var import_node_readline = require("node:readline");
+
+// distribution/ned/owner.ts
+var import_node_net3 = require("node:net");
+var import_node_crypto24 = require("node:crypto");
+var import_promises32 = require("node:fs/promises");
+var import_node_path34 = __toESM(require("node:path"), 1);
+
+// distribution/ned/rpc.ts
+var import_node_crypto23 = require("node:crypto");
+var MAX = 16 * 1024 * 1024;
+var Peer = class {
+  constructor(socket, handler) {
+    this.socket = socket;
+    this.handler = handler;
+    socket.on("data", (chunk) => {
+      this.buffer = Buffer.concat([this.buffer, chunk]);
+      while (true) {
+        const end = this.buffer.indexOf(10);
+        if (end < 0) break;
+        if (end > MAX) {
+          socket.destroy();
+          return;
+        }
+        const line = this.buffer.subarray(0, end);
+        this.buffer = this.buffer.subarray(end + 1);
+        try {
+          void this.receive(JSON.parse(line.toString())).catch(() => socket.destroy());
+        } catch {
+          socket.destroy();
+          return;
+        }
+      }
+      if (this.buffer.length > MAX) socket.destroy();
+    });
+    socket.on("error", () => {
+    });
+    socket.once("close", () => {
+      this.ended = true;
+      for (const p of this.pending.values()) p.reject(new Error("Ned connection closed"));
+      this.pending.clear();
+      for (const fn of this.closedHandlers) fn();
+    });
+  }
+  pending = /* @__PURE__ */ new Map();
+  buffer = Buffer.alloc(0);
+  ended = false;
+  closedHandlers = [];
+  onClose(fn) {
+    this.closedHandlers.push(fn);
+  }
+  async receive(message) {
+    if (!message || typeof message.id !== "string" || message.id.length > 80) throw new Error("Invalid RPC");
+    if (typeof message.method === "string") {
+      try {
+        this.send({ id: message.id, result: await this.handler(message.method, message.params) });
+      } catch (error) {
+        this.send({ id: message.id, error: error instanceof Error ? error.message.slice(0, 2e3) : "Request failed" });
+      }
+    } else {
+      const entry = this.pending.get(message.id);
+      if (!entry) return;
+      this.pending.delete(message.id);
+      if (message.error) entry.reject(new Error(String(message.error)));
+      else entry.resolve(message.result);
+    }
+  }
+  send(message) {
+    if (this.ended) throw new Error("Ned connection closed");
+    const bytes = Buffer.from(JSON.stringify(message) + "\n");
+    if (bytes.length > MAX) throw new Error("Ned RPC message too large");
+    this.socket.write(bytes);
+  }
+  call(method, params = {}, signal) {
+    if (signal?.aborted) return Promise.reject(new Error("Cancelled"));
+    const id = (0, import_node_crypto23.randomUUID)();
+    return new Promise((resolve, reject) => {
+      const cancel = () => {
+        this.pending.delete(id);
+        reject(new Error("Cancelled"));
+      };
+      const done = () => signal?.removeEventListener("abort", cancel);
+      this.pending.set(id, { resolve: (value) => {
+        done();
+        resolve(value);
+      }, reject: (error) => {
+        done();
+        reject(error);
+      } });
+      signal?.addEventListener("abort", cancel, { once: true });
+      try {
+        this.send({ id, method, params });
+      } catch (error) {
+        this.pending.delete(id);
+        done();
+        reject(error);
+      }
+    });
+  }
+  close() {
+    this.socket.destroy();
+  }
+};
+
+// distribution/ned/owner.ts
+var AgentOwner = class {
+  constructor(root, runtime, connection, selectProject) {
+    this.root = root;
+    this.runtime = runtime;
+    this.connection = connection;
+    this.selectProject = selectProject;
+    this.descriptor = import_node_path34.default.join(root, "runtime", "ned-agent.json");
+  }
+  token = (0, import_node_crypto24.randomBytes)(32).toString("hex");
+  server;
+  peers = /* @__PURE__ */ new Set();
+  sessions = /* @__PURE__ */ new Map();
+  descriptor;
+  endpoint = "";
+  stopping = false;
+  cancelled = /* @__PURE__ */ new Set();
+  unwatchPermissions;
+  async start() {
+    await (0, import_promises32.mkdir)(import_node_path34.default.dirname(this.descriptor), { recursive: true, mode: 448 });
+    this.endpoint = process.platform === "win32" ? "\\\\.\\pipe\\ned-" + this.token : import_node_path34.default.join(this.root, "runtime", "agent-" + this.token.slice(0, 12) + ".sock");
+    this.server = (0, import_node_net3.createServer)((socket) => {
+      let authenticated = false;
+      const authorized = /* @__PURE__ */ new Set();
+      const attached = /* @__PURE__ */ new Set();
+      const peer = new Peer(socket, async (method, params) => {
+        if (!authenticated) {
+          const offered = Buffer.from(String(params?.token ?? ""));
+          const expected = Buffer.from(this.token);
+          if (method !== "hello" || offered.length !== expected.length || !(0, import_node_crypto24.timingSafeEqual)(offered, expected)) {
+            socket.destroy();
+            throw new Error("Unauthorized");
+          }
+          authenticated = true;
+          return this.connection;
+        }
+        if (this.stopping) throw new Error("Ned is stopping");
+        if (method === "permissions/get") return this.runtime.permissionStatus();
+        if (method === "permissions/set") {
+          if (!attached.has(params?.session)) throw new Error("Session not attached");
+          if (!Number.isSafeInteger(params.revision) || params.revision < 0) throw new Error("Permission revision required");
+          await this.runtime.setPermissionMode(params.mode, params.revision);
+          return this.runtime.permissionStatus();
+        }
+        if (method === "authorize") {
+          if (typeof params?.cwd !== "string" || !import_node_path34.default.isAbsolute(params.cwd)) throw new Error("Absolute project directory required");
+          const directory2 = await this.runtime.canonicalProject(params.cwd);
+          if (!authorized.has(directory2)) {
+            if (!await this.selectProject(directory2)) throw new Error("\uD504\uB85C\uC81D\uD2B8 \uC811\uADFC\uC774 \uAC70\uC808\uB418\uC5C8\uC2B5\uB2C8\uB2E4.");
+            await this.runtime.authorizeProject(directory2);
+            authorized.add(directory2);
+          }
+          return { cwd: directory2 };
+        }
+        if (method === "bind") {
+          if (typeof params?.session !== "string") throw new Error("Session required");
+          const directory2 = await this.runtime.projectForSession(params.session);
+          if (!authorized.has(directory2)) throw new Error("\uD504\uB85C\uC81D\uD2B8 \uBC94\uC704\uAC00 \uD655\uC778\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
+          const previous = this.sessions.get(params.session);
+          if (previous && previous !== peer) throw new Error("\uB2E4\uB978 \uD3B8\uC9D1\uAE30\uC5D0\uC11C \uC0AC\uC6A9 \uC911\uC778 \uC138\uC158\uC785\uB2C8\uB2E4.");
+          await this.runtime.activateEditScope(params.session);
+          this.sessions.set(params.session, peer);
+          attached.add(params.session);
+          return {};
+        }
+        if (method === "cancel") {
+          if (!attached.has(params?.session)) throw new Error("Session not attached");
+          await this.runtime.interruptSession(params.session);
+          return {};
+        }
+        throw new Error("Unsupported owner request");
+      });
+      this.peers.add(peer);
+      const authenticationTimer = setTimeout(() => {
+        if (!authenticated) peer.close();
+      }, 1e4);
+      peer.onClose(() => {
+        clearTimeout(authenticationTimer);
+        this.peers.delete(peer);
+        for (const session of attached) if (this.sessions.get(session) === peer) {
+          this.sessions.delete(session);
+          const work = this.runtime.interruptSession(session).catch(() => {
+          });
+          this.cancelled.add(work);
+          void work.finally(() => this.cancelled.delete(work));
+        }
+      });
+    });
+    await new Promise((resolve, reject) => {
+      this.server.once("error", reject);
+      this.server.listen(this.endpoint, resolve);
+    });
+    if (process.platform !== "win32") await (0, import_promises32.chmod)(this.endpoint, 384);
+    this.unwatchPermissions = this.runtime.onPermissionChange(() => {
+      for (const peer of new Set(this.sessions.values())) void peer.call("permissionsChanged", this.runtime.permissionStatus()).catch(() => {
+      });
+    });
+    await atomicJSON(this.descriptor, { schemaVersion: 1, socket: this.endpoint, token: this.token });
+    return this.descriptor;
+  }
+  async checkBuffer(session, project, proposal, signal) {
+    const peer = this.sessions.get(session);
+    if (!peer) throw new Error("\uD3B8\uC9D1\uAE30 \uC5F0\uACB0\uC774 \uC5C6\uC5B4 \uD30C\uC77C \uC218\uC815\uC744 \uBCF4\uB958\uD569\uB2C8\uB2E4.");
+    const response = await peer.call("checkBuffer", {
+      session,
+      path: import_node_path34.default.join(project, proposal.path),
+      before: proposal.before,
+      missing: proposal.baseHash.startsWith("missing:")
+    }, signal ? AbortSignal.any([signal, AbortSignal.timeout(15e3)]) : AbortSignal.timeout(15e3));
+    if (response?.matches !== true) throw new Error("\uC800\uC7A5\uD558\uC9C0 \uC54A\uC740 \uD3B8\uC9D1\uAE30 \uBCC0\uACBD\uC774 \uC788\uC2B5\uB2C8\uB2E4. Ctrl+S\uB85C \uC800\uC7A5\uD55C \uB4A4 \uB2E4\uC2DC \uC694\uCCAD\uD558\uC138\uC694.");
+  }
+  async close() {
+    this.unwatchPermissions?.();
+    this.stopping = true;
+    await (0, import_promises32.rm)(this.descriptor, { force: true });
+    for (const peer of this.peers) peer.close();
+    await new Promise((resolve) => {
+      if (!this.server?.listening) resolve();
+      else this.server.close(() => resolve());
+    });
+    await Promise.allSettled([...this.cancelled]);
+    if (process.platform !== "win32" && this.endpoint) await (0, import_promises32.rm)(this.endpoint, { force: true });
+  }
+};
+
+// tests/subagents-acp.integration.test.ts
+var engine2 = process.env.NED_TEST_ENGINE ?? import_node_path35.default.resolve(
+  ".cache/opencode/source/packages/cli/dist/cli-linux-x64-baseline/bin/opencode"
+);
+var resources3 = process.env.NED_TEST_RESOURCES;
+var bridge = resources3 ? import_node_path35.default.join(resources3, "ned/agent.cjs") : import_node_path35.default.resolve(".cache/ned/app/agent.cjs");
+(0, import_node_test11.test)(
+  "a child finishing after the ACP prompt ends still delivers the parent integration answer to the editor exactly once",
+  { skip: !(0, import_node_fs10.existsSync)(engine2) || !(0, import_node_fs10.existsSync)(bridge), timeout: 3e4 },
+  async (t) => {
+    const root = await (0, import_promises33.mkdtemp)(import_node_path35.default.join((0, import_node_os10.tmpdir)(), "ned-subagent-acp-")), project = import_node_path35.default.join(root, "project");
+    await (0, import_promises33.mkdir)(project);
+    await (0, import_promises33.writeFile)(import_node_path35.default.join(project, "a.txt"), "input");
+    let spawned = false, integrated = false;
+    let releaseChild;
+    const childGate = new Promise((r) => releaseChild = r);
+    t.after(() => releaseChild());
+    const model = (0, import_node_http12.createServer)(async (req, res) => {
+      let raw = "";
+      for await (const b of req) raw += b;
+      const body = JSON.parse(raw), all = JSON.stringify(body.messages), child = all.includes("You are a Ned child agent");
+      if (!body.stream || !body.tools?.length) {
+        res.writeHead(200, { "Content-Type": "application/json" }).end(
+          JSON.stringify({
+            choices: [
+              {
+                message: { role: "assistant", content: "\uC81C\uBAA9" },
+                finish_reason: "stop"
+              }
+            ]
+          })
+        );
+        return;
+      }
+      let delta = {
+        role: "assistant",
+        content: child ? "CHILD_UI_RESULT" : "PARENT_UI_WAITING"
+      }, finish = "stop";
+      if (child) await childGate;
+      else if (!spawned) {
+        spawned = true;
+        delta = {
+          role: "assistant",
+          tool_calls: [
+            {
+              index: 0,
+              id: "spawn_ui",
+              type: "function",
+              function: {
+                name: "ned_host_spawn_subagent",
+                arguments: JSON.stringify({
+                  role: "research",
+                  title: "\uB2A6\uC740 \uC870\uC0AC",
+                  prompt: "Investigate the current code and report findings",
+                  writePaths: []
+                })
+              }
+            }
+          ]
+        };
+        finish = "tool_calls";
+      } else if (all.includes("CHILD_UI_RESULT")) {
+        integrated = true;
+        delta.content = "PARENT_UI_CONFIRMED";
+      }
+      const chunk = (d, f) => JSON.stringify({
+        id: "x",
+        object: "chat.completion.chunk",
+        created: 1,
+        model: body.model,
+        choices: [{ index: 0, delta: d, finish_reason: f }]
+      });
+      res.writeHead(200, { "Content-Type": "text/event-stream" });
+      res.end(
+        "data: " + chunk(delta, null) + "\n\ndata: " + chunk({}, finish) + "\n\ndata: [DONE]\n\n"
+      );
+    });
+    await new Promise((r) => model.listen(0, "127.0.0.1", r));
+    const runtime = new NativeRuntime(
+      import_node_path35.default.join(root, "data"),
+      resources3 ?? import_node_path35.default.join(root, "resources"),
+      {
+        isEncryptionAvailable: () => true,
+        encryptString: Buffer.from,
+        decryptString: (b) => b.toString()
+      }
+    );
+    let owner, agent;
+    t.after(async () => {
+      agent?.kill();
+      await owner?.close();
+      await runtime.close();
+      model.closeAllConnections();
+      await new Promise((r) => model.close(() => r()));
+      await (0, import_promises33.rm)(root, { recursive: true, force: true });
+    });
+    await runtime.initialize(
+      configSchema.parse({
+        model: {
+          baseUrl: "http://127.0.0.1:" + model.address().port + "/v1",
+          apiKey: "synthetic",
+          id: "test"
+        }
+      })
+    );
+    await runtime.authorizeProject(project);
+    const connection = await runtime.connection([engine2]);
+    owner = new AgentOwner(
+      import_node_path35.default.join(root, "owner"),
+      runtime,
+      connection,
+      async () => true
+    );
+    const descriptor = await owner.start();
+    agent = (0, import_node_child_process14.spawn)(process.execPath, [bridge, descriptor], {
+      stdio: "pipe",
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }
+    });
+    let serial = 0;
+    const pending = /* @__PURE__ */ new Map(), updates = [];
+    const rpc = (method, params) => new Promise((resolve, reject) => {
+      const id = ++serial;
+      pending.set(id, { resolve, reject });
+      agent.stdin.write(
+        JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n"
+      );
+    });
+    agent.stderr.on("data", () => {
+    });
+    agent.once("exit", () => {
+      for (const p of pending.values()) p.reject(Error("ACP exited"));
+    });
+    (0, import_node_readline.createInterface)({ input: agent.stdout }).on("line", (line) => {
+      const m = JSON.parse(line);
+      if (m.method) updates.push(m);
+      else {
+        const p = pending.get(m.id);
+        pending.delete(m.id);
+        if (m.error) p?.reject(Error(JSON.stringify(m.error)));
+        else p?.resolve(m.result);
+      }
+    });
+    await rpc("initialize", {
+      protocolVersion: 1,
+      clientCapabilities: {},
+      clientInfo: { name: "ned-fixture", version: "1" }
+    });
+    const session = await rpc("session/new", { cwd: project, mcpServers: [] });
+    await rpc("session/prompt", {
+      sessionId: session.sessionId,
+      prompt: [
+        { type: "text", text: "Delegate research, then integrate the result." }
+      ]
+    });
+    import_strict11.default.equal(
+      integrated,
+      false,
+      "the initial ACP prompt must end before releasing the child"
+    );
+    releaseChild();
+    const end = Date.now() + 6e3;
+    const text3 = () => updates.filter(
+      (m) => m.method === "session/update" && m.params.sessionId === session.sessionId && m.params.update.sessionUpdate === "agent_message_chunk"
+    ).map((m) => m.params.update.content.text).join("");
+    while (!text3().includes("PARENT_UI_CONFIRMED") && Date.now() < end)
+      await new Promise((r) => setTimeout(r, 30));
+    import_strict11.default.ok(integrated, "the engine parent should integrate the result");
+    import_strict11.default.equal(
+      text3().split("PARENT_UI_CONFIRMED").length - 1,
+      1,
+      "the editor must receive the late parent answer once"
     );
   }
 );

@@ -1,13 +1,14 @@
 // Official pinned OpenCode ACP adapter, attached to the existing Ned-owned engine.
 import { ACP } from '@ned/acp';
 import { OpenCode } from '@opencode/client/effect';
-import { Effect, Logger } from 'effect';
+import { Effect, Logger, Stream } from 'effect';
 import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import { ndJsonStream, methods } from '@agentclientprotocol/sdk';
 import { Readable, Writable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { connect } from 'node:net';
 import { Peer } from './rpc';
+import { MessageDelivery } from './message-delivery';
 import { localStreamFetch } from '../../src/main/local-stream-fetch';
 import { permissionMode, permissionOption, permissionConfigId, type PermissionMode } from './permission-policy';
 
@@ -18,6 +19,8 @@ async function main() {
   let acp: any;
   let canRead = false;
   const sessions = new Set<string>();
+  const delivered = new MessageDelivery();
+  const replaying = new Set<string>();
   const sessionOptions = new Map<string, any[]>();
   let mode: PermissionMode = 'ask';
   let revision = 0;
@@ -64,6 +67,7 @@ async function main() {
     async write(message) {
       if (!message.method && pending.has(message.id)) {
         const request = pending.get(message.id)!; pending.delete(message.id);
+        if(['session/load','session/resume'].includes(request.method)&&request.session)replaying.delete(request.session);
         if (message.result && ['session/new', 'session/load', 'session/resume', 'session/fork'].includes(request.method)) {
           const session = message.result.sessionId ?? request.session;
           try { await peer.call('bind', { session }); sessions.add(session); }
@@ -76,6 +80,13 @@ async function main() {
           message.result.configOptions = options(session, message.result.configOptions);
         }
       }
+      const update=message.method==='session/update'?message.params?.update:undefined;
+      if(update?.sessionUpdate==='agent_message_chunk'&&typeof update.messageId==='string'&&update.content?.type==='text'){
+        if(replaying.has(message.params.sessionId))delivered.ignore(message.params.sessionId,update.messageId);
+        const text=delivered.chunk(message.params.sessionId,update.messageId,update.content.text,'acp');
+        if(!text)return;
+        message={...message,params:{...message.params,update:{...update,content:{...update.content,text}}}};
+      }
       if (message.method === 'session/update' && message.params?.update?.sessionUpdate === 'config_option_update')
         message.params.update.configOptions = options(message.params.sessionId, message.params.update.configOptions);
       await writer.write(message);
@@ -85,6 +96,7 @@ async function main() {
   const input = stream.readable.pipeThrough(new TransformStream<any, any>({
     async transform(message, controller) {
       try {
+        if (['session/load','session/resume'].includes(message.method)&&typeof message.params?.sessionId==='string'){delivered.reset(message.params.sessionId);replaying.add(message.params.sessionId);}
         if (message.method === 'initialize') canRead = message.params?.clientCapabilities?.fs?.readTextFile === true;
         if (message.method?.startsWith('session/')) {
           if (message.params?.mcpServers?.length || message.params?.additionalDirectories?.length) throw new Error('Only Ned-managed tools and one selected project are allowed');
@@ -115,6 +127,16 @@ async function main() {
         HttpClient.mapRequest(HttpClientRequest.setHeaders({ Authorization: 'Basic ' + Buffer.from('opencode:' + endpoint.password).toString('base64') })),
       ))),
       Effect.provide(FetchHttpClient.layer),
+    );
+    // ACP's background turn follows child events but stops forwarding parent text
+    // after the initial turn ends. Follow the shared authenticated feed as well;
+    // message offsets merge both paths without re-prompting or new model calls.
+    yield* client.event.subscribe({types:['session.text.delta']}).pipe(
+      Stream.runForEach(event=>Effect.promise(async()=>{
+        if(event.type!=='session.text.delta'||!sessions.has(event.data.sessionID)||replaying.has(event.data.sessionID))return;
+        const text=delivered.chunk(event.data.sessionID,event.data.assistantMessageID,event.data.delta,'event');
+        if(text)await writer.write({jsonrpc:'2.0',method:'session/update',params:{sessionId:event.data.sessionID,update:{sessionUpdate:'agent_message_chunk',messageId:event.data.assistantMessageID,content:{type:'text',text}}}});
+      })),Effect.forkScoped,
     );
     acp = yield* ACP.connect(client, { readable: input, writable: output });
     yield* Effect.promise(() => acp.closed);
