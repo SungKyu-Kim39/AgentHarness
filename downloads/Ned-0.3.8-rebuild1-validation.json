@@ -16,7 +16,8 @@
     "failed": 0,
     "skipped": 12,
     "seconds": 690.850151948,
-    "command": "ELECTRON_BUILDER_CACHE=\"$PWD/.cache/ned/builder-cache\" npm test"
+    "command": "ELECTRON_BUILDER_CACHE=\"$PWD/.cache/ned/builder-cache\" npm test",
+    "sourceCommit": "c4d1edb0d15cd2f1e4fbc5b62243f7754ddaced5"
   },
   "nativeZedSourceProbe": {
     "runId": 43974417593,
@@ -90,5 +91,28 @@
     },
     "referenceCount": 281,
     "upstreamCliExecuted": false
+  },
+  "postFullRegression": {
+    "sourceCommit": "1be374cb1af9f16923688d5499d86ba771218dd4",
+    "tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "seconds": 13.400890408,
+    "scope": "late ACP result delivery and replay, duplicate text, real child execution, native edit/buffer integration, bundled host loading"
+  },
+  "sourceEditorLoaderProbe": {
+    "runId": 44009303991,
+    "sourceOnly": true,
+    "newInstallerAcceptance": false,
+    "loaderExit": 0,
+    "stderrBytes": 0,
+    "nativeModelAndAstryxTestsPassed": 4
+  },
+  "supersededWindowsCandidate": {
+    "runId": 44005753595,
+    "sourceCommit": "c4d1edb0d15cd2f1e4fbc5b62243f7754ddaced5",
+    "conclusion": "cancelled",
+    "finalReleaseEvidence": false,
+    "reason": "Native fixture stage stalled; run cancelled, captured no final fixture output. Candidate predates ACP late-answer fix."
   }
 }
