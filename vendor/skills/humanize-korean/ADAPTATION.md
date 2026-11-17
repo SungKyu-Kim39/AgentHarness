@@ -13,3 +13,7 @@ This is a selective static host adapter, not an installation of the upstream exe
 Original main document SHA-256: bd3494baca18a1a911372a257a6c993b169b4b0bc51ec589f3a24912770caeab
 Bundled main document SHA-256: a94dfe72f279856748fb2190a91dd85f959e1bad4a795e40d7f21a2e7ca35923
 
+
+## Ned controlled subagents
+
+Updated by Ned contributors, 2026-11-16. Generic prohibitions now cover external agent installers/runners. Ned’s own spawn_subagent service may delegate bounded research or assigned-file implementation under the parent project and current native permissions. It does not install or execute upstream agents. Child agents cannot delegate, perform builds/Git writes/desktop actions, or answer user decisions. The main agent integrates confirmed results. This changes the host adapter, not the upstream license or provenance.

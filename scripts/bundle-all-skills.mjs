@@ -18,6 +18,7 @@ run('scripts/bundle-reviewed-skills.mjs');
 const manifest=JSON.parse(await readFile(filename));if(manifest.skills.some(s=>s.id==='astryx'))throw Error('Duplicate Astryx skill');
 manifest.skills.push(astryx);const bytes=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(filename,bytes);
 const lock=JSON.parse(await readFile('skills-lock.json'));lock.count=manifest.skills.length;lock.manifestSha256=createHash('sha256').update(bytes).digest('hex');await writeFile('skills-lock.json',JSON.stringify(lock,null,2)+'\n');
+run('scripts/adapt-subagent-skills.mjs');
 execFileSync(process.execPath,['scripts/bundle-skills.mjs','verify'],{stdio:'inherit'});
 
 } catch(error) {

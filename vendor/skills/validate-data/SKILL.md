@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 사용자가 제공한 로컬 분석·질의·실제 결과의 재현성과 결론을 검토한다. 원본 데이터와 실행기가 없으면 검토 범위와 재계산 미실행을 밝힌다. 집계 단위·조인 증폭·분모·기간·시간대·선택 편향·불확실성을 점검한다. 자료를 외부 서비스나 다른 저장소에 자동 전송하지 않는다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

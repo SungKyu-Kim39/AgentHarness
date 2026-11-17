@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 실제 범위·호환성·데이터 보존에 영향을 주는 결정만 짧게 기록한다. 기존 Conductor spec/plan·ADR을 재사용한다. 팀 리뷰·알림·티켓 생성은 사용자가 요구하거나 기존 팀 정책이 있을 때만 다루며 메시지를 자동 전송하지 않는다. ADR 파일 생성·상태 변경은 승인된 프로젝트 편집이다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

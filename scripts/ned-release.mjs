@@ -70,7 +70,7 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
   await mkdir(path.join(resources,'astryx'),{recursive:true});
   await cp(archive,path.join(resources,'astryx',astryx.archive.name));
   await cp(astryxFile,path.join(resources,'astryx/astryx-offline-lock.json'));
-  for(const file of ['astryx.md','zed-native-agent.md'])await cp(path.join(root,'docs',file),path.join(resources,file));
+  for(const file of ['astryx.md','zed-native-agent.md','subagents.md'])await cp(path.join(root,'docs',file),path.join(resources,file));
  }
  await cp(path.join(root,'release-runtime-lock.json'),path.join(resources,'locks/release-runtime.json'));
  const info={schemaVersion:1,product:'Ned',version,buildRevision:process.env.NED_BUILD_REVISION||undefined,sourceCommit,baselineRuntime:base,hostBuiltFromSource:true,acpBuiltFromPinnedSource:true,upstreamAcpSourceLockSha256:await fileHash(path.join(root,'ned-acp-lock.json')),buildDependencyLockSha256:await fileHash(path.join(root,'scripts/acp-build/package-lock.json')),hostModuleSmoke:smoke,windowsAcceptance:false};

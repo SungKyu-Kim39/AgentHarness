@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 기존 테스트 프레임워크와 컴파일러를 우선한다. GoogleTest·CMake·sanitizer는 런타임에 포함됐다는 뜻이 아니다. 반입된 로컬 패키지만 사용하고 FetchContent나 자동 패키지 복구로 다운로드하지 않는다. 실제 테스트 실행기가 없으면 테스트 코드와 실행 계획만 제안하고 미실행으로 기록한다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

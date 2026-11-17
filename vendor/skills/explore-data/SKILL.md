@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 승인된 프로젝트의 CSV·JSON·스키마와 사용자가 제공한 결과부터 조사한다. 데이터의 단위·키·중복·결측·시간대·표본 범위를 확인한다. 커넥터 연결이나 데이터웨어하우스 계정을 요구하지 않는다. Excel/Parquet 파서와 SQL/Python 실행기는 별도 전제이며 없으면 코드/질의 제안으로 한정한다. 임계값은 도메인에 맞는 휴리스틱으로 설명하고 계산하지 않은 수치는 만들지 않는다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

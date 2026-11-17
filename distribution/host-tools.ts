@@ -49,6 +49,9 @@ export const hostTools: ToolSpec[] = [
   { name: 'run_python', description: 'Activate the user-selected Conda environment and start a project Python task under native command permission. Returns a job ID; use python_run_status to verify completion and exit code. Actions: run .py script, compile .py, test with installed pytest, wheel with installed build --no-isolation, or package a .py with installed PyInstaller. No dependency installation, arbitrary interpreter, shell or environment override. Args are JSON data, never inserted into a shell command.', inputSchema: object({ action: { type: 'string', enum: ['run', 'compile', 'test', 'wheel', 'pyinstaller'] }, script: string, args: { type: 'array', items: string, maxItems: 100 }, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }, ['action']) },
   { name: 'python_run_status', description: 'Read a Python job owned by this conversation/project; omit id to recover this session/project’s job list. Optionally wait up to 30 seconds. running is not success. Returns confirmed exit code and bounded output when finished.', inputSchema: object({ id: string, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }) },
   { name: 'stop_python_run', description: 'Stop one Python job owned by this conversation/project and confirm child process termination. Does not stop unrelated Python, Conda or OpenViking processes.', inputSchema: object({ id: string }, ['id']) },
+  {name:'spawn_subagent',description:'Delegate a self-contained research or implementation task to a real child agent. Uses the parent model/project and current native permissions. At most two child agents run across Ned; further tasks queue. Research is read-only. Workers require exact disjoint project-relative writePaths. No nested delegation, shell/build/Git writes/environment choices/desktop actions in children. Completion is reported back to this conversation automatically. Include all context; children do not see the parent transcript.',inputSchema:object({role:{type:'string',enum:['research','worker']},title:{type:'string',maxLength:200},prompt:{type:'string',maxLength:32000},writePaths:{type:'array',items:string,maxItems:100}},['role','title','prompt'])},
+  {name:'subagent_status',description:'Inspect this conversation’s real child-agent states and confirmed results. Omit id for the latest 50 task metadata records. Supply id for a result page of up to 32000 characters; follow nextOffset using offset. Completion notifications arrive automatically; avoid polling. waitMs may wait up to 30 seconds without limiting child model generation.',inputSchema:object({id:string,waitMs:{type:'integer',minimum:0,maximum:30000},offset:{type:'integer',minimum:0,maximum:10000000}})},
+  {name:'stop_subagent',description:'Stop an owned child task and confirm its engine loop is idle. Never stops another conversation’s tasks. An unconfirmed stop prevents further work.',inputSchema:object({id:string},['id'])},
   ...extensionTools,
   ...desktopTools,
 ];
@@ -75,6 +78,8 @@ export class HostTools {
   readonly python: PythonProjects;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
+    sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal}>;
+    subagents?: {spawn(parent:string,input:{role:'research'|'worker';title:string;prompt:string;writePaths:string[]},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
     fullAccess?: () => boolean;
@@ -110,12 +115,11 @@ export class HostTools {
         else if (input.method === 'ping') result = {};
         else if (input.method === 'tools/list') result = { tools: hostTools };
         else if (input.method === 'tools/call') {
-          const session = input.params?._meta?.['ai.opencode/sessionID'];
+          let session = input.params?._meta?.['ai.opencode/sessionID'];
           const abort = new AbortController();
-          const controllers = this.operations.get(session) ?? new Set<AbortController>();
-          controllers.add(abort); this.operations.set(session, controllers);
+          let controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);
           res.once('close', () => abort.abort());
-          const work = this.call(input.params.name, input.params.arguments ?? {}, session, abort.signal); this.active.add(work);
+          const work = (async()=>{const scope=await this.scope(session,input.params.name,input.params.arguments??{});if(session!==scope.session){controllers.delete(abort);if(!controllers.size)this.operations.delete(session);session=scope.session;controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);}return this.callScoped(input.params.name,input.params.arguments??{},session,scope.signal?AbortSignal.any([abort.signal,scope.signal]):abort.signal);})(); this.active.add(work);
           try {
             const text = await work;
             if (extensionTools.some(t => t.name === input.params.name) || desktopToolNames.includes(input.params.name)) {
@@ -124,7 +128,7 @@ export class HostTools {
             } else result = { ...(input.params.name === 'rea_ghidra' ? { isError: !!(JSON.parse(text).isError || JSON.parse(text).result?.isError) } : {}), content: [{ type: 'text', text: this.options.redactor.text(text) }] };
           }
           catch (error) { result = { isError: true, content: [{ type: 'text', text: this.options.redactor.text(error instanceof Error ? error.message : '도구 실행 실패') }] }; }
-          finally { this.active.delete(work); controllers.delete(abort); if (!controllers.size) this.operations.delete(session); }
+          finally { this.active.delete(work); controllers?.delete(abort); if (!controllers?.size) this.operations.delete(session); }
         } else { res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ jsonrpc: '2.0', id: input.id, error: { code: -32601, message: 'Method not found' } })); return; }
         res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ jsonrpc: '2.0', id: input.id, result }));
       } catch { res.writeHead(400).end(); }
@@ -133,7 +137,9 @@ export class HostTools {
     const address = this.server.address(); if (!address || typeof address === 'string') throw new Error('MCP 포트 할당 실패');
     this.url = `http://127.0.0.1:${address.port}/mcp`;
   }
-  async call(name: string, args: unknown, session: string, signal?: AbortSignal): Promise<string> {
+  private async scope(session:string,tool:string,args:unknown):Promise<{session:string;signal?:AbortSignal}>{if(typeof session!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(session))throw Error('유효한 세션이 필요합니다.');return this.options.sessionScope?this.options.sessionScope(session,tool,args):{session};}
+  async call(name:string,args:unknown,session:string,signal?:AbortSignal):Promise<string>{const scope=await this.scope(session,name,args);return this.callScoped(name,args,scope.session,scope.signal?(signal?AbortSignal.any([signal,scope.signal]):scope.signal):signal);}
+  private async callScoped(name: string, args: unknown, session: string, signal?: AbortSignal): Promise<string> {
     const authority = this.options.permissionSignal?.();
     if (authority) signal = signal ? AbortSignal.any([signal, authority]) : authority;
     if (!this.accepting || typeof session !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(session)) throw new Error('유효한 세션이 필요합니다.');
@@ -146,6 +152,12 @@ export class HostTools {
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
+    if(['spawn_subagent','subagent_status','stop_subagent'].includes(name)){
+      const agents=this.options.subagents;if(!agents)throw Error('하위 Agent 실행기가 준비되지 않았습니다.');
+      if(name==='spawn_subagent'){const a=z.object({role:z.enum(['research','worker']),title:z.string().trim().min(1).max(200),prompt:z.string().trim().min(1).max(32000),writePaths:z.array(pathArg).max(100).default([])}).strict().parse(args);return JSON.stringify(await agents.spawn(session,a,signal));}
+      if(name==='subagent_status'){const a=z.object({id:z.string().max(128).optional(),waitMs:z.number().int().min(0).max(30000).default(0),offset:z.number().int().min(0).max(10000000).default(0)}).strict().parse(args);return JSON.stringify(await agents.status(session,a.id,a.waitMs,a.offset));}
+      const a=z.object({id:z.string().max(128)}).strict().parse(args);return JSON.stringify(await agents.stop(session,a.id));
+    }
     if (name === 'inspect_python') { z.object({}).strict().parse(args); return JSON.stringify(await this.python.inspect(project, signal)); }
     if (name === 'choose_python_environment') { const input = z.object({ replace: z.boolean().default(false) }).strict().parse(args); return JSON.stringify(await this.python.choose(project, input.replace, signal)); }
     if (name === 'run_python') {
@@ -330,5 +342,6 @@ export class HostTools {
     for (const child of this.children) child.kill('SIGKILL');
   }
   resumeSession(session: string) { if(this.sessionEditGrant && this.sessionEditGrant.session!==session)this.revokeEditApproval(); this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
+  async waitSessionStop(session:string){const deadline=Date.now()+15000;while(this.operations.get(session)?.size){if(Date.now()>deadline)throw Error('호스트 도구 중지를 확인하지 못했습니다.');await new Promise(r=>setTimeout(r,20));}await this.python.stopped(session);}
   waitPythonStop(session: string) { return this.python.stopped(session); }
 }

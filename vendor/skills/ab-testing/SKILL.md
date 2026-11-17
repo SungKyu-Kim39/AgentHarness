@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 사내 기능/성능/모델 프롬프트 비교에도 가설·무작위 배정 단위·노출·주 지표·가드레일·MDE·표본 수·중지 규칙을 명시한다. 같은 문제를 여러 번 평가하면 짝지음/클러스터를 고려한다. SRM과 누락·교차 노출을 검사하고 사후 세그먼트는 탐색으로 표시한다. 클라우드 분석·기능 플래그·온라인 계산기를 연결하지 않는다. 실험 실행/출시/기록 변경은 별도 승인 대상이며 마케팅 목표·실험 횟수를 일률적으로 강제하지 않는다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

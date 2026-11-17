@@ -15,3 +15,7 @@ Specific policy: 승인된 프로젝트의 CSV·JSON·스키마와 사용자가 
 Changed documents (hashes are also retained in the manifest):
 
 - SKILL.md: upstream af7590fa616360259da712b5ede5f79b817beb854c47a465f95774354988e8a2; bundled ec3e3883a246ba0243d1b49d2f9ea6aec645ff1875ef4a1933b0102dc7b3f2dd
+
+## Ned controlled subagents
+
+Updated by Ned contributors, 2026-11-16. Generic prohibitions now cover external agent installers/runners. Ned’s own spawn_subagent service may delegate bounded research or assigned-file implementation under the parent project and current native permissions. It does not install or execute upstream agents. Child agents cannot delegate, perform builds/Git writes/desktop actions, or answer user decisions. The main agent integrates confirmed results. This changes the host adapter, not the upstream license or provenance.

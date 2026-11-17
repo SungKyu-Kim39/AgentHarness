@@ -8,7 +8,9 @@
 
 Astryx 0.7.16 스킬·281개 참조와 Windows React 시작 프로젝트를 추가해 기본 스킬은 67종입니다. `astryx-offline-lock.json`, `distribution/astryx-starter`, `downloads/astryx`를 함께 확인합니다. 원본 CLI를 실행하지 않으며 직원 PC에서 패키지를 받지 않습니다. `skills:bundle`은 기존 두 지침 묶음을 갱신하면서 Astryx의 검토된 항목을 보존하고 실패하면 원본 번들을 복구합니다. 이 작업공간에서 upstream 스킬 전체 재생성은 누락된 빌드 캐시의 외부 다운로드 실패로 완료하지 못했지만 검토된 기존 67종 파일은 무결성 검사를 통과합니다.
 
-메뉴·About 수정은 `scripts/patch-ned-editor.mjs`와 `ned-editor-source-lock.json`에 있습니다. Windows 소스 빌드 43966924528은 현재 진행 중입니다. 완료하면 bot이 `work`의 `downloads/editor`에 바이너리·수정 대응 소스·build.json을 새 파일로 커밋합니다. 로컬 변경을 보존하며 그 커밋을 병합한 뒤 `scripts/ned-source-editor.mjs`로 배포 준비본에 적용합니다. 기존의 아이콘 전용 변경과 구별하며 원본 및 수정 대응 소스·라이선스를 함께 배포해야 합니다.
+메뉴·About 수정은 `scripts/patch-ned-editor.mjs`와 `ned-editor-source-lock.json`에 있습니다. Windows 소스 빌드 43966924528은 성공했으며 bot 커밋 `0b05464`를 병합했습니다. `downloads/editor`의 바이너리·수정 대응 소스·build.json을 `scripts/ned-source-editor.mjs`로 무결성 확인 후 배포 준비본에 적용합니다. 기존의 아이콘 전용 변경과 구별하며 원본 및 수정 대응 소스·라이선스를 함께 배포해야 합니다.
+
+Ned 서브에이전트는 `distribution/subagents.ts`에서 관리합니다. 호스트가 실제 OpenCode 자식 세션을 만들며 조사·지정 파일 구현, 전역 동시 두 개, 부모 권한 상속과 중지 확인을 적용합니다. `tests/subagents.integration.test.ts`는 실제 엔진·합성 모델로 두 자식의 읽기·수정·자동 결과 반환·부모 통합·대기 요청 중지를 확인합니다. 제품 스킬의 외부 Agent 설치 금지는 유지하되 이 호스트 위임을 안내하도록 adapter와 해시를 갱신했습니다. Codex 개발용 `.agents/` 규칙은 바꾸지 않았습니다. [사용 안내](docs/subagents.md)를 참고하세요.
 
 `NED_BUILD_REVISION=rebuild1 node scripts/ned-package.mjs release`가 현재 전체 호스트 재빌드 경로입니다. 역사적인 0.3.6 단일 수정용 `rebuild` 모드를 사용하지 않습니다. 기존 게시 EXE·TGZ·태그는 불변입니다. [검증 진행 기록](docs/validation-0.3.8-rebuild1.md)을 갱신하고 새 설치본의 Windows 검증 뒤에만 배포 완료로 표시합니다.
 

@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 프로젝트 안의 변경 전후·호스트 스냅샷·사용자가 제공한 diff를 근거로 보안 회귀를 조사한다. Git 실행기가 없으면 blame/이력을 실행한 것으로 기록하지 않는다. 실제 호출자·권한·입력·자원 수명과 테스트 근거를 확인하고 분석 한계를 밝힌다. 다른 플러그인·하위 에이전트에 자동 위임하지 않는다. 보고서는 대화로 제공할 수 있고 파일은 요청에 필요할 때 프로젝트 안에 승인된 편집으로 제안한다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

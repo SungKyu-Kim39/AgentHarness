@@ -37,7 +37,7 @@ Zed에는 로컬 ACP 에이전트를 등록합니다. 브리지는 호스트가 
 
 이 Agent에는 Ned 스킬·MCP·OpenViking을 연결하지 않습니다. 파일 도구·터미널과 권한 판단은 Zed 자체 구현을 사용합니다. 폐쇄망용 편집기 설정에 따라 웹 도구와 임의 MCP 자동 연결은 끕니다. Ned 앱의 공통 서비스가 살아 있는 것과 Zed Agent의 호출 경로는 별개입니다. 다른 Ned 대화를 함께 열었다면 그 대화의 엔진은 별도로 실행될 수 있습니다.
 
-Ned Agent의 subagent 도구는 현재 허용 목록에 없습니다. 기본 Zed Agent의 spawn_agent는 Zed native Agent 내부에서 부모 모델·프로필을 이어 하위 Thread를 만듭니다. 실제 실행 수용 범위와 사용법은 [두 Agent 안내](zed-native-agent.md)에 구분했습니다.
+Ned Agent는 호스트가 소유한 OpenCode 하위 세션을 생성해 조사·지정 파일 구현을 위임합니다. 동시 두 개, 부모 권한 상속, 파일 배정 충돌 검사와 중지 확인을 적용합니다. 기본 Zed Agent의 spawn_agent는 Zed native Agent 내부에서 부모 모델·프로필을 이어 하위 Thread를 만듭니다. 실제 실행 수용 범위와 사용법은 [두 Agent 안내](zed-native-agent.md)에 구분했습니다.
 
 ## 파일 수정과 빌드
 

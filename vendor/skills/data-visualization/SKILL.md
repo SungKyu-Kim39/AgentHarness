@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 실제 로컬 결과에 맞는 차트·축·단위·표본·신뢰 구간을 선택한다. matplotlib·seaborn·pandas·plotly·브라우저가 설치됐다고 가정하지 않는다. 실행기가 없으면 코드와 시각화 명세만 제안한다. HTML은 로컬 JS·글꼴·이미지만 사용하며 CDN·외부 지도·원격 렌더링을 사용하지 않는다. 산출물 저장은 승인된 프로젝트 편집/실행 대상이다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

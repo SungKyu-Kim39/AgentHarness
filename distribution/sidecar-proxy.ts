@@ -4,7 +4,7 @@ import type { Credentials } from './native-control';
 /** Native API boundary: no global config writes, remote connections or saved approvals. */
 export class SidecarProxy {
   private server?: Server;
-  constructor(private backend: Credentials, private sessions?: { cancelSession(session: string): void; resumeSession(session: string): void }) {}
+  constructor(private backend: Credentials, private sessions?: { cancelSession(session: string): void|Promise<void>; resumeSession(session: string): void|Promise<void> }) {}
   async start(): Promise<Credentials> {
     this.server = createServer(async (req, res) => {
       const auth = 'Basic ' + Buffer.from('opencode:' + this.backend.password).toString('base64');
@@ -15,8 +15,8 @@ export class SidecarProxy {
         const pathname = decodeURIComponent(target.pathname).replace(/\/{2,}/g, '/');
         const operation = /^\/api\/session\/([^/]+)\/(interrupt|prompt)$/.exec(pathname);
         if (req.method === 'POST' && operation) {
-          if (operation[2] === 'interrupt') this.sessions?.cancelSession(operation[1]);
-          else this.sessions?.resumeSession(operation[1]);
+          if (operation[2] === 'interrupt') await this.sessions?.cancelSession(operation[1]);
+          else await this.sessions?.resumeSession(operation[1]);
         }
         const modifying = !['GET', 'HEAD', 'OPTIONS'].includes(req.method ?? '');
         if (modifying && (

@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 규칙은 함께 반입한 이 문서의 고정본을 사용하고 최신 규칙을 온라인에서 조회하지 않는다. 기존 UI 토큰·한국어 문구·Windows 입력 관례와 사용자의 디자인 결정을 존중한다. 승인된 프로젝트 소스로 점검하고 실제 브라우저가 없으면 렌더링·키보드·대비 검증의 미실행을 밝힌다. CDN·Google Fonts 등 외부 자산을 추가하지 않는다. 파일·줄·영향·수정안을 근거와 함께 제시한다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

@@ -243,6 +243,7 @@ async function bundle() {
   }
   if(version==='0.3.8'&&revision==='rebuild1'){
     await cp(path.join(root,'docs/zed-native-agent.md'),path.join(stage,'ZED_NATIVE_AGENT.md'));
+    await cp(path.join(root,'docs/subagents.md'),path.join(stage,'SUBAGENTS.md'));
     await cp(path.join(root,'docs/astryx.md'),path.join(stage,'ASTRYX.md'));
     await mkdir(path.join(stage,'astryx'),{recursive:true});
     const astryx=await json(path.join(root,'astryx-offline-lock.json'));

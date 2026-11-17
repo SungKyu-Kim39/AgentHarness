@@ -8315,6 +8315,9 @@ var hostTools = [
   { name: "run_python", description: "Activate the user-selected Conda environment and start a project Python task under native command permission. Returns a job ID; use python_run_status to verify completion and exit code. Actions: run .py script, compile .py, test with installed pytest, wheel with installed build --no-isolation, or package a .py with installed PyInstaller. No dependency installation, arbitrary interpreter, shell or environment override. Args are JSON data, never inserted into a shell command.", inputSchema: object({ action: { type: "string", enum: ["run", "compile", "test", "wheel", "pyinstaller"] }, script: string, args: { type: "array", items: string, maxItems: 100 }, waitMs: { type: "integer", minimum: 0, maximum: 3e4 } }, ["action"]) },
   { name: "python_run_status", description: "Read a Python job owned by this conversation/project; omit id to recover this session/project\u2019s job list. Optionally wait up to 30 seconds. running is not success. Returns confirmed exit code and bounded output when finished.", inputSchema: object({ id: string, waitMs: { type: "integer", minimum: 0, maximum: 3e4 } }) },
   { name: "stop_python_run", description: "Stop one Python job owned by this conversation/project and confirm child process termination. Does not stop unrelated Python, Conda or OpenViking processes.", inputSchema: object({ id: string }, ["id"]) },
+  { name: "spawn_subagent", description: "Delegate a self-contained research or implementation task to a real child agent. Uses the parent model/project and current native permissions. At most two child agents run across Ned; further tasks queue. Research is read-only. Workers require exact disjoint project-relative writePaths. No nested delegation, shell/build/Git writes/environment choices/desktop actions in children. Completion is reported back to this conversation automatically. Include all context; children do not see the parent transcript.", inputSchema: object({ role: { type: "string", enum: ["research", "worker"] }, title: { type: "string", maxLength: 200 }, prompt: { type: "string", maxLength: 32e3 }, writePaths: { type: "array", items: string, maxItems: 100 } }, ["role", "title", "prompt"]) },
+  { name: "subagent_status", description: "Inspect this conversation\u2019s real child-agent states and confirmed results. Omit id for the latest 50 task metadata records. Supply id for a result page of up to 32000 characters; follow nextOffset using offset. Completion notifications arrive automatically; avoid polling. waitMs may wait up to 30 seconds without limiting child model generation.", inputSchema: object({ id: string, waitMs: { type: "integer", minimum: 0, maximum: 3e4 }, offset: { type: "integer", minimum: 0, maximum: 1e7 } }) },
+  { name: "stop_subagent", description: "Stop an owned child task and confirm its engine loop is idle. Never stops another conversation\u2019s tasks. An unconfirmed stop prevents further work.", inputSchema: object({ id: string }, ["id"]) },
   ...extensionTools,
   ...desktopTools
 ];
@@ -8382,13 +8385,24 @@ var HostTools = class {
         else if (input.method === "ping") result = {};
         else if (input.method === "tools/list") result = { tools: hostTools };
         else if (input.method === "tools/call") {
-          const session = input.params?._meta?.["ai.opencode/sessionID"];
+          let session = input.params?._meta?.["ai.opencode/sessionID"];
           const abort = new AbortController();
-          const controllers = this.operations.get(session) ?? /* @__PURE__ */ new Set();
+          let controllers = this.operations.get(session) ?? /* @__PURE__ */ new Set();
           controllers.add(abort);
           this.operations.set(session, controllers);
           res.once("close", () => abort.abort());
-          const work = this.call(input.params.name, input.params.arguments ?? {}, session, abort.signal);
+          const work = (async () => {
+            const scope = await this.scope(session, input.params.name, input.params.arguments ?? {});
+            if (session !== scope.session) {
+              controllers.delete(abort);
+              if (!controllers.size) this.operations.delete(session);
+              session = scope.session;
+              controllers = this.operations.get(session) ?? /* @__PURE__ */ new Set();
+              controllers.add(abort);
+              this.operations.set(session, controllers);
+            }
+            return this.callScoped(input.params.name, input.params.arguments ?? {}, session, scope.signal ? AbortSignal.any([abort.signal, scope.signal]) : abort.signal);
+          })();
           this.active.add(work);
           try {
             const text2 = await work;
@@ -8400,8 +8414,8 @@ var HostTools = class {
             result = { isError: true, content: [{ type: "text", text: this.options.redactor.text(error instanceof Error ? error.message : "\uB3C4\uAD6C \uC2E4\uD589 \uC2E4\uD328") }] };
           } finally {
             this.active.delete(work);
-            controllers.delete(abort);
-            if (!controllers.size) this.operations.delete(session);
+            controllers?.delete(abort);
+            if (!controllers?.size) this.operations.delete(session);
           }
         } else {
           res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({ jsonrpc: "2.0", id: input.id, error: { code: -32601, message: "Method not found" } }));
@@ -8420,7 +8434,15 @@ var HostTools = class {
     if (!address || typeof address === "string") throw new Error("MCP \uD3EC\uD2B8 \uD560\uB2F9 \uC2E4\uD328");
     this.url = `http://127.0.0.1:${address.port}/mcp`;
   }
+  async scope(session, tool, args) {
+    if (typeof session !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(session)) throw Error("\uC720\uD6A8\uD55C \uC138\uC158\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.");
+    return this.options.sessionScope ? this.options.sessionScope(session, tool, args) : { session };
+  }
   async call(name, args, session, signal) {
+    const scope = await this.scope(session, name, args);
+    return this.callScoped(name, args, scope.session, scope.signal ? signal ? AbortSignal.any([signal, scope.signal]) : scope.signal : signal);
+  }
+  async callScoped(name, args, session, signal) {
     const authority = this.options.permissionSignal?.();
     if (authority) signal = signal ? AbortSignal.any([signal, authority]) : authority;
     if (!this.accepting || typeof session !== "string" || !/^[a-zA-Z0-9_-]{1,128}$/.test(session)) throw new Error("\uC720\uD6A8\uD55C \uC138\uC158\uC774 \uD544\uC694\uD569\uB2C8\uB2E4.");
@@ -8434,6 +8456,20 @@ var HostTools = class {
     const projectID = (0, import_node_crypto11.createHash)("sha256").update(project).digest("hex").slice(0, 32);
     if (extensionTools.some((t) => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
+    if (["spawn_subagent", "subagent_status", "stop_subagent"].includes(name)) {
+      const agents = this.options.subagents;
+      if (!agents) throw Error("\uD558\uC704 Agent \uC2E4\uD589\uAE30\uAC00 \uC900\uBE44\uB418\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
+      if (name === "spawn_subagent") {
+        const a2 = external_exports.object({ role: external_exports.enum(["research", "worker"]), title: external_exports.string().trim().min(1).max(200), prompt: external_exports.string().trim().min(1).max(32e3), writePaths: external_exports.array(pathArg).max(100).default([]) }).strict().parse(args);
+        return JSON.stringify(await agents.spawn(session, a2, signal));
+      }
+      if (name === "subagent_status") {
+        const a2 = external_exports.object({ id: external_exports.string().max(128).optional(), waitMs: external_exports.number().int().min(0).max(3e4).default(0), offset: external_exports.number().int().min(0).max(1e7).default(0) }).strict().parse(args);
+        return JSON.stringify(await agents.status(session, a2.id, a2.waitMs, a2.offset));
+      }
+      const a = external_exports.object({ id: external_exports.string().max(128) }).strict().parse(args);
+      return JSON.stringify(await agents.stop(session, a.id));
+    }
     if (name === "inspect_python") {
       external_exports.object({}).strict().parse(args);
       return JSON.stringify(await this.python.inspect(project, signal));
@@ -8764,6 +8800,14 @@ ${text2}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(s
     this.editGrant = void 0;
     this.runs.set(session, Symbol());
     this.cancelled.delete(session);
+  }
+  async waitSessionStop(session) {
+    const deadline = Date.now() + 15e3;
+    while (this.operations.get(session)?.size) {
+      if (Date.now() > deadline) throw Error("\uD638\uC2A4\uD2B8 \uB3C4\uAD6C \uC911\uC9C0\uB97C \uD655\uC778\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4.");
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    await this.python.stopped(session);
   }
   waitPythonStop(session) {
     return this.python.stopped(session);

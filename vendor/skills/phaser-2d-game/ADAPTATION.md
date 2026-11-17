@@ -14,3 +14,7 @@ Original main document SHA-256: f740df62cb4c6c0f7f5457be4f860d9d163f4cd1df78326c
 Bundled main document SHA-256: a88257a6d344485f78ae75dc46a7fe16b8f5f27854c3889d3840e2e7212315f9
 
 The upstream plugin manifest explicitly declares MIT; the distributed LICENSE identifies that declaration and reproduces MIT terms.
+
+## Ned controlled subagents
+
+Updated by Ned contributors, 2026-11-16. Generic prohibitions now cover external agent installers/runners. Ned’s own spawn_subagent service may delegate bounded research or assigned-file implementation under the parent project and current native permissions. It does not install or execute upstream agents. Child agents cannot delegate, perform builds/Git writes/desktop actions, or answer user decisions. The main agent integrates confirmed results. This changes the host adapter, not the upstream license or provenance.

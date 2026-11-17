@@ -12,9 +12,9 @@ export async function sourceEditorInputs(root){
   const item=build.files.find(f=>f.name===name),bytes=await readFile(path.join(directory,name));if(!item||bytes.length!==item.bytes||sha(bytes)!==item.sha256)throw Error('Source-built editor hash mismatch: '+name);files[name]={...item,bytesData:bytes};
  }
  const archive=path.join(directory,'zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz');
- const change=JSON.parse(execFileSync('tar',['-xOf',archive,'./NED_EDITOR_CHANGES.json'],{encoding:'utf8'}));
+ const change=JSON.parse(execFileSync('tar',['-xOf',archive,'./NED_EDITOR_CHANGES.json'],{encoding:'utf8',stdio:['ignore','pipe','pipe']}));
  if(change.version!=='0.3.8'||change.buildRevision!=='rebuild1'||change.iconSha256!==sha(await readFile(path.join(root,'assets/ned-icon.png')))||change.changes.length!==Object.keys(lock.files).length)throw Error('Source-built editor changes mismatch');
- for(const [file,expected]of Object.entries(lock.files)){const item=change.changes.find(c=>c.file===file);if(item?.originalSha256!==expected||sha(execFileSync('tar',['-xOf',archive,'./'+file],{maxBuffer:2*1024*1024}))!==item.sha256)throw Error('Corresponding source file mismatch: '+file);}
+ for(const [file,expected]of Object.entries(lock.files)){const item=change.changes.find(c=>c.file===file);if(item?.originalSha256!==expected||sha(execFileSync('tar',['-xOf',archive,'./'+file],{maxBuffer:2*1024*1024,stdio:['ignore','pipe','pipe']}))!==item.sha256)throw Error('Corresponding source file mismatch: '+file);}
  const binary=files['Ned-editor-0.3.8-rebuild1.exe'].bytesData;
  for(const text of ['About Ned','Quit Ned','Ned 0.3.8 · rebuild 1'])if(!binary.includes(Buffer.from(text)))throw Error('Built editor missing Ned UI');
  for(const text of ['About Zed','Quit Zed'])if(binary.includes(Buffer.from(text)))throw Error('Built editor retains old menu');

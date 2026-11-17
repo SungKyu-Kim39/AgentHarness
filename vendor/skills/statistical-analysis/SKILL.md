@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 분석 단위·무작위 배정·독립성·누락·표본 수와 가정을 먼저 확인한다. A/B에서는 SRM·사전 지정한 주 지표/MDE·검정력·효과 크기·신뢰 구간·다중 비교·중지 규칙을 확인한다. 반복 관측과 클러스터를 독립 표본으로 세지 않는다. p값은 귀무가설이 참일 확률이나 결과가 우연일 확률이 아니다. 유의하지 않다는 결과를 동등성 증명으로 표현하지 않는다. 실제 로컬 계산 근거 없이 p값·구간을 생성하지 않는다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 

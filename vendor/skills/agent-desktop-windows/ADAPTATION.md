@@ -15,3 +15,7 @@ Specific policy: The bundled native Windows UIA runtime requires an interactive 
 Changed documents (hashes are also retained in the manifest):
 
 - SKILL.md: upstream 6d1ce79a23caf84a5ef75695a4896a1b8bdde7d2b4ff55a655c20118b38e189c; bundled 7ddc2c67e11670ef79f0b370fa8af403529009877a696c97257ede3905137abb
+
+## Ned controlled subagents
+
+Updated by Ned contributors, 2026-11-16. Generic prohibitions now cover external agent installers/runners. Ned’s own spawn_subagent service may delegate bounded research or assigned-file implementation under the parent project and current native permissions. It does not install or execute upstream agents. Child agents cannot delegate, perform builds/Git writes/desktop actions, or answer user decisions. The main agent integrates confirmed results. This changes the host adapter, not the upstream license or provenance.

@@ -9,7 +9,7 @@ This is a reviewed static skill, not an executable plugin. Read only the relevan
 
 호스트의 승인된 프로젝트 읽기·검색과 실제 Graphify/REA 결과만 사용한다. 텍스트 검색을 의미 분석으로 표현하지 않는다. 먼저 기존 프로젝트 지침·Conductor 트랙을 읽는다. 온보딩 설명은 대화로 제공하며 CLAUDE.md 등 추가 문서는 요청에 필요할 때만 승인된 편집으로 제안한다. 전역 설정·개인 설정·엔진 권한을 수정하지 않는다.
 
-Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
+Use approved project reads/searches and host-mediated edits. Do not install packages, download dependencies, fetch remote documentation, deploy, enable hooks, change permissions, spawn external agents, or send messages. A command, compiler, browser, database, test runner or SDK mentioned below is not installed by this skill. Use an approved local executor if available; otherwise report verification as not run. Local node_modules examples require an existing package and the appropriate Windows executable path. User decisions and host policy take precedence. See ADAPTATION.md for provenance and modifications.
 
 ---
 
