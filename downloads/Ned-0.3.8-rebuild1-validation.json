@@ -3,7 +3,7 @@
   "product": "Ned",
   "version": "0.3.8",
   "buildRevision": "rebuild1",
-  "sourceCommit": "c4d1edb",
+  "sourceCommit": "c4d1edb0d15cd2f1e4fbc5b62243f7754ddaced5",
   "recordedAt": "2026-11-17T02:44:11.167980+00:00",
   "os": "linux",
   "modelEndpointKind": "synthetic-loopback-openai-compatible; no intranet models prompted",
@@ -29,5 +29,66 @@
     "passed": true,
     "windowsGuiAcceptance": false
   },
-  "releaseReady": false
+  "releaseReady": false,
+  "auditSourceCommit": "c4d1edb0d15cd2f1e4fbc5b62243f7754ddaced5",
+  "installer": {
+    "name": "Ned-0.3.8-rebuild1-win-x64.exe",
+    "bytes": 1534582358,
+    "sha256": "7c9ac4255f775e69b10b52bb3bac2baf5c3c70a9958d0846b84d451434bf4af3"
+  },
+  "payloadComparison": {
+    "files": 59986,
+    "allStagedBytesVerified": true,
+    "manifestSha256": "5cb9c060d9405173dd87d1b8d706872f74d1775226d3c75d0fdd559976aa0b8a",
+    "generatedInstallerFiles": {
+      "$PLUGINSDIR/System.dll": "3eb38ae99653a7dbc724132ee240f6e5c4af4bfe7c01d31d23faf373f9f2eaca",
+      "$PLUGINSDIR/nsDialogs.dll": "1e40211af65923c2f4fd02ce021458a7745d28e2f383835e3015e96575632172",
+      "$PLUGINSDIR/modern-wizard.bmp": "3ad2dc318056d0a2024af1804ea741146cfc18cc404649a44610cbf8b2056cf2",
+      "Uninstall Ned.exe": "81441bbebcb6b35682cf266b8892b9b9c2c08053b10ca52dd2e0a00101b28b6d"
+    }
+  },
+  "runtimeComponents": {
+    "openviking": {
+      "manifestSha256": "8ee132a83b1bd421620a5b8f4f5ae97c868d2b33a8e2b1a871e001825b2de7a0",
+      "files": 25295
+    },
+    "mcp": {
+      "manifestSha256": "e9ca7b287740bf0de0cdef850209ba1082fdb0c5e79773e11458c0a1a72915f9",
+      "files": 21028
+    },
+    "rea": {
+      "manifestSha256": "96b22a192568d40c14a7a0563b3af9b9f2c03b29e9bab255a42e0af7b6a89523",
+      "files": 9012
+    },
+    "agent-desktop": {
+      "manifestSha256": "5e20ba52fc353efa79e8e551ebd29b31d8499d09f859c1b2e0988999577a4685",
+      "files": 4
+    },
+    "ghidra": {
+      "manifestSha256": "c59be72fd4c4c765f6b1a6f950d452e730ef46fb1667cfecb41073a568bfa2f3",
+      "files": 3659
+    },
+    "skills": {
+      "manifestSha256": "a8e54610ee9e2fc05c4bf6414854b49dbc09979369f4b39abee382e8ea31a9fd",
+      "files": 854,
+      "count": 67
+    }
+  },
+  "sourceEditor": {
+    "sourceCommit": "eba521aa503fb3dae0a280249aaa18e4555e97fe",
+    "upstreamCommit": "e8bc16acee5ae1937600d571d441c4b5d7b0d288",
+    "menuAndAboutFromSource": true,
+    "correspondingSourceLocation": "offline TGZ source/zed-ned-editor-source-v1.28.1-0.3.8-rebuild1.tar.gz",
+    "windowsGuiAcceptance": false
+  },
+  "astryx": {
+    "version": "0.7.16",
+    "archive": {
+      "name": "Ned-Astryx-0.7.16-windows-x64.zip",
+      "bytes": 24922585,
+      "sha256": "70aa74491bc66c7eee3612c24a4903a7832fc018f6de33f739afd1c32df77162"
+    },
+    "referenceCount": 281,
+    "upstreamCliExecuted": false
+  }
 }
