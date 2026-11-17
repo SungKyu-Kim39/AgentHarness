@@ -82,11 +82,26 @@ export async function prepareEditor(root: string, executable: string, resources:
   const env: NodeJS.ProcessEnv = {};
   for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'SystemDrive', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432', 'ProgramData', 'PATHEXT', 'LANG', 'LC_ALL', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'])
     if (process.env[key]) env[key] = process.env[key];
+  const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
+  const gitConfig = path.join(data, 'config/git/config');
+  if (process.platform === 'win32') {
+    // Zed watches config/git/config and refreshes Git access on changes.
+    await mkdir(path.dirname(gitConfig), { recursive: true, mode: 0o700 });
+  }
   return { data, env: { ...env,
     HOME: home, USERPROFILE: home, APPDATA: path.join(home, 'AppData', 'Roaming'), LOCALAPPDATA: path.join(home, 'AppData', 'Local'),
     XDG_CONFIG_HOME: path.join(data, 'config-home'), XDG_DATA_HOME: path.join(data, 'data'), XDG_CACHE_HOME: path.join(data, 'cache'), XDG_STATE_HOME: path.join(data, 'state'),
-    PATH: process.platform === 'win32' ? ['System32', '', 'System32/Wbem', 'System32/WindowsPowerShell/v1.0'].map(p => path.join(process.env.SystemRoot ?? 'C:\\Windows', p)).join(path.delimiter) : '/usr/bin:/bin',
-    ...(process.platform === 'win32' ? { ComSpec: path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32/cmd.exe') } : {}),
+    PATH: process.platform === 'win32'
+      ? [path.join(resources, 'runtime/windows-x64/mcp/git/cmd'),
+          ...['System32', '', 'System32/Wbem', 'System32/WindowsPowerShell/v1.0'].map(p => path.join(systemRoot, p))].join(path.delimiter)
+      : '/usr/bin:/bin',
+    ...(process.platform === 'win32' ? {
+      ComSpec: path.join(systemRoot, 'System32/cmd.exe'),
+      GIT_CONFIG_GLOBAL: gitConfig,
+      GIT_CONFIG_NOSYSTEM: '1',
+      GIT_ALLOW_PROTOCOL: '',
+      GIT_TERMINAL_PROMPT: '0',
+    } : {}),
     TEMP: path.join(data, 'tmp'), TMP: path.join(data, 'tmp'),
     HTTP_PROXY: proxy, HTTPS_PROXY: proxy, ALL_PROXY: proxy, http_proxy: proxy, https_proxy: proxy, all_proxy: proxy, NO_PROXY: '', no_proxy: '',
     DO_NOT_TRACK: '1', OTEL_SDK_DISABLED: 'true',

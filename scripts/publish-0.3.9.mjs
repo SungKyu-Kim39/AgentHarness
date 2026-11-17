@@ -41,8 +41,9 @@ for(const [from,to]of [[`${prefix}-win-x64.exe`,`${prefix}-win-x64.exe`],[`${pre
 if(await fileHash(path.join(root,output,`${prefix}-win-x64.exe`))!==audit.installer.sha256)throw Error('Candidate LFS bytes mismatch');
 const windows={...proof,workflowRunId:Number(validationRun),workflowCommit:validation.head_sha,tests,passed,skipped,failed:0};
 await writeFile(path.join(root,`downloads/${prefix}-windows-offline-smoke.json`),JSON.stringify(windows,null,2)+'\n');
-await writeFile(path.join(root,'docs/release-0.3.9.md'),`# Ned 0.3.9\n\n스킬 사전 준비·변경분 적용과 지식 서비스의 백그라운드 시작, 상세 실행 단계, Studio 오류 복구, CMD/PowerShell, 기존 개인 Zed 대화 가져오기와 EGM 7종을 제공합니다. 기본 스킬은 74종입니다. 기본 Zed Agent의 필수 프로필 이름과 모델 통신 프록시 호환성도 보완했습니다.\n\n설치 EXE의 전체 ${audit.payloadComparison.files.toLocaleString('en-US')}개 파일을 준비본과 대조했습니다. Windows Server 설치 후 ${tests}건 중 ${passed}건 통과·${skipped}건 제외·실패 0건입니다. 합성 모델·설치된 런타임을 사용했으며 직원 Win10/11 GUI·실제 사내 모델 수용과는 구분해 사전 릴리스로 제공합니다.\n\n[변경 사항](https://github.com/${repo}/blob/main/docs/changes-0.3.9.md) · [사용 안내](https://github.com/${repo}/blob/main/docs/ned-user-guide.md) · [검증 기록](https://github.com/${repo}/blob/main/docs/validation-0.3.9.md)\n\nTGZ 전체를 새 폴더에 풀고 EXE로 업데이트합니다. 기존 설정·대화·지식과 사용자 수정 스킬은 보존합니다. 첫 개인 Zed 대화 가져오기 전 원본을 보관하고 안내를 확인하세요.\n\n빌드 소스: ${source}\nWindows 검사: https://github.com/${repo}/actions/runs/${validationRun}\n`);
+await writeFile(path.join(root,'docs/release-0.3.9.md'),`# Ned 0.3.9\n\n스킬 사전 준비·변경분 적용과 지식 서비스의 백그라운드 시작, 상세 실행 단계, Studio 오류 복구, CMD/PowerShell, 기존 개인 Zed 대화 가져오기와 EGM 7종을 제공합니다. 기본 스킬은 74종입니다. 기본 Zed Agent의 필수 프로필 이름과 모델 통신 프록시 호환성과 Git 패널의 Trust Directory도 수정했습니다.\n\n설치 EXE의 전체 ${audit.payloadComparison.files.toLocaleString('en-US')}개 파일을 준비본과 대조했습니다. Windows Server 설치 후 ${tests}건 중 ${passed}건 통과·${skipped}건 제외·실패 0건입니다. 합성 모델·설치된 런타임을 사용했으며 직원 Win10/11 GUI·실제 사내 모델 수용과는 구분해 사전 릴리스로 제공합니다.\n\n[0.3.7 이후 누적 변경](https://github.com/${repo}/blob/main/docs/upgrade-from-0.3.7.md) · [변경 사항](https://github.com/${repo}/blob/main/docs/changes-0.3.9.md) · [사용 안내](https://github.com/${repo}/blob/main/docs/ned-user-guide.md) · [검증 기록](https://github.com/${repo}/blob/main/docs/validation-0.3.9.md)\n\nTGZ 전체를 새 폴더에 풀고 EXE로 업데이트합니다. 기존 설정·대화·지식과 사용자 수정 스킬은 보존합니다. 첫 개인 Zed 대화 가져오기 전 원본을 보관하고 안내를 확인하세요.\n\n빌드 소스: ${source}\nWindows 검사: https://github.com/${repo}/actions/runs/${validationRun}\n`);
 let record=await readFile(path.join(root,'docs/validation-0.3.9.md'),'utf8');
+record=record.replace('Rust Windows 실행 파일 컴파일·GUI 표시는 수행하지 않았습니다.','고정 Rust 도구 사슬로 Windows 실행 파일을 컴파일하고 메뉴/About 문자열·해시와 대응 소스를 확인했습니다. 실제 직원 PC GUI 표시는 별도입니다.');
 record=record.replace('현재 공개 배포는 0.3.8 rebuild1이며, 0.3.9 EXE·TGZ·릴리스는 생성하거나 게시하지 않았습니다.','0.3.9 설치 EXE를 감사하고 같은 파일을 Windows 실행기에서 설치해 검증했습니다. 반입 TGZ와 사전 릴리스는 이 기록을 포함합니다.');
 const at=record.indexOf('## 배포 전 남은 확인');if(at>=0)record=record.slice(0,at);
 record+=`## 설치 파일과 Windows 결과\n\n제품 소스는 \`${source}\`입니다. Windows 실행 [${validationRun}](https://github.com/${repo}/actions/runs/${validationRun})에서 검사 중 설치 파일을 교체하지 않고 ${tests}건 중 ${passed}건 통과·${skipped}건 제외·실패 0건을 확인했습니다. 설치 시간은 같은 Windows Server 실행기의 기준/후보 1회 비교이며 직원 PC 성능으로 일반화하지 않습니다.\n\n설치 EXE는 ${audit.installer.bytes} bytes, SHA-256 \`${audit.installer.sha256}\`입니다. 준비본과 추출본의 ${audit.payloadComparison.files}개 파일을 전부 대조했습니다. 0.3.9용 소스 빌드 편집기·대응 소스, 실제 생성한 runtime lock, 준비 스킬과 EGM/Studio lock, YAML ISC 원문을 포함했습니다.\n\nWindows 검사 상세·개수와 설치 측정은 [실행 결과](../downloads/${prefix}-windows-offline-smoke.json), 설치 전체 파일은 [감사 기록](../downloads/${prefix}-installer-audit.json), TGZ 검사·해시는 [다운로드 안내](../downloads/README.md)에 보존합니다.\n\n## 별도 수용 범위\n\n직원 Win10/11 GUI, 실제 사내 Qwen/BGE 첫 메시지·긴 대기열·취소, 실제 개인 DB의 대화 목록·재개와 운영체제별 UI 동작, 외부 DNS/TCP 전체 관찰은 별도 수용 항목입니다. 합성 HTTP·호스트 fixture를 Zed 실제 GUI의 첫 메시지 성공으로 표현하지 않습니다. Goldfish 실제 모델 입력 격리와 검토 품질도 별도입니다. 설치 압축 해제의 코어 사용량과 실제 직원 PC 시작 성능은 측정하지 않았습니다.\n`;
@@ -75,10 +76,16 @@ run('gh',['release','edit','v0.3.9','--draft=false']);
 const published=gh(['api',`repos/${repo}/releases/tags/v0.3.9`]);if(published.draft||gh(['api',`repos/${repo}/commits/v0.3.9`]).sha!==source)throw Error('Published release identity mismatch');
 const verified=[];
 for(const asset of published.assets){
- const response=await fetch(asset.browser_download_url,{redirect:'follow'});if(!response.ok)throw Error('Public download failed: '+asset.name);
- const h=createHash('sha256');let bytes=0;for await(const chunk of response.body){h.update(chunk);bytes+=chunk.length;}
- const digest=h.digest('hex');if(bytes!==asset.size||asset.digest!=='sha256:'+digest)throw Error('Public download hash mismatch: '+asset.name);
- verified.push({name:asset.name,bytes,sha256:digest,url:asset.browser_download_url});
+ let complete;
+ for(let attempt=0;attempt<3;attempt++){
+  try{
+   const response=await fetch(asset.browser_download_url,{redirect:'follow'});if(!response.ok)throw Error('Public download failed: '+asset.name);
+   const h=createHash('sha256');let bytes=0;for await(const chunk of response.body){h.update(chunk);bytes+=chunk.length;}
+   const digest=h.digest('hex');if(bytes!==asset.size||asset.digest!=='sha256:'+digest)throw Error('Public download hash mismatch: '+asset.name);
+   complete={name:asset.name,bytes,sha256:digest,url:asset.browser_download_url};break;
+  }catch(error){if(attempt===2)throw error;await new Promise(resolve=>setTimeout(resolve,2000*(attempt+1)));}
+ }
+ verified.push(complete);
 }
 await writeFile(path.join(root,`downloads/${prefix}-public-verification.json`),JSON.stringify({schemaVersion:1,version:'0.3.9',releaseUrl,recordedAt:new Date().toISOString(),authenticated:false,verifiedFullDownloads:true,assets:verified},null,2)+'\n');
 await writeFile(path.join(root,`downloads/${prefix}-release-state.json`),JSON.stringify({schemaVersion:1,product:'Ned',version:'0.3.9',sourceCommit:source,artifactCommit,releaseUrl,filesPublished:true,releaseAssetsPublished:true,publicDownloadsFullyVerified:true,windowsRunId:Number(validationRun),installer:audit.installer,bundle:{name:bundle.archive,bytes:bundle.bytes,sha256:bundle.sha256},releaseReady:false,isPrerelease:true,releaseAssetCount:verified.length,assets:verified},null,2)+'\n');

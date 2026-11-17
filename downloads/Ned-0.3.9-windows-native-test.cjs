@@ -14912,6 +14912,11 @@ async function prepareEditor(root, executable, resources4, descriptor, proxy, na
   const env = {};
   for (const key of ["SystemRoot", "SYSTEMROOT", "WINDIR", "SystemDrive", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "ProgramData", "PATHEXT", "LANG", "LC_ALL", "DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "DBUS_SESSION_BUS_ADDRESS", "XDG_RUNTIME_DIR"])
     if (process.env[key]) env[key] = process.env[key];
+  const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
+  const gitConfig = import_node_path14.default.join(data, "config/git/config");
+  if (process.platform === "win32") {
+    await (0, import_promises12.mkdir)(import_node_path14.default.dirname(gitConfig), { recursive: true, mode: 448 });
+  }
   return { data, env: {
     ...env,
     HOME: home,
@@ -14922,8 +14927,17 @@ async function prepareEditor(root, executable, resources4, descriptor, proxy, na
     XDG_DATA_HOME: import_node_path14.default.join(data, "data"),
     XDG_CACHE_HOME: import_node_path14.default.join(data, "cache"),
     XDG_STATE_HOME: import_node_path14.default.join(data, "state"),
-    PATH: process.platform === "win32" ? ["System32", "", "System32/Wbem", "System32/WindowsPowerShell/v1.0"].map((p) => import_node_path14.default.join(process.env.SystemRoot ?? "C:\\Windows", p)).join(import_node_path14.default.delimiter) : "/usr/bin:/bin",
-    ...process.platform === "win32" ? { ComSpec: import_node_path14.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32/cmd.exe") } : {},
+    PATH: process.platform === "win32" ? [
+      import_node_path14.default.join(resources4, "runtime/windows-x64/mcp/git/cmd"),
+      ...["System32", "", "System32/Wbem", "System32/WindowsPowerShell/v1.0"].map((p) => import_node_path14.default.join(systemRoot, p))
+    ].join(import_node_path14.default.delimiter) : "/usr/bin:/bin",
+    ...process.platform === "win32" ? {
+      ComSpec: import_node_path14.default.join(systemRoot, "System32/cmd.exe"),
+      GIT_CONFIG_GLOBAL: gitConfig,
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_ALLOW_PROTOCOL: "",
+      GIT_TERMINAL_PROMPT: "0"
+    } : {},
     TEMP: import_node_path14.default.join(data, "tmp"),
     TMP: import_node_path14.default.join(data, "tmp"),
     HTTP_PROXY: proxy,
@@ -15313,11 +15327,16 @@ var run = (0, import_node_util4.promisify)(import_node_child_process6.execFile);
 });
 (0, import_node_test7.test)("installed source-built editor has Ned menu/About content and corresponding-source provenance", { skip: process.platform !== "win32", timeout: 3e4 }, async () => {
   const resources4 = import_node_path16.default.join(import_node_path16.default.dirname(process.execPath), "resources"), bytes = await (0, import_promises14.readFile)(import_node_path16.default.join(resources4, "zed/Zed.exe"));
-  for (const text3 of ["About Ned", "Quit Ned", "Ned 0.3.8 \xB7 rebuild 1"]) import_strict7.default.ok(bytes.includes(Buffer.from(text3)), text3);
+  const changes = JSON.parse(await (0, import_promises14.readFile)(import_node_path16.default.join(resources4, "ned/sources/NED_EDITOR_CHANGES.json"), "utf8"));
+  const version = process.env.NED_ARTIFACT_VERSION ?? "0.3.9";
+  const [major, revision] = version.split("-");
+  import_strict7.default.equal(changes.version, major);
+  import_strict7.default.equal(changes.buildRevision, revision);
+  const about = revision === "rebuild1" ? "Ned " + major + " \xB7 rebuild 1" : "Ned " + major;
+  for (const text3 of ["About Ned", "Quit Ned", about]) import_strict7.default.ok(bytes.includes(Buffer.from(text3)), text3);
   for (const text3 of ["About Zed", "Quit Zed"]) import_strict7.default.ok(!bytes.includes(Buffer.from(text3)), text3);
   const record = JSON.parse(await (0, import_promises14.readFile)(import_node_path16.default.join(resources4, "ned/editor-branding.json"), "utf8"));
   import_strict7.default.equal(record.modifiedSha256, (0, import_node_crypto7.createHash)("sha256").update(bytes).digest("hex"));
-  const changes = JSON.parse(await (0, import_promises14.readFile)(import_node_path16.default.join(resources4, "ned/sources/NED_EDITOR_CHANGES.json"), "utf8"));
   import_strict7.default.deepEqual(changes, record.sourceChanges);
   import_strict7.default.match(await (0, import_promises14.readFile)(import_node_path16.default.join(resources4, "ned/sources/NED_EDITOR_SOURCE.txt"), "utf8"), /offline TGZ/);
   const loaded = await run(import_node_path16.default.join(resources4, "zed/Zed.exe"), ["--printenv"], { env: { ...process.env, ELECTRON_RUN_AS_NODE: void 0 }, timeout: 15e3, maxBuffer: 4 * 1024 * 1024 });

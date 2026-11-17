@@ -1,6 +1,6 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm,symlink}from'node:fs/promises';import{tmpdir}from'node:os';import path from'node:path';
-import{parse}from'jsonc-parser';import{prepareEditor}from'../distribution/ned/profile';
+import{parse}from'jsonc-parser';import{prepareEditor}from'../distribution/ned/profile';import{terminalShell}from'../distribution/ned/terminal';
 async function fixture(t:any){const root=await mkdtemp(path.join(tmpdir(),'ned-preferences-'));t.after(()=>rm(root,{recursive:true,force:true}));await mkdir(path.join(root,'editor/config'),{recursive:true});return root;}
 const launch=(root:string,version='one')=>prepareEditor(root,'/Ned-'+version,'/resources-'+version,'/descriptor-'+version,'http://127.0.0.1:9');
 test('updates keep live JSONC fonts, panel layout, startup choice, keymap and workspace DB while refreshing managed endpoints',async t=>{
@@ -10,7 +10,7 @@ test('updates keep live JSONC fonts, panel layout, startup choice, keymap and wo
  const keymap='// MY_KEYS\n[{"context":"Workspace","bindings":{"ctrl-shift-a":"custom::Action"}},]\n';await writeFile(path.join(root,'editor/config/keymap.json'),keymap);
  await mkdir(path.join(root,'editor/db'),{recursive:true});const db=path.join(root,'editor/db/workspace.sqlite');await writeFile(db,'opaque-workspace-layout');
  const first=await launch(root);let saved=parse(await readFile(file,'utf8'));
- assert.equal(saved.ui_font_size,22);assert.equal(saved.agent_ui_font_size,24);assert.equal(saved.agent_buffer_font_size,20);assert.equal(saved.agent_ui_font_family,"Malgun Gothic");assert.equal(saved.buffer_font_family,'Consolas');assert.equal(saved.terminal.font_size,18);assert.equal(saved.terminal.shell,undefined);assert.equal(saved.agent.tool_permissions,undefined);assert.equal(saved.agent.dock,'left');assert.equal(saved.agent.default_width,520);assert.equal(saved.agent.threads_sidebar.position,'right');assert.equal(saved.project_panel.dock,'right');assert.equal(saved.restore_on_startup,'last_session');assert.equal(saved.theme,undefined);
+ assert.equal(saved.ui_font_size,22);assert.equal(saved.agent_ui_font_size,24);assert.equal(saved.agent_buffer_font_size,20);assert.equal(saved.agent_ui_font_family,"Malgun Gothic");assert.equal(saved.buffer_font_family,'Consolas');assert.equal(saved.terminal.font_size,18);assert.deepEqual(saved.terminal.shell,process.platform==='win32'?terminalShell('powershell'):undefined);assert.equal(saved.agent.tool_permissions,undefined);assert.equal(saved.agent.dock,'left');assert.equal(saved.agent.default_width,520);assert.equal(saved.agent.threads_sidebar.position,'right');assert.equal(saved.project_panel.dock,'right');assert.equal(saved.restore_on_startup,'last_session');assert.equal(saved.theme,undefined);
  assert.equal(saved.languages['C++'].tab_size,8);assert.ok(!JSON.stringify(saved).includes('untrusted'));assert.equal(saved.telemetry.metrics,false);assert.deepEqual(Object.keys(saved.agent_servers),['Ned']);
  assert.match(await readFile(file,'utf8'),/MY_LAYOUT/);assert.match(await readFile(file,'utf8'),/MY_FONT/);assert.equal(await readFile(path.join(root,'editor/config/settings.before-ned-0.3.3.jsonc'),'utf8'),original);
  // A later user edit wins over any stale appearance snapshot, including after another executable version.

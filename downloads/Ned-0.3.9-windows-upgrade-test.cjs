@@ -444,8 +444,8 @@ var init_parseUtil = __esm({
     init_errors();
     init_en();
     makeIssue = (params) => {
-      const { data, path: path20, errorMaps, issueData } = params;
-      const fullPath = [...path20, ...issueData.path || []];
+      const { data, path: path21, errorMaps, issueData } = params;
+      const fullPath = [...path21, ...issueData.path || []];
       const fullIssue = {
         ...issueData,
         path: fullPath
@@ -753,11 +753,11 @@ var init_types = __esm({
     init_parseUtil();
     init_util();
     ParseInputLazyPath = class {
-      constructor(parent, value, path20, key) {
+      constructor(parent, value, path21, key) {
         this._cachedPath = [];
         this.parent = parent;
         this.data = value;
-        this._path = path20;
+        this._path = path21;
         this._key = key;
       }
       get path() {
@@ -4215,17 +4215,17 @@ var require_visit = __commonJS({
     visit2.BREAK = BREAK;
     visit2.SKIP = SKIP;
     visit2.REMOVE = REMOVE;
-    function visit_(key, node, visitor, path20) {
-      const ctrl = callVisitor(key, node, visitor, path20);
+    function visit_(key, node, visitor, path21) {
+      const ctrl = callVisitor(key, node, visitor, path21);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path20, ctrl);
-        return visit_(key, ctrl, visitor, path20);
+        replaceNode(key, path21, ctrl);
+        return visit_(key, ctrl, visitor, path21);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path20 = Object.freeze(path20.concat(node));
+          path21 = Object.freeze(path21.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = visit_(i, node.items[i], visitor, path20);
+            const ci = visit_(i, node.items[i], visitor, path21);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -4236,13 +4236,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path20 = Object.freeze(path20.concat(node));
-          const ck = visit_("key", node.key, visitor, path20);
+          path21 = Object.freeze(path21.concat(node));
+          const ck = visit_("key", node.key, visitor, path21);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = visit_("value", node.value, visitor, path20);
+          const cv = visit_("value", node.value, visitor, path21);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -4263,17 +4263,17 @@ var require_visit = __commonJS({
     visitAsync.BREAK = BREAK;
     visitAsync.SKIP = SKIP;
     visitAsync.REMOVE = REMOVE;
-    async function visitAsync_(key, node, visitor, path20) {
-      const ctrl = await callVisitor(key, node, visitor, path20);
+    async function visitAsync_(key, node, visitor, path21) {
+      const ctrl = await callVisitor(key, node, visitor, path21);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
-        replaceNode(key, path20, ctrl);
-        return visitAsync_(key, ctrl, visitor, path20);
+        replaceNode(key, path21, ctrl);
+        return visitAsync_(key, ctrl, visitor, path21);
       }
       if (typeof ctrl !== "symbol") {
         if (identity.isCollection(node)) {
-          path20 = Object.freeze(path20.concat(node));
+          path21 = Object.freeze(path21.concat(node));
           for (let i = 0; i < node.items.length; ++i) {
-            const ci = await visitAsync_(i, node.items[i], visitor, path20);
+            const ci = await visitAsync_(i, node.items[i], visitor, path21);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -4284,13 +4284,13 @@ var require_visit = __commonJS({
             }
           }
         } else if (identity.isPair(node)) {
-          path20 = Object.freeze(path20.concat(node));
-          const ck = await visitAsync_("key", node.key, visitor, path20);
+          path21 = Object.freeze(path21.concat(node));
+          const ck = await visitAsync_("key", node.key, visitor, path21);
           if (ck === BREAK)
             return BREAK;
           else if (ck === REMOVE)
             node.key = null;
-          const cv = await visitAsync_("value", node.value, visitor, path20);
+          const cv = await visitAsync_("value", node.value, visitor, path21);
           if (cv === BREAK)
             return BREAK;
           else if (cv === REMOVE)
@@ -4317,23 +4317,23 @@ var require_visit = __commonJS({
       }
       return visitor;
     }
-    function callVisitor(key, node, visitor, path20) {
+    function callVisitor(key, node, visitor, path21) {
       if (typeof visitor === "function")
-        return visitor(key, node, path20);
+        return visitor(key, node, path21);
       if (identity.isMap(node))
-        return visitor.Map?.(key, node, path20);
+        return visitor.Map?.(key, node, path21);
       if (identity.isSeq(node))
-        return visitor.Seq?.(key, node, path20);
+        return visitor.Seq?.(key, node, path21);
       if (identity.isPair(node))
-        return visitor.Pair?.(key, node, path20);
+        return visitor.Pair?.(key, node, path21);
       if (identity.isScalar(node))
-        return visitor.Scalar?.(key, node, path20);
+        return visitor.Scalar?.(key, node, path21);
       if (identity.isAlias(node))
-        return visitor.Alias?.(key, node, path20);
+        return visitor.Alias?.(key, node, path21);
       return void 0;
     }
-    function replaceNode(key, path20, node) {
-      const parent = path20[path20.length - 1];
+    function replaceNode(key, path21, node) {
+      const parent = path21[path21.length - 1];
       if (identity.isCollection(parent)) {
         parent.items[key] = node;
       } else if (identity.isPair(parent)) {
@@ -4941,10 +4941,10 @@ var require_Collection = __commonJS({
     var createNode = require_createNode();
     var identity = require_identity();
     var Node = require_Node();
-    function collectionFromPath(schema2, path20, value) {
+    function collectionFromPath(schema2, path21, value) {
       let v = value;
-      for (let i = path20.length - 1; i >= 0; --i) {
-        const k = path20[i];
+      for (let i = path21.length - 1; i >= 0; --i) {
+        const k = path21[i];
         if (typeof k === "number" && Number.isInteger(k) && k >= 0) {
           const a = [];
           a[k] = v;
@@ -4963,7 +4963,7 @@ var require_Collection = __commonJS({
         sourceObjects: /* @__PURE__ */ new Map()
       });
     }
-    var isEmptyPath = (path20) => path20 == null || typeof path20 === "object" && !!path20[Symbol.iterator]().next().done;
+    var isEmptyPath = (path21) => path21 == null || typeof path21 === "object" && !!path21[Symbol.iterator]().next().done;
     var Collection = class extends Node.NodeBase {
       constructor(type, schema2) {
         super(type);
@@ -4993,11 +4993,11 @@ var require_Collection = __commonJS({
        * be a Pair instance or a `{ key, value }` object, which may not have a key
        * that already exists in the map.
        */
-      addIn(path20, value) {
-        if (isEmptyPath(path20))
+      addIn(path21, value) {
+        if (isEmptyPath(path21))
           this.add(value);
         else {
-          const [key, ...rest] = path20;
+          const [key, ...rest] = path21;
           const node = this.get(key, true);
           if (identity.isCollection(node))
             node.addIn(rest, value);
@@ -5011,8 +5011,8 @@ var require_Collection = __commonJS({
        * Removes a value from the collection.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path20) {
-        const [key, ...rest] = path20;
+      deleteIn(path21) {
+        const [key, ...rest] = path21;
         if (rest.length === 0)
           return this.delete(key);
         const node = this.get(key, true);
@@ -5026,8 +5026,8 @@ var require_Collection = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path20, keepScalar) {
-        const [key, ...rest] = path20;
+      getIn(path21, keepScalar) {
+        const [key, ...rest] = path21;
         const node = this.get(key, true);
         if (rest.length === 0)
           return !keepScalar && identity.isScalar(node) ? node.value : node;
@@ -5045,8 +5045,8 @@ var require_Collection = __commonJS({
       /**
        * Checks if the collection includes a value with the key `key`.
        */
-      hasIn(path20) {
-        const [key, ...rest] = path20;
+      hasIn(path21) {
+        const [key, ...rest] = path21;
         if (rest.length === 0)
           return this.has(key);
         const node = this.get(key, true);
@@ -5056,8 +5056,8 @@ var require_Collection = __commonJS({
        * Sets a value in this collection. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path20, value) {
-        const [key, ...rest] = path20;
+      setIn(path21, value) {
+        const [key, ...rest] = path21;
         if (rest.length === 0) {
           this.set(key, value);
         } else {
@@ -5469,9 +5469,9 @@ ${indent}${start}${value}${end}`;
       const str = value.replace(/\n+/g, `$&
 ${indent}`);
       if (actualString) {
-        const test7 = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str);
+        const test8 = (tag) => tag.default && tag.tag !== "tag:yaml.org,2002:str" && tag.test?.test(str);
         const { compat, tags } = ctx.doc.schema;
-        if (tags.some(test7) || compat?.some(test7))
+        if (tags.some(test8) || compat?.some(test8))
           return quotedString(value, ctx);
       }
       return implicitKey ? str : foldFlowLines.foldFlowLines(str, indent, foldFlowLines.FOLD_FLOW, getFoldOptions(ctx, false));
@@ -7561,9 +7561,9 @@ var require_Document = __commonJS({
           this.contents.add(value);
       }
       /** Adds a value to the document. */
-      addIn(path20, value) {
+      addIn(path21, value) {
         if (assertCollection(this.contents))
-          this.contents.addIn(path20, value);
+          this.contents.addIn(path21, value);
       }
       /**
        * Create a new `Alias` node, ensuring that the target `node` has the required anchor.
@@ -7638,14 +7638,14 @@ var require_Document = __commonJS({
        * Removes a value from the document.
        * @returns `true` if the item was found and removed.
        */
-      deleteIn(path20) {
-        if (Collection.isEmptyPath(path20)) {
+      deleteIn(path21) {
+        if (Collection.isEmptyPath(path21)) {
           if (this.contents == null)
             return false;
           this.contents = null;
           return true;
         }
-        return assertCollection(this.contents) ? this.contents.deleteIn(path20) : false;
+        return assertCollection(this.contents) ? this.contents.deleteIn(path21) : false;
       }
       /**
        * Returns item at `key`, or `undefined` if not found. By default unwraps
@@ -7660,10 +7660,10 @@ var require_Document = __commonJS({
        * scalar values from their surrounding node; to disable set `keepScalar` to
        * `true` (collections are always returned intact).
        */
-      getIn(path20, keepScalar) {
-        if (Collection.isEmptyPath(path20))
+      getIn(path21, keepScalar) {
+        if (Collection.isEmptyPath(path21))
           return !keepScalar && identity.isScalar(this.contents) ? this.contents.value : this.contents;
-        return identity.isCollection(this.contents) ? this.contents.getIn(path20, keepScalar) : void 0;
+        return identity.isCollection(this.contents) ? this.contents.getIn(path21, keepScalar) : void 0;
       }
       /**
        * Checks if the document includes a value with the key `key`.
@@ -7674,10 +7674,10 @@ var require_Document = __commonJS({
       /**
        * Checks if the document includes a value at `path`.
        */
-      hasIn(path20) {
-        if (Collection.isEmptyPath(path20))
+      hasIn(path21) {
+        if (Collection.isEmptyPath(path21))
           return this.contents !== void 0;
-        return identity.isCollection(this.contents) ? this.contents.hasIn(path20) : false;
+        return identity.isCollection(this.contents) ? this.contents.hasIn(path21) : false;
       }
       /**
        * Sets a value in this document. For `!!set`, `value` needs to be a
@@ -7694,13 +7694,13 @@ var require_Document = __commonJS({
        * Sets a value in this document. For `!!set`, `value` needs to be a
        * boolean to add/remove the item from the set.
        */
-      setIn(path20, value) {
-        if (Collection.isEmptyPath(path20)) {
+      setIn(path21, value) {
+        if (Collection.isEmptyPath(path21)) {
           this.contents = value;
         } else if (this.contents == null) {
-          this.contents = Collection.collectionFromPath(this.schema, Array.from(path20), value);
+          this.contents = Collection.collectionFromPath(this.schema, Array.from(path21), value);
         } else if (assertCollection(this.contents)) {
-          this.contents.setIn(path20, value);
+          this.contents.setIn(path21, value);
         }
       }
       /**
@@ -9652,9 +9652,9 @@ var require_cst_visit = __commonJS({
     visit2.BREAK = BREAK;
     visit2.SKIP = SKIP;
     visit2.REMOVE = REMOVE;
-    visit2.itemAtPath = (cst, path20) => {
+    visit2.itemAtPath = (cst, path21) => {
       let item = cst;
-      for (const [field, index] of path20) {
+      for (const [field, index] of path21) {
         const tok = item?.[field];
         if (tok && "items" in tok) {
           item = tok.items[index];
@@ -9663,23 +9663,23 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit2.parentCollection = (cst, path20) => {
-      const parent = visit2.itemAtPath(cst, path20.slice(0, -1));
-      const field = path20[path20.length - 1][0];
+    visit2.parentCollection = (cst, path21) => {
+      const parent = visit2.itemAtPath(cst, path21.slice(0, -1));
+      const field = path21[path21.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
         return coll;
       throw new Error("Parent collection not found");
     };
-    function _visit(path20, item, visitor) {
-      let ctrl = visitor(item, path20);
+    function _visit(path21, item, visitor) {
+      let ctrl = visitor(item, path21);
       if (typeof ctrl === "symbol")
         return ctrl;
       for (const field of ["key", "value"]) {
         const token = item[field];
         if (token && "items" in token) {
           for (let i = 0; i < token.items.length; ++i) {
-            const ci = _visit(Object.freeze(path20.concat([[field, i]])), token.items[i], visitor);
+            const ci = _visit(Object.freeze(path21.concat([[field, i]])), token.items[i], visitor);
             if (typeof ci === "number")
               i = ci - 1;
             else if (ci === BREAK)
@@ -9690,10 +9690,10 @@ var require_cst_visit = __commonJS({
             }
           }
           if (typeof ctrl === "function" && field === "key")
-            ctrl = ctrl(item, path20);
+            ctrl = ctrl(item, path21);
         }
       }
-      return typeof ctrl === "function" ? ctrl(item, path20) : ctrl;
+      return typeof ctrl === "function" ? ctrl(item, path21) : ctrl;
     }
     exports2.visit = visit2;
   }
@@ -10368,10 +10368,10 @@ var require_lexer = __commonJS({
         }
         return n;
       }
-      *pushUntil(test7) {
+      *pushUntil(test8) {
         let i = this.pos;
         let ch = this.buffer[i];
-        while (!test7(ch))
+        while (!test8(ch))
           ch = this.buffer[++i];
         return yield* this.pushToIndex(i, false);
       }
@@ -12895,12 +12895,12 @@ function parseTree(text, errors = [], options = ParseOptions.DEFAULT) {
   }
   return result;
 }
-function findNodeAtLocation(root, path20) {
+function findNodeAtLocation(root, path21) {
   if (!root) {
     return void 0;
   }
   let node = root;
-  for (let segment of path20) {
+  for (let segment of path21) {
     if (typeof segment === "string") {
       if (node.type !== "object" || !Array.isArray(node.children)) {
         return void 0;
@@ -13254,14 +13254,14 @@ function getNodeType(value) {
 
 // node_modules/jsonc-parser/lib/esm/impl/edit.js
 function setProperty(text, originalPath, value, options) {
-  const path20 = originalPath.slice();
+  const path21 = originalPath.slice();
   const errors = [];
   const root = parseTree(text, errors);
   let parent = void 0;
   let lastSegment = void 0;
-  while (path20.length > 0) {
-    lastSegment = path20.pop();
-    parent = findNodeAtLocation(root, path20);
+  while (path21.length > 0) {
+    lastSegment = path21.pop();
+    parent = findNodeAtLocation(root, path21);
     if (parent === void 0 && value !== void 0) {
       if (typeof lastSegment === "string") {
         value = { [lastSegment]: value };
@@ -13448,8 +13448,8 @@ var ParseErrorCode;
   ParseErrorCode2[ParseErrorCode2["InvalidEscapeCharacter"] = 15] = "InvalidEscapeCharacter";
   ParseErrorCode2[ParseErrorCode2["InvalidCharacter"] = 16] = "InvalidCharacter";
 })(ParseErrorCode || (ParseErrorCode = {}));
-function modify(text, path20, value, options) {
-  return setProperty(text, path20, value, options);
+function modify(text, path21, value, options) {
+  return setProperty(text, path21, value, options);
 }
 function applyEdits(text, edits) {
   let sortedEdits = edits.slice(0).sort((a, b) => {
@@ -13694,10 +13694,10 @@ function agentLaunch(executable2, agent, descriptor, platform = process.platform
   if (platform !== "win32") return { command: executable2, args: [agent, descriptor], env };
   const paths = import_node_path3.default.win32;
   if (![executable2, agent, descriptor].every((value) => paths.isAbsolute(value))) throw new Error("Managed agent paths must be absolute");
-  const resources = paths.dirname(paths.dirname(agent));
+  const resources2 = paths.dirname(paths.dirname(agent));
   return {
-    command: paths.join(resources, "runtime/windows-x64/openviking/python/python.exe"),
-    args: ["-I", "-B", paths.join(resources, "runtime/windows-x64/openviking/sidecar-supervisor.py"), executable2, agent, descriptor],
+    command: paths.join(resources2, "runtime/windows-x64/openviking/python/python.exe"),
+    args: ["-I", "-B", paths.join(resources2, "runtime/windows-x64/openviking/sidecar-supervisor.py"), executable2, agent, descriptor],
     env
   };
 }
@@ -13771,19 +13771,24 @@ function editorSettings(executable2, agent, descriptor, proxy, clangd, platform 
     load_direnv: "disabled"
   };
 }
-async function prepareEditor(root, executable2, resources, descriptor, proxy, native) {
+async function prepareEditor(root, executable2, resources2, descriptor, proxy, native) {
   const data = import_node_path5.default.join(root, "editor"), home = import_node_path5.default.join(data, "home");
   await (0, import_promises4.mkdir)(import_node_path5.default.join(data, "config"), { recursive: true, mode: 448 });
   await ensureEditorInstructions(import_node_path5.default.join(data, "config"));
   for (const directory3 of ["home", "home/AppData/Local", "home/AppData/Roaming", "home/AppData/LocalLow", "home/Desktop", "home/Documents", "home/Downloads", "roaming", "local", "config-home", "data", "cache", "state", "tmp"]) await (0, import_promises4.mkdir)(import_node_path5.default.join(data, directory3), { recursive: true, mode: 448 });
-  const clangd = process.platform === "win32" ? import_node_path5.default.join(resources, "runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe") : void 0;
-  const settings2 = await editorPreferences(data, editorSettings(executable2, import_node_path5.default.join(resources, "ned/agent.cjs"), descriptor, proxy, clangd, process.platform, native));
+  const clangd = process.platform === "win32" ? import_node_path5.default.join(resources2, "runtime/windows-x64/mcp/clangd/clangd_23.1.0/bin/clangd.exe") : void 0;
+  const settings2 = await editorPreferences(data, editorSettings(executable2, import_node_path5.default.join(resources2, "ned/agent.cjs"), descriptor, proxy, clangd, process.platform, native));
   validateManagedZedSettings(settings2);
   await writeEditorPreferences(import_node_path5.default.join(data, "config/settings.json"), settings2);
   await ensureEditorKeymap(import_node_path5.default.join(data, "config/keymap.json"));
   const env = {};
   for (const key of ["SystemRoot", "SYSTEMROOT", "WINDIR", "SystemDrive", "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432", "ProgramData", "PATHEXT", "LANG", "LC_ALL", "DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY", "DBUS_SESSION_BUS_ADDRESS", "XDG_RUNTIME_DIR"])
     if (process.env[key]) env[key] = process.env[key];
+  const systemRoot = process.env.SystemRoot ?? "C:\\Windows";
+  const gitConfig = import_node_path5.default.join(data, "config/git/config");
+  if (process.platform === "win32") {
+    await (0, import_promises4.mkdir)(import_node_path5.default.dirname(gitConfig), { recursive: true, mode: 448 });
+  }
   return { data, env: {
     ...env,
     HOME: home,
@@ -13794,8 +13799,17 @@ async function prepareEditor(root, executable2, resources, descriptor, proxy, na
     XDG_DATA_HOME: import_node_path5.default.join(data, "data"),
     XDG_CACHE_HOME: import_node_path5.default.join(data, "cache"),
     XDG_STATE_HOME: import_node_path5.default.join(data, "state"),
-    PATH: process.platform === "win32" ? ["System32", "", "System32/Wbem", "System32/WindowsPowerShell/v1.0"].map((p) => import_node_path5.default.join(process.env.SystemRoot ?? "C:\\Windows", p)).join(import_node_path5.default.delimiter) : "/usr/bin:/bin",
-    ...process.platform === "win32" ? { ComSpec: import_node_path5.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32/cmd.exe") } : {},
+    PATH: process.platform === "win32" ? [
+      import_node_path5.default.join(resources2, "runtime/windows-x64/mcp/git/cmd"),
+      ...["System32", "", "System32/Wbem", "System32/WindowsPowerShell/v1.0"].map((p) => import_node_path5.default.join(systemRoot, p))
+    ].join(import_node_path5.default.delimiter) : "/usr/bin:/bin",
+    ...process.platform === "win32" ? {
+      ComSpec: import_node_path5.default.join(systemRoot, "System32/cmd.exe"),
+      GIT_CONFIG_GLOBAL: gitConfig,
+      GIT_CONFIG_NOSYSTEM: "1",
+      GIT_ALLOW_PROTOCOL: "",
+      GIT_TERMINAL_PROMPT: "0"
+    } : {},
     TEMP: import_node_path5.default.join(data, "tmp"),
     TMP: import_node_path5.default.join(data, "tmp"),
     HTTP_PROXY: proxy,
@@ -14447,7 +14461,7 @@ var launch = (root, version = "one") => prepareEditor(root, "/Ned-" + version, "
   import_strict5.default.equal(saved.agent_ui_font_family, "Malgun Gothic");
   import_strict5.default.equal(saved.buffer_font_family, "Consolas");
   import_strict5.default.equal(saved.terminal.font_size, 18);
-  import_strict5.default.equal(saved.terminal.shell, void 0);
+  import_strict5.default.deepEqual(saved.terminal.shell, process.platform === "win32" ? terminalShell("powershell") : void 0);
   import_strict5.default.equal(saved.agent.tool_permissions, void 0);
   import_strict5.default.equal(saved.agent.dock, "left");
   import_strict5.default.equal(saved.agent.default_width, 520);
@@ -14521,14 +14535,55 @@ function keymapFile(root) {
   import_strict5.default.equal(parse2(text).restore_on_startup, "launchpad");
 });
 
-// tests/openviking.integration.test.ts
+// tests/editor-git-trust.windows.test.ts
 var import_node_test6 = require("node:test");
 var import_strict6 = __toESM(require("node:assert/strict"), 1);
-var import_node_fs5 = require("node:fs");
-var import_promises19 = require("node:fs/promises");
-var import_node_http4 = require("node:http");
+var import_node_child_process = require("node:child_process");
+var import_promises16 = require("node:fs/promises");
 var import_node_os6 = require("node:os");
-var import_node_path19 = __toESM(require("node:path"), 1);
+var import_node_path16 = __toESM(require("node:path"), 1);
+var import_node_util = require("node:util");
+var exec = (0, import_node_util.promisify)(import_node_child_process.execFile);
+var resources = process.env.NED_TEST_NODE && import_node_path16.default.join(import_node_path16.default.dirname(process.env.NED_TEST_NODE), "resources");
+(0, import_node_test6.test)("the installed editor Git command trusts only the selected repository in Ned\u2019s watched config", {
+  skip: process.platform !== "win32" || !resources
+}, async (t) => {
+  const root = await (0, import_promises16.mkdtemp)(import_node_path16.default.join((0, import_node_os6.tmpdir)(), "ned-editor-git-"));
+  t.after(() => (0, import_promises16.rm)(root, { recursive: true, force: true }));
+  const repositories = [import_node_path16.default.join(root, "project with spaces"), import_node_path16.default.join(root, "other project")];
+  for (const repository of repositories) await (0, import_promises16.mkdir)(repository);
+  const profile2 = await prepareEditor(root, process.execPath, resources, "test-descriptor", "http://127.0.0.1:9");
+  const config = import_node_path16.default.join(profile2.data, "config", "git", "config");
+  import_strict6.default.equal(profile2.env.GIT_CONFIG_GLOBAL, config);
+  const where = import_node_path16.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "where.exe");
+  const located = await exec(where, ["git.exe"], { env: profile2.env, cwd: profile2.env.HOME });
+  const bundled = import_node_path16.default.join(resources, "runtime", "windows-x64", "mcp", "git", "cmd", "git.exe");
+  import_strict6.default.equal(await (0, import_promises16.realpath)(located.stdout.trim().split(/\r?\n/)[0]), await (0, import_promises16.realpath)(bundled));
+  const git = (cwd, args, checkOwnership = false) => exec("git", args, { cwd, env: { ...profile2.env, ...checkOwnership ? { GIT_TEST_ASSUME_DIFFERENT_OWNER: "1" } : {} } });
+  for (const repository of repositories) {
+    await git(repository, ["init", "--quiet"]);
+    await import_strict6.default.rejects(git(repository, ["status", "--porcelain"], true), /dubious ownership/i);
+  }
+  const selected = await (0, import_promises16.realpath)(repositories[0]);
+  await git(selected, ["config", "--global", "--add", "safe.directory", selected]);
+  import_strict6.default.equal((await git(selected, ["config", "--global", "--get-all", "safe.directory"])).stdout.trim(), selected);
+  import_strict6.default.match(await (0, import_promises16.readFile)(config, "utf8"), /\[safe\]/);
+  await git(selected, ["status", "--porcelain"], true);
+  await import_strict6.default.rejects(git(repositories[1], ["status", "--porcelain"], true), /dubious ownership/i);
+  await import_strict6.default.rejects(git(selected, ["ls-remote", repositories[1]]), /transport 'file' not allowed/i);
+  const restarted = await prepareEditor(root, process.execPath, resources, "next-descriptor", "http://127.0.0.1:9");
+  const entries = await exec("git", ["config", "--global", "--get-all", "safe.directory"], { cwd: selected, env: restarted.env });
+  import_strict6.default.equal(entries.stdout.trim(), selected);
+});
+
+// tests/openviking.integration.test.ts
+var import_node_test7 = require("node:test");
+var import_strict7 = __toESM(require("node:assert/strict"), 1);
+var import_node_fs5 = require("node:fs");
+var import_promises20 = require("node:fs/promises");
+var import_node_http4 = require("node:http");
+var import_node_os7 = require("node:os");
+var import_node_path20 = __toESM(require("node:path"), 1);
 
 // src/main/http-request.ts
 var import_node_http2 = require("node:http");
@@ -17226,11 +17281,11 @@ var python_runtime_lock_default = {
 };
 
 // src/main/openviking.ts
-var import_node_child_process2 = require("node:child_process");
+var import_node_child_process3 = require("node:child_process");
 var import_node_net = require("node:net");
 var import_node_crypto11 = require("node:crypto");
-var import_promises18 = require("node:fs/promises");
-var import_node_path18 = __toESM(require("node:path"), 1);
+var import_promises19 = require("node:fs/promises");
+var import_node_path19 = __toESM(require("node:path"), 1);
 init_config();
 
 // src/main/openviking-gateway.ts
@@ -17406,18 +17461,18 @@ init_openviking_errors();
 // src/main/parallel-files.ts
 var import_node_crypto9 = require("node:crypto");
 var import_node_fs3 = require("node:fs");
-var import_promises16 = require("node:fs/promises");
-var import_node_path16 = __toESM(require("node:path"), 1);
+var import_promises17 = require("node:fs/promises");
+var import_node_path17 = __toESM(require("node:path"), 1);
 async function verifyFiles(root, files, progress) {
-  const base = await (0, import_promises16.realpath)(root);
+  const base = await (0, import_promises17.realpath)(root);
   let next = 0, done = 0, failed = false;
   const settled = await Promise.allSettled(Array.from({ length: Math.min(4, files.length) }, async () => {
     try {
       while (!failed && next < files.length) {
         const file = files[next++];
-        if (!file || typeof file.path !== "string" || !/^[a-f0-9]{64}$/.test(file.sha256) || import_node_path16.default.isAbsolute(file.path) || /[\\:\x00-\x1f]/.test(file.path) || file.path.split("/").some((p) => !p || p === "." || p === "..")) throw Error("\uBC88\uB4E4 \uD30C\uC77C \uACBD\uB85C \uC624\uB958");
-        const target = await (0, import_promises16.realpath)(import_node_path16.default.join(base, file.path)), relative = import_node_path16.default.relative(base, target);
-        if (relative.startsWith("..") || import_node_path16.default.isAbsolute(relative) || !(await (0, import_promises16.lstat)(target)).isFile()) throw Error("\uBC88\uB4E4 \uD30C\uC77C \uBC94\uC704 \uC624\uB958");
+        if (!file || typeof file.path !== "string" || !/^[a-f0-9]{64}$/.test(file.sha256) || import_node_path17.default.isAbsolute(file.path) || /[\\:\x00-\x1f]/.test(file.path) || file.path.split("/").some((p) => !p || p === "." || p === "..")) throw Error("\uBC88\uB4E4 \uD30C\uC77C \uACBD\uB85C \uC624\uB958");
+        const target = await (0, import_promises17.realpath)(import_node_path17.default.join(base, file.path)), relative = import_node_path17.default.relative(base, target);
+        if (relative.startsWith("..") || import_node_path17.default.isAbsolute(relative) || !(await (0, import_promises17.lstat)(target)).isFile()) throw Error("\uBC88\uB4E4 \uD30C\uC77C \uBC94\uC704 \uC624\uB958");
         const hash2 = (0, import_node_crypto9.createHash)("sha256");
         for await (const chunk of (0, import_node_fs3.createReadStream)(target)) hash2.update(chunk);
         if (hash2.digest("hex") !== file.sha256) throw Error("\uBC88\uB4E4 \uD30C\uC77C \uBB34\uACB0\uC131 \uC624\uB958");
@@ -17433,15 +17488,15 @@ async function verifyFiles(root, files, progress) {
 }
 
 // src/main/personal-knowledge.ts
-var import_node_child_process = require("node:child_process");
+var import_node_child_process2 = require("node:child_process");
 var import_node_crypto10 = require("node:crypto");
 var import_node_fs4 = require("node:fs");
-var import_promises17 = require("node:fs/promises");
-var import_node_path17 = __toESM(require("node:path"), 1);
-var import_node_util = require("node:util");
+var import_promises18 = require("node:fs/promises");
+var import_node_path18 = __toESM(require("node:path"), 1);
+var import_node_util2 = require("node:util");
 init_zod();
 init_config();
-var exec = (0, import_node_util.promisify)(import_node_child_process.execFile);
+var exec2 = (0, import_node_util2.promisify)(import_node_child_process2.execFile);
 var rootPattern = /^viking:\/\/user\/(?!local-user$)[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 var MAX_PACK = 512 * 1024 * 1024;
 var entrySchema = external_exports.object({
@@ -17514,12 +17569,12 @@ var PersonalKnowledge = class {
     return this.transport(root.slice("viking://user/".length), route, options);
   }
   get file() {
-    return import_node_path17.default.join(this.directory, "personal-imports.json");
+    return import_node_path18.default.join(this.directory, "personal-imports.json");
   }
   async registry() {
     let raw;
     try {
-      raw = await (0, import_promises17.readFile)(this.file, "utf8");
+      raw = await (0, import_promises18.readFile)(this.file, "utf8");
     } catch (error) {
       if (error.code === "ENOENT") return { schemaVersion: 1, entries: [] };
       throw error;
@@ -17557,14 +17612,14 @@ var PersonalKnowledge = class {
   async importOne(file, approve) {
     const signal = this.abort.signal;
     signal.throwIfAborted();
-    const info = await (0, import_promises17.lstat)(file);
+    const info = await (0, import_promises18.lstat)(file);
     if (!info.isFile() || info.isSymbolicLink() || info.size > MAX_PACK || info.size === 0) throw new Error("512 MiB \uC774\uD558\uC758 \uC77C\uBC18 .ovpack \uD30C\uC77C\uC744 \uC120\uD0DD\uD558\uC138\uC694.");
-    await (0, import_promises17.mkdir)(this.directory, { recursive: true, mode: 448 });
-    const stage = await (0, import_promises17.mkdtemp)(import_node_path17.default.join(this.directory, "personal-import-"));
-    const snapshot = import_node_path17.default.join(stage, "source.ovpack");
+    await (0, import_promises18.mkdir)(this.directory, { recursive: true, mode: 448 });
+    const stage = await (0, import_promises18.mkdtemp)(import_node_path18.default.join(this.directory, "personal-import-"));
+    const snapshot = import_node_path18.default.join(stage, "source.ovpack");
     try {
-      await (0, import_promises17.copyFile)(file, snapshot);
-      if ((await (0, import_promises17.lstat)(snapshot)).size > MAX_PACK) throw new Error("\uAC00\uC838\uC624\uAE30 \uD30C\uC77C \uD06C\uAE30\uAC00 \uC81C\uD55C\uC744 \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4.");
+      await (0, import_promises18.copyFile)(file, snapshot);
+      if ((await (0, import_promises18.lstat)(snapshot)).size > MAX_PACK) throw new Error("\uAC00\uC838\uC624\uAE30 \uD30C\uC77C \uD06C\uAE30\uAC00 \uC81C\uD55C\uC744 \uCD08\uACFC\uD588\uC2B5\uB2C8\uB2E4.");
       const digest2 = (0, import_node_crypto10.createHash)("sha256");
       for await (const bytes of (0, import_node_fs4.createReadStream)(snapshot)) {
         signal.throwIfAborted();
@@ -17573,7 +17628,7 @@ var PersonalKnowledge = class {
       const sha256 = digest2.digest("hex");
       let preview;
       try {
-        const result = await exec(this.python, ["-I", "-B", "-c", inspectPersonalPackPython, snapshot], { windowsHide: true, timeout: 3e4, maxBuffer: 1024 * 1024, signal });
+        const result = await exec2(this.python, ["-I", "-B", "-c", inspectPersonalPackPython, snapshot], { windowsHide: true, timeout: 3e4, maxBuffer: 1024 * 1024, signal });
         preview = JSON.parse(result.stdout);
         if (!rootPattern.test(preview.root) || !Array.isArray(preview.roots) || preview.roots.some((r) => !validRoot(r, preview.root))) throw new Error();
       } catch {
@@ -17607,10 +17662,10 @@ ${resume ? "\uD30C\uC77C \uAC00\uC838\uC624\uAE30 \uC644\uB8CC \uAE30\uB85D\uC77
         signal
       );
       if (!approved || signal.aborted) throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30\uB97C \uCDE8\uC18C\uD588\uC2B5\uB2C8\uB2E4.");
-      const archive2 = import_node_path17.default.join(this.directory, "personal-" + sha256 + ".ovpack");
-      await (0, import_promises17.copyFile)(snapshot, archive2, import_node_fs4.constants.COPYFILE_EXCL).catch(async (error) => {
+      const archive2 = import_node_path18.default.join(this.directory, "personal-" + sha256 + ".ovpack");
+      await (0, import_promises18.copyFile)(snapshot, archive2, import_node_fs4.constants.COPYFILE_EXCL).catch(async (error) => {
         if (error.code !== "EEXIST") throw error;
-        const stat = await (0, import_promises17.lstat)(archive2);
+        const stat = await (0, import_promises18.lstat)(archive2);
         if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_PACK) throw new Error("\uBCF4\uAD00\uD55C \uC6D0\uBCF8 OVPack\uC758 \uD30C\uC77C \uD615\uC2DD\uC774 \uBC14\uB00C\uC5C8\uC2B5\uB2C8\uB2E4. \uB36E\uC5B4\uC4F0\uC9C0 \uC54A\uC558\uC2B5\uB2C8\uB2E4.");
         const digest3 = (0, import_node_crypto10.createHash)("sha256");
         for await (const chunk of (0, import_node_fs4.createReadStream)(archive2)) digest3.update(chunk);
@@ -17636,8 +17691,8 @@ ${resume ? "\uD30C\uC77C \uAC00\uC838\uC624\uAE30 \uC644\uB8CC \uAE30\uB85D\uC77
           let uploadFile = archive2;
           if (isolated) {
             await checkpoint("OV_PERSONAL_RECOVERY");
-            const derived = import_node_path17.default.join(this.directory, "personal-" + sha256 + "-" + user + ".ovpack");
-            const result = await exec(this.python, ["-I", "-B", this.recovery.script, archive2, derived, user, this.recovery.launcher, this.recovery.tokenizers], { windowsHide: true, maxBuffer: 1024 * 1024, signal }).catch((error) => {
+            const derived = import_node_path18.default.join(this.directory, "personal-" + sha256 + "-" + user + ".ovpack");
+            const result = await exec2(this.python, ["-I", "-B", this.recovery.script, archive2, derived, user, this.recovery.launcher, this.recovery.tokenizers], { windowsHide: true, maxBuffer: 1024 * 1024, signal }).catch((error) => {
               this.recovery?.diagnostic?.(String(error.stderr ?? error.code ?? "OV_RECOVERY_PROCESS"));
               throw error;
             });
@@ -17675,7 +17730,7 @@ ${resume ? "\uD30C\uC77C \uAC00\uC838\uC624\uAE30 \uC644\uB8CC \uAE30\uB85D\uC77
         throw new Error("\uAC1C\uC778 \uC9C0\uC2DD \uAC00\uC838\uC624\uAE30\uB97C \uC644\uB8CC\uD558\uC9C0 \uBABB\uD588\uC2B5\uB2C8\uB2E4. [" + code + "] \uC6D0\uBCF8 OVPack\uACFC \uC2E4\uD328 \uAE30\uB85D\uC740 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4. \uAC19\uC740 \uD30C\uC77C\uC744 \uB2E4\uC2DC \uC120\uD0DD\uD558\uBA74 \uBCF5\uAD6C\uB97C \uD655\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4. \uAE30\uC874 \uB300\uC0C1\uC740 \uC790\uB3D9 \uB36E\uC5B4\uC4F0\uAE30\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.");
       }
     } finally {
-      await (0, import_promises17.rm)(stage, { recursive: true, force: true });
+      await (0, import_promises18.rm)(stage, { recursive: true, force: true });
     }
   }
   async roots() {
@@ -17805,7 +17860,7 @@ var OpenVikingService = class {
       }
       this.update("starting");
       try {
-        await migrateVikingNamespace(import_node_path18.default.join(this.data, "openviking"), {
+        await migrateVikingNamespace(import_node_path19.default.join(this.data, "openviking"), {
           start: (workspace, account) => this.start(config, workspace, account, true),
           stop: () => this.stop(),
           request: (route, options) => this.request(route, options?.body, false, options?.method, options?.signal),
@@ -17816,11 +17871,11 @@ var OpenVikingService = class {
         });
         namespaceAbort.signal.throwIfAborted();
         this.startupStage = "skills";
-        if (this.skillBundle) await seedBundledSkills(this.skillBundle, import_node_path18.default.join(this.data, "openviking/data"), import_node_path18.default.join(this.data, "openviking/bundled-skills.json"), (state) => {
+        if (this.skillBundle) await seedBundledSkills(this.skillBundle, import_node_path19.default.join(this.data, "openviking/data"), import_node_path19.default.join(this.data, "openviking/bundled-skills.json"), (state) => {
           this.value.skills = state;
           this.changed();
           this.diagnosticWrites = this.diagnosticWrites.catch(() => {
-          }).then(() => atomicJSON(import_node_path18.default.join(this.data, "openviking/skills-status.json"), { schemaVersion: 1, recordedAt: (/* @__PURE__ */ new Date()).toISOString(), ...state }));
+          }).then(() => atomicJSON(import_node_path19.default.join(this.data, "openviking/skills-status.json"), { schemaVersion: 1, recordedAt: (/* @__PURE__ */ new Date()).toISOString(), ...state }));
         }, namespaceAbort.signal);
         await this.start(config);
         this.update("ready");
@@ -17857,7 +17912,7 @@ var OpenVikingService = class {
   }
   async writeStartupStatus(detail) {
     try {
-      await atomicJSON(import_node_path18.default.join(this.data, "openviking", "startup-status.json"), { schemaVersion: 1, recordedAt: (/* @__PURE__ */ new Date()).toISOString(), ...detail });
+      await atomicJSON(import_node_path19.default.join(this.data, "openviking", "startup-status.json"), { schemaVersion: 1, recordedAt: (/* @__PURE__ */ new Date()).toISOString(), ...detail });
       return true;
     } catch {
       return false;
@@ -17866,35 +17921,35 @@ var OpenVikingService = class {
   async resolveLaunch() {
     if (this.testLaunch) return this.testLaunch;
     const platform = process.platform === "win32" ? "windows-x64" : "linux-x64";
-    const root = import_node_path18.default.join(this.runtime, platform, "openviking");
-    const manifest = JSON.parse(await (0, import_promises18.readFile)(import_node_path18.default.join(root, "manifest.json"), "utf8"));
+    const root = import_node_path19.default.join(this.runtime, platform, "openviking");
+    const manifest = JSON.parse(await (0, import_promises19.readFile)(import_node_path19.default.join(root, "manifest.json"), "utf8"));
     if (manifest.version !== python_runtime_lock_default.openViking.version || !Array.isArray(manifest.files) || !manifest.files.length) throw new Error("OpenViking \uBC88\uB4E4 \uC5C6\uC74C");
     this.update("starting", "\uC9C0\uC2DD \uC11C\uBE44\uC2A4 \uD30C\uC77C\uC744 \uD655\uC778\uD558\uACE0 \uC788\uC2B5\uB2C8\uB2E4.");
     await verifyFiles(root, manifest.files, (done, total) => {
       if (done === total || done % 100 === 0) this.update("starting", `\uC9C0\uC2DD \uC11C\uBE44\uC2A4 \uD30C\uC77C \uD655\uC778 ${done}/${total}`);
     });
-    return { executable: import_node_path18.default.join(root, "python", process.platform === "win32" ? "python.exe" : "bin/python3"), launcher: import_node_path18.default.join(root, "launch.py"), cwd: root };
+    return { executable: import_node_path19.default.join(root, "python", process.platform === "win32" ? "python.exe" : "bin/python3"), launcher: import_node_path19.default.join(root, "launch.py"), cwd: root };
   }
-  async start(config, workspace = import_node_path18.default.join(this.data, "openviking", "data"), account = vikingAccount, maintenance = false) {
+  async start(config, workspace = import_node_path19.default.join(this.data, "openviking", "data"), account = vikingAccount, maintenance = false) {
     this.account = account;
     this.maintenance = maintenance;
     this.startupStage = "bundle";
     const launch2 = await this.resolveLaunch();
     this.personal = new PersonalKnowledge(
-      import_node_path18.default.join(this.data, "openviking"),
+      import_node_path19.default.join(this.data, "openviking"),
       launch2.executable,
       (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user),
-      { launcher: launch2.launcher, tokenizers: import_node_path18.default.join(launch2.cwd, "tokenizers"), diagnostic: this.testLaunch?.diagnostic, script: this.testLaunch ? import_node_path18.default.resolve("distribution/personal-pack-recovery.py") : import_node_path18.default.resolve(this.runtime, "../ned/personal-pack-recovery.py") }
+      { launcher: launch2.launcher, tokenizers: import_node_path19.default.join(launch2.cwd, "tokenizers"), diagnostic: this.testLaunch?.diagnostic, script: this.testLaunch ? import_node_path19.default.resolve("distribution/personal-pack-recovery.py") : import_node_path19.default.resolve(this.runtime, "../ned/personal-pack-recovery.py") }
     );
     this.startupStage = "configuration";
-    const folder = import_node_path18.default.join(this.data, "openviking");
-    await (0, import_promises18.mkdir)(folder, { recursive: true, mode: 448 });
+    const folder = import_node_path19.default.join(this.data, "openviking");
+    await (0, import_promises19.mkdir)(folder, { recursive: true, mode: 448 });
     this.gateway = new OpenVikingGateway(config, (event) => {
       this.modelEvents.push(event);
       this.modelEvents = this.modelEvents.slice(-20);
       const events = structuredClone(this.modelEvents);
       this.diagnosticWrites = this.diagnosticWrites.catch(() => {
-      }).then(() => atomicJSON(import_node_path18.default.join(folder, "model-status.json"), { schemaVersion: 1, events }));
+      }).then(() => atomicJSON(import_node_path19.default.join(folder, "model-status.json"), { schemaVersion: 1, events }));
     });
     await this.gateway.start();
     const reserve = (0, import_node_net.createServer)();
@@ -17911,7 +17966,7 @@ var OpenVikingService = class {
     const gateway = this.gateway;
     const embedding = config.openViking.embedding;
     const vlm = config.openViking.vlm ?? config.model;
-    this.configFile = import_node_path18.default.join(folder, `runtime-${(0, import_node_crypto11.randomBytes)(8).toString("hex")}.json`);
+    this.configFile = import_node_path19.default.join(folder, `runtime-${(0, import_node_crypto11.randomBytes)(8).toString("hex")}.json`);
     await atomicJSON(this.configFile, {
       storage: { workspace, agfs: { backend: "local" }, vectordb: { backend: "local", name: "context" } },
       server: { host: "127.0.0.1", port, workers: 1, auth_mode: "trusted", root_api_key: this.token },
@@ -17926,7 +17981,7 @@ var OpenVikingService = class {
     let launchError;
     let stderr = "";
     let lastHealthStatus;
-    this.process = (0, import_node_child_process2.spawn)(launch2.executable, ["-I", "-B", launch2.launcher, "--config", this.configFile, "--port", String(port)], {
+    this.process = (0, import_node_child_process3.spawn)(launch2.executable, ["-I", "-B", launch2.launcher, "--config", this.configFile, "--port", String(port)], {
       cwd: launch2.cwd,
       windowsHide: true,
       stdio: ["pipe", "pipe", "pipe"],
@@ -17935,7 +17990,7 @@ var OpenVikingService = class {
         WINDIR: process.env.WINDIR,
         TEMP: process.env.TEMP,
         TMP: process.env.TMP,
-        PATH: import_node_path18.default.dirname(launch2.executable),
+        PATH: import_node_path19.default.dirname(launch2.executable),
         HOME: folder,
         USERPROFILE: folder,
         APPDATA: folder,
@@ -17948,7 +18003,7 @@ var OpenVikingService = class {
         LITELLM_LOCAL_MODEL_COST_MAP: "True",
         LITELLM_TELEMETRY: "False",
         NO_PROXY: "127.0.0.1,localhost",
-        TIKTOKEN_CACHE_DIR: import_node_path18.default.join(launch2.cwd, "tokenizers")
+        TIKTOKEN_CACHE_DIR: import_node_path19.default.join(launch2.cwd, "tokenizers")
       }
     });
     this.process.stdout.on("data", () => {
@@ -18055,7 +18110,7 @@ var OpenVikingService = class {
     this.ready();
     if (Buffer.byteLength(content) > 2 * 1024 * 1024) throw new Error("2 MiB \uC774\uD558 \uD14D\uC2A4\uD2B8\uB9CC \uC0C9\uC778\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4.");
     const form = new FormData();
-    form.append("file", new Blob([content], { type: "text/plain" }), import_node_path18.default.basename(filename).replace(/[^a-zA-Z0-9_.-]/g, "_") + ".txt");
+    form.append("file", new Blob([content], { type: "text/plain" }), import_node_path19.default.basename(filename).replace(/[^a-zA-Z0-9_.-]/g, "_") + ".txt");
     const response = await fetch(this.baseUrl + "/api/v1/resources/temp_upload", { method: "POST", redirect: "error", headers: this.credentials("local-user"), body: form, signal: AbortSignal.timeout(3e4) });
     if (!response.ok) {
       this.testLaunch?.diagnostic?.(`Upload HTTP ${response.status}: ${await response.text()}`);
@@ -18095,7 +18150,7 @@ var OpenVikingService = class {
     this.process = void 0;
     await this.gateway?.close();
     this.gateway = void 0;
-    if (this.configFile) await (0, import_promises18.unlink)(this.configFile).catch(() => {
+    if (this.configFile) await (0, import_promises19.unlink)(this.configFile).catch(() => {
     });
     this.configFile = void 0;
   }
@@ -18110,9 +18165,9 @@ var OpenVikingService = class {
 
 // tests/openviking.integration.test.ts
 init_contracts();
-var executable = import_node_path19.default.resolve(process.env.NED_TEST_CURRENT_PYTHON ?? ".cache/openviking/env-linux/bin/python3");
-(0, import_node_test6.test)("real pinned OpenViking registers default skill packages, restarts without duplicate indexing and keeps project knowledge scoped", { skip: !(0, import_node_fs5.existsSync)(executable), timeout: 3e5 }, async (t) => {
-  const root = await (0, import_promises19.mkdtemp)(import_node_path19.default.join((0, import_node_os6.tmpdir)(), "ned-viking-"));
+var executable = import_node_path20.default.resolve(process.env.NED_TEST_CURRENT_PYTHON ?? ".cache/openviking/env-linux/bin/python3");
+(0, import_node_test7.test)("real pinned OpenViking registers default skill packages, restarts without duplicate indexing and keeps project knowledge scoped", { skip: !(0, import_node_fs5.existsSync)(executable), timeout: 3e5 }, async (t) => {
+  const root = await (0, import_promises20.mkdtemp)(import_node_path20.default.join((0, import_node_os7.tmpdir)(), "ned-viking-"));
   const requests = [], inputs = [];
   const endpoint2 = (0, import_node_http4.createServer)(async (req, res) => {
     let raw = "";
@@ -18121,8 +18176,8 @@ var executable = import_node_path19.default.resolve(process.env.NED_TEST_CURRENT
     const body = JSON.parse(raw);
     inputs.push(JSON.stringify(body.input ?? body.messages).slice(0, 120));
     if (req.url === "/v1/chat/completions") {
-      import_strict6.default.equal(body.model, "llm-test");
-      import_strict6.default.equal(req.headers.authorization, "Bearer viking-test-key");
+      import_strict7.default.equal(body.model, "llm-test");
+      import_strict7.default.equal(req.headers.authorization, "Bearer viking-test-key");
       res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({ id: "viking-description", object: "chat.completion", model: "llm-test", choices: [{ index: 0, message: { role: "assistant", content: "Scoped local project document." }, finish_reason: "stop" }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } }));
       return;
     }
@@ -18130,8 +18185,8 @@ var executable = import_node_path19.default.resolve(process.env.NED_TEST_CURRENT
       res.writeHead(400).end("{}");
       return;
     }
-    import_strict6.default.equal(body.model, "embed-test");
-    import_strict6.default.equal(req.headers.authorization, "Bearer embedding-test-key");
+    import_strict7.default.equal(body.model, "embed-test");
+    import_strict7.default.equal(req.headers.authorization, "Bearer embedding-test-key");
     const input = Array.isArray(body.input) ? body.input : [body.input];
     res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify({ object: "list", model: "embed-test", data: input.map((_, index) => ({ object: "embedding", index, embedding: [0.5, 0.25, 0.125, 0.75] })), usage: { prompt_tokens: 10, total_tokens: 10 } }));
   });
@@ -18144,44 +18199,44 @@ var executable = import_node_path19.default.resolve(process.env.NED_TEST_CURRENT
   const baseUrl = `http://127.0.0.1:${port}/v1`;
   const config = configSchema.parse({ schemaVersion: 2, model: { baseUrl, apiKey: "viking-test-key", id: "llm-test" }, openViking: { enabled: true, embedding: { baseUrl, apiKey: "embedding-test-key", id: "embed-test", dimension: 4 } } });
   let diagnostics = "";
-  const inputSkills = process.env.NED_TEST_SKILLS_DIR ?? "vendor/skills", inputSeed = import_node_path19.default.join(inputSkills, "..", "skill-seed");
-  const skills = import_node_path19.default.join(root, "resources/ned/skills");
-  await (0, import_promises19.cp)(process.env.NED_TEST_TOKENIZERS_DIR ?? "vendor/runtime/windows-x64/openviking/tokenizers", import_node_path19.default.join(root, "tokenizers"), { recursive: true });
-  await (0, import_promises19.cp)(inputSkills, skills, { recursive: true });
-  await (0, import_promises19.cp)("skills-lock.json", import_node_path19.default.join(skills, "..", "skills-lock.json"));
-  if ((0, import_node_fs5.existsSync)(import_node_path19.default.join(inputSeed, "manifest.json"))) await (0, import_promises19.cp)(inputSeed, import_node_path19.default.join(skills, "..", "skill-seed"), { recursive: true });
+  const inputSkills = process.env.NED_TEST_SKILLS_DIR ?? "vendor/skills", inputSeed = import_node_path20.default.join(inputSkills, "..", "skill-seed");
+  const skills = import_node_path20.default.join(root, "resources/ned/skills");
+  await (0, import_promises20.cp)(process.env.NED_TEST_TOKENIZERS_DIR ?? "vendor/runtime/windows-x64/openviking/tokenizers", import_node_path20.default.join(root, "tokenizers"), { recursive: true });
+  await (0, import_promises20.cp)(inputSkills, skills, { recursive: true });
+  await (0, import_promises20.cp)("skills-lock.json", import_node_path20.default.join(skills, "..", "skills-lock.json"));
+  if ((0, import_node_fs5.existsSync)(import_node_path20.default.join(inputSeed, "manifest.json"))) await (0, import_promises20.cp)(inputSeed, import_node_path20.default.join(skills, "..", "skill-seed"), { recursive: true });
   const viking = new OpenVikingService(root, root, () => {
-  }, { executable, launcher: import_node_path19.default.resolve("scripts/openviking-launch.py"), cwd: root, diagnostic: (text) => {
+  }, { executable, launcher: import_node_path20.default.resolve("scripts/openviking-launch.py"), cwd: root, diagnostic: (text) => {
     diagnostics += text;
   } }, skills);
   t.after(async () => {
     await viking.close();
-    await (0, import_promises19.rm)(root, { recursive: true, force: true });
+    await (0, import_promises20.rm)(root, { recursive: true, force: true });
   });
   await viking.configure(config);
-  import_strict6.default.equal(viking.state().status, "ready", diagnostics);
+  import_strict7.default.equal(viking.state().status, "ready", diagnostics);
   const waitForSkills = async () => {
     const deadline = Date.now() + 24e4;
     while (Date.now() < deadline && ["pending", "registering"].includes(viking.state().skills?.status ?? "")) await new Promise((resolve) => setTimeout(resolve, 100));
-    import_strict6.default.equal(viking.state().skills?.status, "ready", JSON.stringify(viking.state().skills) + "\n" + diagnostics.slice(-12e3));
-    import_strict6.default.equal(viking.state().skills?.registered, JSON.parse(await (0, import_promises19.readFile)("vendor/skills/manifest.json", "utf8")).skills.length);
+    import_strict7.default.equal(viking.state().skills?.status, "ready", JSON.stringify(viking.state().skills) + "\n" + diagnostics.slice(-12e3));
+    import_strict7.default.equal(viking.state().skills?.registered, JSON.parse(await (0, import_promises20.readFile)("vendor/skills/manifest.json", "utf8")).skills.length);
   };
   await waitForSkills();
-  import_strict6.default.equal(requests.length, 0, "prepared skills must not require a description or embedding model call");
+  import_strict7.default.equal(requests.length, 0, "prepared skills must not require a description or embedding model call");
   const connection = await viking.studioConnection();
   const skillResponse = await fetch(connection.baseUrl + "/api/v1/skills/ned-test-driven-development?target_uri=" + encodeURIComponent("viking://agent/skills") + "&include_content=true&include_integrity=true&include_source=true", { headers: connection.headers });
-  import_strict6.default.equal(skillResponse.status, 200, await skillResponse.clone().text());
-  import_strict6.default.ok(JSON.stringify(await skillResponse.json()).includes("ned-test-driven-development"));
+  import_strict7.default.equal(skillResponse.status, 200, await skillResponse.clone().text());
+  import_strict7.default.ok(JSON.stringify(await skillResponse.json()).includes("ned-test-driven-development"));
   const settled = await fetch(connection.baseUrl + "/api/v1/system/wait", { method: "POST", headers: { ...connection.headers, "Content-Type": "application/json" }, body: JSON.stringify({ timeout: 60 }) });
-  import_strict6.default.equal(settled.status, 200, await settled.clone().text());
+  import_strict7.default.equal(settled.status, 200, await settled.clone().text());
   const afterFirstImport = requests.length;
   await viking.configure(config);
   await waitForSkills();
-  import_strict6.default.equal(requests.length, afterFirstImport, "unchanged restarts must not send default skills for embedding again: " + JSON.stringify(inputs));
-  await viking.index("p1", "hello.txt", "Ned tests local project knowledge.").catch((error) => import_strict6.default.fail(error.message + "\n" + diagnostics));
+  import_strict7.default.equal(requests.length, afterFirstImport, "unchanged restarts must not send default skills for embedding again: " + JSON.stringify(inputs));
+  await viking.index("p1", "hello.txt", "Ned tests local project knowledge.").catch((error) => import_strict7.default.fail(error.message + "\n" + diagnostics));
   const found = await viking.search("p1", "Ned", 3);
-  import_strict6.default.ok(found.includes("p1"), found);
-  await import_strict6.default.rejects(viking.read("p2", "viking://resources/ned/p1/file.txt"));
-  import_strict6.default.ok(requests.every((route) => ["/v1/embeddings", "/v1/chat/completions"].includes(route)), JSON.stringify(requests));
+  import_strict7.default.ok(found.includes("p1"), found);
+  await import_strict7.default.rejects(viking.read("p2", "viking://resources/ned/p1/file.txt"));
+  import_strict7.default.ok(requests.every((route) => ["/v1/embeddings", "/v1/chat/completions"].includes(route)), JSON.stringify(requests));
   await viking.close();
 });

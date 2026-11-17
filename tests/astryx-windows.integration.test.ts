@@ -29,11 +29,16 @@ test('installed Windows Astryx starter builds using bundled Node and native esbu
 });
 test('installed source-built editor has Ned menu/About content and corresponding-source provenance',{skip:process.platform!=='win32',timeout:30000},async()=>{
  const resources=path.join(path.dirname(process.execPath),'resources'),bytes=await readFile(path.join(resources,'zed/Zed.exe'));
- for(const text of ['About Ned','Quit Ned','Ned 0.3.8 · rebuild 1'])assert.ok(bytes.includes(Buffer.from(text)),text);
+ const changes=JSON.parse(await readFile(path.join(resources,'ned/sources/NED_EDITOR_CHANGES.json'),'utf8'));
+ const version=process.env.NED_ARTIFACT_VERSION??'0.3.9';
+ const [major,revision]=version.split('-');
+ assert.equal(changes.version,major);
+ assert.equal(changes.buildRevision,revision);
+ const about=revision==='rebuild1'?'Ned '+major+' · rebuild 1':'Ned '+major;
+ for(const text of ['About Ned','Quit Ned',about])assert.ok(bytes.includes(Buffer.from(text)),text);
  for(const text of ['About Zed','Quit Zed'])assert.ok(!bytes.includes(Buffer.from(text)),text);
  const record=JSON.parse(await readFile(path.join(resources,'ned/editor-branding.json'),'utf8'));
  assert.equal(record.modifiedSha256,createHash('sha256').update(bytes).digest('hex'));
- const changes=JSON.parse(await readFile(path.join(resources,'ned/sources/NED_EDITOR_CHANGES.json'),'utf8'));
  assert.deepEqual(changes,record.sourceChanges);
  assert.match(await readFile(path.join(resources,'ned/sources/NED_EDITOR_SOURCE.txt'),'utf8'),/offline TGZ/);
  // Exercise the newly compiled PE loader; discard printenv output rather than logging credentials.

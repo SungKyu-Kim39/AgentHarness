@@ -1,6 +1,6 @@
 # Ned
 
-0.3.9 배포 준비: [변경 사항](docs/changes-0.3.9.md) · [검증 범위](docs/validation-0.3.9.md). 현재 공개 배포본은 0.3.8 rebuild1이며, 새 설치 파일 게시 전입니다.
+0.3.9 배포 준비: [변경 사항](docs/changes-0.3.9.md) · [검증 범위](docs/validation-0.3.9.md) · [0.3.7 이후 누적 변경](docs/upgrade-from-0.3.7.md). 현재 공개 배포본은 0.3.8 rebuild1이며, 새 설치 파일 게시 전입니다.
 
 Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이기 위해 만들었습니다.
 

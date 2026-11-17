@@ -101,7 +101,7 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       ...['egm-lock.json','studio-assets-lock.json'].map(file=>({from:path.join(root,file),to:'ned/locks/'+file})),
-      ...['egm.md','zed-history-import.md','changes-0.3.9.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
+      ...['egm.md','zed-history-import.md','changes-0.3.9.md','upgrade-from-0.3.7.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
       {from:path.join(root,'distribution/personal-pack-recovery.py'),to:'ned/personal-pack-recovery.py'},
       {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
       {from:path.join(root,'scripts/sidecar-supervisor.py'),to:'ned/python-supervisor.py'},
@@ -250,7 +250,7 @@ async function bundle() {
   if((version==='0.3.8'&&revision==='rebuild1'||version==='0.3.9')){
     await cp(path.join(root,'docs/zed-native-agent.md'),path.join(stage,'ZED_NATIVE_AGENT.md'));
     await cp(path.join(root,'docs/subagents.md'),path.join(stage,'SUBAGENTS.md'));
-    if(version==='0.3.9')for(const file of ['egm.md','zed-history-import.md','changes-0.3.9.md'])await cp(path.join(root,'docs',file),path.join(stage,file));
+    if(version==='0.3.9')for(const file of ['egm.md','zed-history-import.md','changes-0.3.9.md','upgrade-from-0.3.7.md'])await cp(path.join(root,'docs',file),path.join(stage,file));
     await cp(path.join(root,'docs/astryx.md'),path.join(stage,'ASTRYX.md'));
     await mkdir(path.join(stage,'astryx'),{recursive:true});
     const astryx=await json(path.join(root,'astryx-offline-lock.json'));

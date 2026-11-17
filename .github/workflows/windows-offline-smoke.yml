@@ -173,7 +173,7 @@ jobs:
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Namespace test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-namespace-test.txt -RedirectStandardError windows-namespace-stderr.txt -Wait -PassThru
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-namespace-test.txt -RedirectStandardError windows-namespace-stderr.txt -Wait -PassThru
           $run.Refresh()
           Get-Content windows-namespace-test.txt
           Get-Content windows-namespace-stderr.txt
@@ -188,7 +188,7 @@ jobs:
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Delete test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-delete-test.txt -RedirectStandardError windows-delete-stderr.txt -Wait -PassThru
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-delete-test.txt -RedirectStandardError windows-delete-stderr.txt -Wait -PassThru
           $run.Refresh()
           Get-Content windows-delete-test.txt
           Get-Content windows-delete-stderr.txt
@@ -203,7 +203,7 @@ jobs:
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Compaction test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-compaction-test.txt -RedirectStandardError windows-compaction-stderr.txt -Wait -PassThru
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-compaction-test.txt -RedirectStandardError windows-compaction-stderr.txt -Wait -PassThru
           $run.Refresh()
           Get-Content windows-compaction-test.txt
           Get-Content windows-compaction-stderr.txt
@@ -262,7 +262,7 @@ jobs:
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Python test hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-test.txt -RedirectStandardError windows-python-stderr.txt -Wait -PassThru
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-test.txt -RedirectStandardError windows-python-stderr.txt -Wait -PassThru
           $run.Refresh()
           Get-Content windows-python-test.txt
           Get-Content windows-python-stderr.txt
@@ -363,7 +363,7 @@ jobs:
           $expected = (Get-Content "$test.sha256").Split(' ')[0]
           if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Python probe hash mismatch' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-source-test.txt -RedirectStandardError windows-python-source-stderr.txt -Wait -PassThru
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-source-test.txt -RedirectStandardError windows-python-source-stderr.txt -Wait -PassThru
           $run.Refresh()
           Get-Content windows-python-source-test.txt
           Get-Content windows-python-source-stderr.txt

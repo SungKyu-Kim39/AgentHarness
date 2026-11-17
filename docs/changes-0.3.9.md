@@ -62,3 +62,9 @@ Studio는 실제 앱 DOM 표시를 확인합니다. 빈 화면이 지속되면 �
 [기존 개인 Zed Agent 대화 가져오기](zed-history-import.md)와
 [EGM 사용](egm.md)을 제공합니다. 검증 범위와 배포 전 확인 사항은
 [0.3.9 검증 기록](validation-0.3.9.md)에 기록합니다.
+
+## Git 패널의 Trust Directory
+
+Windows 관리 편집기에 번들 Git의 위치를 전달합니다. 사용자가 버튼을 누르면 해당
+저장소만 Ned 전용 Git 설정의 `safe.directory`에 저장되고, 편집기는 감시하는 설정 파일의
+변경을 받아 상태를 갱신합니다. [Git 사용 안내](git-and-binary-analysis.md)

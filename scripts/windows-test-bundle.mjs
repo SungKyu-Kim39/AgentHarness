@@ -13,7 +13,7 @@ const groups={
  compaction:['compaction.integration'],
  native:['git-tools','external-read','personal-pack-recovery','ghidra-network','rea-ghidra.integration','zed-native','astryx-windows.integration','subagents','subagents.integration','message-delivery','subagents-acp.integration'],
  python:['python-windows.integration'],
- upgrade:['zed-settings','zed-history','skill-seed','terminal','editor-preferences','openviking.integration'],
+ upgrade:['zed-settings','zed-history','skill-seed','terminal','editor-preferences','editor-git-trust.windows','openviking.integration'],
 };
 await mkdir(path.join(root,'.cache/ned/windows-tests'),{recursive:true});
 for(const [name,tests]of Object.entries(groups)){
