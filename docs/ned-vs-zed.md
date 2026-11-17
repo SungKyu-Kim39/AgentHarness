@@ -2,7 +2,7 @@
 
 Ned의 편집 화면은 Zed입니다. 파일을 열고 코드를 수정하며 패널을 배치하는 기능은 Zed가 담당합니다. Ned는 여기에 전용 OpenCode 엔진, 사내 모델 설정, 개발 도구와 스킬, OpenViking을 연결하고 한 번에 설치할 수 있도록 묶었습니다. 이 글은 0.3.8 rebuild1 기본 배포 구성을 기준으로 설명합니다.
 
-Aegis·Conductor·Serena·Graphify·REA·OpenViking·agent-desktop이 각각 무엇인지, 스킬 67개를 언제 쓰면 좋은지는 [Ned 상세 사용 안내서](ned-user-guide.md)에 요청 예시와 함께 설명했습니다. 이 글에서는 구성과 운영의 차이를 요약합니다.
+Aegis·Conductor·Serena·Graphify·REA·OpenViking·agent-desktop이 각각 무엇인지, 스킬 74개를 언제 쓰면 좋은지는 [Ned 상세 사용 안내서](ned-user-guide.md)에 요청 예시와 함께 설명했습니다. 이 글에서는 구성과 운영의 차이를 요약합니다.
 
 ## 여러 직원에게 같은 환경을 배포하려면
 
@@ -19,7 +19,7 @@ Zed 자체도 AI 기능과 외부 에이전트 연결을 지원합니다. 비교
 | 모델 설정 | 연결 방식에 맞춰 개별 설정 | 중앙 JSON에서 여러 LLM과 단일 임베딩 설정 |
 | 도구 준비 | 필요한 도구·런타임 선정과 설치 | 검토한 런타임과 도구를 반입 묶음에 포함 |
 | 하위 작업 | 선택한 하네스와 도구에 따름 | Ned의 조사·지정 파일 구현 하위 Agent 또는 Zed 자체 하위 Agent |
-| 작업 지침 | 개인이나 조직이 준비 | 기본 스킬 67개와 Aegis·Conductor 어댑터 |
+| 작업 지침 | 개인이나 조직이 준비 | 기본 스킬 74개와 Aegis·Conductor 어댑터 |
 | 코드·자료 분석 | 선택한 도구 구성에 따름 | Serena·clangd, Graphify, REA와 개발 MCP 6종 |
 | 지식 검색 | 별도 서비스 연결과 운영 | OpenViking 실행·종료, 스킬 등록, 자료 색인·검색 |
 | 권한 | 에이전트와 클라이언트 설정에 따름 | 호스트에서 승인 요청·파일 자동 승인·전체 권한 선택 |
@@ -102,3 +102,5 @@ Zed에서도 지식 서비스를 별도로 연결할 수 있습니다. Ned에는
 ## 기본 Zed Agent만 사용하고 싶다면
 
 0.3.8 rebuild1에서는 기본 Zed Agent와 Ned Agent를 선택할 수 있습니다. 기본 Zed Agent에는 Ned 스킬·MCP·OpenViking을 주입하지 않습니다. 중앙 JSON의 사내 모델 연결만 공유하며, 도구와 승인은 Zed 자체 체계를 사용합니다. [선택 방법과 경계](zed-native-agent.md)를 참고하세요. Ned의 추가 기능이 필요할 때 다시 Ned Agent를 선택하면 됩니다.
+
+0.3.9는 기본 스킬의 사전 준비·변경분 적용과 지식 서비스의 백그라운드 시작을 적용합니다. 기존 개인 Zed 대화는 [선택 가져오기](zed-history-import.md), CMD/PowerShell은 [터미널 선택](offline-setup.md), EGM 7종은 [설계·검토 안내](egm.md)에서 확인합니다.

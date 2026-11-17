@@ -6,9 +6,13 @@ on:
         description: Exact immutable installer build
         default: 0.3.8
         type: choice
-        options: ['0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
+        options: ['0.3.9', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
       candidate_source:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
+        type: string
+        default: ''
+      editor_run:
+        description: Immutable successful 0.3.9 editor build run ID
         type: string
         default: ''
       runtime_source_probe:
@@ -25,7 +29,7 @@ permissions:
   contents: read
 jobs:
   offline-install:
-    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe'
+    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe' && inputs.artifact_version != 'release-build'
     runs-on: windows-2022
     timeout-minutes: 30
     env:
@@ -191,7 +195,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows file deletion test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify real engine compaction length recovery
-        if: always() && startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') && env.NED_TEST_NODE != ''
+        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || env.NED_ARTIFACT_VERSION == '0.3.9') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -206,7 +210,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows compaction test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify Git writes, external reads, Ghidra and large OVPack recovery
-        if: always() && startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') && env.NED_TEST_NODE != ''
+        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || env.NED_ARTIFACT_VERSION == '0.3.9') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -241,7 +245,7 @@ jobs:
           }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify installed Python tools with a preinstalled Conda environment
-        if: always() && startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') && env.NED_TEST_NODE != ''
+        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || env.NED_ARTIFACT_VERSION == '0.3.9') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -264,6 +268,25 @@ jobs:
           Get-Content windows-python-stderr.txt
           if ($run.ExitCode -ne 0) { throw 'Installed Windows Python tools failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
+      - name: Verify 0.3.9 skills, history, settings and terminal behavior
+        if: always() && env.NED_ARTIFACT_VERSION == '0.3.9' && env.NED_TEST_NODE != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $test = 'downloads/Ned-0.3.9-windows-upgrade-test.cjs'
+          $expected = (Get-Content "$test.sha256").Split(' ')[0]
+          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Upgrade test hash mismatch' }
+          $env:ELECTRON_RUN_AS_NODE = '1'
+          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-upgrade-test.txt -RedirectStandardError windows-upgrade-stderr.txt -PassThru
+          try {
+            if (!$run.WaitForExit(600000)) { & taskkill.exe /PID $run.Id /T /F | Out-Null; throw 'Upgrade fixture exceeded its CI budget' }
+            $run.Refresh()
+            if ($run.ExitCode -ne 0) { throw 'Installed 0.3.9 upgrade tests failed' }
+          } finally {
+            Get-Content windows-upgrade-test.txt -ErrorAction SilentlyContinue
+            Get-Content windows-upgrade-stderr.txt -ErrorAction SilentlyContinue
+          }
+          Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Restore disposable runner firewall configuration
         if: always()
         shell: pwsh
@@ -278,6 +301,8 @@ jobs:
           name: ${{ inputs.runtime_source_probe && 'windows-runtime-source-probe-0.3.8' || format('windows-offline-smoke-{0}', env.NED_ARTIFACT_VERSION) }}
           path: |
             windows-offline-smoke.json
+            windows-upgrade-test.txt
+            windows-upgrade-stderr.txt
             windows-namespace-test.txt
             windows-namespace-stderr.txt
             windows-delete-test.txt
@@ -515,3 +540,42 @@ jobs:
             native-source-test.txt
             native-source-stderr.txt
             native-source-status.json
+
+  release-build:
+    if: inputs.artifact_version == 'release-build'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      NED_EDITOR_RUN: ${{ inputs.editor_run }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          lfs: false
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.22.1'
+      - name: Prepare build-machine space and Java 21
+        shell: bash
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+          df -h .
+      - name: Install pinned build dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build and audit immutable installer candidate
+        id: candidate
+        run: node scripts/release-0.3.9.mjs candidate
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ned-0.3.9-release-state-${{ steps.candidate.outputs.source_sha }}
+          path: .cache/ned/release-state
+          include-hidden-files: true
+          compression-level: 0
+          if-no-files-found: error

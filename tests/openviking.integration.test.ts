@@ -7,7 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { OpenVikingService } from '../src/main/openviking';
 import { configSchema } from '../src/shared/contracts';
-const executable = path.resolve('.cache/openviking/env-linux/bin/python3');
+const executable = path.resolve(process.env.NED_TEST_CURRENT_PYTHON??'.cache/openviking/env-linux/bin/python3');
 test('real pinned OpenViking registers default skill packages, restarts without duplicate indexing and keeps project knowledge scoped', { skip: !existsSync(executable), timeout: 300000 }, async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'ned-viking-'));
   const requests: string[] = [], inputs: string[]=[];
@@ -29,10 +29,11 @@ test('real pinned OpenViking registers default skill packages, restarts without 
   const baseUrl = `http://127.0.0.1:${port}/v1`;
   const config = configSchema.parse({ schemaVersion: 2, model: { baseUrl, apiKey: 'viking-test-key', id: 'llm-test' }, openViking: { enabled: true, embedding: { baseUrl, apiKey: 'embedding-test-key', id: 'embed-test', dimension: 4 } } });
   let diagnostics = '';
+  const inputSkills=process.env.NED_TEST_SKILLS_DIR??'vendor/skills', inputSeed=path.join(inputSkills,'..','skill-seed');
   const skills = path.join(root, 'resources/ned/skills');
-  await cp('vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
-  await cp('vendor/skills', skills, { recursive: true }); await cp('skills-lock.json', path.join(skills, '..', 'skills-lock.json'));
-  if(existsSync('vendor/skill-seed/manifest.json'))await cp('vendor/skill-seed',path.join(skills,'..','skill-seed'),{recursive:true});
+  await cp(process.env.NED_TEST_TOKENIZERS_DIR??'vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
+  await cp(inputSkills, skills, { recursive: true }); await cp('skills-lock.json', path.join(skills, '..', 'skills-lock.json'));
+  if(existsSync(path.join(inputSeed,'manifest.json')))await cp(inputSeed,path.join(skills,'..','skill-seed'),{recursive:true});
   const viking = new OpenVikingService(root, root, () => {}, { executable, launcher: path.resolve('scripts/openviking-launch.py'), cwd: root, diagnostic: text => { diagnostics += text; } }, skills);
   t.after(async () => { await viking.close(); await rm(root, { recursive: true, force: true }); }); await viking.configure(config);
   assert.equal(viking.state().status, 'ready', diagnostics);

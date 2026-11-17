@@ -1,6 +1,6 @@
 # Ned
 
-0.3.9 구현 후보: [변경 사항](docs/changes-0.3.9.md) · [검증 범위](docs/validation-0.3.9.md). 현재 공개 배포본은 0.3.8 rebuild1이며, 새 설치 파일 게시 전입니다.
+0.3.9 배포 준비: [변경 사항](docs/changes-0.3.9.md) · [검증 범위](docs/validation-0.3.9.md). 현재 공개 배포본은 0.3.8 rebuild1이며, 새 설치 파일 게시 전입니다.
 
 Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이기 위해 만들었습니다.
 
@@ -8,7 +8,9 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 [소개와 활용](docs/ned-introduction.md) · [Zed와의 차이](docs/ned-vs-zed.md) · [설치 안내](docs/offline-setup.md) · [모델 설정](docs/model-controls.md) · [권한 설정](docs/approval-modes.md) · [라이선스](docs/license-policy.md)
 
-AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 67개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
+AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
+
+0.3.9는 스킬 사전 준비·변경분 적용과 비동기 지식 서비스, 상세 시작 표시, Studio 오류 복구, CMD 선택, [기존 Zed 대화 가져오기](docs/zed-history-import.md), [EGM 설계·검토](docs/egm.md)를 제공합니다.
 
 0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가했습니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 
@@ -45,7 +47,7 @@ Ned는 선택한 프로젝트의 코드를 읽고 검색한 뒤 수정안을 만
 
 반복 승인창이 번거롭다면 대화 입력창이나 알림 영역의 **권한** 메뉴에서 **프로젝트 파일 자동 승인** 또는 **전체 권한**을 선택할 수 있습니다. 선택은 재시작과 업데이트 후에도 유지됩니다. 적용 범위는 [권한 안내](docs/approval-modes.md)에 설명했습니다.
 
-기본 구성에는 Aegis·Conductor 지침, 스킬 67개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
+기본 구성에는 Aegis·Conductor 지침, 스킬 74개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
 
 OpenViking은 Ned와 함께 시작하고 종료합니다. 기본 스킬을 등록하고, 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [스킬 안내](docs/skills-0.3.7.md), [개인 지식 이관](docs/openviking-personal-migration.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
 

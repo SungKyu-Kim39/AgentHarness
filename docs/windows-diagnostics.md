@@ -59,3 +59,18 @@ OpenViking 없이 작업을 먼저 해야 한다면 관리 중인 JSON에서 `op
 0.3.6부터 Windows 편집기는 내부 폴더 선택창을 사용합니다. 실제 바탕화면·즐겨찾기를 탐색하려면 **Ned → 프로젝트 폴더 열기**를 사용하세요. 호스트의 Windows 환경에서 폴더를 선택하고 경로만 전용 편집기로 전달합니다. 실제 파일 시스템 디렉터리가 없는 라이브러리 제목이나 가상 항목은 프로젝트 폴더로 사용할 수 없습니다.
 
 사용자 지정 경로로 설치한 경우 **CHECK_AGENT**, **CHECK_DESKTOP**, **CHECK_OPENVIKING**, **EXPORT_PERSONAL**은 HKCU의 `Uninstall/Ned` `InstallLocation`을 찾아 실행합니다. 과거 패치는 지정된 원본 해시·위치만 대상으로 하므로 0.3.6 이상에 적용하지 않습니다.
+
+## 0.3.9 기본 Zed Agent와 Studio
+
+`missing field name`이 보이면 0.3.9 업데이트 후 다시 실행해 관리 프로필을 갱신합니다.
+Write·Ask·Minimal의 필수 이름과 모델 capability는 Ned가 준비하고 저장 전에 검사합니다.
+주석·글꼴·패널·대화는 유지하며 설정 파일을 지우는 방식으로 복구하지 않습니다.
+
+`Permission Denied / Ned offline editor`는 편집기 통신 프록시의 거부 응답입니다.
+0.3.9는 자체 모델 경로의 일반·프록시 요청을 처리합니다. 실패가 남으면
+`%APPDATA%\Ned\editor-network-status.json`, `zed-model-status.json`의 코드와
+설치 버전을 확인합니다. 키나 settings 전문을 공유하지 않습니다.
+
+Studio 빈 화면은 `%APPDATA%\Ned\openviking\studio-status.json`의 코드로
+인증·자료·CSP·렌더러 문제를 구분합니다. 오류 화면의 다시 불러오기를 사용하며 지식 서비스
+상태도 확인합니다. 지식 서비스 실패가 Ned의 로컬 스킬과 대화를 막지는 않습니다.
