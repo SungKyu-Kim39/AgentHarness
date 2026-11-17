@@ -266,11 +266,15 @@ async function bundle() {
     const auditSource=path.join(stage,'source',`Ned-audit-${report.auditSourceCommit.slice(0,12)}-source.tgz`);
     run('git',['archive','--format=tar.gz','--output='+auditSource,report.auditSourceCommit,':(exclude)downloads']);verifyAsciiTar(auditSource);
   }
+  if(verifierCommit!==commit&&verifierCommit!==report.auditSourceCommit){
+    const bundleSource=path.join(stage,'source',`Ned-bundle-${verifierCommit.slice(0,12)}-source.tgz`);
+    run('git',['archive','--format=tar.gz','--output='+bundleSource,verifierCommit,':(exclude)downloads']);verifyAsciiTar(bundleSource);
+  }
   const files=await verifyAsciiTree(stage);verifyAsciiTar(source);
   const archive=path.join(output,name+'.tgz');run('tar',['-czf',archive,'-C',output,name]);
   verifyAsciiTar(archive);
   const sha=await fileHash(archive);await writeFile(archive+'.sha256',sha+'  '+path.basename(archive)+'\n');
-  await writeFile(path.join(output,'bundle-manifest.json'),JSON.stringify({product:'Ned',version,buildRevision:revision||undefined,auditSourceCommit:report.auditSourceCommit,sourceCommit:commit,archive:path.basename(archive),bytes:(await stat(archive)).size,sha256:sha,files,installer:report.installer},null,2)+'\n');
+  await writeFile(path.join(output,'bundle-manifest.json'),JSON.stringify({product:'Ned',version,buildRevision:revision||undefined,auditSourceCommit:report.auditSourceCommit,bundleSourceCommit:verifierCommit,sourceCommit:commit,archive:path.basename(archive),bytes:(await stat(archive)).size,sha256:sha,files,installer:report.installer},null,2)+'\n');
 }
 if(mode==='release-prepare') {
   await prepareRelease(root,cache,staged,version,await getPath7za(),true);

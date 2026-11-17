@@ -5,7 +5,15 @@ on:
       version:
         description: Immutable artifact version
         required: true
-        default: '0.3.8'
+        default: '0.3.9'
+      candidate_run:
+        description: Successful 0.3.9 candidate build run ID
+        required: false
+        default: ''
+      candidate_source:
+        description: Immutable 0.3.9 product source SHA
+        required: false
+        default: ''
       validation_run:
         description: Successful Windows offline smoke run ID
         required: true
@@ -21,13 +29,26 @@ jobs:
       GH_REPO: ${{ github.repository }}
       NED_VERSION: ${{ inputs.version }}
       NED_VALIDATION_RUN: ${{ inputs.validation_run }}
+      NED_CANDIDATE_RUN: ${{ inputs.candidate_run }}
+      NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           lfs: false
           persist-credentials: false
           fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        if: inputs.version == '0.3.9'
+        with:
+          node-version: '24.22.1'
+      - name: Install pinned release tools
+        if: inputs.version == '0.3.9'
+        run: npm ci --no-audit --no-fund
+      - name: Finalize and publish the installed 0.3.9 bytes
+        if: inputs.version == '0.3.9'
+        run: node scripts/publish-0.3.9.mjs
       - name: Verify published files and Windows validation
+        if: inputs.version != '0.3.9'
         shell: bash
         run: |
           node --input-type=module <<'JS'
@@ -78,6 +99,7 @@ jobs:
           await writeFile('release-assets/list.json',JSON.stringify(files));
           JS
       - name: Upload without replacing existing assets
+        if: inputs.version != '0.3.9'
         shell: bash
         run: |
           node --input-type=module <<'JS'

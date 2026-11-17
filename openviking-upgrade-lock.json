@@ -22,5 +22,11 @@
     "filename": "openviking-0.5.5.tar.gz",
     "url": "https://files.pythonhosted.org/packages/0f/d8/858cceeba435f6983ed6d05992c6a4ec9315b47045fba53d8c47699ce7a5/openviking-0.5.5.tar.gz",
     "sha256": "038fa5cdd1c175ce7e8e08791fad999fda08f65a5ac7326ab1aa3b1a471d1d7d"
+  },
+  "supervisorBaseline": {
+    "file": "distribution/baselines/openviking-0.5.5-supervisor.py",
+    "sha256": "78d7dd7eadbb79dceb7a7aadc3571a8c54ec85cabcf1c473deac7fdb864771c3",
+    "sourceCommit": "b096614b23bbc7101ba1659c3313194155b24c26",
+    "reason": "Reproduce the reviewed pre-optimization manifest before updateReleaseSupervisor applies the current host-owned supervisor."
   }
 }
