@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
-  "version": "0.3.8",
+  "version": "0.3.9",
+  "supervisorSha256": "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7",
   "baseline": {
     "name": "Ned-0.3.6-rebuild1-win-x64.exe",
     "bytes": 1176899012,
@@ -41,6 +42,5 @@
     "scripts/bundle-ghidra.py": "143686cd4a89d17b9bcbdba34a43a9344f3458bdf1f4602860b5492039d3aa29",
     "scripts/CompileGhidraGuard.java": "692dcdce5c3394580746b1e85824a857241f4c3666f3f661286373668b8b59e6",
     "distribution/NedOfflineNetworkGuard.java": "f88062fdb7dabbdb416bfdf1b8e320f538aef643d3d34fa308595badcaa25e0a"
-  },
-  "supervisorSha256": "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7"
+  }
 }
