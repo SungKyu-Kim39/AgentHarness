@@ -7947,7 +7947,7 @@ var run = (0, import_node_util4.promisify)(import_node_child_process6.execFile);
   import_strict7.default.match(await (0, import_promises14.readFile)(import_node_path15.default.join(kit, "index.html"), "utf8"), /connect-src 'none'/);
   import_strict7.default.equal(manifest.platform, "win32-x64");
 });
-(0, import_node_test7.test)("installed source-built editor has Ned menu/About content and corresponding-source provenance", { skip: process.platform !== "win32" }, async () => {
+(0, import_node_test7.test)("installed source-built editor has Ned menu/About content and corresponding-source provenance", { skip: process.platform !== "win32", timeout: 3e4 }, async () => {
   const resources3 = import_node_path15.default.join(import_node_path15.default.dirname(process.execPath), "resources"), bytes = await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "zed/Zed.exe"));
   for (const text3 of ["About Ned", "Quit Ned", "Ned 0.3.8 \xB7 rebuild 1"]) import_strict7.default.ok(bytes.includes(Buffer.from(text3)), text3);
   for (const text3 of ["About Zed", "Quit Zed"]) import_strict7.default.ok(!bytes.includes(Buffer.from(text3)), text3);
@@ -7956,6 +7956,8 @@ var run = (0, import_node_util4.promisify)(import_node_child_process6.execFile);
   const changes = JSON.parse(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/sources/NED_EDITOR_CHANGES.json"), "utf8"));
   import_strict7.default.deepEqual(changes, record.sourceChanges);
   import_strict7.default.match(await (0, import_promises14.readFile)(import_node_path15.default.join(resources3, "ned/sources/NED_EDITOR_SOURCE.txt"), "utf8"), /offline TGZ/);
+  const loaded = await run(import_node_path15.default.join(resources3, "zed/Zed.exe"), ["--printenv"], { env: { ...process.env, ELECTRON_RUN_AS_NODE: void 0 }, timeout: 15e3, maxBuffer: 4 * 1024 * 1024 });
+  import_strict7.default.equal(loaded.stderr, "");
 });
 
 // tests/subagents.test.ts

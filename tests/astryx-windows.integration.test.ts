@@ -27,7 +27,7 @@ test('installed Windows Astryx starter builds using bundled Node and native esbu
  assert.match(await readFile(path.join(kit,'index.html'),'utf8'),/connect-src 'none'/);
  assert.equal(manifest.platform,'win32-x64');
 });
-test('installed source-built editor has Ned menu/About content and corresponding-source provenance',{skip:process.platform!=='win32'},async()=>{
+test('installed source-built editor has Ned menu/About content and corresponding-source provenance',{skip:process.platform!=='win32',timeout:30000},async()=>{
  const resources=path.join(path.dirname(process.execPath),'resources'),bytes=await readFile(path.join(resources,'zed/Zed.exe'));
  for(const text of ['About Ned','Quit Ned','Ned 0.3.8 · rebuild 1'])assert.ok(bytes.includes(Buffer.from(text)),text);
  for(const text of ['About Zed','Quit Zed'])assert.ok(!bytes.includes(Buffer.from(text)),text);
@@ -36,4 +36,7 @@ test('installed source-built editor has Ned menu/About content and corresponding
  const changes=JSON.parse(await readFile(path.join(resources,'ned/sources/NED_EDITOR_CHANGES.json'),'utf8'));
  assert.deepEqual(changes,record.sourceChanges);
  assert.match(await readFile(path.join(resources,'ned/sources/NED_EDITOR_SOURCE.txt'),'utf8'),/offline TGZ/);
+ // Exercise the newly compiled PE loader; discard printenv output rather than logging credentials.
+ const loaded=await run(path.join(resources,'zed/Zed.exe'),['--printenv'],{env:{...process.env,ELECTRON_RUN_AS_NODE:undefined},timeout:15000,maxBuffer:4*1024*1024});
+ assert.equal(loaded.stderr,'');
 });
