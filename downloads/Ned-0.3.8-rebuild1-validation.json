@@ -31,7 +31,7 @@
     "windowsGuiAcceptance": false
   },
   "releaseReady": false,
-  "auditSourceCommit": "1be374cb1af9f16923688d5499d86ba771218dd4",
+  "auditSourceCommit": "8b894aed9ee6a5b4a5859c1868cd20f2abe9b4ef",
   "installer": {
     "name": "Ned-0.3.8-rebuild1-win-x64.exe",
     "bytes": 1534583160,
@@ -114,5 +114,21 @@
     "conclusion": "cancelled",
     "finalReleaseEvidence": false,
     "reason": "Native fixture stage stalled; run cancelled, captured no final fixture output. Candidate predates ACP late-answer fix."
+  },
+  "windowsInstallerValidation": {
+    "runId": 44013048470,
+    "headSha": "8b894aed9ee6a5b4a5859c1868cd20f2abe9b4ef",
+    "passed": 32,
+    "failed": 0,
+    "installerSha256": "74291ef0eaf204f562c3e14e6b24a62852ada5f66cb83013617a066d50bbb1d3"
+  },
+  "supersededFinalInstallerTest": {
+    "runId": 44010758699,
+    "conclusion": "failure",
+    "observedNativePasses": 19,
+    "observedNativeFailures": 1,
+    "noCompleteNativeSummary": true,
+    "sameInstallerSha256": "74291ef0eaf204f562c3e14e6b24a62852ada5f66cb83013617a066d50bbb1d3",
+    "testHarnessFix": "Close engine/services before deleting the Windows SQLite workspace; final TAP retry passes all 32 tests with identical installer bytes."
   }
 }

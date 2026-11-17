@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.8-rebuild1",
+  "openVikingVersion": "0.5.5",
+  "candidateSource": "1be374cb1af9f16923688d5499d86ba771218dd4",
+  "installerSha256": "74291ef0eaf204f562c3e14e6b24a62852ada5f66cb83013617a066d50bbb1d3",
+  "os": "10.0.20348.0",
+  "installerMilliseconds": 48173,
+  "baselineInstallerMilliseconds": 50392,
+  "baselineInstalledFiles": 94237,
+  "baselineInstalledBytes": 3375883034.0,
+  "comparisonOrder": "baseline then candidate; single Windows Server runner, not a Win10/11 acceptance benchmark",
+  "installedFiles": 59987,
+  "installedBytes": 3952742489.0,
+  "openVikingImport": true,
+  "tokenizerEncodings": 7,
+  "bundledNode": true,
+  "privateDataInstallRejected": true,
+  "bundledRuntimeInternetBlockedByWindowsFirewall": true,
+  "importStepModelsPrompted": false,
+  "intranetModelsPrompted": false,
+  "desktopActions": 0,
+  "namespaceTestUsesLocalSyntheticModels": true,
+  "realWin10Win11GuiAcceptance": false,
+  "recordedAt": "2026-11-17T04:01:41.395310+00:00",
+  "runId": 44013048470,
+  "url": "https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44013048470",
+  "sourceCommit": "1be374cb1af9f16923688d5499d86ba771218dd4",
+  "conclusion": "success",
+  "runtimeSourceOverride": false,
+  "newInstallerAcceptance": true,
+  "fixtureResults": {
+    "Verify 0.5.4 data migration using the installed Windows runtimes": {
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    "Verify file deletion with the installed Windows Node runtime": {
+      "tests": 9,
+      "pass": 9,
+      "fail": 0,
+      "skipped": 0
+    },
+    "Verify real engine compaction length recovery": {
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    },
+    "Verify Git writes, external reads, Ghidra and large OVPack recovery": {
+      "tests": 20,
+      "pass": 20,
+      "fail": 0,
+      "skipped": 0
+    },
+    "Verify installed Python tools with a preinstalled Conda environment": {
+      "tests": 1,
+      "pass": 1,
+      "fail": 0,
+      "skipped": 0
+    }
+  },
+  "allFixtureTests": {
+    "tests": 32,
+    "passed": 32,
+    "failed": 0,
+    "skipped": 0
+  },
+  "modelEndpointKind": "synthetic-loopback-openai-compatible; no intranet models prompted",
+  "releaseReady": false
+}
