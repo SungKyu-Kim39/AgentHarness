@@ -15111,6 +15111,8 @@ async function migrateVikingNamespace(folder, runtime, signal) {
       const remote = await detail(item.name);
       if (fingerprint(remote.result) !== item.fingerprint || typeof remote.result.revision !== "string") throw new Error("OV_NAMESPACE_SKILL_CHANGED");
       registry.entries[item.id].revision = remote.result.revision;
+      const files = Object.fromEntries(remote.result.files.filter((f) => !f.is_dir && !/(^|\/)\.(abstract|overview)\.md$/.test(f.path) && typeof f.sha256 === "string").map((f) => [f.path, f.sha256]));
+      if (typeof files["SKILL.md"] === "string") registry.entries[item.id].verifiedFiles = files;
     }
     if (registry) await (0, import_promises2.writeFile)(import_node_path2.default.join(p.backup, "bundled-skills.next.json"), JSON.stringify(registry, null, 2) + "\n", { flag: "wx", mode: 384 });
     await runtime.stop();
@@ -15353,13 +15355,13 @@ async function seedBundledSkills(bundle, workspace, stateFile, progress, signal)
         state.reused++;
       } else {
         if (info) {
-          const previous2 = saved.entries[pkg.id];
-          const before = previous2?.files ? await hashes(target, Object.keys(previous2.files)) : void 0;
-          if (!previous2?.files || !before || !Object.entries(previous2.files).every(([name, value]) => before[name] === value)) {
+          const prior = saved.entries[pkg.id] ?? (previous?.entries?.[pkg.id]?.verifiedFiles ? { files: previous.entries[pkg.id].verifiedFiles } : void 0);
+          const before = prior?.files ? await hashes(target, Object.keys(prior.files)) : void 0;
+          if (!prior?.files || !before || !Object.entries(prior.files).every(([name, value]) => before[name] === value)) {
             state.conflicts.push(pkg.id);
             continue;
           }
-          const extras = await untrackedFiles(target, new Set(Object.keys(previous2.files)));
+          const extras = await untrackedFiles(target, new Set(Object.keys(prior.files)));
           if (extras) {
             state.conflicts.push(pkg.id);
             continue;

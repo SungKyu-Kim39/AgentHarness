@@ -4138,154 +4138,6 @@ var init_zod = __esm({
   }
 });
 
-// node_modules/jsonc-parser/lib/umd/main.js
-var require_main = __commonJS({
-  "node_modules/jsonc-parser/lib/umd/main.js"(exports2, module2) {
-    (function(factory) {
-      if (typeof module2 === "object" && typeof module2.exports === "object") {
-        var v = factory(require, exports2);
-        if (v !== void 0) module2.exports = v;
-      } else if (typeof define === "function" && define.amd) {
-        define(["require", "exports", "./impl/format", "./impl/edit", "./impl/scanner", "./impl/parser"], factory);
-      }
-    })(function(require2, exports3) {
-      "use strict";
-      Object.defineProperty(exports3, "__esModule", { value: true });
-      exports3.applyEdits = exports3.modify = exports3.format = exports3.printParseErrorCode = exports3.ParseErrorCode = exports3.stripComments = exports3.visit = exports3.getNodeValue = exports3.getNodePath = exports3.findNodeAtOffset = exports3.findNodeAtLocation = exports3.parseTree = exports3.parse = exports3.getLocation = exports3.SyntaxKind = exports3.ScanError = exports3.createScanner = void 0;
-      const formatter = require2("./impl/format");
-      const edit = require2("./impl/edit");
-      const scanner = require2("./impl/scanner");
-      const parser = require2("./impl/parser");
-      exports3.createScanner = scanner.createScanner;
-      var ScanError;
-      (function(ScanError2) {
-        ScanError2[ScanError2["None"] = 0] = "None";
-        ScanError2[ScanError2["UnexpectedEndOfComment"] = 1] = "UnexpectedEndOfComment";
-        ScanError2[ScanError2["UnexpectedEndOfString"] = 2] = "UnexpectedEndOfString";
-        ScanError2[ScanError2["UnexpectedEndOfNumber"] = 3] = "UnexpectedEndOfNumber";
-        ScanError2[ScanError2["InvalidUnicode"] = 4] = "InvalidUnicode";
-        ScanError2[ScanError2["InvalidEscapeCharacter"] = 5] = "InvalidEscapeCharacter";
-        ScanError2[ScanError2["InvalidCharacter"] = 6] = "InvalidCharacter";
-      })(ScanError || (exports3.ScanError = ScanError = {}));
-      var SyntaxKind;
-      (function(SyntaxKind2) {
-        SyntaxKind2[SyntaxKind2["OpenBraceToken"] = 1] = "OpenBraceToken";
-        SyntaxKind2[SyntaxKind2["CloseBraceToken"] = 2] = "CloseBraceToken";
-        SyntaxKind2[SyntaxKind2["OpenBracketToken"] = 3] = "OpenBracketToken";
-        SyntaxKind2[SyntaxKind2["CloseBracketToken"] = 4] = "CloseBracketToken";
-        SyntaxKind2[SyntaxKind2["CommaToken"] = 5] = "CommaToken";
-        SyntaxKind2[SyntaxKind2["ColonToken"] = 6] = "ColonToken";
-        SyntaxKind2[SyntaxKind2["NullKeyword"] = 7] = "NullKeyword";
-        SyntaxKind2[SyntaxKind2["TrueKeyword"] = 8] = "TrueKeyword";
-        SyntaxKind2[SyntaxKind2["FalseKeyword"] = 9] = "FalseKeyword";
-        SyntaxKind2[SyntaxKind2["StringLiteral"] = 10] = "StringLiteral";
-        SyntaxKind2[SyntaxKind2["NumericLiteral"] = 11] = "NumericLiteral";
-        SyntaxKind2[SyntaxKind2["LineCommentTrivia"] = 12] = "LineCommentTrivia";
-        SyntaxKind2[SyntaxKind2["BlockCommentTrivia"] = 13] = "BlockCommentTrivia";
-        SyntaxKind2[SyntaxKind2["LineBreakTrivia"] = 14] = "LineBreakTrivia";
-        SyntaxKind2[SyntaxKind2["Trivia"] = 15] = "Trivia";
-        SyntaxKind2[SyntaxKind2["Unknown"] = 16] = "Unknown";
-        SyntaxKind2[SyntaxKind2["EOF"] = 17] = "EOF";
-      })(SyntaxKind || (exports3.SyntaxKind = SyntaxKind = {}));
-      exports3.getLocation = parser.getLocation;
-      exports3.parse = parser.parse;
-      exports3.parseTree = parser.parseTree;
-      exports3.findNodeAtLocation = parser.findNodeAtLocation;
-      exports3.findNodeAtOffset = parser.findNodeAtOffset;
-      exports3.getNodePath = parser.getNodePath;
-      exports3.getNodeValue = parser.getNodeValue;
-      exports3.visit = parser.visit;
-      exports3.stripComments = parser.stripComments;
-      var ParseErrorCode;
-      (function(ParseErrorCode2) {
-        ParseErrorCode2[ParseErrorCode2["InvalidSymbol"] = 1] = "InvalidSymbol";
-        ParseErrorCode2[ParseErrorCode2["InvalidNumberFormat"] = 2] = "InvalidNumberFormat";
-        ParseErrorCode2[ParseErrorCode2["PropertyNameExpected"] = 3] = "PropertyNameExpected";
-        ParseErrorCode2[ParseErrorCode2["ValueExpected"] = 4] = "ValueExpected";
-        ParseErrorCode2[ParseErrorCode2["ColonExpected"] = 5] = "ColonExpected";
-        ParseErrorCode2[ParseErrorCode2["CommaExpected"] = 6] = "CommaExpected";
-        ParseErrorCode2[ParseErrorCode2["CloseBraceExpected"] = 7] = "CloseBraceExpected";
-        ParseErrorCode2[ParseErrorCode2["CloseBracketExpected"] = 8] = "CloseBracketExpected";
-        ParseErrorCode2[ParseErrorCode2["EndOfFileExpected"] = 9] = "EndOfFileExpected";
-        ParseErrorCode2[ParseErrorCode2["InvalidCommentToken"] = 10] = "InvalidCommentToken";
-        ParseErrorCode2[ParseErrorCode2["UnexpectedEndOfComment"] = 11] = "UnexpectedEndOfComment";
-        ParseErrorCode2[ParseErrorCode2["UnexpectedEndOfString"] = 12] = "UnexpectedEndOfString";
-        ParseErrorCode2[ParseErrorCode2["UnexpectedEndOfNumber"] = 13] = "UnexpectedEndOfNumber";
-        ParseErrorCode2[ParseErrorCode2["InvalidUnicode"] = 14] = "InvalidUnicode";
-        ParseErrorCode2[ParseErrorCode2["InvalidEscapeCharacter"] = 15] = "InvalidEscapeCharacter";
-        ParseErrorCode2[ParseErrorCode2["InvalidCharacter"] = 16] = "InvalidCharacter";
-      })(ParseErrorCode || (exports3.ParseErrorCode = ParseErrorCode = {}));
-      function printParseErrorCode(code) {
-        switch (code) {
-          case 1:
-            return "InvalidSymbol";
-          case 2:
-            return "InvalidNumberFormat";
-          case 3:
-            return "PropertyNameExpected";
-          case 4:
-            return "ValueExpected";
-          case 5:
-            return "ColonExpected";
-          case 6:
-            return "CommaExpected";
-          case 7:
-            return "CloseBraceExpected";
-          case 8:
-            return "CloseBracketExpected";
-          case 9:
-            return "EndOfFileExpected";
-          case 10:
-            return "InvalidCommentToken";
-          case 11:
-            return "UnexpectedEndOfComment";
-          case 12:
-            return "UnexpectedEndOfString";
-          case 13:
-            return "UnexpectedEndOfNumber";
-          case 14:
-            return "InvalidUnicode";
-          case 15:
-            return "InvalidEscapeCharacter";
-          case 16:
-            return "InvalidCharacter";
-        }
-        return "<unknown ParseErrorCode>";
-      }
-      exports3.printParseErrorCode = printParseErrorCode;
-      function format(documentText, range, options) {
-        return formatter.format(documentText, range, options);
-      }
-      exports3.format = format;
-      function modify3(text, path20, value, options) {
-        return edit.setProperty(text, path20, value, options);
-      }
-      exports3.modify = modify3;
-      function applyEdits3(text, edits) {
-        let sortedEdits = edits.slice(0).sort((a, b) => {
-          const diff = a.offset - b.offset;
-          if (diff === 0) {
-            return a.length - b.length;
-          }
-          return diff;
-        });
-        let lastModifiedOffset = text.length;
-        for (let i = sortedEdits.length - 1; i >= 0; i--) {
-          let e = sortedEdits[i];
-          if (e.offset + e.length <= lastModifiedOffset) {
-            text = edit.applyEdit(text, e);
-          } else {
-            throw new Error("Overlapping edit");
-          }
-          lastModifiedOffset = e.offset;
-        }
-        return text;
-      }
-      exports3.applyEdits = applyEdits3;
-    });
-  }
-});
-
 // node_modules/yaml/dist/nodes/identity.js
 var require_identity = __commonJS({
   "node_modules/yaml/dist/nodes/identity.js"(exports2) {
@@ -4351,7 +4203,7 @@ var require_visit = __commonJS({
     var BREAK = Symbol("break visit");
     var SKIP = Symbol("skip children");
     var REMOVE = Symbol("remove node");
-    function visit(node, visitor) {
+    function visit2(node, visitor) {
       const visitor_ = initVisitor(visitor);
       if (identity.isDocument(node)) {
         const cd = visit_(null, node.contents, visitor_, Object.freeze([node]));
@@ -4360,9 +4212,9 @@ var require_visit = __commonJS({
       } else
         visit_(null, node, visitor_, Object.freeze([]));
     }
-    visit.BREAK = BREAK;
-    visit.SKIP = SKIP;
-    visit.REMOVE = REMOVE;
+    visit2.BREAK = BREAK;
+    visit2.SKIP = SKIP;
+    visit2.REMOVE = REMOVE;
     function visit_(key, node, visitor, path20) {
       const ctrl = callVisitor(key, node, visitor, path20);
       if (identity.isNode(ctrl) || identity.isPair(ctrl)) {
@@ -4496,7 +4348,7 @@ var require_visit = __commonJS({
         throw new Error(`Cannot replace node with ${pt} parent`);
       }
     }
-    exports2.visit = visit;
+    exports2.visit = visit2;
     exports2.visitAsync = visitAsync;
   }
 });
@@ -4506,7 +4358,7 @@ var require_directives = __commonJS({
   "node_modules/yaml/dist/doc/directives.js"(exports2) {
     "use strict";
     var identity = require_identity();
-    var visit = require_visit();
+    var visit2 = require_visit();
     var escapeChars = {
       "!": "%21",
       ",": "%2C",
@@ -4650,7 +4502,7 @@ var require_directives = __commonJS({
         let tagNames;
         if (doc && tagEntries.length > 0 && identity.isNode(doc.contents)) {
           const tags = {};
-          visit.visit(doc.contents, (_key, node) => {
+          visit2.visit(doc.contents, (_key, node) => {
             if (identity.isNode(node) && node.tag)
               tags[node.tag] = true;
           });
@@ -4677,7 +4529,7 @@ var require_anchors = __commonJS({
   "node_modules/yaml/dist/doc/anchors.js"(exports2) {
     "use strict";
     var identity = require_identity();
-    var visit = require_visit();
+    var visit2 = require_visit();
     function anchorIsValid(anchor) {
       if (/[\x00-\x19\s,[\]{}]/.test(anchor)) {
         const sa = JSON.stringify(anchor);
@@ -4688,7 +4540,7 @@ var require_anchors = __commonJS({
     }
     function anchorNames(root) {
       const anchors = /* @__PURE__ */ new Set();
-      visit.visit(root, {
+      visit2.visit(root, {
         Value(_key, node) {
           if (node.anchor)
             anchors.add(node.anchor);
@@ -4868,7 +4720,7 @@ var require_Alias = __commonJS({
   "node_modules/yaml/dist/nodes/Alias.js"(exports2) {
     "use strict";
     var anchors = require_anchors();
-    var visit = require_visit();
+    var visit2 = require_visit();
     var identity = require_identity();
     var Node = require_Node();
     var toJS = require_toJS();
@@ -4892,7 +4744,7 @@ var require_Alias = __commonJS({
           nodes = ctx.aliasResolveCache;
         } else {
           nodes = [];
-          visit.visit(doc, {
+          visit2.visit(doc, {
             Node: (_key, node) => {
               if (identity.isAlias(node) || identity.hasAnchor(node))
                 nodes.push(node);
@@ -6613,14 +6465,14 @@ var require_bool = __commonJS({
 var require_stringifyNumber = __commonJS({
   "node_modules/yaml/dist/stringify/stringifyNumber.js"(exports2) {
     "use strict";
-    function stringifyNumber({ format, minFractionDigits, tag, value }) {
+    function stringifyNumber({ format: format2, minFractionDigits, tag, value }) {
       if (typeof value === "bigint")
         return String(value);
       const num = typeof value === "number" ? value : Number(value);
       if (!isFinite(num))
         return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
       let n = JSON.stringify(value);
-      if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^\d/.test(n)) {
+      if (!format2 && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^\d/.test(n)) {
         let i = n.indexOf(".");
         if (i < 0) {
           i = n.length;
@@ -9792,15 +9644,15 @@ var require_cst_visit = __commonJS({
     var BREAK = Symbol("break visit");
     var SKIP = Symbol("skip children");
     var REMOVE = Symbol("remove item");
-    function visit(cst, visitor) {
+    function visit2(cst, visitor) {
       if ("type" in cst && cst.type === "document")
         cst = { start: cst.start, value: cst.value };
       _visit(Object.freeze([]), cst, visitor);
     }
-    visit.BREAK = BREAK;
-    visit.SKIP = SKIP;
-    visit.REMOVE = REMOVE;
-    visit.itemAtPath = (cst, path20) => {
+    visit2.BREAK = BREAK;
+    visit2.SKIP = SKIP;
+    visit2.REMOVE = REMOVE;
+    visit2.itemAtPath = (cst, path20) => {
       let item = cst;
       for (const [field, index] of path20) {
         const tok = item?.[field];
@@ -9811,8 +9663,8 @@ var require_cst_visit = __commonJS({
       }
       return item;
     };
-    visit.parentCollection = (cst, path20) => {
-      const parent = visit.itemAtPath(cst, path20.slice(0, -1));
+    visit2.parentCollection = (cst, path20) => {
+      const parent = visit2.itemAtPath(cst, path20.slice(0, -1));
       const field = path20[path20.length - 1][0];
       const coll = parent?.[field];
       if (coll && "items" in coll)
@@ -9843,7 +9695,7 @@ var require_cst_visit = __commonJS({
       }
       return typeof ctrl === "function" ? ctrl(item, path20) : ctrl;
     }
-    exports2.visit = visit;
+    exports2.visit = visit2;
   }
 });
 
@@ -11475,7 +11327,7 @@ var require_public_api = __commonJS({
       }
       return doc;
     }
-    function parse6(src, reviver, options) {
+    function parse3(src, reviver, options) {
       let _reviver = void 0;
       if (typeof reviver === "function") {
         _reviver = reviver;
@@ -11516,7 +11368,7 @@ var require_public_api = __commonJS({
         return value.toString(options);
       return new Document.Document(value, _replacer, options).toString(options);
     }
-    exports2.parse = parse6;
+    exports2.parse = parse3;
     exports2.parseAllDocuments = parseAllDocuments;
     exports2.parseDocument = parseDocument2;
     exports2.stringify = stringify;
@@ -11542,7 +11394,7 @@ var require_dist = __commonJS({
     var lineCounter = require_line_counter();
     var parser = require_parser();
     var publicApi = require_public_api();
-    var visit = require_visit();
+    var visit2 = require_visit();
     exports2.Composer = composer.Composer;
     exports2.Document = Document.Document;
     exports2.Schema = Schema.Schema;
@@ -11570,8 +11422,8 @@ var require_dist = __commonJS({
     exports2.parseAllDocuments = publicApi.parseAllDocuments;
     exports2.parseDocument = publicApi.parseDocument;
     exports2.stringify = publicApi.stringify;
-    exports2.visit = visit.visit;
-    exports2.visitAsync = visit.visitAsync;
+    exports2.visit = visit2.visit;
+    exports2.visitAsync = visit2.visitAsync;
   }
 });
 
@@ -11976,6 +11828,8 @@ async function migrateVikingNamespace(folder, runtime, signal) {
       const remote = await detail(item.name);
       if (fingerprint(remote.result) !== item.fingerprint || typeof remote.result.revision !== "string") throw new Error("OV_NAMESPACE_SKILL_CHANGED");
       registry.entries[item.id].revision = remote.result.revision;
+      const files = Object.fromEntries(remote.result.files.filter((f) => !f.is_dir && !/(^|\/)\.(abstract|overview)\.md$/.test(f.path) && typeof f.sha256 === "string").map((f) => [f.path, f.sha256]));
+      if (typeof files["SKILL.md"] === "string") registry.entries[item.id].verifiedFiles = files;
     }
     if (registry) await (0, import_promises9.writeFile)(import_node_path10.default.join(p.backup, "bundled-skills.next.json"), JSON.stringify(registry, null, 2) + "\n", { flag: "wx", mode: 384 });
     await runtime.stop();
@@ -12244,13 +12098,1387 @@ var import_promises4 = require("node:fs/promises");
 
 // distribution/ned/zed-settings.ts
 init_zod();
-var import_jsonc_parser = __toESM(require_main(), 1);
+
+// node_modules/jsonc-parser/lib/esm/impl/scanner.js
+function createScanner(text, ignoreTrivia = false) {
+  const len = text.length;
+  let pos = 0, value = "", tokenOffset = 0, token = 16, lineNumber = 0, lineStartOffset = 0, tokenLineStartOffset = 0, prevTokenLineStartOffset = 0, scanError = 0;
+  function scanHexDigits(count, exact) {
+    let digits = 0;
+    let value2 = 0;
+    while (digits < count || !exact) {
+      let ch = text.charCodeAt(pos);
+      if (ch >= 48 && ch <= 57) {
+        value2 = value2 * 16 + ch - 48;
+      } else if (ch >= 65 && ch <= 70) {
+        value2 = value2 * 16 + ch - 65 + 10;
+      } else if (ch >= 97 && ch <= 102) {
+        value2 = value2 * 16 + ch - 97 + 10;
+      } else {
+        break;
+      }
+      pos++;
+      digits++;
+    }
+    if (digits < count) {
+      value2 = -1;
+    }
+    return value2;
+  }
+  function setPosition(newPosition) {
+    pos = newPosition;
+    value = "";
+    tokenOffset = 0;
+    token = 16;
+    scanError = 0;
+  }
+  function scanNumber() {
+    let start = pos;
+    if (text.charCodeAt(pos) === 48) {
+      pos++;
+    } else {
+      pos++;
+      while (pos < text.length && isDigit(text.charCodeAt(pos))) {
+        pos++;
+      }
+    }
+    if (pos < text.length && text.charCodeAt(pos) === 46) {
+      pos++;
+      if (pos < text.length && isDigit(text.charCodeAt(pos))) {
+        pos++;
+        while (pos < text.length && isDigit(text.charCodeAt(pos))) {
+          pos++;
+        }
+      } else {
+        scanError = 3;
+        return text.substring(start, pos);
+      }
+    }
+    let end = pos;
+    if (pos < text.length && (text.charCodeAt(pos) === 69 || text.charCodeAt(pos) === 101)) {
+      pos++;
+      if (pos < text.length && text.charCodeAt(pos) === 43 || text.charCodeAt(pos) === 45) {
+        pos++;
+      }
+      if (pos < text.length && isDigit(text.charCodeAt(pos))) {
+        pos++;
+        while (pos < text.length && isDigit(text.charCodeAt(pos))) {
+          pos++;
+        }
+        end = pos;
+      } else {
+        scanError = 3;
+      }
+    }
+    return text.substring(start, end);
+  }
+  function scanString() {
+    let result = "", start = pos;
+    while (true) {
+      if (pos >= len) {
+        result += text.substring(start, pos);
+        scanError = 2;
+        break;
+      }
+      const ch = text.charCodeAt(pos);
+      if (ch === 34) {
+        result += text.substring(start, pos);
+        pos++;
+        break;
+      }
+      if (ch === 92) {
+        result += text.substring(start, pos);
+        pos++;
+        if (pos >= len) {
+          scanError = 2;
+          break;
+        }
+        const ch2 = text.charCodeAt(pos++);
+        switch (ch2) {
+          case 34:
+            result += '"';
+            break;
+          case 92:
+            result += "\\";
+            break;
+          case 47:
+            result += "/";
+            break;
+          case 98:
+            result += "\b";
+            break;
+          case 102:
+            result += "\f";
+            break;
+          case 110:
+            result += "\n";
+            break;
+          case 114:
+            result += "\r";
+            break;
+          case 116:
+            result += "	";
+            break;
+          case 117:
+            const ch3 = scanHexDigits(4, true);
+            if (ch3 >= 0) {
+              result += String.fromCharCode(ch3);
+            } else {
+              scanError = 4;
+            }
+            break;
+          default:
+            scanError = 5;
+        }
+        start = pos;
+        continue;
+      }
+      if (ch >= 0 && ch <= 31) {
+        if (isLineBreak(ch)) {
+          result += text.substring(start, pos);
+          scanError = 2;
+          break;
+        } else {
+          scanError = 6;
+        }
+      }
+      pos++;
+    }
+    return result;
+  }
+  function scanNext() {
+    value = "";
+    scanError = 0;
+    tokenOffset = pos;
+    lineStartOffset = lineNumber;
+    prevTokenLineStartOffset = tokenLineStartOffset;
+    if (pos >= len) {
+      tokenOffset = len;
+      return token = 17;
+    }
+    let code = text.charCodeAt(pos);
+    if (isWhiteSpace(code)) {
+      do {
+        pos++;
+        value += String.fromCharCode(code);
+        code = text.charCodeAt(pos);
+      } while (isWhiteSpace(code));
+      return token = 15;
+    }
+    if (isLineBreak(code)) {
+      pos++;
+      value += String.fromCharCode(code);
+      if (code === 13 && text.charCodeAt(pos) === 10) {
+        pos++;
+        value += "\n";
+      }
+      lineNumber++;
+      tokenLineStartOffset = pos;
+      return token = 14;
+    }
+    switch (code) {
+      // tokens: []{}:,
+      case 123:
+        pos++;
+        return token = 1;
+      case 125:
+        pos++;
+        return token = 2;
+      case 91:
+        pos++;
+        return token = 3;
+      case 93:
+        pos++;
+        return token = 4;
+      case 58:
+        pos++;
+        return token = 6;
+      case 44:
+        pos++;
+        return token = 5;
+      // strings
+      case 34:
+        pos++;
+        value = scanString();
+        return token = 10;
+      // comments
+      case 47:
+        const start = pos - 1;
+        if (text.charCodeAt(pos + 1) === 47) {
+          pos += 2;
+          while (pos < len) {
+            if (isLineBreak(text.charCodeAt(pos))) {
+              break;
+            }
+            pos++;
+          }
+          value = text.substring(start, pos);
+          return token = 12;
+        }
+        if (text.charCodeAt(pos + 1) === 42) {
+          pos += 2;
+          const safeLength = len - 1;
+          let commentClosed = false;
+          while (pos < safeLength) {
+            const ch = text.charCodeAt(pos);
+            if (ch === 42 && text.charCodeAt(pos + 1) === 47) {
+              pos += 2;
+              commentClosed = true;
+              break;
+            }
+            pos++;
+            if (isLineBreak(ch)) {
+              if (ch === 13 && text.charCodeAt(pos) === 10) {
+                pos++;
+              }
+              lineNumber++;
+              tokenLineStartOffset = pos;
+            }
+          }
+          if (!commentClosed) {
+            pos++;
+            scanError = 1;
+          }
+          value = text.substring(start, pos);
+          return token = 13;
+        }
+        value += String.fromCharCode(code);
+        pos++;
+        return token = 16;
+      // numbers
+      case 45:
+        value += String.fromCharCode(code);
+        pos++;
+        if (pos === len || !isDigit(text.charCodeAt(pos))) {
+          return token = 16;
+        }
+      // found a minus, followed by a number so
+      // we fall through to proceed with scanning
+      // numbers
+      case 48:
+      case 49:
+      case 50:
+      case 51:
+      case 52:
+      case 53:
+      case 54:
+      case 55:
+      case 56:
+      case 57:
+        value += scanNumber();
+        return token = 11;
+      // literals and unknown symbols
+      default:
+        while (pos < len && isUnknownContentCharacter(code)) {
+          pos++;
+          code = text.charCodeAt(pos);
+        }
+        if (tokenOffset !== pos) {
+          value = text.substring(tokenOffset, pos);
+          switch (value) {
+            case "true":
+              return token = 8;
+            case "false":
+              return token = 9;
+            case "null":
+              return token = 7;
+          }
+          return token = 16;
+        }
+        value += String.fromCharCode(code);
+        pos++;
+        return token = 16;
+    }
+  }
+  function isUnknownContentCharacter(code) {
+    if (isWhiteSpace(code) || isLineBreak(code)) {
+      return false;
+    }
+    switch (code) {
+      case 125:
+      case 93:
+      case 123:
+      case 91:
+      case 34:
+      case 58:
+      case 44:
+      case 47:
+        return false;
+    }
+    return true;
+  }
+  function scanNextNonTrivia() {
+    let result;
+    do {
+      result = scanNext();
+    } while (result >= 12 && result <= 15);
+    return result;
+  }
+  return {
+    setPosition,
+    getPosition: () => pos,
+    scan: ignoreTrivia ? scanNextNonTrivia : scanNext,
+    getToken: () => token,
+    getTokenValue: () => value,
+    getTokenOffset: () => tokenOffset,
+    getTokenLength: () => pos - tokenOffset,
+    getTokenStartLine: () => lineStartOffset,
+    getTokenStartCharacter: () => tokenOffset - prevTokenLineStartOffset,
+    getTokenError: () => scanError
+  };
+}
+function isWhiteSpace(ch) {
+  return ch === 32 || ch === 9;
+}
+function isLineBreak(ch) {
+  return ch === 10 || ch === 13;
+}
+function isDigit(ch) {
+  return ch >= 48 && ch <= 57;
+}
+var CharacterCodes;
+(function(CharacterCodes2) {
+  CharacterCodes2[CharacterCodes2["lineFeed"] = 10] = "lineFeed";
+  CharacterCodes2[CharacterCodes2["carriageReturn"] = 13] = "carriageReturn";
+  CharacterCodes2[CharacterCodes2["space"] = 32] = "space";
+  CharacterCodes2[CharacterCodes2["_0"] = 48] = "_0";
+  CharacterCodes2[CharacterCodes2["_1"] = 49] = "_1";
+  CharacterCodes2[CharacterCodes2["_2"] = 50] = "_2";
+  CharacterCodes2[CharacterCodes2["_3"] = 51] = "_3";
+  CharacterCodes2[CharacterCodes2["_4"] = 52] = "_4";
+  CharacterCodes2[CharacterCodes2["_5"] = 53] = "_5";
+  CharacterCodes2[CharacterCodes2["_6"] = 54] = "_6";
+  CharacterCodes2[CharacterCodes2["_7"] = 55] = "_7";
+  CharacterCodes2[CharacterCodes2["_8"] = 56] = "_8";
+  CharacterCodes2[CharacterCodes2["_9"] = 57] = "_9";
+  CharacterCodes2[CharacterCodes2["a"] = 97] = "a";
+  CharacterCodes2[CharacterCodes2["b"] = 98] = "b";
+  CharacterCodes2[CharacterCodes2["c"] = 99] = "c";
+  CharacterCodes2[CharacterCodes2["d"] = 100] = "d";
+  CharacterCodes2[CharacterCodes2["e"] = 101] = "e";
+  CharacterCodes2[CharacterCodes2["f"] = 102] = "f";
+  CharacterCodes2[CharacterCodes2["g"] = 103] = "g";
+  CharacterCodes2[CharacterCodes2["h"] = 104] = "h";
+  CharacterCodes2[CharacterCodes2["i"] = 105] = "i";
+  CharacterCodes2[CharacterCodes2["j"] = 106] = "j";
+  CharacterCodes2[CharacterCodes2["k"] = 107] = "k";
+  CharacterCodes2[CharacterCodes2["l"] = 108] = "l";
+  CharacterCodes2[CharacterCodes2["m"] = 109] = "m";
+  CharacterCodes2[CharacterCodes2["n"] = 110] = "n";
+  CharacterCodes2[CharacterCodes2["o"] = 111] = "o";
+  CharacterCodes2[CharacterCodes2["p"] = 112] = "p";
+  CharacterCodes2[CharacterCodes2["q"] = 113] = "q";
+  CharacterCodes2[CharacterCodes2["r"] = 114] = "r";
+  CharacterCodes2[CharacterCodes2["s"] = 115] = "s";
+  CharacterCodes2[CharacterCodes2["t"] = 116] = "t";
+  CharacterCodes2[CharacterCodes2["u"] = 117] = "u";
+  CharacterCodes2[CharacterCodes2["v"] = 118] = "v";
+  CharacterCodes2[CharacterCodes2["w"] = 119] = "w";
+  CharacterCodes2[CharacterCodes2["x"] = 120] = "x";
+  CharacterCodes2[CharacterCodes2["y"] = 121] = "y";
+  CharacterCodes2[CharacterCodes2["z"] = 122] = "z";
+  CharacterCodes2[CharacterCodes2["A"] = 65] = "A";
+  CharacterCodes2[CharacterCodes2["B"] = 66] = "B";
+  CharacterCodes2[CharacterCodes2["C"] = 67] = "C";
+  CharacterCodes2[CharacterCodes2["D"] = 68] = "D";
+  CharacterCodes2[CharacterCodes2["E"] = 69] = "E";
+  CharacterCodes2[CharacterCodes2["F"] = 70] = "F";
+  CharacterCodes2[CharacterCodes2["G"] = 71] = "G";
+  CharacterCodes2[CharacterCodes2["H"] = 72] = "H";
+  CharacterCodes2[CharacterCodes2["I"] = 73] = "I";
+  CharacterCodes2[CharacterCodes2["J"] = 74] = "J";
+  CharacterCodes2[CharacterCodes2["K"] = 75] = "K";
+  CharacterCodes2[CharacterCodes2["L"] = 76] = "L";
+  CharacterCodes2[CharacterCodes2["M"] = 77] = "M";
+  CharacterCodes2[CharacterCodes2["N"] = 78] = "N";
+  CharacterCodes2[CharacterCodes2["O"] = 79] = "O";
+  CharacterCodes2[CharacterCodes2["P"] = 80] = "P";
+  CharacterCodes2[CharacterCodes2["Q"] = 81] = "Q";
+  CharacterCodes2[CharacterCodes2["R"] = 82] = "R";
+  CharacterCodes2[CharacterCodes2["S"] = 83] = "S";
+  CharacterCodes2[CharacterCodes2["T"] = 84] = "T";
+  CharacterCodes2[CharacterCodes2["U"] = 85] = "U";
+  CharacterCodes2[CharacterCodes2["V"] = 86] = "V";
+  CharacterCodes2[CharacterCodes2["W"] = 87] = "W";
+  CharacterCodes2[CharacterCodes2["X"] = 88] = "X";
+  CharacterCodes2[CharacterCodes2["Y"] = 89] = "Y";
+  CharacterCodes2[CharacterCodes2["Z"] = 90] = "Z";
+  CharacterCodes2[CharacterCodes2["asterisk"] = 42] = "asterisk";
+  CharacterCodes2[CharacterCodes2["backslash"] = 92] = "backslash";
+  CharacterCodes2[CharacterCodes2["closeBrace"] = 125] = "closeBrace";
+  CharacterCodes2[CharacterCodes2["closeBracket"] = 93] = "closeBracket";
+  CharacterCodes2[CharacterCodes2["colon"] = 58] = "colon";
+  CharacterCodes2[CharacterCodes2["comma"] = 44] = "comma";
+  CharacterCodes2[CharacterCodes2["dot"] = 46] = "dot";
+  CharacterCodes2[CharacterCodes2["doubleQuote"] = 34] = "doubleQuote";
+  CharacterCodes2[CharacterCodes2["minus"] = 45] = "minus";
+  CharacterCodes2[CharacterCodes2["openBrace"] = 123] = "openBrace";
+  CharacterCodes2[CharacterCodes2["openBracket"] = 91] = "openBracket";
+  CharacterCodes2[CharacterCodes2["plus"] = 43] = "plus";
+  CharacterCodes2[CharacterCodes2["slash"] = 47] = "slash";
+  CharacterCodes2[CharacterCodes2["formFeed"] = 12] = "formFeed";
+  CharacterCodes2[CharacterCodes2["tab"] = 9] = "tab";
+})(CharacterCodes || (CharacterCodes = {}));
+
+// node_modules/jsonc-parser/lib/esm/impl/string-intern.js
+var cachedSpaces = new Array(20).fill(0).map((_, index) => {
+  return " ".repeat(index);
+});
+var maxCachedValues = 200;
+var cachedBreakLinesWithSpaces = {
+  " ": {
+    "\n": new Array(maxCachedValues).fill(0).map((_, index) => {
+      return "\n" + " ".repeat(index);
+    }),
+    "\r": new Array(maxCachedValues).fill(0).map((_, index) => {
+      return "\r" + " ".repeat(index);
+    }),
+    "\r\n": new Array(maxCachedValues).fill(0).map((_, index) => {
+      return "\r\n" + " ".repeat(index);
+    })
+  },
+  "	": {
+    "\n": new Array(maxCachedValues).fill(0).map((_, index) => {
+      return "\n" + "	".repeat(index);
+    }),
+    "\r": new Array(maxCachedValues).fill(0).map((_, index) => {
+      return "\r" + "	".repeat(index);
+    }),
+    "\r\n": new Array(maxCachedValues).fill(0).map((_, index) => {
+      return "\r\n" + "	".repeat(index);
+    })
+  }
+};
+var supportedEols = ["\n", "\r", "\r\n"];
+
+// node_modules/jsonc-parser/lib/esm/impl/format.js
+function format(documentText, range, options) {
+  let initialIndentLevel;
+  let formatText;
+  let formatTextStart;
+  let rangeStart;
+  let rangeEnd;
+  if (range) {
+    rangeStart = range.offset;
+    rangeEnd = rangeStart + range.length;
+    formatTextStart = rangeStart;
+    while (formatTextStart > 0 && !isEOL(documentText, formatTextStart - 1)) {
+      formatTextStart--;
+    }
+    let endOffset = rangeEnd;
+    while (endOffset < documentText.length && !isEOL(documentText, endOffset)) {
+      endOffset++;
+    }
+    formatText = documentText.substring(formatTextStart, endOffset);
+    initialIndentLevel = computeIndentLevel(formatText, options);
+  } else {
+    formatText = documentText;
+    initialIndentLevel = 0;
+    formatTextStart = 0;
+    rangeStart = 0;
+    rangeEnd = documentText.length;
+  }
+  const eol = getEOL(options, documentText);
+  const eolFastPathSupported = supportedEols.includes(eol);
+  let numberLineBreaks = 0;
+  let indentLevel = 0;
+  let indentValue;
+  if (options.insertSpaces) {
+    indentValue = cachedSpaces[options.tabSize || 4] ?? repeat(cachedSpaces[1], options.tabSize || 4);
+  } else {
+    indentValue = "	";
+  }
+  const indentType = indentValue === "	" ? "	" : " ";
+  let scanner = createScanner(formatText, false);
+  let hasError = false;
+  function newLinesAndIndent() {
+    if (numberLineBreaks > 1) {
+      return repeat(eol, numberLineBreaks) + repeat(indentValue, initialIndentLevel + indentLevel);
+    }
+    const amountOfSpaces = indentValue.length * (initialIndentLevel + indentLevel);
+    if (!eolFastPathSupported || amountOfSpaces > cachedBreakLinesWithSpaces[indentType][eol].length) {
+      return eol + repeat(indentValue, initialIndentLevel + indentLevel);
+    }
+    if (amountOfSpaces <= 0) {
+      return eol;
+    }
+    return cachedBreakLinesWithSpaces[indentType][eol][amountOfSpaces];
+  }
+  function scanNext() {
+    let token = scanner.scan();
+    numberLineBreaks = 0;
+    while (token === 15 || token === 14) {
+      if (token === 14 && options.keepLines) {
+        numberLineBreaks += 1;
+      } else if (token === 14) {
+        numberLineBreaks = 1;
+      }
+      token = scanner.scan();
+    }
+    hasError = token === 16 || scanner.getTokenError() !== 0;
+    return token;
+  }
+  const editOperations = [];
+  function addEdit(text, startOffset, endOffset) {
+    if (!hasError && (!range || startOffset < rangeEnd && endOffset > rangeStart) && documentText.substring(startOffset, endOffset) !== text) {
+      editOperations.push({ offset: startOffset, length: endOffset - startOffset, content: text });
+    }
+  }
+  let firstToken = scanNext();
+  if (options.keepLines && numberLineBreaks > 0) {
+    addEdit(repeat(eol, numberLineBreaks), 0, 0);
+  }
+  if (firstToken !== 17) {
+    let firstTokenStart = scanner.getTokenOffset() + formatTextStart;
+    let initialIndent = indentValue.length * initialIndentLevel < 20 && options.insertSpaces ? cachedSpaces[indentValue.length * initialIndentLevel] : repeat(indentValue, initialIndentLevel);
+    addEdit(initialIndent, formatTextStart, firstTokenStart);
+  }
+  while (firstToken !== 17) {
+    let firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
+    let secondToken = scanNext();
+    let replaceContent = "";
+    let needsLineBreak = false;
+    while (numberLineBreaks === 0 && (secondToken === 12 || secondToken === 13)) {
+      let commentTokenStart = scanner.getTokenOffset() + formatTextStart;
+      addEdit(cachedSpaces[1], firstTokenEnd, commentTokenStart);
+      firstTokenEnd = scanner.getTokenOffset() + scanner.getTokenLength() + formatTextStart;
+      needsLineBreak = secondToken === 12;
+      replaceContent = needsLineBreak ? newLinesAndIndent() : "";
+      secondToken = scanNext();
+    }
+    if (secondToken === 2) {
+      if (firstToken !== 1) {
+        indentLevel--;
+      }
+      ;
+      if (options.keepLines && numberLineBreaks > 0 || !options.keepLines && firstToken !== 1) {
+        replaceContent = newLinesAndIndent();
+      } else if (options.keepLines) {
+        replaceContent = cachedSpaces[1];
+      }
+    } else if (secondToken === 4) {
+      if (firstToken !== 3) {
+        indentLevel--;
+      }
+      ;
+      if (options.keepLines && numberLineBreaks > 0 || !options.keepLines && firstToken !== 3) {
+        replaceContent = newLinesAndIndent();
+      } else if (options.keepLines) {
+        replaceContent = cachedSpaces[1];
+      }
+    } else {
+      switch (firstToken) {
+        case 3:
+        case 1:
+          indentLevel++;
+          if (options.keepLines && numberLineBreaks > 0 || !options.keepLines) {
+            replaceContent = newLinesAndIndent();
+          } else {
+            replaceContent = cachedSpaces[1];
+          }
+          break;
+        case 5:
+          if (options.keepLines && numberLineBreaks > 0 || !options.keepLines) {
+            replaceContent = newLinesAndIndent();
+          } else {
+            replaceContent = cachedSpaces[1];
+          }
+          break;
+        case 12:
+          replaceContent = newLinesAndIndent();
+          break;
+        case 13:
+          if (numberLineBreaks > 0) {
+            replaceContent = newLinesAndIndent();
+          } else if (!needsLineBreak) {
+            replaceContent = cachedSpaces[1];
+          }
+          break;
+        case 6:
+          if (options.keepLines && numberLineBreaks > 0) {
+            replaceContent = newLinesAndIndent();
+          } else if (!needsLineBreak) {
+            replaceContent = cachedSpaces[1];
+          }
+          break;
+        case 10:
+          if (options.keepLines && numberLineBreaks > 0) {
+            replaceContent = newLinesAndIndent();
+          } else if (secondToken === 6 && !needsLineBreak) {
+            replaceContent = "";
+          }
+          break;
+        case 7:
+        case 8:
+        case 9:
+        case 11:
+        case 2:
+        case 4:
+          if (options.keepLines && numberLineBreaks > 0) {
+            replaceContent = newLinesAndIndent();
+          } else {
+            if ((secondToken === 12 || secondToken === 13) && !needsLineBreak) {
+              replaceContent = cachedSpaces[1];
+            } else if (secondToken !== 5 && secondToken !== 17) {
+              hasError = true;
+            }
+          }
+          break;
+        case 16:
+          hasError = true;
+          break;
+      }
+      if (numberLineBreaks > 0 && (secondToken === 12 || secondToken === 13)) {
+        replaceContent = newLinesAndIndent();
+      }
+    }
+    if (secondToken === 17) {
+      if (options.keepLines && numberLineBreaks > 0) {
+        replaceContent = newLinesAndIndent();
+      } else {
+        replaceContent = options.insertFinalNewline ? eol : "";
+      }
+    }
+    const secondTokenStart = scanner.getTokenOffset() + formatTextStart;
+    addEdit(replaceContent, firstTokenEnd, secondTokenStart);
+    firstToken = secondToken;
+  }
+  return editOperations;
+}
+function repeat(s, count) {
+  let result = "";
+  for (let i = 0; i < count; i++) {
+    result += s;
+  }
+  return result;
+}
+function computeIndentLevel(content, options) {
+  let i = 0;
+  let nChars = 0;
+  const tabSize = options.tabSize || 4;
+  while (i < content.length) {
+    let ch = content.charAt(i);
+    if (ch === cachedSpaces[1]) {
+      nChars++;
+    } else if (ch === "	") {
+      nChars += tabSize;
+    } else {
+      break;
+    }
+    i++;
+  }
+  return Math.floor(nChars / tabSize);
+}
+function getEOL(options, text) {
+  for (let i = 0; i < text.length; i++) {
+    const ch = text.charAt(i);
+    if (ch === "\r") {
+      if (i + 1 < text.length && text.charAt(i + 1) === "\n") {
+        return "\r\n";
+      }
+      return "\r";
+    } else if (ch === "\n") {
+      return "\n";
+    }
+  }
+  return options && options.eol || "\n";
+}
+function isEOL(text, offset) {
+  return "\r\n".indexOf(text.charAt(offset)) !== -1;
+}
+
+// node_modules/jsonc-parser/lib/esm/impl/parser.js
+var ParseOptions;
+(function(ParseOptions2) {
+  ParseOptions2.DEFAULT = {
+    allowTrailingComma: false
+  };
+})(ParseOptions || (ParseOptions = {}));
+function parse(text, errors = [], options = ParseOptions.DEFAULT) {
+  let currentProperty = null;
+  let currentParent = [];
+  const previousParents = [];
+  function onValue(value) {
+    if (Array.isArray(currentParent)) {
+      currentParent.push(value);
+    } else if (currentProperty !== null) {
+      currentParent[currentProperty] = value;
+    }
+  }
+  const visitor = {
+    onObjectBegin: () => {
+      const object2 = {};
+      onValue(object2);
+      previousParents.push(currentParent);
+      currentParent = object2;
+      currentProperty = null;
+    },
+    onObjectProperty: (name) => {
+      currentProperty = name;
+    },
+    onObjectEnd: () => {
+      currentParent = previousParents.pop();
+    },
+    onArrayBegin: () => {
+      const array = [];
+      onValue(array);
+      previousParents.push(currentParent);
+      currentParent = array;
+      currentProperty = null;
+    },
+    onArrayEnd: () => {
+      currentParent = previousParents.pop();
+    },
+    onLiteralValue: onValue,
+    onError: (error, offset, length) => {
+      errors.push({ error, offset, length });
+    }
+  };
+  visit(text, visitor, options);
+  return currentParent[0];
+}
+function parseTree(text, errors = [], options = ParseOptions.DEFAULT) {
+  let currentParent = { type: "array", offset: -1, length: -1, children: [], parent: void 0 };
+  function ensurePropertyComplete(endOffset) {
+    if (currentParent.type === "property") {
+      currentParent.length = endOffset - currentParent.offset;
+      currentParent = currentParent.parent;
+    }
+  }
+  function onValue(valueNode) {
+    currentParent.children.push(valueNode);
+    return valueNode;
+  }
+  const visitor = {
+    onObjectBegin: (offset) => {
+      currentParent = onValue({ type: "object", offset, length: -1, parent: currentParent, children: [] });
+    },
+    onObjectProperty: (name, offset, length) => {
+      currentParent = onValue({ type: "property", offset, length: -1, parent: currentParent, children: [] });
+      currentParent.children.push({ type: "string", value: name, offset, length, parent: currentParent });
+    },
+    onObjectEnd: (offset, length) => {
+      ensurePropertyComplete(offset + length);
+      currentParent.length = offset + length - currentParent.offset;
+      currentParent = currentParent.parent;
+      ensurePropertyComplete(offset + length);
+    },
+    onArrayBegin: (offset, length) => {
+      currentParent = onValue({ type: "array", offset, length: -1, parent: currentParent, children: [] });
+    },
+    onArrayEnd: (offset, length) => {
+      currentParent.length = offset + length - currentParent.offset;
+      currentParent = currentParent.parent;
+      ensurePropertyComplete(offset + length);
+    },
+    onLiteralValue: (value, offset, length) => {
+      onValue({ type: getNodeType(value), offset, length, parent: currentParent, value });
+      ensurePropertyComplete(offset + length);
+    },
+    onSeparator: (sep, offset, length) => {
+      if (currentParent.type === "property") {
+        if (sep === ":") {
+          currentParent.colonOffset = offset;
+        } else if (sep === ",") {
+          ensurePropertyComplete(offset);
+        }
+      }
+    },
+    onError: (error, offset, length) => {
+      errors.push({ error, offset, length });
+    }
+  };
+  visit(text, visitor, options);
+  const result = currentParent.children[0];
+  if (result) {
+    delete result.parent;
+  }
+  return result;
+}
+function findNodeAtLocation(root, path20) {
+  if (!root) {
+    return void 0;
+  }
+  let node = root;
+  for (let segment of path20) {
+    if (typeof segment === "string") {
+      if (node.type !== "object" || !Array.isArray(node.children)) {
+        return void 0;
+      }
+      let found = false;
+      for (const propertyNode of node.children) {
+        if (Array.isArray(propertyNode.children) && propertyNode.children[0].value === segment && propertyNode.children.length === 2) {
+          node = propertyNode.children[1];
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return void 0;
+      }
+    } else {
+      const index = segment;
+      if (node.type !== "array" || index < 0 || !Array.isArray(node.children) || index >= node.children.length) {
+        return void 0;
+      }
+      node = node.children[index];
+    }
+  }
+  return node;
+}
+function visit(text, visitor, options = ParseOptions.DEFAULT) {
+  const _scanner = createScanner(text, false);
+  const _jsonPath = [];
+  let suppressedCallbacks = 0;
+  function toNoArgVisit(visitFunction) {
+    return visitFunction ? () => suppressedCallbacks === 0 && visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
+  }
+  function toOneArgVisit(visitFunction) {
+    return visitFunction ? (arg) => suppressedCallbacks === 0 && visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter()) : () => true;
+  }
+  function toOneArgVisitWithPath(visitFunction) {
+    return visitFunction ? (arg) => suppressedCallbacks === 0 && visitFunction(arg, _scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice()) : () => true;
+  }
+  function toBeginVisit(visitFunction) {
+    return visitFunction ? () => {
+      if (suppressedCallbacks > 0) {
+        suppressedCallbacks++;
+      } else {
+        let cbReturn = visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter(), () => _jsonPath.slice());
+        if (cbReturn === false) {
+          suppressedCallbacks = 1;
+        }
+      }
+    } : () => true;
+  }
+  function toEndVisit(visitFunction) {
+    return visitFunction ? () => {
+      if (suppressedCallbacks > 0) {
+        suppressedCallbacks--;
+      }
+      if (suppressedCallbacks === 0) {
+        visitFunction(_scanner.getTokenOffset(), _scanner.getTokenLength(), _scanner.getTokenStartLine(), _scanner.getTokenStartCharacter());
+      }
+    } : () => true;
+  }
+  const onObjectBegin = toBeginVisit(visitor.onObjectBegin), onObjectProperty = toOneArgVisitWithPath(visitor.onObjectProperty), onObjectEnd = toEndVisit(visitor.onObjectEnd), onArrayBegin = toBeginVisit(visitor.onArrayBegin), onArrayEnd = toEndVisit(visitor.onArrayEnd), onLiteralValue = toOneArgVisitWithPath(visitor.onLiteralValue), onSeparator = toOneArgVisit(visitor.onSeparator), onComment = toNoArgVisit(visitor.onComment), onError = toOneArgVisit(visitor.onError);
+  const disallowComments = options && options.disallowComments;
+  const allowTrailingComma = options && options.allowTrailingComma;
+  function scanNext() {
+    while (true) {
+      const token = _scanner.scan();
+      switch (_scanner.getTokenError()) {
+        case 4:
+          handleError(
+            14
+            /* ParseErrorCode.InvalidUnicode */
+          );
+          break;
+        case 5:
+          handleError(
+            15
+            /* ParseErrorCode.InvalidEscapeCharacter */
+          );
+          break;
+        case 3:
+          handleError(
+            13
+            /* ParseErrorCode.UnexpectedEndOfNumber */
+          );
+          break;
+        case 1:
+          if (!disallowComments) {
+            handleError(
+              11
+              /* ParseErrorCode.UnexpectedEndOfComment */
+            );
+          }
+          break;
+        case 2:
+          handleError(
+            12
+            /* ParseErrorCode.UnexpectedEndOfString */
+          );
+          break;
+        case 6:
+          handleError(
+            16
+            /* ParseErrorCode.InvalidCharacter */
+          );
+          break;
+      }
+      switch (token) {
+        case 12:
+        case 13:
+          if (disallowComments) {
+            handleError(
+              10
+              /* ParseErrorCode.InvalidCommentToken */
+            );
+          } else {
+            onComment();
+          }
+          break;
+        case 16:
+          handleError(
+            1
+            /* ParseErrorCode.InvalidSymbol */
+          );
+          break;
+        case 15:
+        case 14:
+          break;
+        default:
+          return token;
+      }
+    }
+  }
+  function handleError(error, skipUntilAfter = [], skipUntil = []) {
+    onError(error);
+    if (skipUntilAfter.length + skipUntil.length > 0) {
+      let token = _scanner.getToken();
+      while (token !== 17) {
+        if (skipUntilAfter.indexOf(token) !== -1) {
+          scanNext();
+          break;
+        } else if (skipUntil.indexOf(token) !== -1) {
+          break;
+        }
+        token = scanNext();
+      }
+    }
+  }
+  function parseString(isValue) {
+    const value = _scanner.getTokenValue();
+    if (isValue) {
+      onLiteralValue(value);
+    } else {
+      onObjectProperty(value);
+      _jsonPath.push(value);
+    }
+    scanNext();
+    return true;
+  }
+  function parseLiteral() {
+    switch (_scanner.getToken()) {
+      case 11:
+        const tokenValue = _scanner.getTokenValue();
+        let value = Number(tokenValue);
+        if (isNaN(value)) {
+          handleError(
+            2
+            /* ParseErrorCode.InvalidNumberFormat */
+          );
+          value = 0;
+        }
+        onLiteralValue(value);
+        break;
+      case 7:
+        onLiteralValue(null);
+        break;
+      case 8:
+        onLiteralValue(true);
+        break;
+      case 9:
+        onLiteralValue(false);
+        break;
+      default:
+        return false;
+    }
+    scanNext();
+    return true;
+  }
+  function parseProperty() {
+    if (_scanner.getToken() !== 10) {
+      handleError(3, [], [
+        2,
+        5
+        /* SyntaxKind.CommaToken */
+      ]);
+      return false;
+    }
+    parseString(false);
+    if (_scanner.getToken() === 6) {
+      onSeparator(":");
+      scanNext();
+      if (!parseValue()) {
+        handleError(4, [], [
+          2,
+          5
+          /* SyntaxKind.CommaToken */
+        ]);
+      }
+    } else {
+      handleError(5, [], [
+        2,
+        5
+        /* SyntaxKind.CommaToken */
+      ]);
+    }
+    _jsonPath.pop();
+    return true;
+  }
+  function parseObject() {
+    onObjectBegin();
+    scanNext();
+    let needsComma = false;
+    while (_scanner.getToken() !== 2 && _scanner.getToken() !== 17) {
+      if (_scanner.getToken() === 5) {
+        if (!needsComma) {
+          handleError(4, [], []);
+        }
+        onSeparator(",");
+        scanNext();
+        if (_scanner.getToken() === 2 && allowTrailingComma) {
+          break;
+        }
+      } else if (needsComma) {
+        handleError(6, [], []);
+      }
+      if (!parseProperty()) {
+        handleError(4, [], [
+          2,
+          5
+          /* SyntaxKind.CommaToken */
+        ]);
+      }
+      needsComma = true;
+    }
+    onObjectEnd();
+    if (_scanner.getToken() !== 2) {
+      handleError(7, [
+        2
+        /* SyntaxKind.CloseBraceToken */
+      ], []);
+    } else {
+      scanNext();
+    }
+    return true;
+  }
+  function parseArray() {
+    onArrayBegin();
+    scanNext();
+    let isFirstElement = true;
+    let needsComma = false;
+    while (_scanner.getToken() !== 4 && _scanner.getToken() !== 17) {
+      if (_scanner.getToken() === 5) {
+        if (!needsComma) {
+          handleError(4, [], []);
+        }
+        onSeparator(",");
+        scanNext();
+        if (_scanner.getToken() === 4 && allowTrailingComma) {
+          break;
+        }
+      } else if (needsComma) {
+        handleError(6, [], []);
+      }
+      if (isFirstElement) {
+        _jsonPath.push(0);
+        isFirstElement = false;
+      } else {
+        _jsonPath[_jsonPath.length - 1]++;
+      }
+      if (!parseValue()) {
+        handleError(4, [], [
+          4,
+          5
+          /* SyntaxKind.CommaToken */
+        ]);
+      }
+      needsComma = true;
+    }
+    onArrayEnd();
+    if (!isFirstElement) {
+      _jsonPath.pop();
+    }
+    if (_scanner.getToken() !== 4) {
+      handleError(8, [
+        4
+        /* SyntaxKind.CloseBracketToken */
+      ], []);
+    } else {
+      scanNext();
+    }
+    return true;
+  }
+  function parseValue() {
+    switch (_scanner.getToken()) {
+      case 3:
+        return parseArray();
+      case 1:
+        return parseObject();
+      case 10:
+        return parseString(true);
+      default:
+        return parseLiteral();
+    }
+  }
+  scanNext();
+  if (_scanner.getToken() === 17) {
+    if (options.allowEmptyContent) {
+      return true;
+    }
+    handleError(4, [], []);
+    return false;
+  }
+  if (!parseValue()) {
+    handleError(4, [], []);
+    return false;
+  }
+  if (_scanner.getToken() !== 17) {
+    handleError(9, [], []);
+  }
+  return true;
+}
+function getNodeType(value) {
+  switch (typeof value) {
+    case "boolean":
+      return "boolean";
+    case "number":
+      return "number";
+    case "string":
+      return "string";
+    case "object": {
+      if (!value) {
+        return "null";
+      } else if (Array.isArray(value)) {
+        return "array";
+      }
+      return "object";
+    }
+    default:
+      return "null";
+  }
+}
+
+// node_modules/jsonc-parser/lib/esm/impl/edit.js
+function setProperty(text, originalPath, value, options) {
+  const path20 = originalPath.slice();
+  const errors = [];
+  const root = parseTree(text, errors);
+  let parent = void 0;
+  let lastSegment = void 0;
+  while (path20.length > 0) {
+    lastSegment = path20.pop();
+    parent = findNodeAtLocation(root, path20);
+    if (parent === void 0 && value !== void 0) {
+      if (typeof lastSegment === "string") {
+        value = { [lastSegment]: value };
+      } else {
+        value = [value];
+      }
+    } else {
+      break;
+    }
+  }
+  if (!parent) {
+    if (value === void 0) {
+      throw new Error("Can not delete in empty document");
+    }
+    return withFormatting(text, { offset: root ? root.offset : 0, length: root ? root.length : 0, content: JSON.stringify(value) }, options);
+  } else if (parent.type === "object" && typeof lastSegment === "string" && Array.isArray(parent.children)) {
+    const existing = findNodeAtLocation(parent, [lastSegment]);
+    if (existing !== void 0) {
+      if (value === void 0) {
+        if (!existing.parent) {
+          throw new Error("Malformed AST");
+        }
+        const propertyIndex = parent.children.indexOf(existing.parent);
+        let removeBegin;
+        let removeEnd = existing.parent.offset + existing.parent.length;
+        if (propertyIndex > 0) {
+          let previous = parent.children[propertyIndex - 1];
+          removeBegin = previous.offset + previous.length;
+        } else {
+          removeBegin = parent.offset + 1;
+          if (parent.children.length > 1) {
+            let next = parent.children[1];
+            removeEnd = next.offset;
+          }
+        }
+        return withFormatting(text, { offset: removeBegin, length: removeEnd - removeBegin, content: "" }, options);
+      } else {
+        return withFormatting(text, { offset: existing.offset, length: existing.length, content: JSON.stringify(value) }, options);
+      }
+    } else {
+      if (value === void 0) {
+        return [];
+      }
+      const newProperty = `${JSON.stringify(lastSegment)}: ${JSON.stringify(value)}`;
+      const index = options.getInsertionIndex ? options.getInsertionIndex(parent.children.map((p) => p.children[0].value)) : parent.children.length;
+      let edit;
+      if (index > 0) {
+        let previous = parent.children[index - 1];
+        edit = { offset: previous.offset + previous.length, length: 0, content: "," + newProperty };
+      } else if (parent.children.length === 0) {
+        edit = { offset: parent.offset + 1, length: 0, content: newProperty };
+      } else {
+        edit = { offset: parent.offset + 1, length: 0, content: newProperty + "," };
+      }
+      return withFormatting(text, edit, options);
+    }
+  } else if (parent.type === "array" && typeof lastSegment === "number" && Array.isArray(parent.children)) {
+    const insertIndex = lastSegment;
+    if (insertIndex === -1) {
+      const newProperty = `${JSON.stringify(value)}`;
+      let edit;
+      if (parent.children.length === 0) {
+        edit = { offset: parent.offset + 1, length: 0, content: newProperty };
+      } else {
+        const previous = parent.children[parent.children.length - 1];
+        edit = { offset: previous.offset + previous.length, length: 0, content: "," + newProperty };
+      }
+      return withFormatting(text, edit, options);
+    } else if (value === void 0 && parent.children.length >= 0) {
+      const removalIndex = lastSegment;
+      const toRemove = parent.children[removalIndex];
+      let edit;
+      if (parent.children.length === 1) {
+        edit = { offset: parent.offset + 1, length: parent.length - 2, content: "" };
+      } else if (parent.children.length - 1 === removalIndex) {
+        let previous = parent.children[removalIndex - 1];
+        let offset = previous.offset + previous.length;
+        let parentEndOffset = parent.offset + parent.length;
+        edit = { offset, length: parentEndOffset - 2 - offset, content: "" };
+      } else {
+        edit = { offset: toRemove.offset, length: parent.children[removalIndex + 1].offset - toRemove.offset, content: "" };
+      }
+      return withFormatting(text, edit, options);
+    } else if (value !== void 0) {
+      let edit;
+      const newProperty = `${JSON.stringify(value)}`;
+      if (!options.isArrayInsertion && parent.children.length > lastSegment) {
+        const toModify = parent.children[lastSegment];
+        edit = { offset: toModify.offset, length: toModify.length, content: newProperty };
+      } else if (parent.children.length === 0 || lastSegment === 0) {
+        edit = { offset: parent.offset + 1, length: 0, content: parent.children.length === 0 ? newProperty : newProperty + "," };
+      } else {
+        const index = lastSegment > parent.children.length ? parent.children.length : lastSegment;
+        const previous = parent.children[index - 1];
+        edit = { offset: previous.offset + previous.length, length: 0, content: "," + newProperty };
+      }
+      return withFormatting(text, edit, options);
+    } else {
+      throw new Error(`Can not ${value === void 0 ? "remove" : options.isArrayInsertion ? "insert" : "modify"} Array index ${insertIndex} as length is not sufficient`);
+    }
+  } else {
+    throw new Error(`Can not add ${typeof lastSegment !== "number" ? "index" : "property"} to parent of type ${parent.type}`);
+  }
+}
+function withFormatting(text, edit, options) {
+  if (!options.formattingOptions) {
+    return [edit];
+  }
+  let newText = applyEdit(text, edit);
+  let begin = edit.offset;
+  let end = edit.offset + edit.content.length;
+  if (edit.length === 0 || edit.content.length === 0) {
+    while (begin > 0 && !isEOL(newText, begin - 1)) {
+      begin--;
+    }
+    while (end < newText.length && !isEOL(newText, end)) {
+      end++;
+    }
+  }
+  const edits = format(newText, { offset: begin, length: end - begin }, { ...options.formattingOptions, keepLines: false });
+  for (let i = edits.length - 1; i >= 0; i--) {
+    const edit2 = edits[i];
+    newText = applyEdit(newText, edit2);
+    begin = Math.min(begin, edit2.offset);
+    end = Math.max(end, edit2.offset + edit2.length);
+    end += edit2.content.length - edit2.length;
+  }
+  const editLength = text.length - (newText.length - end) - begin;
+  return [{ offset: begin, length: editLength, content: newText.substring(begin, end) }];
+}
+function applyEdit(text, edit) {
+  return text.substring(0, edit.offset) + edit.content + text.substring(edit.offset + edit.length);
+}
+
+// node_modules/jsonc-parser/lib/esm/main.js
+var ScanError;
+(function(ScanError2) {
+  ScanError2[ScanError2["None"] = 0] = "None";
+  ScanError2[ScanError2["UnexpectedEndOfComment"] = 1] = "UnexpectedEndOfComment";
+  ScanError2[ScanError2["UnexpectedEndOfString"] = 2] = "UnexpectedEndOfString";
+  ScanError2[ScanError2["UnexpectedEndOfNumber"] = 3] = "UnexpectedEndOfNumber";
+  ScanError2[ScanError2["InvalidUnicode"] = 4] = "InvalidUnicode";
+  ScanError2[ScanError2["InvalidEscapeCharacter"] = 5] = "InvalidEscapeCharacter";
+  ScanError2[ScanError2["InvalidCharacter"] = 6] = "InvalidCharacter";
+})(ScanError || (ScanError = {}));
+var SyntaxKind;
+(function(SyntaxKind2) {
+  SyntaxKind2[SyntaxKind2["OpenBraceToken"] = 1] = "OpenBraceToken";
+  SyntaxKind2[SyntaxKind2["CloseBraceToken"] = 2] = "CloseBraceToken";
+  SyntaxKind2[SyntaxKind2["OpenBracketToken"] = 3] = "OpenBracketToken";
+  SyntaxKind2[SyntaxKind2["CloseBracketToken"] = 4] = "CloseBracketToken";
+  SyntaxKind2[SyntaxKind2["CommaToken"] = 5] = "CommaToken";
+  SyntaxKind2[SyntaxKind2["ColonToken"] = 6] = "ColonToken";
+  SyntaxKind2[SyntaxKind2["NullKeyword"] = 7] = "NullKeyword";
+  SyntaxKind2[SyntaxKind2["TrueKeyword"] = 8] = "TrueKeyword";
+  SyntaxKind2[SyntaxKind2["FalseKeyword"] = 9] = "FalseKeyword";
+  SyntaxKind2[SyntaxKind2["StringLiteral"] = 10] = "StringLiteral";
+  SyntaxKind2[SyntaxKind2["NumericLiteral"] = 11] = "NumericLiteral";
+  SyntaxKind2[SyntaxKind2["LineCommentTrivia"] = 12] = "LineCommentTrivia";
+  SyntaxKind2[SyntaxKind2["BlockCommentTrivia"] = 13] = "BlockCommentTrivia";
+  SyntaxKind2[SyntaxKind2["LineBreakTrivia"] = 14] = "LineBreakTrivia";
+  SyntaxKind2[SyntaxKind2["Trivia"] = 15] = "Trivia";
+  SyntaxKind2[SyntaxKind2["Unknown"] = 16] = "Unknown";
+  SyntaxKind2[SyntaxKind2["EOF"] = 17] = "EOF";
+})(SyntaxKind || (SyntaxKind = {}));
+var parse2 = parse;
+var parseTree2 = parseTree;
+var ParseErrorCode;
+(function(ParseErrorCode2) {
+  ParseErrorCode2[ParseErrorCode2["InvalidSymbol"] = 1] = "InvalidSymbol";
+  ParseErrorCode2[ParseErrorCode2["InvalidNumberFormat"] = 2] = "InvalidNumberFormat";
+  ParseErrorCode2[ParseErrorCode2["PropertyNameExpected"] = 3] = "PropertyNameExpected";
+  ParseErrorCode2[ParseErrorCode2["ValueExpected"] = 4] = "ValueExpected";
+  ParseErrorCode2[ParseErrorCode2["ColonExpected"] = 5] = "ColonExpected";
+  ParseErrorCode2[ParseErrorCode2["CommaExpected"] = 6] = "CommaExpected";
+  ParseErrorCode2[ParseErrorCode2["CloseBraceExpected"] = 7] = "CloseBraceExpected";
+  ParseErrorCode2[ParseErrorCode2["CloseBracketExpected"] = 8] = "CloseBracketExpected";
+  ParseErrorCode2[ParseErrorCode2["EndOfFileExpected"] = 9] = "EndOfFileExpected";
+  ParseErrorCode2[ParseErrorCode2["InvalidCommentToken"] = 10] = "InvalidCommentToken";
+  ParseErrorCode2[ParseErrorCode2["UnexpectedEndOfComment"] = 11] = "UnexpectedEndOfComment";
+  ParseErrorCode2[ParseErrorCode2["UnexpectedEndOfString"] = 12] = "UnexpectedEndOfString";
+  ParseErrorCode2[ParseErrorCode2["UnexpectedEndOfNumber"] = 13] = "UnexpectedEndOfNumber";
+  ParseErrorCode2[ParseErrorCode2["InvalidUnicode"] = 14] = "InvalidUnicode";
+  ParseErrorCode2[ParseErrorCode2["InvalidEscapeCharacter"] = 15] = "InvalidEscapeCharacter";
+  ParseErrorCode2[ParseErrorCode2["InvalidCharacter"] = 16] = "InvalidCharacter";
+})(ParseErrorCode || (ParseErrorCode = {}));
+function modify(text, path20, value, options) {
+  return setProperty(text, path20, value, options);
+}
+function applyEdits(text, edits) {
+  let sortedEdits = edits.slice(0).sort((a, b) => {
+    const diff = a.offset - b.offset;
+    if (diff === 0) {
+      return a.length - b.length;
+    }
+    return diff;
+  });
+  let lastModifiedOffset = text.length;
+  for (let i = sortedEdits.length - 1; i >= 0; i--) {
+    let e = sortedEdits[i];
+    if (e.offset + e.length <= lastModifiedOffset) {
+      text = applyEdit(text, e);
+    } else {
+      throw new Error("Overlapping edit");
+    }
+    lastModifiedOffset = e.offset;
+  }
+  return text;
+}
+
+// distribution/ned/zed-settings.ts
 var profile = external_exports.object({ name: external_exports.string().min(1), tools: external_exports.record(external_exports.boolean()).optional(), enable_all_context_servers: external_exports.boolean().optional(), context_servers: external_exports.record(external_exports.unknown()).optional() }).passthrough();
 var model = external_exports.object({ name: external_exports.string().min(1), max_tokens: external_exports.number().int().positive(), capabilities: external_exports.object({ tools: external_exports.boolean(), images: external_exports.boolean(), parallel_tool_calls: external_exports.boolean(), prompt_cache_key: external_exports.boolean(), chat_completions: external_exports.boolean(), interleaved_reasoning: external_exports.boolean(), max_tokens_parameter: external_exports.boolean() }).passthrough() }).passthrough();
 var settings = external_exports.object({ agent: external_exports.object({ profiles: external_exports.record(profile).optional() }).passthrough(), language_models: external_exports.object({ openai_compatible: external_exports.record(external_exports.object({ api_url: external_exports.string().url(), available_models: external_exports.array(model).min(1) }).passthrough()) }).passthrough().optional() }).passthrough();
 function validateManagedZedSettings(text) {
   const errors = [];
-  const data = (0, import_jsonc_parser.parse)(text.replace(/^\ufeff/, ""), errors, { allowTrailingComma: true });
+  const data = parse2(text.replace(/^\ufeff/, ""), errors, { allowTrailingComma: true });
   if (errors.length) throw Error("Zed \uC124\uC815 JSONC \uD615\uC2DD \uC624\uB958. \uAE30\uC874 \uC124\uC815\uC740 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4.");
   const result = settings.safeParse(data);
   if (!result.success) throw Error("ZED_SETTINGS_SCHEMA: " + result.error.issues.slice(0, 5).map((i) => i.path.join(".")).join(", "));
@@ -12259,13 +13487,11 @@ function validateManagedZedSettings(text) {
 // distribution/ned/terminal.ts
 var import_node_path2 = __toESM(require("node:path"), 1);
 var import_promises2 = require("node:fs/promises");
-var import_jsonc_parser3 = __toESM(require_main(), 1);
 
 // distribution/ned/editor-preferences.ts
 var import_node_path = __toESM(require("node:path"), 1);
 var import_promises = require("node:fs/promises");
 var import_node_crypto = require("node:crypto");
-var import_jsonc_parser2 = __toESM(require_main(), 1);
 var uiKeys = /* @__PURE__ */ new Set([
   "theme",
   "icon_theme",
@@ -12330,18 +13556,18 @@ var object = (value) => !!value && typeof value === "object" && !Array.isArray(v
 function decode(text, name) {
   text = text.replace(/^\ufeff/, "");
   const errors = [];
-  const value = (0, import_jsonc_parser2.parse)(text, errors, { allowTrailingComma: true, allowEmptyContent: true });
-  const tree = (0, import_jsonc_parser2.parseTree)(text, [], { allowTrailingComma: true, allowEmptyContent: true });
+  const value = parse2(text, errors, { allowTrailingComma: true, allowEmptyContent: true });
+  const tree = parseTree2(text, [], { allowTrailingComma: true, allowEmptyContent: true });
   let duplicate = false;
-  const visit = (node) => {
+  const visit2 = (node) => {
     if (!node) return;
     if (node.type === "object") {
       const names = node.children?.map((p) => p.children[0].value) ?? [];
       if (new Set(names).size !== names.length) duplicate = true;
     }
-    node.children?.forEach(visit);
+    node.children?.forEach(visit2);
   };
-  visit(tree);
+  visit2(tree);
   if (value === void 0 && !errors.length) return {};
   if (errors.length || duplicate || !object(value)) throw new Error(`\uD3B8\uC9D1\uAE30 ${name} \uC124\uC815\uC758 JSONC \uBB38\uBC95\uC744 \uD655\uC778\uD558\uC138\uC694. \uAE30\uC874 \uD30C\uC77C\uC744 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4.`);
   return value;
@@ -12387,14 +13613,14 @@ async function editorPreferences(data, managed) {
   }
   const bom = original?.startsWith("\uFEFF") ? "\uFEFF" : "";
   let updated = (original ?? "{}\n").slice(bom.length);
-  if (!(0, import_jsonc_parser2.parseTree)(updated, [], { allowTrailingComma: true, allowEmptyContent: true })) updated += "\n{}\n";
+  if (!parseTree2(updated, [], { allowTrailingComma: true, allowEmptyContent: true })) updated += "\n{}\n";
   const options = { formattingOptions: { insertSpaces: true, tabSize: 2, eol: updated.includes("\r\n") ? "\r\n" : "\n" } };
   const reconcile = (at, before, after) => {
     if (JSON.stringify(before) === JSON.stringify(after)) return;
     if (object(before) && object(after)) {
-      for (const key of Object.keys(before)) if (!Object.hasOwn(after, key)) updated = (0, import_jsonc_parser2.applyEdits)(updated, (0, import_jsonc_parser2.modify)(updated, [...at, key], void 0, options));
+      for (const key of Object.keys(before)) if (!Object.hasOwn(after, key)) updated = applyEdits(updated, modify(updated, [...at, key], void 0, options));
       for (const [key, value] of Object.entries(after)) reconcile([...at, key], before[key], value);
-    } else updated = (0, import_jsonc_parser2.applyEdits)(updated, (0, import_jsonc_parser2.modify)(updated, at, after, options));
+    } else updated = applyEdits(updated, modify(updated, at, after, options));
   };
   reconcile([], saved, desired);
   const result = bom + updated;
@@ -12436,9 +13662,9 @@ async function setDefaultTerminal(data, kind) {
   const file = import_node_path2.default.join(data, "config/settings.json"), info = await (0, import_promises2.lstat)(file);
   if (!info.isFile() || info.isSymbolicLink() || info.size > 2 * 1024 * 1024) throw Error("\uD3B8\uC9D1\uAE30 \uD130\uBBF8\uB110 \uC124\uC815 \uACBD\uB85C \uC624\uB958");
   const text = await (0, import_promises2.readFile)(file, "utf8"), errors = [];
-  (0, import_jsonc_parser3.parse)(text.replace(/^\ufeff/, ""), errors, { allowTrailingComma: true });
+  parse2(text.replace(/^\ufeff/, ""), errors, { allowTrailingComma: true });
   if (errors.length) throw Error("\uD3B8\uC9D1\uAE30 \uC124\uC815 JSONC\uB97C \uD655\uC778\uD558\uC138\uC694.");
-  await writeEditorPreferences(file, (0, import_jsonc_parser3.applyEdits)(text, (0, import_jsonc_parser3.modify)(text, ["terminal", "shell"], terminalShell(kind), { formattingOptions: { insertSpaces: true, tabSize: 2 } })));
+  await writeEditorPreferences(file, applyEdits(text, modify(text, ["terminal", "shell"], terminalShell(kind), { formattingOptions: { insertSpaces: true, tabSize: 2 } })));
 }
 async function ensureTerminalTasks(data, platform = process.platform) {
   if (platform !== "win32") return;
@@ -12449,14 +13675,14 @@ async function ensureTerminalTasks(data, platform = process.platform) {
   });
   if (info && (!info.isFile() || info.isSymbolicLink() || info.size > 2 * 1024 * 1024)) throw Error("\uD130\uBBF8\uB110 \uC791\uC5C5 \uC124\uC815 \uACBD\uB85C \uC624\uB958");
   const text = info ? await (0, import_promises2.readFile)(file, "utf8") : "[]\n", errors = [];
-  const tasks = (0, import_jsonc_parser3.parse)(text, errors, { allowTrailingComma: true });
+  const tasks = parse2(text, errors, { allowTrailingComma: true });
   if (errors.length || !Array.isArray(tasks)) throw Error("\uD130\uBBF8\uB110 \uC791\uC5C5 JSONC\uB97C \uD655\uC778\uD558\uC138\uC694. \uAE30\uC874 \uD30C\uC77C\uC744 \uBCF4\uC874\uD588\uC2B5\uB2C8\uB2E4.");
   let result = text, index = tasks.length;
   for (const kind of ["powershell", "cmd"]) {
     const label = kind === "cmd" ? "Ned: CMD" : "Ned: PowerShell";
     if (tasks.some((t) => t?.label === label)) continue;
     const shell = terminalShell(kind);
-    result = (0, import_jsonc_parser3.applyEdits)(result, (0, import_jsonc_parser3.modify)(result, [index++], { label, command: shell.program, args: [...shell.args, kind === "cmd" ? "/K" : "-NoExit"], cwd: "$ZED_WORKTREE_ROOT", use_new_terminal: true, allow_concurrent_runs: true, reveal: "always" }, { formattingOptions: { insertSpaces: true, tabSize: 2 } }));
+    result = applyEdits(result, modify(result, [index++], { label, command: shell.program, args: [...shell.args, kind === "cmd" ? "/K" : "-NoExit"], cwd: "$ZED_WORKTREE_ROOT", use_new_terminal: true, allow_concurrent_runs: true, reveal: "always" }, { formattingOptions: { insertSpaces: true, tabSize: 2 } }));
   }
   if (result !== text) await writeEditorPreferences(file, result);
 }
@@ -12732,11 +13958,15 @@ async function importHistorySnapshot(source, editorData) {
 // tests/zed-history.test.ts
 (0, import_node_test2.test)("Zed history merges committed WAL rows, preserves source, removes prior grants, deduplicates and never overwrites conflicts", async (t) => {
   const root = await (0, import_promises7.mkdtemp)(import_node_path8.default.join((0, import_node_os2.tmpdir)(), "ned-zed-import-"));
-  t.after(() => (0, import_promises7.rm)(root, { recursive: true, force: true }));
+  const handles = [];
+  t.after(async () => {
+    for (const db2 of handles.reverse()) db2.close();
+    await (0, import_promises7.rm)(root, { recursive: true, force: true });
+  });
   const editor = import_node_path8.default.join(root, "editor");
   await (0, import_promises7.mkdir)(editor);
   const source = import_node_path8.default.join(root, "threads.db"), db = new import_node_sqlite2.DatabaseSync(source);
-  t.after(() => db.close());
+  handles.push(db);
   db.exec("PRAGMA journal_mode=WAL; CREATE TABLE threads(id TEXT PRIMARY KEY,summary TEXT,updated_at TEXT,data_type TEXT,data BLOB)");
   const bytes = (0, import_node_zlib2.zstdCompressSync)(Buffer.from(JSON.stringify({ version: "0.3.0", title: "original", messages: [], model: { provider: "private" }, sandbox_grants: { allow_fs_write_all: true } })));
   db.prepare("INSERT INTO threads VALUES(?,?,?,?,?)").run("t1", "original", "2026-01-01", "zstd", bytes);
@@ -12744,7 +13974,7 @@ async function importHistorySnapshot(source, editorData) {
   import_strict2.default.equal(report.imported, 1);
   import_strict2.default.equal(report.unsupported, 0);
   const out = new import_node_sqlite2.DatabaseSync(import_node_path8.default.join(editor, "threads/threads.db"));
-  t.after(() => out.close());
+  handles.push(out);
   const thread = JSON.parse((0, import_node_zlib2.zstdDecompressSync)(out.prepare("SELECT data FROM threads").get().data).toString());
   import_strict2.default.deepEqual(thread.sandbox_grants, {});
   import_strict2.default.equal(thread.model, null);
@@ -12759,15 +13989,16 @@ async function importHistorySnapshot(source, editorData) {
 });
 (0, import_node_test2.test)("older target tables gain known metadata columns and unsupported rows leave the original unchanged", async (t) => {
   const root = await (0, import_promises7.mkdtemp)(import_node_path8.default.join((0, import_node_os2.tmpdir)(), "ned-zed-schema-"));
-  t.after(() => (0, import_promises7.rm)(root, { recursive: true, force: true }));
+  const handles = [];
+  t.after(async () => {
+    for (const db of handles.reverse()) db.close();
+    await (0, import_promises7.rm)(root, { recursive: true, force: true });
+  });
   const editor = import_node_path8.default.join(root, "editor");
   await (0, import_promises7.mkdir)(import_node_path8.default.join(editor, "threads"), { recursive: true });
   const source = import_node_path8.default.join(root, "threads.db"), input = new import_node_sqlite2.DatabaseSync(source);
   const target = new import_node_sqlite2.DatabaseSync(import_node_path8.default.join(editor, "threads/threads.db"));
-  t.after(() => {
-    input.close();
-    target.close();
-  });
+  handles.push(input, target);
   const basic = "CREATE TABLE threads(id TEXT PRIMARY KEY,summary TEXT,updated_at TEXT,data_type TEXT,data BLOB";
   input.exec(basic + ",parent_id TEXT,folder_paths TEXT,folder_paths_order TEXT,created_at TEXT)");
   target.exec(basic + ")");
@@ -12955,13 +14186,13 @@ async function seedBundledSkills(bundle, workspace, stateFile, progress, signal)
         state.reused++;
       } else {
         if (info) {
-          const previous2 = saved.entries[pkg.id];
-          const before = previous2?.files ? await hashes(target, Object.keys(previous2.files)) : void 0;
-          if (!previous2?.files || !before || !Object.entries(previous2.files).every(([name, value]) => before[name] === value)) {
+          const prior = saved.entries[pkg.id] ?? (previous?.entries?.[pkg.id]?.verifiedFiles ? { files: previous.entries[pkg.id].verifiedFiles } : void 0);
+          const before = prior?.files ? await hashes(target, Object.keys(prior.files)) : void 0;
+          if (!prior?.files || !before || !Object.entries(prior.files).every(([name, value]) => before[name] === value)) {
             state.conflicts.push(pkg.id);
             continue;
           }
-          const extras = await untrackedFiles(target, new Set(Object.keys(previous2.files)));
+          const extras = await untrackedFiles(target, new Set(Object.keys(prior.files)));
           if (extras) {
             state.conflicts.push(pkg.id);
             continue;
@@ -13117,6 +14348,29 @@ async function fixture(t) {
   import_strict3.default.deepEqual(state.conflicts, ["cpp-testing"]);
   import_strict3.default.match(await (0, import_promises13.readFile)(file, "utf8"), /user_note: keep/);
 });
+for (const edited of [false, true]) (0, import_node_test3.test)(`a migrated pristine legacy package is replaced from verified hashes; later edits remain protected (${edited})`, async (t) => {
+  const { rename: rename5 } = await import("node:fs/promises");
+  const f = await fixture(t);
+  await f.run();
+  const file = import_node_path13.default.join(f.installed, "SKILL.md");
+  await (0, import_promises13.writeFile)(file, (await (0, import_promises13.readFile)(file, "utf8")).replace("name: ned-cpp-testing", "name: l-vibe-cpp-testing"));
+  await rename5(import_node_path13.default.join(f.installed, "NED-BUNDLE.json"), import_node_path13.default.join(f.installed, "L-VIBE-BUNDLE.json"));
+  const record = JSON.parse(await (0, import_promises13.readFile)(f.state.replace(/\.json$/, "-seed.json"), "utf8"));
+  const names = Object.keys(record.entries["cpp-testing"].files).map((name) => name === "NED-BUNDLE.json" ? "L-VIBE-BUNDLE.json" : name);
+  const verifiedFiles = Object.fromEntries(await Promise.all(names.map(async (name) => [name, sha(await (0, import_promises13.readFile)(import_node_path13.default.join(f.installed, name)))])));
+  await (0, import_promises13.rm)(f.state.replace(/\.json$/, "-seed.json"));
+  await (0, import_promises13.writeFile)(f.state, JSON.stringify({ schemaVersion: 1, entries: { "cpp-testing": { bundleHash: "previous-package-hash", revision: "verified-by-sdk-migration", verifiedFiles } } }));
+  if (edited) await (0, import_promises13.writeFile)(file, await (0, import_promises13.readFile)(file, "utf8") + "\nUSER EDIT");
+  const state = await f.run();
+  if (edited) {
+    import_strict3.default.deepEqual(state.conflicts, ["cpp-testing"]);
+    import_strict3.default.match(await (0, import_promises13.readFile)(file, "utf8"), /USER EDIT/);
+  } else {
+    import_strict3.default.equal(state.updated, 1);
+    import_strict3.default.equal(state.status, "ready");
+    import_strict3.default.ok((await (0, import_promises13.readFile)(import_node_path13.default.join(f.installed, "NED-BUNDLE.json"))).length > 0);
+  }
+});
 
 // tests/terminal.test.ts
 var import_node_test4 = require("node:test");
@@ -13124,7 +14378,6 @@ var import_strict4 = __toESM(require("node:assert/strict"), 1);
 var import_promises14 = require("node:fs/promises");
 var import_node_os4 = require("node:os");
 var import_node_path14 = __toESM(require("node:path"), 1);
-var import_jsonc_parser4 = __toESM(require_main(), 1);
 (0, import_node_test4.test)("CMD selection survives an update; both independent terminals preserve JSONC and use the selected project", async (t) => {
   const root = await (0, import_promises14.mkdtemp)(import_node_path14.default.join((0, import_node_os4.tmpdir)(), "ned-terminal-"));
   t.after(() => (0, import_promises14.rm)(root, { recursive: true, force: true }));
@@ -13134,7 +14387,7 @@ var import_jsonc_parser4 = __toESM(require_main(), 1);
   await (0, import_promises14.writeFile)(file, '// USER_NOTE\n{"terminal":{"font_size":19}}');
   await setDefaultTerminal(editor, "cmd");
   await prepareEditor(root, "/Ned", "/resources", "/descriptor", "http://127.0.0.1:9");
-  const value = (0, import_jsonc_parser4.parse)(await (0, import_promises14.readFile)(file, "utf8"));
+  const value = parse2(await (0, import_promises14.readFile)(file, "utf8"));
   import_strict4.default.deepEqual(value.terminal.shell, terminalShell("cmd"));
   import_strict4.default.equal(value.terminal.font_size, 19);
   import_strict4.default.match(await (0, import_promises14.readFile)(file, "utf8"), /USER_NOTE/);
@@ -13144,7 +14397,7 @@ var import_jsonc_parser4 = __toESM(require_main(), 1);
   await (0, import_promises14.writeFile)(tasksFile, '// MY_TASK\n[{"label":"custom","command":"my-build"},]');
   await ensureTerminalTasks(editor, "win32");
   await ensureTerminalTasks(editor, "win32");
-  const tasks = (0, import_jsonc_parser4.parse)(await (0, import_promises14.readFile)(tasksFile, "utf8"));
+  const tasks = parse2(await (0, import_promises14.readFile)(tasksFile, "utf8"));
   import_strict4.default.equal(tasks.length, 3);
   import_strict4.default.equal(tasks[0].command, "my-build");
   for (const task of tasks.slice(1)) {
@@ -13160,7 +14413,6 @@ var import_strict5 = __toESM(require("node:assert/strict"), 1);
 var import_promises15 = require("node:fs/promises");
 var import_node_os5 = require("node:os");
 var import_node_path15 = __toESM(require("node:path"), 1);
-var import_jsonc_parser5 = __toESM(require_main(), 1);
 async function fixture2(t) {
   const root = await (0, import_promises15.mkdtemp)(import_node_path15.default.join((0, import_node_os5.tmpdir)(), "ned-preferences-"));
   t.after(() => (0, import_promises15.rm)(root, { recursive: true, force: true }));
@@ -13188,7 +14440,7 @@ var launch = (root, version = "one") => prepareEditor(root, "/Ned-" + version, "
   const db = import_node_path15.default.join(root, "editor/db/workspace.sqlite");
   await (0, import_promises15.writeFile)(db, "opaque-workspace-layout");
   const first = await launch(root);
-  let saved = (0, import_jsonc_parser5.parse)(await (0, import_promises15.readFile)(file, "utf8"));
+  let saved = parse2(await (0, import_promises15.readFile)(file, "utf8"));
   import_strict5.default.equal(saved.ui_font_size, 22);
   import_strict5.default.equal(saved.agent_ui_font_size, 24);
   import_strict5.default.equal(saved.agent_buffer_font_size, 20);
@@ -13212,7 +14464,7 @@ var launch = (root, version = "one") => prepareEditor(root, "/Ned-" + version, "
   import_strict5.default.equal(await (0, import_promises15.readFile)(import_node_path15.default.join(root, "editor/config/settings.before-ned-0.3.3.jsonc"), "utf8"), original);
   await (0, import_promises15.writeFile)(file, (await (0, import_promises15.readFile)(file, "utf8")).replace('"ui_font_size": 22', '"ui_font_size": 25'));
   const second = await launch(root, "two");
-  saved = (0, import_jsonc_parser5.parse)(await (0, import_promises15.readFile)(file, "utf8"));
+  saved = parse2(await (0, import_promises15.readFile)(file, "utf8"));
   import_strict5.default.equal(saved.ui_font_size, 25);
   import_strict5.default.equal(saved.agent.dock, "left");
   import_strict5.default.equal(saved.agent_servers.Ned.command, "/Ned-two");
@@ -13244,14 +14496,14 @@ function keymapFile(root) {
   await (0, import_promises15.writeFile)(import_node_path15.default.join(root, "editor/appearance.json"), '{"ui_font_size":21}');
   await launch(root);
   const file = import_node_path15.default.join(root, "editor/config/settings.json");
-  let value = (0, import_jsonc_parser5.parse)(await (0, import_promises15.readFile)(file, "utf8"));
+  let value = parse2(await (0, import_promises15.readFile)(file, "utf8"));
   import_strict5.default.equal(value.ui_font_size, 21);
   import_strict5.default.equal(value.restore_on_startup, "launchpad");
   import_strict5.default.match(await (0, import_promises15.readFile)(keymapFile(root), "utf8"), /NewExternalAgentThread/);
   delete value.ui_font_size;
   await (0, import_promises15.writeFile)(file, JSON.stringify(value));
   await launch(root);
-  value = (0, import_jsonc_parser5.parse)(await (0, import_promises15.readFile)(file, "utf8"));
+  value = parse2(await (0, import_promises15.readFile)(file, "utf8"));
   import_strict5.default.equal(value.ui_font_size, void 0);
 });
 (0, import_node_test5.test)("UTF-8 BOM and comment-only editor settings survive managed preference updates", async (t) => {
@@ -13261,12 +14513,12 @@ function keymapFile(root) {
   let text = await (0, import_promises15.readFile)(file, "utf8");
   import_strict5.default.ok(text.startsWith("\uFEFF"));
   import_strict5.default.match(text, /UTF8_NOTE/);
-  import_strict5.default.equal((0, import_jsonc_parser5.parse)(text.slice(1)).ui_font_size, 23);
+  import_strict5.default.equal(parse2(text.slice(1)).ui_font_size, 23);
   await (0, import_promises15.writeFile)(file, "// ONLY_NOTE\n");
   await launch(root);
   text = await (0, import_promises15.readFile)(file, "utf8");
   import_strict5.default.match(text, /ONLY_NOTE/);
-  import_strict5.default.equal((0, import_jsonc_parser5.parse)(text).restore_on_startup, "launchpad");
+  import_strict5.default.equal(parse2(text).restore_on_startup, "launchpad");
 });
 
 // tests/openviking.integration.test.ts

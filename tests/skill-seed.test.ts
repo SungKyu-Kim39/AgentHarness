@@ -51,3 +51,12 @@ test('user-edited YAML metadata is a protected conflict even when the document b
  const f=await fixture(t);await f.run();const file=path.join(f.installed,'SKILL.md');const before=await readFile(file,'utf8');await writeFile(file,before.replace('name: ned-cpp-testing','name: ned-cpp-testing\nmetadata:\n  user_note: keep'));
  await rm(f.state.replace(/\.json$/,'-seed.json'));const state=await f.run();assert.deepEqual(state.conflicts,['cpp-testing']);assert.match(await readFile(file,'utf8'),/user_note: keep/);
 });
+for(const edited of [false,true])test(`a migrated pristine legacy package is replaced from verified hashes; later edits remain protected (${edited})`,async t=>{
+ const {rename}=await import('node:fs/promises');const f=await fixture(t);await f.run();
+ const file=path.join(f.installed,'SKILL.md');await writeFile(file,(await readFile(file,'utf8')).replace('name: ned-cpp-testing','name: l-vibe-cpp-testing'));
+ await rename(path.join(f.installed,'NED-BUNDLE.json'),path.join(f.installed,'L-VIBE-BUNDLE.json'));
+ const record=JSON.parse(await readFile(f.state.replace(/\.json$/,'-seed.json'),'utf8'));const names=Object.keys(record.entries['cpp-testing'].files).map(name=>name==='NED-BUNDLE.json'?'L-VIBE-BUNDLE.json':name);const verifiedFiles=Object.fromEntries(await Promise.all(names.map(async name=>[name,sha(await readFile(path.join(f.installed,name)))])));
+ await rm(f.state.replace(/\.json$/,'-seed.json'));await writeFile(f.state,JSON.stringify({schemaVersion:1,entries:{'cpp-testing':{bundleHash:'previous-package-hash',revision:'verified-by-sdk-migration',verifiedFiles}}}));
+ if(edited)await writeFile(file,(await readFile(file,'utf8'))+'\nUSER EDIT');const state=await f.run();
+ if(edited){assert.deepEqual(state.conflicts,['cpp-testing']);assert.match(await readFile(file,'utf8'),/USER EDIT/);}else{assert.equal(state.updated,1);assert.equal(state.status,'ready');assert.ok((await readFile(path.join(f.installed,'NED-BUNDLE.json'))).length>0);}
+});

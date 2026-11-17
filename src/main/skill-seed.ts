@@ -110,10 +110,10 @@ export async function seedBundledSkills(bundle: string, workspace: string, state
       if(info && same) { state.reused!++; }
       else {
         if(info) {
-          const previous=saved.entries[pkg.id];
-          const before=previous?.files?await hashes(target,Object.keys(previous.files)):undefined;
-          if(!previous?.files || !before || !Object.entries(previous.files).every(([name,value])=>before[name]===value)) { state.conflicts.push(pkg.id); continue; }
-          const extras=await untrackedFiles(target,new Set(Object.keys(previous.files)));if(extras){state.conflicts.push(pkg.id);continue;}
+          const prior=saved.entries[pkg.id]??(previous?.entries?.[pkg.id]?.verifiedFiles?{files:previous.entries[pkg.id].verifiedFiles}:undefined);
+          const before=prior?.files?await hashes(target,Object.keys(prior.files)):undefined;
+          if(!prior?.files || !before || !Object.entries(prior.files).every(([name,value])=>before[name]===value)) { state.conflicts.push(pkg.id); continue; }
+          const extras=await untrackedFiles(target,new Set(Object.keys(prior.files)));if(extras){state.conflicts.push(pkg.id);continue;}
         }
         stage=path.join(root,'.ned-stage-'+randomUUID()); await mkdir(stage,{mode:0o700});
         for(const [name,b]of files){await mkdir(path.dirname(path.join(stage,name)),{recursive:true,mode:0o700});await writeFile(path.join(stage,name),b,{flag:'wx',mode:0o600});}

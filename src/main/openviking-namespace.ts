@@ -48,7 +48,7 @@ interface MigrationRecord {
   schemaVersion: 1; id: string; phase: 'exporting' | 'restoring' | 'committing' | 'ready' | 'failed';
   registry?: boolean;
 }
-interface SkillRecords { schemaVersion: 1; entries: Record<string, { bundleHash: string; revision: string }> }
+interface SkillRecords { schemaVersion: 1; entries: Record<string, { bundleHash: string; revision: string; verifiedFiles?: Record<string,string> }> }
 function skillRecords(bytes: Buffer): SkillRecords {
   const value = JSON.parse(bytes.toString('utf8'));
   if (value.schemaVersion !== 1 || !value.entries || Array.isArray(value.entries) || typeof value.entries !== 'object' ||
@@ -224,6 +224,11 @@ export async function migrateVikingNamespace(folder: string, runtime: MigrationR
       const remote = await detail(item.name);
       if (fingerprint(remote.result) !== item.fingerprint || typeof remote.result.revision !== 'string') throw new Error('OV_NAMESPACE_SKILL_CHANGED');
       registry!.entries[item.id].revision = remote.result.revision;
+      // The old registration revision attested a pristine package; migration
+      // has now rechecked its files under the SDK lock. Carry those exact hashes
+      // to the stopped-service seed step, including the old package filenames.
+      const files=Object.fromEntries(remote.result.files.filter((f:any)=>!f.is_dir&&!/(^|\/)\.(abstract|overview)\.md$/.test(f.path)&&typeof f.sha256==='string').map((f:any)=>[f.path,f.sha256]));
+      if(typeof files['SKILL.md']==='string')registry!.entries[item.id].verifiedFiles=files;
     }
     if (registry) await writeFile(path.join(p.backup, 'bundled-skills.next.json'), JSON.stringify(registry, null, 2) + '\n', { flag: 'wx', mode: 0o600 });
     await runtime.stop(); signal.throwIfAborted();

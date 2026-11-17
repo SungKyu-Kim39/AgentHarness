@@ -6,7 +6,6 @@ import path from "node:path";
 import { Subagents } from "../distribution/subagents";
 async function fixture(t: any) {
   const root = await mkdtemp(path.join(tmpdir(), "ned-subagent-"));
-  t.after(() => rm(root, { recursive: true, force: true }));
   const project = path.join(root, "project"),
     sessions = new Map<string, any>([
       [
@@ -97,7 +96,7 @@ async function fixture(t: any) {
   );
   await agents.load();
   await agents.recover();
-  t.after(() => agents.close().catch(() => {}));
+  t.after(async () => { await agents.close().catch(() => {}); await rm(root, { recursive: true, force: true }); });
   const wait = async (p: () => boolean) => {
     const end = Date.now() + 3000;
     while (!p()) {
