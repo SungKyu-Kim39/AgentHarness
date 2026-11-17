@@ -96,7 +96,6 @@ async function main() {
   const input = stream.readable.pipeThrough(new TransformStream<any, any>({
     async transform(message, controller) {
       try {
-        if (['session/load','session/resume'].includes(message.method)&&typeof message.params?.sessionId==='string'){delivered.reset(message.params.sessionId);replaying.add(message.params.sessionId);}
         if (message.method === 'initialize') canRead = message.params?.clientCapabilities?.fs?.readTextFile === true;
         if (message.method?.startsWith('session/')) {
           if (message.params?.mcpServers?.length || message.params?.additionalDirectories?.length) throw new Error('Only Ned-managed tools and one selected project are allowed');
@@ -114,6 +113,7 @@ async function main() {
           }
           if (message.method === 'session/cancel') await peer.call('cancel', { session: message.params.sessionId });
         }
+        if (['session/load','session/resume'].includes(message.method)&&typeof message.params?.sessionId==='string'){delivered.reset(message.params.sessionId);replaying.add(message.params.sessionId);}
         if (message.id !== undefined && message.method) pending.set(message.id, { method: message.method, cwd: message.params?.cwd, session: message.params?.sessionId });
         controller.enqueue(message);
       } catch (error: any) {
