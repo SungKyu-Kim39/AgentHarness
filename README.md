@@ -8,13 +8,13 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 67개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
 
-0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가합니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
+0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가했습니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 
 ## 다운로드
 
-최신 배포는 [Ned 0.3.8](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
+최신 배포는 [Ned 0.3.8 수정 빌드 1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
 
-0.3.8은 프로젝트별 Conda 환경 선택과 Python 실행·빌드, Git 커밋, REA/Ghidra 분석, OpenViking Studio와 실패한 개인 지식 가져오기 복구를 추가했습니다. 요약 출력 한도와 공통 프로세스 감독기도 보완했습니다. OpenViking 0.5.5와 스킬 66개를 유지합니다. [검증 기록](docs/validation-0.3.8.md)에서 확인한 동작과 남은 수용 범위를 볼 수 있습니다.
+원본 0.3.8은 프로젝트별 Conda 환경 선택과 Python 실행·빌드, Git 커밋, REA/Ghidra 분석, OpenViking Studio와 실패한 개인 지식 가져오기 복구를 추가했습니다. 요약 출력 한도와 공통 프로세스 감독기도 보완했습니다. OpenViking 0.5.5와 스킬 66개를 유지합니다. [검증 기록](docs/validation-0.3.8.md)에서 확인한 동작과 남은 수용 범위를 볼 수 있습니다.
 
 0.3.7에서는 기본 스킬을 66개로 늘리고, 요청과 대화 문맥에 맞는 지침을 자동으로 불러오도록 했습니다. Python SDK의 파일 배치와 호스트 번들을 정리해 설치 부담도 줄였습니다.
 
@@ -53,4 +53,4 @@ Ned 호스트는 설정과 승인, 서비스 실행·종료를 관리합니다. 
 
 빌드는 고정 OpenCode 소스와 Windows 런타임을 준비한 뒤 진행합니다. `npm run ned:prepare:acp`로 빌드 의존성을 준비하고, `npm run build`로 호스트와 ACP를, `NED_BUILD_REVISION=rebuild1 npm run ned:release`로 수정 빌드 설치기를 생성합니다. 자세한 절차와 코드 위치는 [개발 인계](HANDOFF.md), [아키텍처](docs/architecture.md), [어댑터 명세](docs/adapters.md)를 참고하세요.
 
-`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.8입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.
+`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.8 수정 빌드 1입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.

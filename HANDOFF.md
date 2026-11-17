@@ -1,20 +1,24 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.8**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 현재 배포는 **Ned 0.3.8 수정 빌드 1**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-## 0.3.8 rebuild1 작업 중
+## 0.3.8 rebuild1 배포 기준
 
-기본 Zed Agent용 모델 중계는 `distribution/ned/zed-models.ts`에 있습니다. Ned 도구·지침·스킬·MCP·OpenViking·요약 재시도를 주입하지 않습니다. 기본 Zed는 자체 native 하네스로 동작하며 OpenCode와 ACP를 사용하지 않습니다. 실제 키는 Zed에 저장하지 않고 실행별 로컬 토큰으로 연결하며, Zed 자체 프로필·승인 체계를 사용합니다. 모델 중계 테스트와 설정 유지 검사를 통과했습니다.
+[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1)의 EXE·TGZ·체크섬·감사 자료 7개를 게시했고 인증 없는 전체 다운로드 해시를 확인했습니다. [다운로드 안내](downloads/README.md), [배포 상태](downloads/Ned-0.3.8-rebuild1-release-state.json), [검증 기록](docs/validation-0.3.8-rebuild1.md)을 기준으로 이어갑니다.
 
-Astryx 0.7.16 스킬·281개 참조와 Windows React 시작 프로젝트를 추가해 기본 스킬은 67종입니다. `astryx-offline-lock.json`, `distribution/astryx-starter`, `downloads/astryx`를 함께 확인합니다. 원본 CLI를 실행하지 않으며 직원 PC에서 패키지를 받지 않습니다. `skills:bundle`은 기존 두 지침 묶음을 갱신하면서 Astryx의 검토된 항목을 보존하고 실패하면 원본 번들을 복구합니다. 이 작업공간에서 upstream 스킬 전체 재생성은 누락된 빌드 캐시의 외부 다운로드 실패로 완료하지 못했지만 검토된 기존 67종 파일은 무결성 검사를 통과합니다.
+제품 소스는 `1be374cb1af9f16923688d5499d86ba771218dd4`, 반입 파일 커밋은 `16d75164ff44ba2bbf9662d5e78801270816196d`, 검사·감사 소스는 `8b894aed9ee6a5b4a5859c1868cd20f2abe9b4ef`입니다. EXE는 1,534,583,160 bytes, SHA-256 `74291ef0eaf204f562c3e14e6b24a62852ada5f66cb83013617a066d50bbb1d3`입니다. TGZ는 1,913,956,648 bytes, SHA-256 `dfd20c9b57473ca6c80b7aeb1c9fa84deb6585d2ac6b4648f4af889d242680b3`입니다. 대응 소스 두 묶음과 수정 편집기 소스는 TGZ의 source/에 있습니다. 기존 게시 파일과 태그는 불변이며 이후 수정은 새 빌드 식별자로 구분합니다.
 
-메뉴·About 수정은 `scripts/patch-ned-editor.mjs`와 `ned-editor-source-lock.json`에 있습니다. Windows 소스 빌드 43966924528은 성공했으며 bot 커밋 `0b05464`를 병합했습니다. `downloads/editor`의 바이너리·수정 대응 소스·build.json을 `scripts/ned-source-editor.mjs`로 무결성 확인 후 배포 준비본에 적용합니다. 기존의 아이콘 전용 변경과 구별하며 원본 및 수정 대응 소스·라이선스를 함께 배포해야 합니다.
+서브에이전트는 `distribution/subagents.ts`의 호스트 소유 OpenCode 하위 세션입니다. 조사·지정 파일 구현 역할, 전역 동시 두 개, 부모 권한 상속과 중지 확인을 적용합니다. `distribution/ned/agent.ts`와 `message-delivery.ts`는 부모의 첫 답변 뒤 도착한 통합 답변도 실제 ACP 화면에 한 번만 전달합니다. `tests/subagents*.test.ts`, `message-delivery.test.ts`를 확인합니다. 제품 스킬의 외부 Agent 설치 금지는 유지하며 Codex 개발용 `.agents/` 규칙은 바꾸지 않았습니다.
 
-Ned 서브에이전트는 `distribution/subagents.ts`에서 관리합니다. 호스트가 실제 OpenCode 자식 세션을 만들며 조사·지정 파일 구현, 전역 동시 두 개, 부모 권한 상속과 중지 확인을 적용합니다. `tests/subagents.integration.test.ts`는 실제 엔진·합성 모델로 두 자식의 읽기·수정·자동 결과 반환·부모 통합·대기 요청 중지를 확인합니다. 제품 스킬의 외부 Agent 설치 금지는 유지하되 이 호스트 위임을 안내하도록 adapter와 해시를 갱신했습니다. Codex 개발용 `.agents/` 규칙은 바꾸지 않았습니다. [사용 안내](docs/subagents.md)를 참고하세요.
+기본 Zed Agent의 연결은 `distribution/ned/zed-models.ts`에 있습니다. Zed 자체 하네스이며 OpenCode·ACP·Ned 스킬·MCP·OpenViking·요약 재시도를 사용하지 않습니다. 모델 주소·기본 요청 옵션을 공유하고 실제 키 대신 실행별 로컬 토큰을 전달합니다. 자체 프로필과 권한을 유지합니다. [두 Agent 안내](docs/zed-native-agent.md)를 참고하세요.
 
-첫 후보 `c4d1edb`는 API 검사를 통과했지만 늦은 하위 결과의 부모 답변이 ACP 화면에 나타나지 않는 경로를 추가로 발견했습니다. `distribution/ned/agent.ts`의 공유 이벤트 구독과 `message-delivery.ts`의 위치별 중복 제거를 보완했습니다. 최종 후보는 이 보완 이후 소스로 다시 빌드해야 합니다. `tests/subagents-acp.integration.test.ts`는 첫 prompt 종료 후에만 하위 모델을 풀어 실제 화면 전달을 검증합니다.
+Astryx 0.7.16 스킬·281개 참조와 Windows React 시작 프로젝트를 추가해 스킬은 67종입니다. 원본 CLI를 실행하거나 직원 PC에서 의존성을 받지 않습니다. `astryx-offline-lock.json`, `distribution/astryx-starter`, `downloads/astryx`를 확인합니다. `skills:bundle`은 검토된 Astryx 항목을 보존하고 실패 시 복구하며, `adapt-subagent-skills.mjs`로 호스트 위임 지침과 해시를 갱신합니다.
 
-`NED_BUILD_REVISION=rebuild1 node scripts/ned-package.mjs release`가 현재 전체 호스트 재빌드 경로입니다. 역사적인 0.3.6 단일 수정용 `rebuild` 모드를 사용하지 않습니다. 기존 게시 EXE·TGZ·태그는 불변입니다. [검증 진행 기록](docs/validation-0.3.8-rebuild1.md)을 갱신하고 새 설치본의 Windows 검증 뒤에만 배포 완료로 표시합니다.
+Ned 메뉴·About은 Windows 소스 빌드 43966924528의 편집기입니다. 컴포넌트 커밋 `0b05464`, `downloads/editor`의 바이너리·대응 소스·build.json과 `ned-editor-source-lock.json`을 함께 유지합니다. `scripts/ned-source-editor.mjs`가 고정 입력을 검증하고 아이콘을 적용합니다. 큰 수정 대응 소스는 TGZ에만 두고 설치 폴더에는 작은 변경 기록·위치·해시 안내를 둡니다.
+
+Linux 전체 211건은 199건 통과·12건 제외·실패 0건이며 후속 집중 검사 8건도 통과했습니다. [최종 Windows 실행 44013048470](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44013048470)은 설치 파일 교체 없이 32건 모두 통과했습니다. 앞선 native 검사 지연은 테스트의 DB 정리 순서를 고친 뒤 같은 EXE로 재검증했습니다. 실제 직원 Win10/11 GUI·사내 모델과 전체 DNS/TCP 수용은 별도이며 releaseReady는 false입니다.
+
+수정 빌드는 `NED_BUILD_REVISION=rebuild1 node scripts/ned-package.mjs release`로 만들었습니다. `rebuild` 역사 모드를 사용하지 않습니다. 문서·검사가 진행된 뒤 같은 EXE를 감사·묶음 생성할 때만 `NED_REBUILT_SOURCE_COMMIT`으로 제품 소스를 명시합니다. 설치 EXE를 다시 빌드하지 않은 감사 소스와 제품 소스를 혼동하지 않습니다.
 
 ## 0.3.8 배포 기준
 

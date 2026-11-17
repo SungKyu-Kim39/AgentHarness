@@ -1,6 +1,29 @@
-# Ned 0.3.8
+# Ned 0.3.8 수정 빌드 1
 
-최신 배포입니다. Ned와 개인 Zed를 종료하고 반입 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식·편집기 환경은 유지합니다.
+최신 배포입니다. 앱의 기본 버전은 0.3.8로 유지하고 파일명은 `rebuild1`로 구분합니다. Ned와 개인 Zed를 종료한 뒤 TGZ를 새 폴더에 풀고 설치 EXE를 실행하세요. 기존 설정·대화·지식·편집기 글꼴과 패널 배치를 유지합니다.
+
+- [폐쇄망 반입 TGZ · 설치 EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8-rebuild1/Ned-0.3.8-rebuild1-windows-x64.tgz) — 1,913,956,648 bytes
+- [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8-rebuild1/Ned-0.3.8-rebuild1-win-x64.exe) — 1,534,583,160 bytes
+- [TGZ SHA-256](Ned-0.3.8-rebuild1-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.8-rebuild1-win-x64.exe.sha256)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1) · [검증 기록](../docs/validation-0.3.8-rebuild1.md) · [Windows 32건](Ned-0.3.8-rebuild1-windows-offline-smoke.json) · [전체 파일 대조](Ned-0.3.8-rebuild1-installer-audit.json) · [반입 묶음 검사](Ned-0.3.8-rebuild1-bundle-verification.json) · [공개 다운로드 검사](Ned-0.3.8-rebuild1-public-verification.json) · [배포 상태](Ned-0.3.8-rebuild1-release-state.json)
+
+Ned Agent는 조사·지정 파일 구현을 실제 하위 Agent에게 위임합니다. 부모의 모델·프로젝트·권한을 따르고, 동시에 두 작업을 실행합니다. 하위 결과를 부모 대화에 통합하며 부모의 첫 답변이 끝난 뒤에도 편집기에 전달합니다. 대화 중지·새 요청·앱 종료 시 하위 작업도 정리합니다. [서브에이전트 안내](../docs/subagents.md)를 참고하세요.
+
+[기본 Zed Agent](../docs/zed-native-agent.md)는 Zed 자체 하네스로 동작합니다. 중앙 JSON의 모델 연결을 공유하지만 OpenCode·Ned 도구·스킬·MCP·OpenViking·요약 정책은 사용하지 않습니다. Ned 메뉴·About은 고정 Zed 소스에서 빌드했으며 기반 Zed의 출처와 수정 대응 소스도 제공합니다.
+
+[Astryx](../docs/astryx.md)의 스킬·참조 281개와 Windows용 React 시작 프로젝트를 추가해 기본 스킬은 67종입니다. 시작 프로젝트는 ZIP 한 파일로 설치하며 직원 PC에서 npm 설치를 요구하지 않습니다.
+
+Linux 전체 회귀는 211건 중 199건 통과·12건 환경별 제외·실패 0건이며, 보완 후 집중 검사 8건도 통과했습니다. [Windows 실행 44013048470](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44013048470)은 최종 EXE를 설치해 32건 모두 통과했습니다. 검사 중 설치 파일을 교체하지 않았습니다. 앱 파일 59,986개를 준비본과 전부 대조했고 반입 묶음 50개 파일의 경로·대응 소스 해시도 확인했습니다.
+
+Windows Server 실행기의 설치 시간은 48.173초입니다. 직원 Windows 10·11 GUI, 실제 사내 Qwen/BGE와 전체 DNS/TCP 관찰은 별도 수용 범위이며 prerelease로 제공합니다. 릴리스 첨부 파일 7개는 인증 없이 전체 다운로드해 크기와 SHA-256을 확인했습니다.
+
+제품 빌드 소스는 `1be374cb1af9f16923688d5499d86ba771218dd4`, 검사·감사 소스는 `8b894aed9ee6a5b4a5859c1868cd20f2abe9b4ef`, 반입 파일 커밋은 `16d75164ff44ba2bbf9662d5e78801270816196d`입니다. 이전 버전의 EXE·TGZ·태그는 보존합니다.
+
+---
+
+# Ned 0.3.8 원본 배포
+
+이전 원본 배포입니다. Ned와 개인 Zed를 종료하고 반입 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식·편집기 환경은 유지합니다.
 
 - [폐쇄망 반입 TGZ · EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-windows-x64.tgz) — 1,837,611,541 bytes
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-win-x64.exe) — 1,511,354,669 bytes

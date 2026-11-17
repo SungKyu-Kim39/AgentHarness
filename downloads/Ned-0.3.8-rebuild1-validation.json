@@ -130,5 +130,11 @@
     "noCompleteNativeSummary": true,
     "sameInstallerSha256": "74291ef0eaf204f562c3e14e6b24a62852ada5f66cb83013617a066d50bbb1d3",
     "testHarnessFix": "Close engine/services before deleting the Windows SQLite workspace; final TAP retry passes all 32 tests with identical installer bytes."
+  },
+  "releasePublication": {
+    "workflowRunId": 44015060571,
+    "releaseUrl": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1",
+    "assetCount": 7,
+    "anonymousFullDownloadsVerified": true
   }
 }
