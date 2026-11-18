@@ -416,6 +416,28 @@ jobs:
           npm ci --no-audit --no-fund
           if ($LASTEXITCODE -ne 0) { throw 'Terminal test prerequisites failed' }
           $env:NED_SHELL_TEST_PYTHON = (Get-Command python.exe).Source
+          @'
+          const { execFile } = require('node:child_process');
+          const p = require('node:path');
+          const { writeFileSync } = require('node:fs');
+          const env = process.env;
+          const ps = p.join(env.SystemRoot, 'System32/WindowsPowerShell/v1.0/powershell.exe');
+          const scr = 'Write-Output "PS-TEST"; exit 9';
+          const file = p.join(env.RUNNER_TEMP, 'ned-shell-probe.ps1');
+          writeFileSync(file, scr, 'utf8');
+          const restricted = {SystemRoot:env.SystemRoot,WINDIR:env.SystemRoot,Path:env.Path,PATHEXT:env.PATHEXT,USERPROFILE:env.USERPROFILE,APPDATA:env.APPDATA,LOCALAPPDATA:env.LOCALAPPDATA,TEMP:env.TEMP,TMP:env.TMP,ComSpec:env.ComSpec};
+          const args = ['-NoLogo','-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(scr,'utf16le').toString('base64')];
+          const run = (name,bin,argv,env) => new Promise(resolve => {
+            const child = execFile(bin,argv,{env,timeout:15000,windowsHide:true},(err,stdout,stderr)=>{console.log(JSON.stringify({name,code:err?.code,signal:err?.signal,stdout:stdout.slice(0,500),stderr:stderr.slice(0,500)}));resolve();});
+            child.stdin.end();
+          });
+          Promise.all([
+            run('direct',ps,args,env),
+            run('restricted',ps,args,restricted),
+            run('script-file',ps,['-NoProfile','-NonInteractive','-File',file],restricted),
+            run('supervisor',env.NED_SHELL_TEST_PYTHON,['-I','-B','scripts/sidecar-supervisor.py',ps,...args],restricted),
+          ]);
+          '@ | node
           & node --import tsx --test tests/terminal-jobs.windows.test.ts
           if ($LASTEXITCODE -ne 0) { throw 'Windows terminal host test failed' }
       - name: Prepare the pinned source and Ned UI changes
