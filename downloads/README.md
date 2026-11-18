@@ -1,6 +1,22 @@
+# Ned 0.3.9
+
+최신 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE로 업데이트합니다. 기존 설정·대화·지식·편집기 환경과 사용자 수정 스킬을 보존합니다.
+
+- [반입 TGZ](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.9/Ned-0.3.9-windows-x64.tgz) — 1915581654 bytes
+- [설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.9/Ned-0.3.9-win-x64.exe) — 1535624809 bytes
+- [TGZ SHA-256](Ned-0.3.9-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.9-win-x64.exe.sha256)
+- [변경 사항](../docs/changes-0.3.9.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../docs/validation-0.3.9.md)
+- [설치 감사](Ned-0.3.9-installer-audit.json) · [TGZ 검사](Ned-0.3.9-bundle-verification.json) · [Windows 결과](Ned-0.3.9-windows-offline-smoke.json) · [공개 확인](Ned-0.3.9-public-verification.json) · [배포 상태](Ned-0.3.9-release-state.json)
+
+기본 스킬 74종을 로컬 준비하고 변경분만 적용합니다. 지식 서비스의 준비가 대화를 막지 않으며 구체적인 시작 단계를 표시합니다. Studio 복구, CMD, 기존 개인 Zed 대화 가져오기와 EGM 7종을 포함합니다. 기본 Zed Agent의 필수 name·모델 통신 경로도 보완했습니다.
+
+Windows Server의 설치 후 52건 중 52건 통과·0건 제외·실패 0건입니다. 직원 Win10/11 GUI·실제 사내 모델·전체 외부 DNS/TCP 수용과는 구분합니다. 과거 태그·첨부는 보존합니다.
+
+---
+
 # Ned 0.3.8 수정 빌드 1
 
-최신 배포입니다. 앱의 기본 버전은 0.3.8로 유지하고 파일명은 `rebuild1`로 구분합니다. Ned와 개인 Zed를 종료한 뒤 TGZ를 새 폴더에 풀고 설치 EXE를 실행하세요. 기존 설정·대화·지식·편집기 글꼴과 패널 배치를 유지합니다.
+이전 배포입니다. 앱의 기본 버전은 0.3.8로 유지하고 파일명은 `rebuild1`로 구분합니다. Ned와 개인 Zed를 종료한 뒤 TGZ를 새 폴더에 풀고 설치 EXE를 실행하세요. 기존 설정·대화·지식·편집기 글꼴과 패널 배치를 유지합니다.
 
 - [폐쇄망 반입 TGZ · 설치 EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8-rebuild1/Ned-0.3.8-rebuild1-windows-x64.tgz) — 1,913,956,648 bytes
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8-rebuild1/Ned-0.3.8-rebuild1-win-x64.exe) — 1,534,583,160 bytes
