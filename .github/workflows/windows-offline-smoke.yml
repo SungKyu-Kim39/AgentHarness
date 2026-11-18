@@ -293,7 +293,8 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $install = Split-Path $env:NED_TEST_NODE
+          $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
+          if ((Split-Path $env:NED_TEST_NODE) -ne $install) { throw 'Unexpected disposable installer path' }
           $previous = Join-Path $env:RUNNER_TEMP 'Ned-0.3.9-previous.exe'
           $audit = Get-Content 'downloads/Ned-0.3.9-installer-audit.json' -Raw | ConvertFrom-Json
           $url = 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/af68e9a2fa55c98596d83b3503680bab3ecb2dad/downloads/Ned-0.3.9-win-x64.exe'
@@ -301,10 +302,13 @@ jobs:
           if ($LASTEXITCODE -ne 0 -or (Get-FileHash $previous -Algorithm SHA256).Hash -ne $audit.installer.sha256) { throw 'Published 0.3.9 installer hash mismatch' }
           $uninstall = Start-Process -FilePath (Join-Path $install 'Uninstall Ned.exe') -ArgumentList @('/S', "_?=$install") -Wait -PassThru
           $uninstall.Refresh()
-          if ($uninstall.ExitCode -ne 0) { throw 'Clean candidate uninstall failed' }
+          if ($uninstall.ExitCode -ne 0) { throw "Clean candidate uninstall failed: $($uninstall.ExitCode)" }
+          # The explicit NSIS _?= mode can leave the running uninstaller in
+          # this fixture path. The released installer requires an empty path.
+          if (Test-Path -LiteralPath $install) { Remove-Item -LiteralPath $install -Recurse -Force }
           $old = Start-Process -FilePath $previous -ArgumentList @('/S', "/D=$install") -Wait -PassThru
           $old.Refresh()
-          if ($old.ExitCode -ne 0) { throw 'Published 0.3.9 installation failed' }
+          if ($old.ExitCode -ne 0) { throw "Published 0.3.9 installation failed: $($old.ExitCode)" }
           Remove-Item $previous -Force
           $skills = Join-Path $env:APPDATA 'Ned\skills\ned-release-fixture'
           $reference = Join-Path $skills 'references\guidance.md'
