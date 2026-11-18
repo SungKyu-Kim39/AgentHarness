@@ -26,13 +26,13 @@ Ned를 닫고 반입 폴더의 **CHECK_OPENVIKING.cmd**를 실행해 보세요. 
 
 문의할 때는 경고 코드와 안전한 상태 기록, 검사 마지막 오류와 `EXIT_CODE`를 사용하세요. 전체 설정·키·DB·지식을 보내거나 삭제할 필요는 없습니다. 무결성 검사나 외부 DNS 차단을 풀어서 해결하지 않습니다.
 
-OpenViking 없이 작업을 먼저 해야 한다면 관리 중인 JSON에서 `openViking.enabled`만 `false`로 바꾸고 기존 embedding 설정을 유지한 채 가져올 수 있습니다. 이 동안 색인·검색과 기본 스킬 자동 등록은 중단됩니다. 암호화 파일은 직접 편집하지 말고 [설정 복구 안내](configuration-recovery.md)를 참고하세요.
+OpenViking 없이 작업을 먼저 해야 한다면 관리 중인 JSON에서 `openViking.enabled`만 `false`로 바꾸고 기존 embedding 설정을 유지한 채 가져올 수 있습니다. 이 동안 지식 색인·검색은 중단되고 Ned의 기본 스킬은 계속 사용할 수 있습니다. 암호화 파일은 직접 편집하지 말고 [설정 복구 안내](configuration-recovery.md)를 참고하세요.
 
-## 개인 지식 가져오기 오류
+## 기존 개인 지식 조회
 
-개인 지식 가져오기는 서비스 시작이나 스킬 등록과 별도로 실행합니다. `OV_PERSONAL_UPLOAD`는 사본 전달, `OV_PERSONAL_IMPORT`는 SDK 가져오기, `OV_PERSONAL_VERIFY`는 영역 존재 확인 단계입니다. `OV_PERSONAL_INDEX`는 색인 검사 실패를 뜻합니다. HTTP 상태가 있으면 함께 확인합니다.
-
-기록은 `openviking/personal-imports.json`, 승인한 사본은 `personal-<sha256>.ovpack`으로 보관합니다. 실패·충돌 영역을 자동으로 덮어쓰지 않습니다. [이관 안내](openviking-personal-migration.md)에 따라 확인하고 실제 OVPack이나 키는 공유하지 마세요.
+0.3.10에서 새 개인 공통 지식 `.ovpack` 가져오기를 제거했습니다. 이전에 가져오기를 완료한
+자료는 OpenViking에서 조회할 수 있으며 가져오기 기록인 `openviking/personal-imports.json`도
+보존합니다.
 
 ## 모델 응답이나 세션 압축이 끊길 때
 
@@ -72,5 +72,5 @@ Write·Ask·Minimal의 필수 이름과 모델 capability는 Ned가 준비하고
 설치 버전을 확인합니다. 키나 settings 전문을 공유하지 않습니다.
 
 Studio 빈 화면은 `%APPDATA%\Ned\openviking\studio-status.json`의 코드로
-인증·자료·CSP·렌더러 문제를 구분합니다. 오류 화면의 다시 불러오기를 사용하며 지식 서비스
+연결·인증·자료·브라우저 저장소·CSP·렌더러 문제를 구분합니다. 오류 화면의 다시 불러오기를 사용하며 지식 서비스
 상태도 확인합니다. 지식 서비스 실패가 Ned의 로컬 스킬과 대화를 막지는 않습니다.

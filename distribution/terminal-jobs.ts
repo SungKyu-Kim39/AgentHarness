@@ -53,13 +53,19 @@ export class TerminalJobs {
     const shell = terminalShell(job.shell, systemRoot);
     const python = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
     const env: NodeJS.ProcessEnv = { SystemRoot: systemRoot, WINDIR: systemRoot,
-      Path: process.env.Path ?? process.env.PATH, PATHEXT: process.env.PATHEXT,
-      USERPROFILE: process.env.USERPROFILE, APPDATA: process.env.APPDATA, LOCALAPPDATA: process.env.LOCALAPPDATA,
-      TEMP: process.env.TEMP, TMP: process.env.TMP, ComSpec: terminalShell('cmd', systemRoot).program };
+      Path: process.env.Path ?? process.env.PATH, ComSpec: terminalShell('cmd', systemRoot).program };
+    for (const name of ['SystemDrive', 'ProgramData', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432',
+      'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'HOMEDRIVE', 'HOMEPATH', 'TEMP', 'TMP', 'PATHEXT', 'PROCESSOR_ARCHITECTURE']) {
+      if (process.env[name]) env[name] = process.env[name];
+    }
     let batch: string | undefined;
     try {
       let args: string[];
       if (job.shell === 'powershell') {
+        env.PSModulePath = [
+          path.join(path.dirname(shell.program), 'Modules'),
+          path.join(env.ProgramW6432 ?? env.ProgramFiles ?? path.join(path.parse(systemRoot).root, 'Program Files'), 'WindowsPowerShell', 'Modules'),
+        ].join(path.delimiter);
         const script = "[Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)\n$OutputEncoding = [Console]::OutputEncoding\n$global:LASTEXITCODE = 0\n& {\n" + command +
           "\n}\nif (-not $?) { if ($LASTEXITCODE) { exit $LASTEXITCODE }; exit 1 }; exit $LASTEXITCODE";
         args = [...shell.args, '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')];

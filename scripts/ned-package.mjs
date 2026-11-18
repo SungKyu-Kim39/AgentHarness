@@ -169,6 +169,8 @@ async function audit() {
     verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
     const sourceEditor=(version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))?await verifySourceEditor(root,resources):undefined;
     if(['0.3.9','0.3.10'].includes(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
+    if(version==='0.3.10')for(const file of ['skill-seed','personal-pack-recovery.py'])
+      if(await exists(path.join(resources,'ned',file)))throw Error('Removed OpenViking resource still in installer: '+file);
     let astryx;
     if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))){
       const lock=await json(path.join(root,'astryx-offline-lock.json'));

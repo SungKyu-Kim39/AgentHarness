@@ -1,5 +1,7 @@
 # Ned
 
+[0.3.10 변경 사항](docs/changes-0.3.10.md) · [검증](docs/validation-0.3.10.md)
+
 최신 사전 릴리스는 [Ned 0.3.9](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.9)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [변경 사항](docs/changes-0.3.9.md) · [검증 기록](docs/validation-0.3.9.md).
 
 Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이기 위해 만들었습니다.
