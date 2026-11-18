@@ -12,7 +12,9 @@ type Job = {
   controller: AbortController;
   task: Promise<void>;
   result?: CommandResult;
-  error?: 'start-failed' | 'stop-unconfirmed';
+  error?: 'start-failed' | 'stop-unconfirmed' | 'stopped';
+  output?: string;
+  outputTruncated?: boolean;
 };
 
 export class TerminalJobs {
@@ -30,7 +32,7 @@ export class TerminalJobs {
     }
     for (const [id, job] of this.jobs) {
       if (this.jobs.size < 64) break;
-      if (job.result || job.error === 'start-failed') this.jobs.delete(id);
+      if (job.result || job.error && job.error !== 'stop-unconfirmed') this.jobs.delete(id);
     }
     if (this.jobs.size >= 64) throw new Error('동시에 실행할 수 있는 Ned 터미널 작업 수를 초과했습니다.');
     const id = randomUUID(), controller = new AbortController();
@@ -46,6 +48,7 @@ export class TerminalJobs {
     const shell = terminalShell(job.shell, systemRoot);
     const env: NodeJS.ProcessEnv = { SystemRoot: systemRoot, WINDIR: systemRoot,
       Path: process.env.Path ?? process.env.PATH, PATHEXT: process.env.PATHEXT,
+      USERPROFILE: process.env.USERPROFILE, APPDATA: process.env.APPDATA, LOCALAPPDATA: process.env.LOCALAPPDATA,
       TEMP: process.env.TEMP, TMP: process.env.TMP, ComSpec: terminalShell('cmd', systemRoot).program };
     let batch: string | undefined;
     try {
@@ -63,9 +66,12 @@ export class TerminalJobs {
         args = [...shell.args, '/Q', '/C', '%NED_TERMINAL_BATCH%'];
       }
       signal.throwIfAborted();
-      job.result = await this.commands.run({ executable: shell.program, args, cwd: job.project, env }, signal);
+      job.result = await this.commands.run({ executable: shell.program, args, cwd: job.project, env }, signal, false, (output, truncated) => {
+        job.output = output.slice(-12000);
+        job.outputTruncated = truncated || output.length > 12000;
+      });
     } catch {
-      job.error = this.commands.stoppingUnconfirmed ? 'stop-unconfirmed' : 'start-failed';
+      job.error = this.commands.stoppingUnconfirmed ? 'stop-unconfirmed' : signal.aborted ? 'stopped' : 'start-failed';
     } finally {
       if (batch) await rm(batch, { force: true }).catch(() => {});
     }
@@ -80,7 +86,7 @@ export class TerminalJobs {
     return { id: job.id, shell: job.shell, status: job.error ?? (job.result
       ? job.result.cancelled ? 'stopped' : 'finished'
       : job.controller.signal.aborted ? 'stopping' : 'running'),
-    ...(job.result ? { exitCode: job.result.exitCode, output: job.result.output.slice(-12000), outputTruncated: job.result.outputTruncated || job.result.output.length > 12000 } : {}) };
+    ...(job.result ? { exitCode: job.result.exitCode } : {}), output: job.output ?? '', outputTruncated: job.outputTruncated ?? false };
   }
   async status(session: string, project: string, id: string, waitMs: number, signal?: AbortSignal) {
     const job = this.owned(session, project, id);

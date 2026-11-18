@@ -6,7 +6,7 @@ on:
         description: Exact immutable installer build
         default: 0.3.8
         type: choice
-        options: ['0.3.9', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
+        options: ['0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
       candidate_source:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
@@ -29,7 +29,7 @@ permissions:
   contents: read
 jobs:
   offline-install:
-    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe' && inputs.artifact_version != 'release-build'
+    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe' && inputs.artifact_version != 'release-build' && inputs.artifact_version != 'terminal-source-probe' && inputs.artifact_version != 'terminal-editor-probe'
     runs-on: windows-2022
     timeout-minutes: 30
     env:
@@ -385,7 +385,7 @@ jobs:
 
 
   editor-source-build:
-    if: inputs.artifact_version == 'editor-source-build'
+    if: inputs.artifact_version == 'editor-source-build' || inputs.artifact_version == 'terminal-source-probe' || inputs.artifact_version == 'terminal-editor-probe'
     runs-on: windows-2022
     timeout-minutes: 360
     permissions:
@@ -405,6 +405,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Verify the Windows terminal host paths
+        if: inputs.artifact_version != 'terminal-editor-probe'
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         shell: pwsh
@@ -418,6 +419,7 @@ jobs:
           & node --import tsx --test tests/terminal-jobs.windows.test.ts
           if ($LASTEXITCODE -ne 0) { throw 'Windows terminal host test failed' }
       - name: Prepare the pinned source and Ned UI changes
+        if: inputs.artifact_version != 'terminal-source-probe'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -436,11 +438,14 @@ jobs:
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           $artifact = $version + $(if ($env:NED_BUILD_REVISION) { '-' + $env:NED_BUILD_REVISION } else { '' })
           "NED_EDITOR_ARTIFACT=$artifact" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          & tar.exe -czf (Join-Path $out "zed-ned-editor-source-v1.28.1-$artifact.tar.gz") -C $source .
-          if ($LASTEXITCODE -ne 0) { throw 'Corresponding source packaging failed' }
+          if ('${{ inputs.artifact_version }}' -eq 'editor-source-build') {
+            & tar.exe -czf (Join-Path $out "zed-ned-editor-source-v1.28.1-$artifact.tar.gz") -C $source .
+            if ($LASTEXITCODE -ne 0) { throw 'Corresponding source packaging failed' }
+          }
           "NED_EDITOR_SOURCE=$source" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_EDITOR_OUTPUT=$out" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
       - name: Build the edited Windows x64 executable
+        if: inputs.artifact_version != 'terminal-source-probe'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -450,10 +455,15 @@ jobs:
           & rustup toolchain install 1.98.1 --profile minimal --component rust-src
           if ($LASTEXITCODE -ne 0) { throw 'Pinned Rust installation failed' }
           Set-Location $env:NED_EDITOR_SOURCE
+          if ('${{ inputs.artifact_version }}' -eq 'terminal-editor-probe') {
+            & cargo --config .cargo/bundle-config.toml check --release --locked --package terminal_view --target x86_64-pc-windows-msvc
+            exit $LASTEXITCODE
+          }
           & cargo --config .cargo/bundle-config.toml build --release --locked --package zed --target x86_64-pc-windows-msvc
           if ($LASTEXITCODE -ne 0) { throw 'Editor source build failed' }
           Copy-Item target/x86_64-pc-windows-msvc/release/zed.exe (Join-Path $env:NED_EDITOR_OUTPUT "Ned-editor-${env:NED_EDITOR_ARTIFACT}.exe")
       - name: Check visible menu strings and record binary provenance
+        if: inputs.artifact_version == 'editor-source-build'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -472,6 +482,7 @@ jobs:
           '@ | node
           if ($LASTEXITCODE -ne 0) { throw 'Built editor validation failed' }
       - name: Upload versioned components for review
+        if: inputs.artifact_version == 'editor-source-build'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ned-editor-${{ env.NED_EDITOR_ARTIFACT }}-${{ github.sha }}

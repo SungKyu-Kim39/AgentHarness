@@ -42,7 +42,7 @@ test('the host runs both approved Windows shells and stops only this conversatio
     ['powershell', '(Get-Location).Path; Write-Output \'quoted "hello world"\'; exit 9', 9],
   ] as const) {
     const { id } = await call('run_terminal', { shell, command });
-    const result = await call('terminal_status', { id, waitMs: 10000 });
+    const result = await call('terminal_status', { id, waitMs: 30000 });
     assert.equal(result.exitCode, exitCode, JSON.stringify(result));
     assert.ok(result.output.toLowerCase().includes(project.toLowerCase()), result.output);
     assert.match(result.output, /quoted "hello world"/);

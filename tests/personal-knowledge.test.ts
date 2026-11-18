@@ -13,7 +13,15 @@ async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
   const root = await mkdtemp(path.join(tmpdir(), 'ned-personal-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const archive = path.join(root, 'legacy.ovpack');
-  await writeFile(archive, Buffer.from('synthetic export bytes'));
+  const paths = ['memories/preference.md', 'resources/design.md', 'skills/example/SKILL.md', 'sessions/past.json', 'privacy/current.json', 'peers/codex.tool@local/memories/entity.md'];
+  await execute('python3', ['-I', '-B', '-c', `import json,sys,zipfile
+user=sys.argv[2]; paths=json.loads(sys.argv[3])
+m={'kind':'openviking.ovpack','format_version':3,'root':{'name':user,'uri':'viking://user/'+user},'entries':[{'path':'','kind':'directory'}]+[{'path':p,'kind':'file'} for p in paths]}
+with zipfile.ZipFile(sys.argv[1],'w') as z:
+ z.writestr(user+'/_ovpack/manifest.json',json.dumps(m))
+ for p in paths:z.writestr(user+'/files/'+p,'synthetic private data')
+ if sys.argv[4]=='true':z.writestr(user+'/../outside.txt','reject')
+`, archive, 'default', JSON.stringify(paths), 'false']);
   return { root, archive };
 }
 
