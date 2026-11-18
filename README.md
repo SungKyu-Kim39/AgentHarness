@@ -10,7 +10,7 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
 
-0.3.9는 스킬 사전 준비·변경분 적용과 비동기 지식 서비스, 상세 시작 표시, Studio 오류 복구, CMD 선택, [기존 Zed 대화 가져오기](docs/zed-history-import.md), [EGM 설계·검토](docs/egm.md)를 제공합니다.
+0.3.9는 스킬 사전 준비·변경분 적용과 비동기 지식 서비스, 상세 시작 표시, Studio 오류 복구, CMD 선택, [기존 Zed 대화 가져오기](docs/zed-history-import.md), [EGM 설계·검토](docs/egm.md)를 제공합니다. 기본 Zed Agent의 설정·모델 연결과 Git 패널의 **Trust Directory**를 수정했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
 
 0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가했습니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 
@@ -49,12 +49,12 @@ Ned는 선택한 프로젝트의 코드를 읽고 검색한 뒤 수정안을 만
 
 기본 구성에는 Aegis·Conductor 지침, 스킬 74개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
 
-OpenViking은 Ned와 함께 시작하고 종료합니다. 기본 스킬을 등록하고, 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [스킬 안내](docs/skills-0.3.7.md), [개인 지식 이관](docs/openviking-personal-migration.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
+OpenViking은 Ned 실행 중 백그라운드에서 시작하고 Ned와 함께 종료합니다. 설치된 기본 스킬은 변경분을 적용하며, 지식 서비스는 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [스킬 안내](docs/skills-0.3.9.md), [개인 지식 이관](docs/openviking-personal-migration.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
 
 ## 개발과 배포
 
 Ned 호스트는 설정과 승인, 서비스 실행·종료를 관리합니다. Zed는 편집기와 대화 화면을, 전용 OpenCode 엔진은 에이전트 실행을 담당합니다. 모델 가중치는 포함하지 않으며, 답변과 임베딩 계산에는 JSON에 지정한 사내 API를 사용합니다. 긴 서버 대기열을 고려해 모델 응답에 기본 시간 제한을 두지 않습니다.
 
-빌드는 고정 OpenCode 소스와 Windows 런타임을 준비한 뒤 진행합니다. `npm run ned:prepare:acp`로 빌드 의존성을 준비하고, `npm run build`로 호스트와 ACP를, `NED_BUILD_REVISION=rebuild1 npm run ned:release`로 수정 빌드 설치기를 생성합니다. 자세한 절차와 코드 위치는 [개발 인계](HANDOFF.md), [아키텍처](docs/architecture.md), [어댑터 명세](docs/adapters.md)를 참고하세요.
+빌드는 고정 OpenCode 소스와 Windows 런타임을 준비한 뒤 진행합니다. `npm run ned:prepare:acp`로 빌드 의존성을 준비하고, `npm run build`로 호스트와 ACP를, `npm run ned:release`로 설치기를 생성합니다. 자세한 절차와 코드 위치는 [개발 인계](HANDOFF.md), [아키텍처](docs/architecture.md), [어댑터 명세](docs/adapters.md)를 참고하세요.
 
 `work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.8 수정 빌드 1입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.
