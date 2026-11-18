@@ -17,7 +17,7 @@ test('the installed editor Git command trusts only the selected repository in Ne
   t.after(() => rm(root, { recursive: true, force: true }));
   const repositories = [path.join(root, 'project with spaces'), path.join(root, 'other project')];
   for (const repository of repositories) await mkdir(repository);
-  const profile = await prepareEditor(root, process.execPath, resources!, 'test-descriptor', 'http://127.0.0.1:9');
+  const profile = await prepareEditor(root, process.execPath, resources!, path.join(root, 'test-descriptor'), 'http://127.0.0.1:9');
   const config = path.join(profile.data, 'config', 'git', 'config');
   assert.equal(profile.env.GIT_CONFIG_GLOBAL, config);
   const where = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'where.exe');
@@ -41,7 +41,7 @@ test('the installed editor Git command trusts only the selected repository in Ne
   await assert.rejects(git(repositories[1], ['status', '--porcelain'], true), /dubious ownership/i);
   await assert.rejects(git(selected, ['ls-remote', repositories[1]]), /transport 'file' not allowed/i);
 
-  const restarted = await prepareEditor(root, process.execPath, resources!, 'next-descriptor', 'http://127.0.0.1:9');
+  const restarted = await prepareEditor(root, process.execPath, resources!, path.join(root, 'next-descriptor'), 'http://127.0.0.1:9');
   const entries = await exec('git', ['config', '--global', '--get-all', 'safe.directory'], { cwd: selected, env: restarted.env });
   assert.equal(entries.stdout.trim(), selected);
 });

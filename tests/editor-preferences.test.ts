@@ -2,7 +2,7 @@ import {test} from 'node:test';import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,writeFile,readFile,rm,symlink}from'node:fs/promises';import{tmpdir}from'node:os';import path from'node:path';
 import{parse}from'jsonc-parser';import{prepareEditor}from'../distribution/ned/profile';import{terminalShell}from'../distribution/ned/terminal';
 async function fixture(t:any){const root=await mkdtemp(path.join(tmpdir(),'ned-preferences-'));t.after(()=>rm(root,{recursive:true,force:true}));await mkdir(path.join(root,'editor/config'),{recursive:true});return root;}
-const launch=(root:string,version='one')=>prepareEditor(root,'/Ned-'+version,'/resources-'+version,'/descriptor-'+version,'http://127.0.0.1:9');
+const launch=(root:string,version='one')=>prepareEditor(root,path.join(root,'Ned-'+version),path.join(root,'resources-'+version),path.join(root,'descriptor-'+version),'http://127.0.0.1:9');
 test('updates keep live JSONC fonts, panel layout, startup choice, keymap and workspace DB while refreshing managed endpoints',async t=>{
  const root=await fixture(t),file=path.join(root,'editor/config/settings.json');
  const original=`// MY_LAYOUT\n{\n "ui_font_size": 22, // MY_FONT\n "agent_ui_font_size":24,"agent_buffer_font_size":20,"agent_ui_font_family":"Malgun Gothic", "buffer_font_size": 19, "buffer_font_family":"Consolas",\n "terminal":{"font_size":18,"shell":{"program":"untrusted"}}, "agent":{"terminal_init_command":"untrusted","tool_permissions":{"default":"allow"},"dock":"left","default_width":520,"threads_sidebar":{"position":"right","default_width":280}},\n "project_panel":{"dock":"right","default_width":310}, "restore_on_startup":"last_session",\n "languages":{"C++":{"tab_size":8,"language_servers":["untrusted"]}},\n "agent_servers":{"Other":{"command":"untrusted"}},"telemetry":{"metrics":true},\n}\n`;
@@ -15,7 +15,14 @@ test('updates keep live JSONC fonts, panel layout, startup choice, keymap and wo
  assert.match(await readFile(file,'utf8'),/MY_LAYOUT/);assert.match(await readFile(file,'utf8'),/MY_FONT/);assert.equal(await readFile(path.join(root,'editor/config/settings.before-ned-0.3.3.jsonc'),'utf8'),original);
  // A later user edit wins over any stale appearance snapshot, including after another executable version.
  await writeFile(file,(await readFile(file,'utf8')).replace('"ui_font_size": 22','"ui_font_size": 25'));
- const second=await launch(root,'two');saved=parse(await readFile(file,'utf8'));assert.equal(saved.ui_font_size,25);assert.equal(saved.agent.dock,'left');assert.equal(saved.agent_servers.Ned.command,'/Ned-two');assert.equal(saved.agent_servers.Ned.args[0],'/resources-two/ned/agent.cjs');assert.equal(second.data,first.data);
+ const second=await launch(root,'two');saved=parse(await readFile(file,'utf8'));assert.equal(saved.ui_font_size,25);assert.equal(saved.agent.dock,'left');const agentPath=path.join(root,'resources-two','ned','agent.cjs');
+ if(process.platform==='win32'){
+  assert.equal(saved.agent_servers.Ned.command,path.join(root,'resources-two','runtime','windows-x64','openviking','python','python.exe'));
+  assert.deepEqual(saved.agent_servers.Ned.args.slice(3),[path.join(root,'Ned-two'),agentPath,path.join(root,'descriptor-two')]);
+ }else{
+  assert.equal(saved.agent_servers.Ned.command,path.join(root,'Ned-two'));
+  assert.deepEqual(saved.agent_servers.Ned.args,[agentPath,path.join(root,'descriptor-two')]);
+ }assert.equal(second.data,first.data);
  assert.equal(await readFile(keymapFile(root),'utf8'),keymap);assert.equal(await readFile(db,'utf8'),'opaque-workspace-layout');assert.equal(await readFile(path.join(root,'editor/config/settings.before-ned-0.3.3.jsonc'),'utf8'),original);
 });
 function keymapFile(root:string){return path.join(root,'editor/config/keymap.json')}

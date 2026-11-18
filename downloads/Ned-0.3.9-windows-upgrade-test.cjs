@@ -14433,7 +14433,7 @@ async function fixture2(t) {
   await (0, import_promises15.mkdir)(import_node_path15.default.join(root, "editor/config"), { recursive: true });
   return root;
 }
-var launch = (root, version = "one") => prepareEditor(root, "/Ned-" + version, "/resources-" + version, "/descriptor-" + version, "http://127.0.0.1:9");
+var launch = (root, version = "one") => prepareEditor(root, import_node_path15.default.join(root, "Ned-" + version), import_node_path15.default.join(root, "resources-" + version), import_node_path15.default.join(root, "descriptor-" + version), "http://127.0.0.1:9");
 (0, import_node_test5.test)("updates keep live JSONC fonts, panel layout, startup choice, keymap and workspace DB while refreshing managed endpoints", async (t) => {
   const root = await fixture2(t), file = import_node_path15.default.join(root, "editor/config/settings.json");
   const original = `// MY_LAYOUT
@@ -14481,8 +14481,14 @@ var launch = (root, version = "one") => prepareEditor(root, "/Ned-" + version, "
   saved = parse2(await (0, import_promises15.readFile)(file, "utf8"));
   import_strict5.default.equal(saved.ui_font_size, 25);
   import_strict5.default.equal(saved.agent.dock, "left");
-  import_strict5.default.equal(saved.agent_servers.Ned.command, "/Ned-two");
-  import_strict5.default.equal(saved.agent_servers.Ned.args[0], "/resources-two/ned/agent.cjs");
+  const agentPath = import_node_path15.default.join(root, "resources-two", "ned", "agent.cjs");
+  if (process.platform === "win32") {
+    import_strict5.default.equal(saved.agent_servers.Ned.command, import_node_path15.default.join(root, "resources-two", "runtime", "windows-x64", "openviking", "python", "python.exe"));
+    import_strict5.default.deepEqual(saved.agent_servers.Ned.args.slice(3), [import_node_path15.default.join(root, "Ned-two"), agentPath, import_node_path15.default.join(root, "descriptor-two")]);
+  } else {
+    import_strict5.default.equal(saved.agent_servers.Ned.command, import_node_path15.default.join(root, "Ned-two"));
+    import_strict5.default.deepEqual(saved.agent_servers.Ned.args, [agentPath, import_node_path15.default.join(root, "descriptor-two")]);
+  }
   import_strict5.default.equal(second.data, first.data);
   import_strict5.default.equal(await (0, import_promises15.readFile)(keymapFile(root), "utf8"), keymap);
   import_strict5.default.equal(await (0, import_promises15.readFile)(db, "utf8"), "opaque-workspace-layout");
@@ -14552,7 +14558,7 @@ var resources = process.env.NED_TEST_NODE && import_node_path16.default.join(imp
   t.after(() => (0, import_promises16.rm)(root, { recursive: true, force: true }));
   const repositories = [import_node_path16.default.join(root, "project with spaces"), import_node_path16.default.join(root, "other project")];
   for (const repository of repositories) await (0, import_promises16.mkdir)(repository);
-  const profile2 = await prepareEditor(root, process.execPath, resources, "test-descriptor", "http://127.0.0.1:9");
+  const profile2 = await prepareEditor(root, process.execPath, resources, import_node_path16.default.join(root, "test-descriptor"), "http://127.0.0.1:9");
   const config = import_node_path16.default.join(profile2.data, "config", "git", "config");
   import_strict6.default.equal(profile2.env.GIT_CONFIG_GLOBAL, config);
   const where = import_node_path16.default.join(process.env.SystemRoot ?? "C:\\Windows", "System32", "where.exe");
@@ -14571,7 +14577,7 @@ var resources = process.env.NED_TEST_NODE && import_node_path16.default.join(imp
   await git(selected, ["status", "--porcelain"], true);
   await import_strict6.default.rejects(git(repositories[1], ["status", "--porcelain"], true), /dubious ownership/i);
   await import_strict6.default.rejects(git(selected, ["ls-remote", repositories[1]]), /transport 'file' not allowed/i);
-  const restarted = await prepareEditor(root, process.execPath, resources, "next-descriptor", "http://127.0.0.1:9");
+  const restarted = await prepareEditor(root, process.execPath, resources, import_node_path16.default.join(root, "next-descriptor"), "http://127.0.0.1:9");
   const entries = await exec("git", ["config", "--global", "--get-all", "safe.directory"], { cwd: selected, env: restarted.env });
   import_strict6.default.equal(entries.stdout.trim(), selected);
 });
