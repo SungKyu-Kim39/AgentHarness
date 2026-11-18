@@ -35,3 +35,13 @@ localStorage.setItem('ov_studio_entry_profile:ned-managed','workbench');
 localStorage.setItem('i18nextLng','en');
 sessionStorage.setItem('ov_studio_workspace_selected','selected');`;
 }
+
+
+// The pinned SPA mounts its interface under #app. A text-only mount is
+// the upstream credential-storage failure path, even in translated builds.
+export const studioRenderProbe = `(() => {
+  const app = document.getElementById('app');
+  if (!app) return 'waiting';
+  if (app.querySelector('[data-slot="sidebar-wrapper"]')) return 'ready';
+  return !app.childElementCount && app.textContent.trim() ? 'credential-storage' : 'waiting';
+})()`;

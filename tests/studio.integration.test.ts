@@ -7,7 +7,7 @@ import path from 'node:path';
 import { chromium } from 'playwright';
 import { OpenVikingService } from '../src/main/openviking';
 import { configSchema } from '../src/shared/contracts';
-import { studioBootstrap, studioCsp, studioHeaders, studioOrigin, studioRequestAllowed } from '../distribution/ned/studio-policy';
+import { studioBootstrap, studioCsp, studioHeaders, studioOrigin, studioRenderProbe, studioRequestAllowed } from '../distribution/ned/studio-policy';
 const python = path.resolve('.cache/openviking/env-linux/bin/python3');
 const browserPath = process.env.NED_TEST_BROWSER ?? '/usr/bin/chromium';
 test('actual bundled Studio renders with injected private-account headers and no external access', { skip: !existsSync(python) || !existsSync(browserPath), timeout: 90000 }, async t => {
@@ -33,6 +33,7 @@ test('actual bundled Studio renders with injected private-account headers and no
   const page = await context.newPage(); const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await page.goto(origin + '/health'); await page.evaluate(studioBootstrap(origin));
   await page.goto(origin + '/studio/', { waitUntil: 'networkidle' });
+  assert.equal(await page.evaluate(studioRenderProbe), 'ready');
   const text = await page.locator('body').innerText();
   assert.ok(text.length > 40, text); assert.match(text, /OpenViking|Workspace|Skills|Dashboard/i);
   const listing = await page.evaluate(async () => {

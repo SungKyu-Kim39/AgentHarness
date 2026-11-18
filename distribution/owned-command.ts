@@ -11,7 +11,7 @@ export class OwnedCommand {
   get stoppingUnconfirmed() { return this.uncertain; }
   constructor(private resources: string) {}
   run(spec: CommandSpec, signal?: AbortSignal, timeout: number | false = false, progress?: (output: string, truncated: boolean) => void) {
-    if (this.uncertain || this.abort.signal.aborted) throw new Error('이전 Python 프로세스 종료가 확인되지 않았거나 Ned가 종료 중입니다.');
+    if (this.uncertain || this.abort.signal.aborted) throw new Error('이전 명령 프로세스 종료가 확인되지 않았거나 Ned가 종료 중입니다.');
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     const task = this.execute(structuredClone(spec), combined, timeout, progress); this.active.add(task);
     void task.finally(() => this.active.delete(task)).catch(() => {}); return task;
@@ -34,7 +34,7 @@ export class OwnedCommand {
       if (cancelled) return; cancelled = true;
       if (windows) child.stdin.end(); else kill();
       force = setTimeout(kill, 1500);
-      confirm = setTimeout(() => { this.uncertain = true; rejectStop?.(new Error('Python 자식 프로세스 종료를 확인하지 못했습니다. 새 실행을 차단합니다.')); }, 8000);
+      confirm = setTimeout(() => { this.uncertain = true; rejectStop?.(new Error('명령의 자식 프로세스 종료를 확인하지 못했습니다. 새 실행을 차단합니다.')); }, 8000);
     };
     child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
     const append = (bytes: string) => { output += bytes; if (output.length > 160000) { output = output.slice(-160000); outputTruncated = true; } try { progress?.(output, outputTruncated); } catch { stop(); } };
@@ -44,7 +44,7 @@ export class OwnedCommand {
     try {
       const exitCode = await new Promise<number | null>((resolve, reject) => {
         rejectStop = reject;
-        child.once('error', () => { if (child.pid && child.exitCode === null && child.signalCode === null) this.uncertain = true; reject(new Error('고정된 Python·Conda 실행기를 시작하지 못했습니다. 설치 경로와 실행 권한을 확인하세요.')); });
+        child.once('error', () => { if (child.pid && child.exitCode === null && child.signalCode === null) this.uncertain = true; reject(new Error('고정된 명령 실행기를 시작하지 못했습니다. 설치 경로와 실행 권한을 확인하세요.')); });
         child.once('close', resolve);
       });
       return { exitCode, output, stdout, outputTruncated, cancelled };
@@ -52,6 +52,6 @@ export class OwnedCommand {
   }
   async close() {
     this.abort.abort(); await Promise.allSettled([...this.active]);
-    if (this.uncertain) throw new Error('Python 실행 종료를 확인하지 못했습니다.');
+    if (this.uncertain) throw new Error('명령 실행 종료를 확인하지 못했습니다.');
   }
 }

@@ -1,20 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdtemp, rm, cp, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, cp } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { OpenVikingService } from '../src/main/openviking';
 import { configSchema } from '../src/shared/contracts';
 const executable = path.resolve(process.env.NED_TEST_CURRENT_PYTHON??'.cache/openviking/env-linux/bin/python3');
-test('real pinned OpenViking registers default skill packages, restarts without duplicate indexing and keeps project knowledge scoped', { skip: !existsSync(executable), timeout: 300000 }, async t => {
+test('real pinned OpenViking starts and restarts without registering bundled skills and keeps project knowledge scoped', { skip: !existsSync(executable), timeout: 300000 }, async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'ned-viking-'));
-  const requests: string[] = [], inputs: string[]=[];
+  const requests: string[] = [];
   const endpoint = createServer(async (req, res) => {
     let raw = ''; for await (const bytes of req) raw += bytes;
     requests.push(req.url!); const body = JSON.parse(raw);
-    inputs.push(JSON.stringify(body.input??body.messages).slice(0,120));
     if (req.url === '/v1/chat/completions') {
       assert.equal(body.model, 'llm-test'); assert.equal(req.headers.authorization, 'Bearer viking-test-key');
       res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ id: 'viking-description', object: 'chat.completion', model: 'llm-test', choices: [{ index: 0, message: { role: 'assistant', content: 'Scoped local project document.' }, finish_reason: 'stop' }], usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 } })); return;
@@ -29,33 +28,19 @@ test('real pinned OpenViking registers default skill packages, restarts without 
   const baseUrl = `http://127.0.0.1:${port}/v1`;
   const config = configSchema.parse({ schemaVersion: 2, model: { baseUrl, apiKey: 'viking-test-key', id: 'llm-test' }, openViking: { enabled: true, embedding: { baseUrl, apiKey: 'embedding-test-key', id: 'embed-test', dimension: 4 } } });
   let diagnostics = '';
-  const inputSkills=process.env.NED_TEST_SKILLS_DIR??'vendor/skills', inputSeed=path.join(inputSkills,'..','skill-seed');
-  const skills = path.join(root, 'resources/ned/skills');
   await cp(process.env.NED_TEST_TOKENIZERS_DIR??'vendor/runtime/windows-x64/openviking/tokenizers', path.join(root, 'tokenizers'), { recursive: true });
-  await cp(inputSkills, skills, { recursive: true }); await cp('skills-lock.json', path.join(skills, '..', 'skills-lock.json'));
-  if(existsSync(path.join(inputSeed,'manifest.json')))await cp(inputSeed,path.join(skills,'..','skill-seed'),{recursive:true});
-  const viking = new OpenVikingService(root, root, () => {}, { executable, launcher: path.resolve('scripts/openviking-launch.py'), cwd: root, diagnostic: text => { diagnostics += text; } }, skills);
+  const viking = new OpenVikingService(root, root, () => {}, { executable, launcher: path.resolve('scripts/openviking-launch.py'), cwd: root, diagnostic: text => { diagnostics += text; } });
   t.after(async () => { await viking.close(); await rm(root, { recursive: true, force: true }); }); await viking.configure(config);
   assert.equal(viking.state().status, 'ready', diagnostics);
-  const waitForSkills = async () => {
-    const deadline = Date.now() + 240000;
-    while (Date.now() < deadline && ['pending', 'registering'].includes(viking.state().skills?.status ?? '')) await new Promise(resolve => setTimeout(resolve, 100));
-    assert.equal(viking.state().skills?.status, 'ready', JSON.stringify(viking.state().skills) + '\n' + diagnostics.slice(-12000));
-    assert.equal(viking.state().skills?.registered, JSON.parse(await readFile('vendor/skills/manifest.json','utf8')).skills.length);
-  };
-  await waitForSkills();
-  assert.equal(requests.length, 0, 'prepared skills must not require a description or embedding model call');
-  const connection=await viking.studioConnection();
-  const skillResponse=await fetch(connection.baseUrl+'/api/v1/skills/ned-test-driven-development?target_uri='+encodeURIComponent('viking://agent/skills')+'&include_content=true&include_integrity=true&include_source=true',{headers:connection.headers});
-  assert.equal(skillResponse.status,200,await skillResponse.clone().text());
-  assert.ok(JSON.stringify(await skillResponse.json()).includes('ned-test-driven-development'));
-  // The SDK initializes its fixed account/user directory vectors on first
-  // authenticated access. Settle that separate queue before measuring restart.
-  const settled=await fetch(connection.baseUrl+'/api/v1/system/wait',{method:'POST',headers:{...connection.headers,'Content-Type':'application/json'},body:JSON.stringify({timeout:60})});
-  assert.equal(settled.status,200,await settled.clone().text());
-  const afterFirstImport = requests.length;
-  await viking.configure(config); await waitForSkills();
-  assert.equal(requests.length, afterFirstImport, 'unchanged restarts must not send default skills for embedding again: '+JSON.stringify(inputs));
+  assert.equal(requests.length, 0, 'startup must not send bundled skills to model endpoints');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt) await viking.configure(config);
+    const connection = await viking.studioConnection();
+    const skills = await fetch(connection.baseUrl + '/api/v1/skills', { headers: connection.headers });
+    assert.equal(skills.status, 200);
+    assert.deepEqual((await skills.json()).result.skills, []);
+    assert.equal(existsSync(path.join(root, 'openviking/skills-status.json')), false);
+  }
   await viking.index('p1', 'hello.txt', 'Ned tests local project knowledge.').catch(error => assert.fail(error.message + '\n' + diagnostics));
   const found = await viking.search('p1', 'Ned', 3);
   assert.ok(found.includes('p1'), found);

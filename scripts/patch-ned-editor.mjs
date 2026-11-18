@@ -7,6 +7,115 @@ const root=path.resolve(import.meta.dirname,'..');
 const identity=await editorVersion(root);
 const directory=path.resolve(process.argv[2]??'');
 const lock=JSON.parse(await readFile(path.join(root,'ned-editor-source-lock.json'),'utf8'));
+function replaceOne(text, before, after) {
+ if(text.split(before).length!==2)throw Error('Editor terminal source changed: '+before.slice(0,75));
+ return text.replace(before,after);
+}
+function patchTerminalPanel(source) {
+ let text=replaceOne(source,'        let assistant_enabled = self.assistant_enabled;','        let workspace = self.workspace.clone();\n        let assistant_enabled = self.assistant_enabled;');
+ text=replaceOne(text,'                            .menu(move |window, cx| {\n                                let focus_handle = focus_handle.clone();',
+  '                            .menu({\n                                let workspace = workspace.clone();\n                                move |window, cx| {\n                                let focus_handle = focus_handle.clone();');
+ text=replaceOne(text,`                                    menu.context(focus_handle.clone())
+                                        .action(
+                                            "New Terminal",
+                                            workspace::NewTerminal::default().boxed_clone(),
+                                        )`,`                                    let menu = menu.context(focus_handle.clone());
+                                    let managed = cfg!(windows) && std::env::var_os("NED_MANAGED_TERMINAL").is_some()
+                                        && workspace.read_with(cx, |workspace, cx| !workspace.project().read(cx).is_remote()).unwrap_or(false);
+                                    let menu = if managed {
+                                        let powershell = workspace.clone();
+                                        let cmd = workspace.clone();
+                                        menu.entry("PowerShell", None, move |window, cx| {
+                                            Self::open_ned_shell(&powershell, false, window, cx);
+                                        }).entry("CMD", None, move |window, cx| {
+                                            Self::open_ned_shell(&cmd, true, window, cx);
+                                        })
+                                    } else {
+                                        menu.action("New Terminal", workspace::NewTerminal::default().boxed_clone())
+                                    };
+                                    menu`);
+ text=replaceOne(text,'                                Some(menu)\n                            }),','                                Some(menu)\n                                }\n                            }),');
+ const marker='    fn add_terminal_shell(\n';
+ const shellMethod=`    fn open_ned_shell(workspace: &WeakEntity<Workspace>, cmd: bool, window: &mut Window, cx: &mut App) {
+        let system = std::env::var_os("SystemRoot")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from(r"C:\\Windows"))
+            .join("System32");
+        let (program, args, title) = if cmd {
+            (system.join("cmd.exe"), vec!["/D".into()], "CMD")
+        } else {
+            (system.join("WindowsPowerShell/v1.0/powershell.exe"), vec!["-NoLogo".into(), "-NoProfile".into()], "PowerShell")
+        };
+        let shell = Shell::WithArguments { program: program.to_string_lossy().into_owned(), args, title_override: Some(title.into()) };
+        let _ = workspace.update(cx, |workspace, cx| {
+            let project = workspace.project().read(cx);
+            if project.is_remote() {
+                return;
+            }
+            let cwd = project.active_project_directory(cx).map(|path| path.to_path_buf());
+            if let Some(panel) = workspace.panel::<Self>(cx) {
+                panel.update(cx, |panel, cx| {
+                    panel.add_terminal_with_shell(false, cwd, RevealStrategy::Always, Some(shell), window, cx)
+                }).detach_and_log_err(cx);
+            }
+        });
+    }
+
+`;
+ text=replaceOne(text,marker,shellMethod+marker);
+ return replaceOne(text,`    ) -> Task<Result<WeakEntity<Terminal>>> {
+        let workspace = self.workspace.clone();
+        self.spawn_pending_terminal(window, cx, async move |terminal_panel, cx| {
+            if workspace.update(cx, |workspace, cx| !is_enabled_in_workspace(workspace, cx))? {
+                anyhow::bail!("terminal not yet supported for collaborative projects");
+            }
+            let project = workspace.read_with(cx, |workspace, _| workspace.project().clone())?;
+            let terminal = if force_local {`,`    ) -> Task<Result<WeakEntity<Terminal>>> {
+        self.add_terminal_with_shell(force_local, cwd, reveal_strategy, None, window, cx)
+    }
+
+    fn add_terminal_with_shell(
+        &mut self,
+        force_local: bool,
+        cwd: Option<PathBuf>,
+        reveal_strategy: RevealStrategy,
+        shell: Option<Shell>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Task<Result<WeakEntity<Terminal>>> {
+        let workspace = self.workspace.clone();
+        self.spawn_pending_terminal(window, cx, async move |terminal_panel, cx| {
+            if workspace.update(cx, |workspace, cx| !is_enabled_in_workspace(workspace, cx))? {
+                anyhow::bail!("terminal not yet supported for collaborative projects");
+            }
+            let project = workspace.read_with(cx, |workspace, _| workspace.project().clone())?;
+            let terminal = if let Some(shell) = shell {
+                project.update(cx, |project, cx| project.create_terminal_shell_with(cwd, shell, cx)).await
+            } else if force_local {`);
+}
+function patchProjectTerminals(text) {
+ text=replaceOne(text,'        self.create_terminal_shell_internal(cwd, false, cx)\n    }',
+  `        self.create_terminal_shell_internal(cwd, false, None, cx)
+    }
+
+    pub fn create_terminal_shell_with(
+        &mut self,
+        cwd: Option<PathBuf>,
+        shell: Shell,
+        cx: &mut Context<Self>,
+    ) -> Task<Result<Entity<Terminal>>> {
+        self.create_terminal_shell_internal(cwd, false, Some(shell), cx)
+    }`);
+ text=replaceOne(text,'self.create_terminal_shell_internal(working_directory, true, cx)','self.create_terminal_shell_internal(working_directory, true, None, cx)');
+ text=replaceOne(text,'        force_local: bool,\n        cx: &mut Context<Self>,','        force_local: bool,\n        shell_override: Option<Shell>,\n        cx: &mut Context<Self>,');
+ const at=text.indexOf('    fn create_terminal_shell_internal(');
+ return text.slice(0,at)+replaceOne(text.slice(at),
+   '        let settings = TerminalSettings::get(settings_location, cx).clone();',
+   `        let mut settings = TerminalSettings::get(settings_location, cx).clone();
+        if let Some(shell) = shell_override {
+            settings.shell = shell;
+        }`);
+}
 const outputs=[];
 for(const [file,expected] of Object.entries(lock.files)){
  const filename=path.join(directory,file),bytes=await readFile(filename);
@@ -17,6 +126,10 @@ for(const [file,expected] of Object.entries(lock.files)){
    if(text.split(before).length!==2)throw Error('Editor menu source changed: '+before);
    text=text.replace(before,after);
   }
+ }else if(file.endsWith('terminal_panel.rs')){
+  text=patchTerminalPanel(text);
+ }else if(file.endsWith('terminals.rs')){
+  text=patchProjectTerminals(text);
  }else{
   const at=text.indexOf('fn open_about_window('),end=text.indexOf('\nfn quit(',at);if(at<0||end<at)throw Error('About source boundary changed');
   let block=text.slice(at,end);

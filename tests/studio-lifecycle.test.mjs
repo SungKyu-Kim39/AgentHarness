@@ -11,7 +11,7 @@ function fixture(proxy=Promise.resolve(),load=()=>Promise.resolve(),options={}) 
  const isolated={setProxy:()=>proxy,setPermissionRequestHandler(){},setPermissionCheckHandler(){},on(){},clearStorageData:async()=>{cleared++;},webRequest:Object.fromEntries(['onBeforeRequest','onBeforeSendHeaders','onHeadersReceived'].map(key=>[key,handler=>{hooks[key]=handler;}]))};
  class Window extends EventEmitter {
   destroyed=false;focused=0;webContents=new EventEmitter();
-  constructor(options){super();this.options=options;this.webContents.setWindowOpenHandler=handler=>{this.popup=handler;};this.webContents.executeJavaScript=async script=>{assert.ok(!script.includes('private-run-token'));this.bootstrap=script;if(script.startsWith('({retry:'))return {...state};if(script==='window.__nedStudioRetry=false')state.retry=false;};windows.push(this);}
+  constructor(options){super();this.options=options;this.webContents.setWindowOpenHandler=handler=>{this.popup=handler;};this.webContents.executeJavaScript=async script=>{assert.ok(!script.includes('private-run-token'));this.bootstrap=script;if(script.includes('sidebar-wrapper'))return state.phase ?? 'waiting';};windows.push(this);}
   setMenu(){}show(){}focus(){this.focused++;}isDestroyed(){return this.destroyed;}
   loadURL(url){this.url=url;return load();}destroy(){this.destroyed=true;this.emit('closed');}
  }
@@ -38,10 +38,14 @@ test('closing during navigation cancels the window without reopening or a false 
 });
 
 test('a blank document becomes an explicit diagnostic and retry can reach a rendered app',async()=>{
- const state={ready:false,retry:false},f=fixture(Promise.resolve(),()=>Promise.resolve(),{state});
+ const state={phase:'waiting'},f=fixture(Promise.resolve(),()=>Promise.resolve(),{state});
  await f.studio.open(connection,'icon');await f.advance(16000);
- assert.match(f.windows[0].bootstrap,/다시 불러오기/);assert.equal(f.diagnostics.at(-1).code,'STUDIO_RENDER_TIMEOUT');
- state.retry=true;await f.advance(750);assert.equal(f.windows[0].url,connection.baseUrl+'/studio/');
- state.ready=true;await f.advance(750);assert.equal(f.diagnostics.at(-1).code,'STUDIO_READY');
+ const window=f.windows[0];
+ assert.match(decodeURIComponent(window.url),/다시 불러오기/);assert.equal(f.diagnostics.at(-1).code,'STUDIO_RENDER_TIMEOUT');
+ let prevented=false;
+ state.phase='ready';
+ window.webContents.emit('will-navigate',{preventDefault:()=>{prevented=true;}},connection.baseUrl+'/studio/');
+ await f.advance(750);assert.equal(prevented,true);assert.equal(window.url,connection.baseUrl+'/studio/');
+ assert.equal(f.diagnostics.at(-1).code,'STUDIO_READY');
  f.studio.close();
 });

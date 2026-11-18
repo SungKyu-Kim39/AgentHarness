@@ -27,7 +27,7 @@ process.env.ELECTRON_BUILDER_CACHE ??= path.join(cache,'builder-cache');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
-const fullRelease = ['0.3.7','0.3.8','0.3.9'].includes(version);
+const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10'].includes(version);
 if(['0.3.7','0.3.8'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
@@ -95,14 +95,12 @@ async function packageApp(compileInstaller=true) {
     win:{target:'dir',signAndEditExecutable:false,icon:path.join(root,'assets/ned-icon.ico')},
     extraResources:[
       {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*','windows-x64/agent-desktop/**/*','windows-x64/ghidra/**/*']},
-      {from:path.join(root,'vendor/skill-seed'),to:'ned/skill-seed'},
       {from:path.join(root,'vendor/skills'),to:'ned/skills',filter:['**/*','!doc-coauthoring{,/**/*}']},
       {from:path.join(root,'distribution/methodology'),to:'ned/methodology'},
       {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       ...['egm-lock.json','studio-assets-lock.json'].map(file=>({from:path.join(root,file),to:'ned/locks/'+file})),
-      ...['egm.md','zed-history-import.md','changes-0.3.9.md','upgrade-from-0.3.7.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
-      {from:path.join(root,'distribution/personal-pack-recovery.py'),to:'ned/personal-pack-recovery.py'},
+      ...['egm.md','zed-history-import.md','changes-0.3.10.md','upgrade-from-0.3.7.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
       {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
       {from:path.join(root,'scripts/sidecar-supervisor.py'),to:'ned/python-supervisor.py'},
       {from:path.join(root,'distribution/python-runner.py'),to:'ned/python-runner.py'},
@@ -169,10 +167,10 @@ async function audit() {
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
     if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
     verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
-    const sourceEditor=(version==='0.3.8'&&revision==='rebuild1'||version==='0.3.9')?await verifySourceEditor(root,resources):undefined;
-    if(version==='0.3.9')for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
+    const sourceEditor=(version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))?await verifySourceEditor(root,resources):undefined;
+    if(['0.3.9','0.3.10'].includes(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
     let astryx;
-    if((version==='0.3.8'&&revision==='rebuild1'||version==='0.3.9')){
+    if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))){
       const lock=await json(path.join(root,'astryx-offline-lock.json'));
       if(await fileHash(path.join(resources,'ned/astryx',lock.archive.name))!==lock.archive.sha256||await fileHash(path.join(resources,'ned/astryx/astryx-offline-lock.json'))!==await fileHash(path.join(root,'astryx-offline-lock.json')))throw Error('Installed Astryx assets differ from the reviewed lock');
       astryx={version:lock.version,archive:lock.archive,referenceCount:lock.referenceCount,upstreamCliExecuted:false};
@@ -180,7 +178,7 @@ async function audit() {
     const baseline=revision&&!fullRelease?await rebuildBaseline(root,version,revision):undefined;
     const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
-    for(const name of ['openviking','mcp','rea','agent-desktop',...(['0.3.8','0.3.9'].includes(version)?['ghidra']:[]),'skills']) {
+    for(const name of ['openviking','mcp','rea','agent-desktop',...(['0.3.8','0.3.9','0.3.10'].includes(version)?['ghidra']:[]),'skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
@@ -226,9 +224,9 @@ async function bundle() {
   await cp(installer,path.join(stage,path.basename(installer)));
   for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[`docs/validation-${artifactVersion}.md`,'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
-  if(fullRelease)await cp(path.join(root,version==='0.3.9'?'docs/skills-0.3.9.md':'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
+  if(fullRelease)await cp(path.join(root,['0.3.9','0.3.10'].includes(version)?'docs/skills-0.3.9.md':'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
-  if(['0.3.8','0.3.9'].includes(version))for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
+  if(['0.3.8','0.3.9','0.3.10'].includes(version))for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));
@@ -244,13 +242,13 @@ async function bundle() {
     if(await fileHash(sourceFile)!==item.sha256)throw Error('Offline corresponding-source handover is incomplete');
     await cp(sourceFile,path.join(stage,'source',item.handoverFile));
   }
-  if(['0.3.8','0.3.9'].includes(version))for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
+  if(['0.3.8','0.3.9','0.3.10'].includes(version))for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
     const file=path.join(root,'.cache/ghidra',item.file);if(await fileHash(file)!==item.sha256)throw Error('Ghidra/JDK corresponding source hash mismatch');await cp(file,path.join(stage,'source',item.file));
   }
-  if((version==='0.3.8'&&revision==='rebuild1'||version==='0.3.9')){
+  if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))){
     await cp(path.join(root,'docs/zed-native-agent.md'),path.join(stage,'ZED_NATIVE_AGENT.md'));
     await cp(path.join(root,'docs/subagents.md'),path.join(stage,'SUBAGENTS.md'));
-    if(version==='0.3.9')for(const file of ['egm.md','zed-history-import.md','changes-0.3.9.md','upgrade-from-0.3.7.md'])await cp(path.join(root,'docs',file),path.join(stage,file));
+    if(['0.3.9','0.3.10'].includes(version))for(const file of ['egm.md','zed-history-import.md','changes-0.3.10.md','upgrade-from-0.3.7.md'])await cp(path.join(root,'docs',file),path.join(stage,file));
     await cp(path.join(root,'docs/astryx.md'),path.join(stage,'ASTRYX.md'));
     await mkdir(path.join(stage,'astryx'),{recursive:true});
     const astryx=await json(path.join(root,'astryx-offline-lock.json'));
@@ -282,7 +280,7 @@ if(mode==='release-prepare') {
 else if(mode==='release') {
   await prepareRelease(root,cache,staged,version,await getPath7za());
   await refreshReleaseHost(root,cache,staged,version,buildCommit);
-  if((version==='0.3.8'&&revision==='rebuild1'||version==='0.3.9'))await installSourceEditor(root,staged);
+  if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version)))await installSourceEditor(root,staged);
   await stamp();await verifyAsciiTree(staged);
   const nsis=await getMakeNsisPath('0.0.0');
   run(nsis.path,[process.env.NED_VERBOSE_INSTALLER==='1'?'-V4':'-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});

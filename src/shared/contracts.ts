@@ -148,8 +148,7 @@ export interface AppState {
   notice?: string;
   sessionApproval: boolean;
   capabilities: { commands: false; serena: boolean; snapshots: true };
-  knowledge?: { status: 'unconfigured' | 'disabled' | 'starting' | 'ready' | 'stopping' | 'error'; message?: string; embedding?: { baseUrl: string; id: string; dimension: number }; indexedFiles: number;
-    skills?: { previousRegistered?: number; checked?: number; reused?: number; installed?: number; updated?: number; indexStatus?: 'not-indexed' | 'unverified' | 'indexing' | 'ready'; status: 'pending' | 'registering' | 'ready' | 'error'; registered: number; total: number; conflicts: string[]; failed: string[]; message?: string; current?: { id: string; stage: string }; errors?: Array<{ id: string; stage: string; code: string; httpStatus?: number }> } };
+  knowledge?: { status: 'unconfigured' | 'disabled' | 'starting' | 'ready' | 'stopping' | 'error'; message?: string; embedding?: { baseUrl: string; id: string; dimension: number }; indexedFiles: number };
   skills?: Array<{ id: string; name: string; description: string }>;
 }
 export const requestSchema = z.discriminatedUnion("action", [

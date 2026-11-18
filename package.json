@@ -1,7 +1,7 @@
 {
   "name": "ned",
   "productName": "Ned",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "private": true,
   "description": "Offline managed Zed IDE and OpenCode vibe coding workspace",
   "license": "MIT",
@@ -42,8 +42,7 @@
     "ned:prepare": "node scripts/ned-package.mjs prepare",
     "ned:prepare:acp": "node scripts/prepare-acp.mjs",
     "ned:release:prepare": "node scripts/ned-package.mjs release-prepare",
-    "ned:release": "node scripts/ned-package.mjs release",
-    "skills:seed": "node --import tsx scripts/prepare-skill-seed.ts"
+    "ned:release": "node scripts/ned-package.mjs release"
   },
   "dependencies": {
     "diff": "8.0.2",

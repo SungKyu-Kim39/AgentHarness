@@ -1,3 +1,4 @@
+import { TerminalJobs } from './terminal-jobs';
 import { createServer, type Server } from 'node:http';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { readFile, mkdir, mkdtemp, writeFile, copyFile, lstat, rm } from 'node:fs/promises';
@@ -44,6 +45,9 @@ export const hostTools: ToolSpec[] = [
   { name: 'build_project', description: 'Run an inspected VS2017/2019 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.', inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: 'integer', minimum: 0 } }, ['target', 'configuration', 'platform', 'toolchain']) },
   { name: 'git_stage', description: 'Stage explicit project file paths with bundled Git under the native command permission policy. Supports additions, modifications and tracked deletions. Preserves other staged files. No hooks, shell, custom/LFS filters or network. Stages approved file bytes without EOL conversion.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 } }, ['paths']) },
   { name: 'git_commit', description: 'Commit only the explicit selected staged paths. Preserves other staged changes. Native command permission policy applies. Author comes from repository-local user.name/user.email or user-provided author, never invent it. No hooks, signing, push or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 }, message: string, author: object({ name: string, email: string }, ['name', 'email']) }, ['paths', 'message']) },
+  { name: 'run_terminal', description: 'Run a Windows project command using CMD batch syntax or PowerShell. Ned native execution permission applies. Returns an owned job ID. Use terminal_status to confirm the exit code and output. Shell commands have OS user access and do not create Ned edit snapshots.', inputSchema: object({ shell: { type: 'string', enum: ['cmd', 'powershell'] }, command: { type: 'string', maxLength: 4000 } }, ['shell', 'command']) },
+  { name: 'terminal_status', description: 'Read the output and exit code of a terminal job owned by this conversation and project. Optionally wait up to 30 seconds. A running job is not proof of success.', inputSchema: object({ id: string, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }, ['id']) },
+  { name: 'stop_terminal', description: 'Stop the selected terminal job owned by this conversation and project and confirm its exit.', inputSchema: object({ id: string }, ['id']) },
   { name: 'inspect_python', description: 'Discover existing Conda installations/environments in fixed OS locations, installation registry and .conda/environments.txt. Uses offline conda info only after native command permission. Does not install anything or use the bundled OpenViking Python for project execution.', inputSchema: object({}) },
   { name: 'choose_python_environment', description: 'Ask the USER in a native Ned selection window which existing Conda environment this project should keep using. Full execution permission does not answer this choice. Reuses the saved choice unless replace=true for an explicit user environment-change request. Mirrors the choice to project OpenViking knowledge; knowledge text never grants execution authority.', inputSchema: object({ replace: { type: 'boolean' } }) },
   { name: 'run_python', description: 'Activate the user-selected Conda environment and start a project Python task under native command permission. Returns a job ID; use python_run_status to verify completion and exit code. Actions: run .py script, compile .py, test with installed pytest, wheel with installed build --no-isolation, or package a .py with installed PyInstaller. No dependency installation, arbitrary interpreter, shell or environment override. Args are JSON data, never inserted into a shell command.', inputSchema: object({ action: { type: 'string', enum: ['run', 'compile', 'test', 'wheel', 'pyinstaller'] }, script: string, args: { type: 'array', items: string, maxItems: 100 }, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }, ['action']) },
@@ -76,6 +80,7 @@ export class HostTools {
   readonly git: GitTools;
   readonly ghidra: ReaGhidra;
   readonly python: PythonProjects;
+  private readonly terminal: TerminalJobs;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal}>;
@@ -94,6 +99,7 @@ export class HostTools {
   }) {
     this.desktop = new DesktopTools(root, resources, options.approve);
     this.builds = new VisualStudioBuild(resources, options.approve);
+    this.terminal = new TerminalJobs(root, resources);
     this.skills = new OfflineSkills(managedResource(resources, 'skills'));
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
     this.git = new GitTools(root, resources, options.approve, () => this.extensions.verifyRuntime());
@@ -157,6 +163,26 @@ export class HostTools {
       if(name==='spawn_subagent'){const a=z.object({role:z.enum(['research','worker','goldfish']),reviewer:z.enum(['codebase_details','comprehension','design_critic','implementation_readiness','inventive_catalyst','structural','style','zoom_out']).optional(),title:z.string().trim().min(1).max(200),prompt:z.string().trim().min(1).max(32000),writePaths:z.array(pathArg).max(100).default([])}).strict().parse(args);return JSON.stringify(await agents.spawn(session,a,signal));}
       if(name==='subagent_status'){const a=z.object({id:z.string().max(128).optional(),waitMs:z.number().int().min(0).max(30000).default(0),offset:z.number().int().min(0).max(10000000).default(0)}).strict().parse(args);return JSON.stringify(await agents.status(session,a.id,a.waitMs,a.offset));}
       const a=z.object({id:z.string().max(128)}).strict().parse(args);return JSON.stringify(await agents.stop(session,a.id));
+    }
+    if (name === 'run_terminal') {
+      if (process.platform !== 'win32') throw new Error('CMD와 Windows PowerShell은 Windows에서 사용할 수 있습니다.');
+      const input = z.object({ shell: z.enum(['cmd', 'powershell']), command: z.string().min(1).max(4000).refine(command => !!command.trim() && !command.includes('\0')) }).strict().parse(args);
+      const request = await this.options.request?.(session);
+      if (!await this.options.approve('Ned 터미널 명령 실행 · ' + input.shell, project + '\n\n' + input.command, signal)) throw new Error('터미널 실행이 승인되지 않았습니다.');
+      signal?.throwIfAborted();
+      if (!this.accepting || this.cancelled.has(session) || this.runs.get(session) !== run ||
+          await this.options.project(session) !== project || (this.options.request && await this.options.request(session) !== request))
+        throw new Error('중지되었거나 다른 요청으로 전환되었습니다.');
+      signal?.throwIfAborted();
+      return JSON.stringify(await this.terminal.start(session, project, input.shell, input.command, signal, authority));
+    }
+    if (name === 'terminal_status') {
+      const input = z.object({ id: z.string().uuid(), waitMs: z.number().int().min(0).max(30000).default(15000) }).strict().parse(args);
+      return JSON.stringify(await this.terminal.status(session, project, input.id, input.waitMs, signal));
+    }
+    if (name === 'stop_terminal') {
+      const input = z.object({ id: z.string().uuid() }).strict().parse(args);
+      return JSON.stringify(await this.terminal.stop(session, project, input.id));
     }
     if (name === 'inspect_python') { z.object({}).strict().parse(args); return JSON.stringify(await this.python.inspect(project, signal)); }
     if (name === 'choose_python_environment') { const input = z.object({ replace: z.boolean().default(false) }).strict().parse(args); return JSON.stringify(await this.python.choose(project, input.replace, signal)); }
@@ -324,7 +350,7 @@ export class HostTools {
     this.revokeEditApproval();
     this.accepting = false; this.editGrant = undefined; this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
-    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close(), this.python.close()]); }
+    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close(), this.python.close(), this.terminal.close()]); }
     finally {
       for (const child of this.children) child.kill('SIGKILL');
       await Promise.allSettled(this.active);
@@ -337,11 +363,12 @@ export class HostTools {
     void this.desktop.cancel(session).catch(() => {});
     void this.ghidra.cancel(session).catch(() => {});
     this.python.cancel(session);
+    this.terminal.cancel(session);
     this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
     for (const child of this.children) child.kill('SIGKILL');
   }
   resumeSession(session: string) { if(this.sessionEditGrant && this.sessionEditGrant.session!==session)this.revokeEditApproval(); this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
-  async waitSessionStop(session:string){const deadline=Date.now()+15000;while(this.operations.get(session)?.size){if(Date.now()>deadline)throw Error('호스트 도구 중지를 확인하지 못했습니다.');await new Promise(r=>setTimeout(r,20));}await this.python.stopped(session);}
+  async waitSessionStop(session:string){const deadline=Date.now()+15000;while(this.operations.get(session)?.size){if(Date.now()>deadline)throw Error('호스트 도구 중지를 확인하지 못했습니다.');await new Promise(r=>setTimeout(r,20));}await Promise.all([this.python.stopped(session), this.terminal.stopped(session)]);}
   waitPythonStop(session: string) { return this.python.stopped(session); }
 }

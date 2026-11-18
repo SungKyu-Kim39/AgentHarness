@@ -1,16 +1,11 @@
-import { execFile } from 'node:child_process';
-import { createHash, randomUUID } from 'node:crypto';
-import { constants, createReadStream, openAsBlob } from 'node:fs';
-import { copyFile, lstat, mkdir, mkdtemp, readFile, rm } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { promisify } from 'node:util';
 import { z } from 'zod';
-import { atomicJSON } from './config';
-import type { SkillTransport } from './openviking-skills';
 
-const exec = promisify(execFile);
+type PersonalRequest = { method?: 'POST'; body?: unknown; signal?: AbortSignal };
+export type PersonalTransport = (user: string, route: string, options?: PersonalRequest) => Promise<any>;
+
 const rootPattern = /^viking:\/\/user\/(?!local-user$)[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
-const MAX_PACK = 512 * 1024 * 1024;
 const entrySchema = z.object({
   sha256: z.string().regex(/^[a-f0-9]{64}$/), root: z.string().regex(rootPattern),
   roots: z.array(z.string()).max(64), status: z.enum(['importing', 'ready', 'failed']),
@@ -20,45 +15,6 @@ const entrySchema = z.object({
 }).strict();
 const registrySchema = z.object({ schemaVersion: z.literal(1), entries: z.array(entrySchema).max(32) }).strict();
 type Entry = z.infer<typeof entrySchema>;
-type Preview = { root: string; roots: string[]; files: number; bytes: number };
-export type PersonalTransport = (user: string, route: string, options?: Parameters<SkillTransport>[1]) => Promise<any>;
-
-// Stdlib-only inspection, never extracts or executes archive contents. The SDK
-// performs the full OVPack checksums/namespace validation before importing.
-export const inspectPersonalPackPython = String.raw`
-import json, re, stat, sys, zipfile
-with zipfile.ZipFile(sys.argv[1]) as z:
-    infos = z.infolist()
-    if not infos or len(infos) > 200000: raise ValueError('OVPACK_ENTRIES')
-    names = set(); total = 0
-    for i in infos:
-        n = i.filename
-        if n in names or chr(92) in n or n.startswith('/') or ':' in n or any(x in ('.', '..') for x in n.rstrip('/').split('/')): raise ValueError('OVPACK_PATH')
-        if stat.S_ISLNK(i.external_attr >> 16) or i.flag_bits & 1: raise ValueError('OVPACK_LINK')
-        names.add(n); total += i.file_size
-        if total > 2147483648: raise ValueError('OVPACK_EXPANDED_SIZE')
-    top = {n.split('/')[0] for n in names}
-    if len(top) != 1: raise ValueError('OVPACK_ROOT')
-    base = next(iter(top)); p = base + '/_ovpack/manifest.json'
-    if z.getinfo(p).file_size > 8388608: raise ValueError('OVPACK_MANIFEST_SIZE')
-    m = json.loads(z.read(p))
-    root = m.get('root', {}).get('uri', '')
-    if m.get('format_version') != 3 or m.get('kind') != 'openviking.ovpack': raise ValueError('OVPACK_VERSION')
-    if not re.fullmatch(r'viking://user/(?!local-user$)[A-Za-z0-9][A-Za-z0-9_-]{0,127}', root): raise ValueError('OVPACK_USER_ROOT')
-    if m['root'].get('name') != base or root.rsplit('/', 1)[-1] != base: raise ValueError('OVPACK_ROOT_NAME')
-    entries = m.get('entries', [])
-    if not isinstance(entries, list): raise ValueError('OVPACK_MANIFEST_ENTRIES')
-    roots = set(); files = 0
-    for e in entries:
-        rel = e.get('path', '')
-        if not isinstance(rel, str) or chr(92) in rel or rel.startswith('/') or any(x in ('.','..') for x in rel.split('/')): raise ValueError('OVPACK_MANIFEST_PATH')
-        parts = rel.split('/')
-        if parts[0] in ('memories','resources','skills'): roots.add(root + '/' + parts[0])
-        if len(parts) >= 3 and parts[0] == 'peers' and parts[2] == 'memories' and re.fullmatch(r'[A-Za-z0-9_.@-]{1,255}', parts[1]) and parts[1] not in ('.','..') and parts[1].count('@') <= 1: roots.add(root + '/peers/' + parts[1] + '/memories')
-        if e.get('kind') == 'file': files += 1
-    if not roots or len(roots) > 64: raise ValueError('OVPACK_SEARCH_ROOTS')
-    print(json.dumps(dict(root=root, roots=sorted(roots), files=files, bytes=total)))
-`;
 
 function validRoot(root: string, base: string) {
   if (root === base + '/memories' || root === base + '/resources' || root === base + '/skills') return true;
@@ -72,12 +28,11 @@ function uriAllowed(uri: string, roots: string[]) {
     roots.some(root => uri === root || uri.startsWith(root + '/'));
 }
 
+// 0.3.9 and earlier imports remain available read-only after upgrade.
 export class PersonalKnowledge {
-  private operation: Promise<unknown> = Promise.resolve();
   private abort = new AbortController();
-  constructor(private directory: string, private python: string, private transport: PersonalTransport,
-    private recovery?: { script: string; launcher: string; tokenizers: string; diagnostic?: (text: string) => void }) {}
-  private request(root: string, route: string, options?: Parameters<SkillTransport>[1]) {
+  constructor(private directory: string, private transport: PersonalTransport) {}
+  private request(root: string, route: string, options?: PersonalRequest) {
     if (!rootPattern.test(root)) throw new Error('개인 지식 사용자 범위가 올바르지 않습니다.');
     return this.transport(root.slice('viking://user/'.length), route, options);
   }
@@ -89,116 +44,6 @@ export class PersonalKnowledge {
     const registry = registrySchema.parse(JSON.parse(raw));
     if (registry.entries.some(e => e.roots.some(r => !validRoot(r, e.root)))) throw new Error('개인 지식 등록 기록의 범위가 올바르지 않습니다.');
     return registry;
-  }
-  async status() {
-    const registry = await this.registry();
-    return registry.entries.map(({ sha256, root, status, files, importedAt, sourceRoot, lastStage, lastHttpStatus }) => ({ sha256, root, status, files, importedAt,
-      ...(sourceRoot ? { sourceRoot } : {}), ...(lastStage ? { lastStage } : {}), ...(lastHttpStatus ? { lastHttpStatus } : {}) }));
-  }
-  private async verifyIndex(entry: Pick<Entry, 'root' | 'roots'>, signal: AbortSignal) {
-    // OVPack import enqueues embedding work; HTTP success is not search readiness.
-    // The wait API has no default deadline, preserving long intranet model queues.
-    await this.request(entry.root, '/api/v1/system/wait', { method: 'POST', body: {}, signal });
-    for (const uri of entry.roots) {
-      const report = await this.request(entry.root, '/api/v1/system/consistency', { method: 'POST', body: { uri }, signal });
-      if (report.result?.ok !== true) throw new Error('OV_PERSONAL_INDEX_INCOMPLETE');
-    }
-  }
-  import(file: string, approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>) {
-    const run = this.operation.then(() => this.importOne(file, approve));
-    this.operation = run.catch(() => {}); return run;
-  }
-  private async importOne(file: string, approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>) {
-    const signal = this.abort.signal; signal.throwIfAborted();
-    const info = await lstat(file);
-    if (!info.isFile() || info.isSymbolicLink() || info.size > MAX_PACK || info.size === 0) throw new Error('512 MiB 이하의 일반 .ovpack 파일을 선택하세요.');
-    await mkdir(this.directory, { recursive: true, mode: 0o700 });
-    const stage = await mkdtemp(path.join(this.directory, 'personal-import-'));
-    const snapshot = path.join(stage, 'source.ovpack');
-    try {
-      await copyFile(file, snapshot);
-      if ((await lstat(snapshot)).size > MAX_PACK) throw new Error('가져오기 파일 크기가 제한을 초과했습니다.');
-      const digest = createHash('sha256');
-      for await (const bytes of createReadStream(snapshot)) { signal.throwIfAborted(); digest.update(bytes); }
-      const sha256 = digest.digest('hex');
-      let preview: Preview;
-      try {
-        const result = await exec(this.python, ['-I', '-B', '-c', inspectPersonalPackPython, snapshot], { windowsHide: true, timeout: 30000, maxBuffer: 1024 * 1024, signal });
-        preview = JSON.parse(result.stdout);
-        if (!rootPattern.test(preview.root) || !Array.isArray(preview.roots) || preview.roots.some(r => !validRoot(r, preview.root))) throw new Error();
-      } catch { throw new Error('사용자 영역을 내보낸 OVPack v3인지 확인하세요. 전체 DB 백업이나 잘못된 압축 파일은 가져올 수 없습니다.'); }
-      const registry = await this.registry();
-      const complete = registry.entries.find(e => e.sha256 === sha256 && e.status === 'ready');
-      if (complete) {
-        await this.request(complete.root, '/api/v1/fs/stat?uri=' + encodeURIComponent(complete.root), { signal });
-        await this.verifyIndex(complete, signal);
-        return { status: 'already-imported', root: complete.root, sha256 };
-      }
-      const existing = registry.entries.slice().reverse().find(e => e.sha256 === sha256);
-      const collision = !!existing || registry.entries.some(e => e.root === preview.root || e.sourceRoot === preview.root);
-      const resume = existing?.imported === true && existing.status !== 'ready';
-      if (collision && !this.recovery) throw new Error('같은 사용자 영역의 가져오기 기록이 있습니다. 기존 자료와 실패 상태를 보존했으며 자동 덮어쓰기는 하지 않습니다.');
-      if (!resume && registry.entries.length >= 32) throw new Error('개인 지식 가져오기 개수 제한에 도달했습니다.');
-      const isolated = collision && !resume;
-      const user = 'ned-import-' + randomUUID().replaceAll('-', '');
-      const destination = resume ? existing!.root : isolated ? 'viking://user/' + user : preview.root;
-      const approved = await approve('개인 공통 지식 가져오기',
-        `선택한 파일: ${file}\n원본 사용자 영역: ${preview.root}\n대상: ${destination}\n파일: ${preview.files}개\nSHA-256: ${sha256}\n\n${resume ? '파일 가져오기 완료 기록이 있어 기존 자료를 덮어쓰지 않고 색인만 다시 확인·복구합니다.' : isolated ? '이전 기록과 자료를 보존하고 별도 사용자 영역에 복구합니다. SDK로 원본·복구 패키지를 검증하며 파일 내용은 그대로 유지합니다. 사용자 경로가 바뀌므로 벡터는 다시 계산합니다.' : 'Ned의 개인 저장소에 가져옵니다. 기존 대상은 덮어쓰지 않으며 벡터는 호환될 때 재사용합니다.'}\n모든 프로젝트에서 읽기 전용으로 검색합니다. 대화/개인정보 관리 자료는 보존하되 검색 도구에는 노출하지 않습니다. 사용자 스킬은 자료로만 보존하며 실행형 플러그인으로 설치하지 않습니다.`, signal);
-      if (!approved || signal.aborted) throw new Error('개인 지식 가져오기를 취소했습니다.');
-      const archive = path.join(this.directory, 'personal-' + sha256 + '.ovpack');
-      await copyFile(snapshot, archive, constants.COPYFILE_EXCL).catch(async (error: NodeJS.ErrnoException) => {
-        if (error.code !== 'EEXIST') throw error;
-        const stat = await lstat(archive);
-        if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_PACK) throw new Error('보관한 원본 OVPack의 파일 형식이 바뀌었습니다. 덮어쓰지 않았습니다.');
-        const digest = createHash('sha256'); for await (const chunk of createReadStream(archive)) digest.update(chunk);
-        if (digest.digest('hex') !== sha256) throw new Error('보관한 원본 OVPack이 변경되었습니다. 덮어쓰지 않았습니다.');
-      });
-      const entry: Entry = resume ? existing! : { sha256, root: destination, roots: preview.roots.map(root => destination + root.slice(preview.root.length)), files: preview.files, status: 'importing', importedAt: new Date().toISOString(), ...(isolated ? { sourceRoot: preview.root } : {}) };
-      entry.status = 'importing'; entry.lastHttpStatus = undefined;
-      if (!resume) registry.entries.push(entry);
-      await atomicJSON(this.file, registry);
-      let stageName = 'OV_PERSONAL_PREPARE';
-      const checkpoint = async (name: string) => { stageName = name; entry.lastStage = name; await atomicJSON(this.file, registry); signal.throwIfAborted(); };
-      try {
-        if (resume) {
-          await checkpoint('OV_PERSONAL_REINDEX');
-          for (const uri of entry.roots) await this.request(entry.root, '/api/v1/content/reindex', { method: 'POST', body: { uri, mode: 'vectors_only', wait: true }, signal });
-        } else {
-          let uploadFile = archive;
-          if (isolated) {
-            await checkpoint('OV_PERSONAL_RECOVERY');
-            const derived = path.join(this.directory, 'personal-' + sha256 + '-' + user + '.ovpack');
-            const result = await exec(this.python, ['-I', '-B', this.recovery!.script, archive, derived, user, this.recovery!.launcher, this.recovery!.tokenizers], { windowsHide: true, maxBuffer: 1024 * 1024, signal }).catch(error => {
-              this.recovery?.diagnostic?.(String(error.stderr ?? error.code ?? 'OV_RECOVERY_PROCESS')); throw error;
-            });
-            const proof = JSON.parse(result.stdout);
-            if (proof.root !== entry.root || proof.sourceRoot !== preview.root || proof.contentBytesUnchanged !== true) throw new Error('복구 패키지 검증 실패');
-            uploadFile = derived;
-          }
-          await checkpoint('OV_PERSONAL_UPLOAD');
-          const form = new FormData(); form.append('file', await openAsBlob(uploadFile), 'personal.ovpack');
-          const upload = await this.request(entry.root, '/api/v1/resources/temp_upload', { method: 'POST', body: form, signal });
-          const id = upload.result?.temp_file_id;
-          if (typeof id !== 'string') throw new Error('개인 지식 파일 전달 확인 실패');
-          await checkpoint('OV_PERSONAL_IMPORT');
-          const imported = await this.request(entry.root, '/api/v1/pack/import', { method: 'POST', body: { temp_file_id: id, parent: 'viking://user', on_conflict: 'fail', vector_mode: isolated ? 'recompute' : 'auto' }, signal });
-          if (imported.result?.uri !== entry.root) throw new Error('개인 지식 가져오기 경로 확인 실패');
-          entry.imported = true; await atomicJSON(this.file, registry);
-        }
-        await checkpoint('OV_PERSONAL_INDEX');
-        await this.verifyIndex(entry, signal);
-        await checkpoint('OV_PERSONAL_VERIFY');
-        await this.request(entry.root, '/api/v1/fs/stat?uri=' + encodeURIComponent(entry.root), { signal });
-        signal.throwIfAborted(); entry.status = 'ready'; await atomicJSON(this.file, registry);
-        return { status: 'imported', root: entry.root, sha256, files: entry.files };
-      } catch (error) {
-        entry.status = 'failed';
-        const http = (error as { status?: number })?.status;
-        entry.lastStage = stageName; if (Number.isInteger(http)) entry.lastHttpStatus = http; await atomicJSON(this.file, registry);
-        const code = stageName + (Number.isInteger(http) ? ' HTTP ' + http : '');
-        throw new Error('개인 지식 가져오기를 완료하지 못했습니다. [' + code + '] 원본 OVPack과 실패 기록은 보존했습니다. 같은 파일을 다시 선택하면 복구를 확인할 수 있습니다. 기존 대상은 자동 덮어쓰기하지 않습니다.');
-      }
-    } finally { await rm(stage, { recursive: true, force: true }); }
   }
   private async roots() { return (await this.registry()).entries.filter(e => e.status === 'ready').flatMap(e => e.roots); }
   async search(query: string, limit: number) {
@@ -219,5 +64,5 @@ export class PersonalKnowledge {
     const base = uri.split('/').slice(0, 4).join('/');
     return JSON.stringify(await this.request(base, '/api/v1/content/read?uri=' + encodeURIComponent(uri) + '&limit=300', { signal: this.abort.signal }));
   }
-  async close() { this.abort.abort(); await this.operation; }
+  async close() { this.abort.abort(); }
 }

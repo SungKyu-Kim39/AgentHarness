@@ -97,6 +97,7 @@ export async function prepareEditor(root: string, executable: string, resources:
       : '/usr/bin:/bin',
     ...(process.platform === 'win32' ? {
       ComSpec: path.join(systemRoot, 'System32/cmd.exe'),
+      NED_MANAGED_TERMINAL: '1',
       GIT_CONFIG_GLOBAL: gitConfig,
       GIT_CONFIG_NOSYSTEM: '1',
       GIT_ALLOW_PROTOCOL: '',

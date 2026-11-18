@@ -10,7 +10,6 @@ import { requestEditorClose } from './editor-close';
 import { ConfigurationRestart } from './configuration-restart';
 import { atomicJSON } from '../../src/main/config';
 import { importZedHistory } from './zed-history';
-import { setDefaultTerminal } from './terminal';
 import { StartupWindow } from './startup-window';
 import { OpenVikingStudio } from './studio';
 import { selectPythonEnvironment } from './python-selector';
@@ -188,9 +187,6 @@ async function start() {
       { label: '선택한 모드는 업데이트·재시작 후에도 유지됩니다.', enabled: false },
       { label: '전체 권한: 지원 도구의 승인창 생략', enabled: false },
     ] },
-    { label: '기본 터미널', submenu: [
-      ...(['powershell','cmd'] as const).map(kind => ({label: kind === 'cmd' ? '명령 프롬프트 (CMD)' : 'PowerShell', click: async () => { try { await setDefaultTerminal(profile.data,kind); await messageBox({title:'Ned 터미널',message:'새 터미널부터 선택한 셸을 사용합니다. 작업 선택창에서도 Ned: CMD / Ned: PowerShell을 열 수 있습니다.'}); } catch(error){await messageBox({type:'error',title:'Ned 터미널',message:errorMessage(error)});} } })),
-    ] },
     { label: '기존 Zed Agent 대화 가져오기', click: async () => {
       const chosen=await openDialog({title:'기존 Zed의 threads.db 선택',defaultPath:path.join(process.env.LOCALAPPDATA ?? root,'Zed/threads/threads.db'),properties:['openFile'],filters:[{name:'Zed 대화 DB',extensions:['db']}]});
       if(chosen.canceled)return;
@@ -203,25 +199,14 @@ async function start() {
       { label: '설치와 첫 실행', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
       { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
       { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
-      { label: '0.3.9 변경 사항', click: () => { void shell.openPath(path.join(resources, 'ned/changes-0.3.9.md')); } },
+      { label: '0.3.10 변경 사항', click: () => { void shell.openPath(path.join(resources, 'ned/changes-0.3.10.md')); } },
       { label: '기존 Zed 대화 가져오기 안내', click: () => { void shell.openPath(path.join(resources, 'ned/zed-history-import.md')); } },
       { label: 'EGM 설계·검토 사용', click: () => { void shell.openPath(path.join(resources, 'ned/egm.md')); } },
       { label: '새 스킬·MCP 추가 방법', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },
       { label: 'Python·Conda 실행과 환경 기억', click: () => { void shell.openPath(path.join(resources, 'ned/python-conda.md')); } },
       { label: 'Git 커밋·Ghidra·외부 자료 읽기', click: () => { void shell.openPath(path.join(resources, 'ned/git-and-binary-analysis.md')); } },
     ] },
-    { label: '권한 및 자동 승인 상태', click: async () => {
-      const selected=permissionModes.find(mode=>mode.value===permissions.mode)!;
-      const state=runtime.editApprovalStatus();
-      await messageBox({title:'Ned 권한',message:'권한 모드: '+selected.name,detail:selected.description+'\n선택한 권한 모드는 재시작·업데이트 후에도 유지됩니다.\n프로젝트 범위·충돌·저장하지 않은 편집 내용·중지는 계속 검사합니다.'+(state.mode==='session-project'?'\n현재 대화·프로젝트의 임시 파일 수정 승인도 활성화되어 있습니다.':'')});
-    } },
     { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: () => setPermission('ask') },
-    { label: 'OpenViking / 기본 스킬 등록 상태', click: async () => {
-      const state = runtime.status().knowledge, skills = state?.skills;
-      await messageBox({ title: 'Ned 지식 서비스', message: skills ? `기본 스킬 자료 ${skills.total}개 · ${skills.status}` : `OpenViking ${state?.status ?? '설정 필요'}`,
-        detail: (skills?.current ? skills.current.id + ' · ' + skills.current.stage + '\n' : '') + (skills?.message ?? '개인 대화는 자동 업로드하지 않습니다.') + '\n지식 서비스: ' + (state?.message ?? state?.status ?? 'unconfigured') + '\n진단: %APPDATA%\\Ned\\openviking\\skills-status.json / model-status.json' });
-    } },
-    { label: 'OpenViking 기본 스킬 등록 재확인', click: async () => { try { await runtime.retryKnowledgeSkills(); } catch (error) { await messageBox({ title: 'Ned 스킬', message: errorMessage(error) }); } } },
     { label: 'OpenViking Studio 열기', click: async () => {
       try {
         if (quitting || configurationRestart.pending) return;
@@ -238,13 +223,6 @@ async function start() {
       catch (error) { await messageBox({ type: 'error', title: 'Ned 설정', message: errorMessage(error) }); }
     } },
     { id: 'config-restart-cancel', label: '설정 적용 재시작 대기 취소', visible: false, click: () => configurationRestart.cancel() },
-    { label: '개인 공통 지식 가져오기 (.ovpack)', click: async () => {
-      const result = await openDialog({ properties: ['openFile'], filters: [{ name: 'OpenViking pack', extensions: ['ovpack'] }] });
-      if (result.canceled) return;
-      try { const imported = await runtime.importPersonalKnowledge(result.filePaths[0]); await messageBox({ title: 'Ned 개인 지식', message: imported.status, detail: imported.root }); }
-      catch (error) { await messageBox({ title: 'Ned 개인 지식', type: 'error', message: errorMessage(error) }); }
-    } },
-    { label: '개인 공통 지식 가져오기 상태', click: async () => { try { const state = await runtime.personalKnowledgeStatus(); await messageBox({ title: 'Ned 개인 지식 상태', message: state.length ? '개인 자료 가져오기 상태' : '가져온 개인 자료가 없습니다.', detail: JSON.stringify(state, null, 2) + '\nimporting은 색인 준비 중입니다. ready는 검색 영역 색인 검증까지 완료한 상태입니다.' }); } catch (error) { await messageBox({ title: 'Ned 개인 지식', message: errorMessage(error) }); } } },
     { type: 'separator' },
     { label: '종료 안내', click: () => { void messageBox({ title: 'Ned 종료', message: 'Zed 편집기에서 파일을 저장하고 모든 창을 닫으면 OpenCode·OpenViking과 함께 종료됩니다.' }); } },
   ]);

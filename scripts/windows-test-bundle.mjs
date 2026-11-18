@@ -6,14 +6,14 @@ import {createHash} from 'node:crypto';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..');
 const version=JSON.parse(await readFile(path.join(root,'package.json'))).version;
-if(version!=='0.3.9')throw Error('Review Windows fixture inputs for a new version');
+if(version!=='0.3.10')throw Error('Review Windows fixture inputs for a new version');
 const groups={
  namespace:['openviking-namespace.integration'],
  delete:['delete-file'],
  compaction:['compaction.integration'],
- native:['git-tools','external-read','personal-pack-recovery','ghidra-network','rea-ghidra.integration','zed-native','astryx-windows.integration','subagents','subagents.integration','message-delivery','subagents-acp.integration'],
+ native:['git-tools','external-read','ghidra-network','rea-ghidra.integration','zed-native','astryx-windows.integration','subagents','subagents.integration','message-delivery','subagents-acp.integration'],
  python:['python-windows.integration'],
- upgrade:['zed-settings','zed-history','skill-seed','terminal','editor-preferences','editor-git-trust.windows','openviking.integration'],
+ upgrade:['zed-settings','zed-history','terminal-jobs.windows','terminal','editor-preferences','editor-git-trust.windows','openviking.integration'],
 };
 await mkdir(path.join(root,'.cache/ned/windows-tests'),{recursive:true});
 for(const [name,tests]of Object.entries(groups)){

@@ -8,7 +8,6 @@ import path from 'node:path';
 import { atomicJSON } from './config';
 import { OpenVikingGateway } from './openviking-gateway';
 import { vikingErrorCode } from './openviking-errors';
-import { seedBundledSkills } from './skill-seed';
 import { verifyFiles } from './parallel-files';
 import { PersonalKnowledge } from './personal-knowledge';
 import { migrateVikingNamespace, backupVikingAccount, vikingAccount } from './openviking-namespace';
@@ -24,8 +23,8 @@ export interface KnowledgeService {
   personalRead?(uri: string): Promise<string>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
-type StartupStage = 'bundle' | 'configuration' | 'process' | 'health' | 'namespace' | 'skills';
-type StartupCode = 'OV_BUNDLE' | 'OV_CONFIGURATION' | 'OV_PROCESS_START' | 'OV_PROCESS_EXIT' | 'OV_HEALTH_TIMEOUT' | 'OV_NAMESPACE' | 'OV_SKILLS';
+type StartupStage = 'bundle' | 'configuration' | 'process' | 'health' | 'namespace';
+type StartupCode = 'OV_BUNDLE' | 'OV_CONFIGURATION' | 'OV_PROCESS_START' | 'OV_PROCESS_EXIT' | 'OV_HEALTH_TIMEOUT' | 'OV_NAMESPACE';
 type StartupDetail = { osError?: string; exitCode?: number; exitHex?: string; signal?: string; hint?: string; healthStatus?: number };
 class StartupFailure extends Error {
   constructor(readonly code: StartupCode, readonly detail: StartupDetail = {}) { super(code); }
@@ -67,8 +66,7 @@ export class OpenVikingService implements KnowledgeService {
   private personal?: PersonalKnowledge;
   private namespaceAbort?: AbortController;
   private startupStage: StartupStage = 'bundle';
-  private lastConfig?: AgentConfig;
-  constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch, private skillBundle?: string) {}
+  constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch) {}
   state() { return structuredClone(this.value); }
   localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
   modelActivity() { return this.gateway?.activity() ?? { completion: 0, embedding: 0 }; }
@@ -83,12 +81,10 @@ export class OpenVikingService implements KnowledgeService {
   }
   private update(status: NonNullable<AppState['knowledge']>['status'], message?: string) { this.value.status = status; this.value.message = message; this.changed(); }
   configure(config?: AgentConfig) {
-    this.lastConfig = config;
     this.namespaceAbort?.abort();
     const namespaceAbort = new AbortController(); this.namespaceAbort = namespaceAbort;
     this.operation = this.operation.catch(() => {}).then(async () => {
       await this.stop();
-      this.value.skills = undefined;
       if (!config?.openViking) { this.value.embedding = undefined; this.update('unconfigured', 'JSON에 OpenViking 임베딩 모델을 설정하세요.'); return; }
       this.value.embedding = { baseUrl: config.openViking.embedding.baseUrl, id: config.openViking.embedding.id, dimension: config.openViking.embedding.dimension };
       if (!config.openViking.enabled) { this.update('disabled'); return; }
@@ -100,15 +96,13 @@ export class OpenVikingService implements KnowledgeService {
           backup: (file, signal) => backupVikingAccount(this.baseUrl, this.credentials('local-user'), file, signal),
         }, namespaceAbort.signal).catch(error => { this.startupStage = 'namespace'; throw new StartupFailure('OV_NAMESPACE', { osError: osError(error) }); });
         namespaceAbort.signal.throwIfAborted();
-        this.startupStage='skills';
-        if (this.skillBundle) await seedBundledSkills(this.skillBundle, path.join(this.data, 'openviking/data'), path.join(this.data, 'openviking/bundled-skills.json'), state => { this.value.skills = state; this.changed(); this.diagnosticWrites = this.diagnosticWrites.catch(() => {}).then(() => atomicJSON(path.join(this.data, 'openviking/skills-status.json'), { schemaVersion:1, recordedAt:new Date().toISOString(), ...state })); }, namespaceAbort.signal);
         await this.start(config); this.update('ready');
         await this.writeStartupStatus({ status: 'ready', stage: 'health' });
 
       }
       catch (error) {
         const failure = error instanceof StartupFailure ? error : new StartupFailure(
-          this.startupStage === 'skills' ? 'OV_SKILLS' : this.startupStage === 'bundle' ? 'OV_BUNDLE' : this.startupStage === 'configuration' ? 'OV_CONFIGURATION' : 'OV_PROCESS_START',
+          this.startupStage === 'bundle' ? 'OV_BUNDLE' : this.startupStage === 'configuration' ? 'OV_CONFIGURATION' : 'OV_PROCESS_START',
           { osError: osError(error) },
         );
         let stopConfirmed = true;
@@ -116,7 +110,6 @@ export class OpenVikingService implements KnowledgeService {
         const recorded = await this.writeStartupStatus({ status: 'error', stage: this.startupStage, code: failure.code, ...failure.detail, stopConfirmed });
         const labels: Record<StartupCode, string> = {
           OV_BUNDLE: 'OpenViking 번들 파일을 읽거나 검증하지 못했습니다.',
-          OV_SKILLS: '기본 스킬 준비 묶음 또는 기록을 확인하지 못했습니다. 기존 내용은 보존했습니다. Ned 대화는 계속 사용할 수 있습니다.',
           OV_CONFIGURATION: 'OpenViking 실행 설정을 준비하지 못했습니다.',
           OV_PROCESS_START: 'OpenViking Python 프로세스를 실행하지 못했습니다.',
           OV_PROCESS_EXIT: 'OpenViking이 준비되기 전에 Python 프로세스가 종료되었습니다.',
@@ -130,11 +123,6 @@ export class OpenVikingService implements KnowledgeService {
       }
     });
     return this.operation;
-  }
-  async retryBundledSkills() {
-    if (!this.lastConfig) throw Error('OpenViking 설정이 필요합니다.');
-    if (this.value.status === 'starting') throw Error('지식 서비스를 준비하고 있습니다.');
-    await this.configure(this.lastConfig);
   }
   private async writeStartupStatus(detail: Record<string, unknown>) {
     try { await atomicJSON(path.join(this.data, 'openviking', 'startup-status.json'), { schemaVersion: 1, recordedAt: new Date().toISOString(), ...detail }); return true; }
@@ -156,10 +144,8 @@ export class OpenVikingService implements KnowledgeService {
     this.account = account; this.maintenance = maintenance;
     this.startupStage = 'bundle';
     const launch = await this.resolveLaunch();
-    this.personal = new PersonalKnowledge(path.join(this.data, 'openviking'), launch.executable,
-      (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user),
-      { launcher: launch.launcher, tokenizers: path.join(launch.cwd, 'tokenizers'), diagnostic: this.testLaunch?.diagnostic, script: this.testLaunch
-        ? path.resolve('distribution/personal-pack-recovery.py') : path.resolve(this.runtime, '../ned/personal-pack-recovery.py') });
+    this.personal = new PersonalKnowledge(path.join(this.data, 'openviking'),
+      (user, route, options) => this.request(route, options?.body, false, options?.method, options?.signal, user));
     this.startupStage = 'configuration';
     const folder = path.join(this.data, 'openviking'); await mkdir(folder, { recursive: true, mode: 0o700 });
     this.gateway = new OpenVikingGateway(config, event => {
@@ -237,10 +223,6 @@ export class OpenVikingService implements KnowledgeService {
     const json = JSON.parse(text); if (json.status === 'error') throw new Error(vikingErrorCode(text)); return json;
   }
   private ready() { if (this.value.status !== 'ready' || this.exited) throw new Error('OpenViking이 준비되지 않았습니다. 모델·번들 설정을 확인하세요.'); }
-  async importPersonal(file: string, approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>) {
-    this.ready(); return this.personal!.import(file, approve);
-  }
-  async personalStatus() { this.ready(); return this.personal!.status(); }
   async personalSearch(query: string, limit: number) { this.ready(); return this.personal!.search(query, limit); }
   async personalRead(uri: string) { this.ready(); return this.personal!.read(uri); }
   async search(project: string, query: string, limit: number) {

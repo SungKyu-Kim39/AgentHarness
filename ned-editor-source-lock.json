@@ -34,6 +34,8 @@
   },
   "files": {
     "crates/zed/src/zed/app_menus.rs": "31eafb2f0f71955bddcae6dd7ffa96053deec746b964969ca479e3e60ecfdd44",
-    "crates/zed/src/zed.rs": "5f3ff1fdc0941e80fda380184acf0f5f1475147f83215b7b92c54588b770ee8a"
+    "crates/zed/src/zed.rs": "5f3ff1fdc0941e80fda380184acf0f5f1475147f83215b7b92c54588b770ee8a",
+    "crates/terminal_view/src/terminal_panel.rs": "2971eae5072addc14bd86b89d0f06acdb1177776b7cd35336b76abe24017c8ff",
+    "crates/project/src/terminals.rs": "75efa77f002c54984d74741cd2be2e024f921646161464b2b0cb62d2ee18079a"
   }
 }
