@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { atomicJSON } from "../src/main/config";
+import { skills as reviewedEgmSkills } from "../egm-lock.json";
 export type SubagentRole = "research" | "worker" | "goldfish";
 type State =
   | "queued"
@@ -216,7 +217,7 @@ export class Subagents {
         throw Error("하위 Agent의 부모 요청·프로젝트 범위가 바뀌었습니다.");
       if(j.role === "goldfish") {
         if(!goldfishReadTools.has(tool))throw Error("Goldfish는 지정 자료를 읽고 검토 결과만 반환합니다.");
-        if(tool === "read_skill" && !String((args as any)?.id ?? "").startsWith("egm-"))throw Error("Goldfish는 EGM 지침만 읽을 수 있습니다.");
+        if(tool === "read_skill" && !reviewedEgmSkills.includes(String((args as any)?.id ?? "")))throw Error("Goldfish는 EGM 지침만 읽을 수 있습니다.");
         if(tool === "read_file" && /(?:^|[\\/])(?:\.env(?:\..*)?|AGENTS\.md|CLAUDE\.md|GEMINI\.md)$/i.test(String((args as any)?.path ?? "")))throw Error("Goldfish의 비밀·자동 프로젝트 지침 읽기를 차단했습니다.");
       }
       if (

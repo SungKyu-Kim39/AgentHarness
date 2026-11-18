@@ -8,6 +8,7 @@ import { HostTools } from '../distribution/host-tools';
 import { Redactor } from '../src/main/config';
 import { NativeRuntime } from '../distribution/native-control';
 import { configSchema } from '../src/shared/contracts';
+import { automaticSkillContext } from '../src/main/skill-routing';
 
 const additions = ['agent-desktop', 'agent-desktop-windows', 'cpp-pro', 'cpp-testing', 'legacy-modernizer', 'codebase-onboarding', 'api-design', 'database-migrations', 'error-handling-patterns', 'architecture-decision-records', 'differential-review', 'session-handoff', 'explore-data', 'validate-data', 'data-visualization', 'statistical-analysis', 'ab-testing', 'web-design-guidelines', 'astryx'];
 
@@ -91,7 +92,7 @@ test('the real pinned v2 engine discovers the offline skill bundle from the inst
 });
 
 test('a user global skill stays available after the installed resources are replaced', async t => {
-  const { tools, resources, root, project } = await fixture(t);
+  const { tools, resources, root } = await fixture(t);
   const data = path.join(root, 'data');
   const folder = path.join(data, 'skills', 'team-review');
   const entry = path.join(folder, 'SKILL.md');
@@ -113,10 +114,14 @@ test('a user global skill stays available after the installed resources are repl
 
   await rm(path.join(resources, 'ned/skills'), { recursive: true });
   await cp('vendor/skills', path.join(resources, 'ned/skills'), { recursive: true });
-  const upgraded = new HostTools(data, resources, { project: async () => project, approve: async () => false, knowledge: () => undefined, redactor: new Redactor() });
+  const otherProject = path.join(root, 'second-project');
+  await mkdir(otherProject);
+  const upgraded = new HostTools(data, resources, { project: async () => otherProject, approve: async () => false, knowledge: () => undefined, redactor: new Redactor() });
   await upgraded.skills.load();
   assert.match(await upgraded.call('read_skill', { id: 'team-review' }, 'other-project-session'), /Use the review checklist/);
   assert.match(await upgraded.call('read_skill', { id: 'team-review', document: 'references/review.md' }, 'other-project-session'), /review reference/);
+  const guidance = await automaticSkillContext(upgraded.skills, [{ role: 'user', content: 'team-review 스킬을 적용해줘' }]);
+  assert.match(guidance ?? '', /Automatically loaded user skill: team-review/);
   for (const document of ['../goal-framing/SKILL.md', 'run.cmd']) {
     await assert.rejects(upgraded.call('read_skill', { id: 'team-review', document }, 'other-project-session'));
   }

@@ -367,6 +367,7 @@ test('Goldfish gets a fresh reviewer request and host refuses memory, edits, sec
  assert.equal((await f.agents.scope(job.id,'read_skill',{id:'egm-review-loop'})).session,'root');
  for(const tool of ['propose_edit','delete_file','knowledge_search','personal_knowledge_search','spawn_subagent','build_project'])await assert.rejects(f.agents.scope(job.id,tool,{path:'src/a.ts'}),/Goldfish/);
  await assert.rejects(f.agents.scope(job.id,'read_skill',{id:'session-handoff'}),/EGM/);
+ await assert.rejects(f.agents.scope(job.id,'read_skill',{id:'egm-user-global'}),/EGM/);
  for(const file of ['.env','sub/AGENTS.md','CLAUDE.md'])await assert.rejects(f.agents.scope(job.id,'read_file',{path:file}),/Goldfish/);
  f.complete(job.id,'Required reads completed; no structural findings.');await f.wait(()=>f.notifications.length===1);
 });
