@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "0.3.9",
+  "version": "0.3.10",
   "supervisorSha256": "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7",
   "baseline": {
     "name": "Ned-0.3.6-rebuild1-win-x64.exe",
