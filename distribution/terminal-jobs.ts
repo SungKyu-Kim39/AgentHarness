@@ -4,6 +4,10 @@ import path from 'node:path';
 import { OwnedCommand, type CommandResult } from './owned-command';
 import { terminalShell, type TerminalKind } from './ned/terminal';
 
+// PowerShell may wait for end-of-input before it evaluates an encoded
+// command. Keep the supervisor's control pipe open, but give the shell EOF.
+const noninteractiveLaunch = 'import subprocess,sys; sys.exit(subprocess.call(sys.argv[1:], stdin=subprocess.DEVNULL))';
+
 type Job = {
   id: string;
   session: string;
@@ -20,19 +24,20 @@ type Job = {
 export class TerminalJobs {
   private readonly jobs = new Map<string, Job>();
   private readonly commands: OwnedCommand;
-  constructor(private readonly data: string, resources: string) {
+  constructor(private readonly data: string, private readonly resources: string) {
     this.commands = new OwnedCommand(resources);
   }
 
   async start(session: string, project: string, shell: TerminalKind, command: string, requestSignal?: AbortSignal, authority?: AbortSignal) {
     if (process.platform !== 'win32') throw new Error('CMD와 Windows PowerShell은 Windows에서 사용할 수 있습니다.');
+    if (!/^[a-z]:[\\/]/i.test(project)) throw new Error('로컬 드라이브의 프로젝트에서 터미널 명령을 실행할 수 있습니다.');
     requestSignal?.throwIfAborted();
     if ([...this.jobs.values()].some(job => job.session === session && !job.result && !job.error)) {
       throw new Error('현재 대화의 터미널 명령이 실행 중입니다.');
     }
     for (const [id, job] of this.jobs) {
       if (this.jobs.size < 64) break;
-      if (job.result || job.error && job.error !== 'stop-unconfirmed') this.jobs.delete(id);
+      if (job.result || (job.error && job.error !== 'stop-unconfirmed')) this.jobs.delete(id);
     }
     if (this.jobs.size >= 64) throw new Error('동시에 실행할 수 있는 Ned 터미널 작업 수를 초과했습니다.');
     const id = randomUUID(), controller = new AbortController();
@@ -46,6 +51,7 @@ export class TerminalJobs {
   private async execute(job: Job, command: string, signal: AbortSignal) {
     const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
     const shell = terminalShell(job.shell, systemRoot);
+    const python = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
     const env: NodeJS.ProcessEnv = { SystemRoot: systemRoot, WINDIR: systemRoot,
       Path: process.env.Path ?? process.env.PATH, PATHEXT: process.env.PATHEXT,
       USERPROFILE: process.env.USERPROFILE, APPDATA: process.env.APPDATA, LOCALAPPDATA: process.env.LOCALAPPDATA,
@@ -66,7 +72,7 @@ export class TerminalJobs {
         args = [...shell.args, '/Q', '/C', '%NED_TERMINAL_BATCH%'];
       }
       signal.throwIfAborted();
-      job.result = await this.commands.run({ executable: shell.program, args, cwd: job.project, env }, signal, false, (output, truncated) => {
+      job.result = await this.commands.run({ executable: python, args: ['-I', '-B', '-c', noninteractiveLaunch, shell.program, ...args], cwd: job.project, env }, signal, false, (output, truncated) => {
         job.output = output.slice(-12000);
         job.outputTruncated = truncated || output.length > 12000;
       });
