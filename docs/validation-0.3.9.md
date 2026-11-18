@@ -1,7 +1,7 @@
 # Ned 0.3.9 구현 검증
 
 검증일: 2026-11-17. Linux 개발 환경에서 수행한 소스 변경 검사입니다.
-현재 공개 배포는 0.3.8 rebuild1이며, 0.3.9 EXE·TGZ·릴리스는 생성하거나 게시하지 않았습니다.
+0.3.9 설치 EXE를 감사하고 같은 파일을 Windows 실행기에서 설치해 검증했습니다. 반입 TGZ와 사전 릴리스는 이 기록을 포함합니다.
 
 ## 수행한 검사
 
@@ -29,7 +29,7 @@
 - 공식 Zed 1.28.1 대응 소스의 SHA-256
   `2baab0ae5fdbbdd64cf69afbc4fd3f4427dc86b9a8a4dfd2335a949097741226`을 확인한 뒤
   0.3.9 메뉴/About 소스 패치를 적용했습니다. 두 고정 원본 파일의 사전 해시가 일치했습니다.
-  Rust Windows 실행 파일 컴파일·GUI 표시는 수행하지 않았습니다.
+  고정 Rust 도구 사슬로 Windows 실행 파일을 컴파일하고 메뉴/About 문자열·해시와 대응 소스를 확인했습니다. 실제 직원 PC GUI 표시는 별도입니다.
 - workflow YAML 문법과 `git diff --check`를 검사했습니다. 새 파일의 문서 링크와 EGM
   출처·라이선스·고정 커밋/파일 해시도 확인했습니다.
 
@@ -62,24 +62,14 @@ Windows용으로 번들한 검사도 Linux에서 50건 중 42건 통과·8건 �
 소유권 검사, 외부 전송 제한을 확인했습니다. Windows 설치 검사에서는 번들 Git의 실제
 실행 경로, 공백이 있는 저장소 경로와 재시작 후 설정 유지도 검사합니다.
 
-## 배포 전 남은 확인
+## 설치 파일과 Windows 결과
 
-0.3.9용 Windows 소스 빌드 편집기·대응 소스·버전별 build 메타데이터가 필요합니다.
-`editor-source-build` 작업은 현재 package 버전으로 빌드해 검토용 artifact로 올립니다.
-이를 검토 후 `downloads/editor`에 반입해야 합니다. 기존 build.json과 0.3.8 rebuild1
-컴포넌트를 0.3.9 편집기로 인정하거나 덮어쓰지 않습니다.
+제품 소스는 `c5381da2dee6ea1e7901a8edb199c94d39bd8e1a`입니다. Windows 실행 [44204486724](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44204486724)에서 검사 중 설치 파일을 교체하지 않고 52건 중 52건 통과·0건 제외·실패 0건을 확인했습니다. 설치 시간은 같은 Windows Server 실행기의 기준/후보 1회 비교이며 직원 PC 성능으로 일반화하지 않습니다.
 
-기존 `release-runtime-lock.json`은 이전 버전의 검증 자료입니다. 정확한 LFS 원본을 준비하고
-0.3.9 `release-prepare`로 생성한 manifest·라이선스·전체 설치 payload 감사가 필요합니다.
-설치 자료에는 준비 스킬, EGM/Studio lock, YAML ISC 원문과 새 사용 안내를 포함합니다.
-해시를 추정하여 lock을 바꾸거나 과거 수용 결과를 새 버전에 복사하지 않았습니다.
+설치 EXE는 1535624809 bytes, SHA-256 `83e49a5bca3872d4772a70a1d212f6f6f294e2ed13d13c304d351e6aece36c04`입니다. 준비본과 추출본의 61386개 파일을 전부 대조했습니다. 0.3.9용 소스 빌드 편집기·대응 소스, 실제 생성한 runtime lock, 준비 스킬과 EGM/Studio lock, YAML ISC 원문을 포함했습니다.
 
-실제 Win10/11 첫 설치·0.3.7/0.3.8 업데이트, 사용자 수정 스킬·대화·설정 보존,
-Zed의 설정 읽기와 첫 메시지/스트리밍/중지, 개인 원본 DB 목록·재개, PowerShell/CMD,
-Studio 창 재시도·종료, 실제 사내 모델과 외부 DNS/TCP 차단을 확인해야 합니다.
-Goldfish 실제 엔진의 모델 입력 격리와 검토 품질·결과 통합도 추가 수용 항목입니다.
+Windows 검사 상세·개수와 설치 측정은 [실행 결과](../downloads/Ned-0.3.9-windows-offline-smoke.json), 설치 전체 파일은 [감사 기록](../downloads/Ned-0.3.9-installer-audit.json), TGZ 검사·해시는 [다운로드 안내](../downloads/README.md)에 보존합니다.
 
-사용자가 제보한 `Ned offline editor` 응답의 발생 위치는 확인했지만 해당 Windows PC의
-실제 요청 형태와 사내 서버 첫 응답은 확보하지 못했습니다. 동일한 프록시 경로의 합성
-검사가 실제 직원 PC 수용을 대신하지 않습니다. 시작·설치 성능의 Windows 전후 측정과
-설치 압축 해제의 코어 사용량도 미측정이며 개선율·전체 코어 사용을 주장하지 않습니다.
+## 별도 수용 범위
+
+직원 Win10/11 GUI, 실제 사내 Qwen/BGE 첫 메시지·긴 대기열·취소, 실제 개인 DB의 대화 목록·재개와 운영체제별 UI 동작, 외부 DNS/TCP 전체 관찰은 별도 수용 항목입니다. 합성 HTTP·호스트 fixture를 Zed 실제 GUI의 첫 메시지 성공으로 표현하지 않습니다. Goldfish 실제 모델 입력 격리와 검토 품질도 별도입니다. 설치 압축 해제의 코어 사용량과 실제 직원 PC 시작 성능은 측정하지 않았습니다.
