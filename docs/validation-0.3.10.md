@@ -20,4 +20,11 @@
   [Zed 터미널 Windows 타입 검사](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44221555467)
 
 Windows 10/11용 설치본의 실제 메뉴와 Studio 창은 별도 확인 범위입니다.
-현재 게시된 배포본은 0.3.9입니다.
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `7cc5cef166690c64b64e545cda1b38e034bd285d`입니다. Windows Server에 최종 EXE를 새로 설치해 12건 중 12건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.9에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535084915 bytes, SHA-256 `72ec13b53e75e70bd7ed8129fcebe39e7b67b7fc68871e3ee0f1464e6d1a41dd`입니다. 준비본과 추출본의 60143개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.10-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.10-installer-audit.json) · [반입 TGZ](../downloads/README.md)

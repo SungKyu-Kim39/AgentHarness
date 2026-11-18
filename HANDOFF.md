@@ -1,8 +1,11 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 배포 기준은 **Ned 0.3.9**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.10**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-<!-- current-release -->
+## 0.3.10 배포 기준
+
+소스 `7cc5cef166690c64b64e545cda1b38e034bd285d`를 사용했습니다. Windows 새 설치·0.3.9 업데이트와 12개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.10.md)
+
 
 버전 구현을 맡으면 설치 EXE·반입 TGZ·문서·체크섬과 GitHub 릴리스까지 한 작업으로
 마무리합니다. 고정 Zed 빌드 후 설치 후보를 생성하고, Windows에서 해당 EXE의 SHA-256을
