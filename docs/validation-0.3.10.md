@@ -15,7 +15,9 @@
   참고 문서의 내용이 유지되는 것도 확인했습니다.
   [글로벌 스킬 업데이트 검사](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44222175100)
 
-[Zed 터미널 Windows 타입 검사](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44221555467)
+- 고정 Zed 1.28.1에 터미널 메뉴 변경을 적용한 뒤 Windows x64 대상의
+  `cargo check --package terminal_view`를 통과했습니다.
+  [Zed 터미널 Windows 타입 검사](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/44221555467)
 
 Windows 10/11용 설치본의 실제 메뉴와 Studio 창은 별도 확인 범위입니다.
 현재 게시된 배포본은 0.3.9입니다.
