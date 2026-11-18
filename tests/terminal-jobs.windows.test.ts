@@ -26,7 +26,7 @@ test('the host runs both approved Windows shells and stops only this conversatio
   }
   let approved = false;
   const host = new HostTools(data, resources, {
-    project: async () => project, redactor: new Redactor(),
+    project: async () => project, knowledge: () => undefined, redactor: new Redactor(),
     approve: async (_title, detail) => {
       assert.ok(detail.startsWith(project + '\n\n'));
       return approved;
