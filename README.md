@@ -12,7 +12,7 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
 
-0.3.9는 스킬 사전 준비·변경분 적용과 비동기 지식 서비스, 상세 시작 표시, Studio 오류 복구, CMD 선택, [기존 Zed 대화 가져오기](docs/zed-history-import.md), [EGM 설계·검토](docs/egm.md)를 제공합니다. 기본 Zed Agent의 설정·모델 연결과 Git 패널의 **Trust Directory**를 수정했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
+0.3.10은 Ned Agent의 CMD·PowerShell 실행과 터미널 패널의 셸 선택, 사용자 글로벌 스킬을 제공합니다. OpenViking Studio의 화면 확인과 재시도를 보완했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
 
 0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가했습니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 
@@ -51,7 +51,7 @@ Ned는 선택한 프로젝트의 코드를 읽고 검색한 뒤 수정안을 만
 
 기본 구성에는 Aegis·Conductor 지침, 스킬 74개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
 
-OpenViking은 Ned 실행 중 백그라운드에서 시작하고 Ned와 함께 종료합니다. 설치된 기본 스킬은 변경분을 적용하며, 지식 서비스는 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [스킬 안내](docs/skills-0.3.9.md), [개인 지식 이관](docs/openviking-personal-migration.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
+OpenViking은 Ned 실행 중 백그라운드에서 시작하고 Ned와 함께 종료합니다. Ned는 기본·사용자 스킬을 로컬 파일에서 읽습니다. 지식 서비스는 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [글로벌 스킬 등록](docs/extension-guide.md#사용자-글로벌-스킬-등록), [스킬 안내](docs/skills-0.3.9.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
 
 ## 개발과 배포
 

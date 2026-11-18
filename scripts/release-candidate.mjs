@@ -5,7 +5,7 @@ import path from 'node:path';
 import {fileHash} from './installer-audit.mjs';
 import {sourceEditorInputs} from './ned-source-editor.mjs';
 const root=path.resolve(import.meta.dirname,'..');
-const prefix='Ned-0.3.9',branch=process.env.GITHUB_REF_NAME;
+const branch=process.env.GITHUB_REF_NAME;
 const run=(cmd,args,options={})=>execFileSync(cmd,args,{cwd:root,stdio:'inherit',...options});
 const capture=(cmd,args)=>execFileSync(cmd,args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
 const json=async file=>JSON.parse((await readFile(path.join(root,file),'utf8')).replace(/^\ufeff/,''));
@@ -18,35 +18,43 @@ async function commit(files,message){
 }
 async function output(key,value){if(process.env.GITHUB_OUTPUT)await appendFile(process.env.GITHUB_OUTPUT,key+'='+value+'\n');}
 function checkedID(name){const value=process.env[name];if(!/^\d+$/.test(value??''))throw Error('Missing immutable workflow run: '+name);return value;}
-if((await json('package.json')).version!=='0.3.9'||!['codex/ned-0.3.9','work'].includes(branch))throw Error('Unexpected release version or branch');
+const {version}=await json('package.json');
+if(!/^0\.3\.[1-9]\d+$/.test(version)||branch!==`codex/ned-${version}`)throw Error('Unexpected release version or branch');
+const prefix=`Ned-${version}`;
 const mode=process.argv[2];
 if(mode==='candidate'){
  const editorRun=checkedID('NED_EDITOR_RUN');
  run('python3',['scripts/release-inputs.py']);
  run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include=downloads/astryx/*.zip']);
  run(process.execPath,['scripts/ned-package.mjs','release-prepare']);
- const old=await json('release-runtime-lock.json');if(old.version!=='0.3.9')throw Error('Runtime preparation did not record 0.3.9');
+ const old=await json('release-runtime-lock.json');if(old.version!==version)throw Error('Runtime preparation did not record '+version);
  run('gh',['run','watch',editorRun,'--exit-status','--interval','30']);
  const editor=gh(['api',`repos/${process.env.GH_REPO}/actions/runs/${editorRun}`]);
- if(editor.conclusion!=='success'||editor.path!=='.github/workflows/windows-offline-smoke.yml')throw Error('Unverified editor build');
+ if(editor.conclusion!=='success'||editor.path!=='.github/workflows/windows-offline-smoke.yml'||editor.head_branch!==branch)throw Error('Unverified editor build');
  run('git',['diff','--exit-code',editor.head_sha,'HEAD','--','scripts/patch-ned-editor.mjs','scripts/ned-editor-version.mjs','ned-editor-source-lock.json','assets/ned-icon.png','package.json']);
- run('gh',['run','download',editorRun,'--pattern','ned-editor-0.3.9-*','--dir','.cache/ned/editor-download']);
- const {readdir}=await import('node:fs/promises');const records=(await readdir(path.join(root,'.cache/ned/editor-download'),{recursive:true})).filter(name=>path.basename(name)==='build-0.3.9.json');
+ run('gh',['run','download',editorRun,'--pattern',`ned-editor-${version}-*`,'--dir','.cache/ned/editor-download']);
+ const {readdir}=await import('node:fs/promises');const records=(await readdir(path.join(root,'.cache/ned/editor-download'),{recursive:true})).filter(name=>path.basename(name)===`build-${version}.json`);
  if(records.length!==1)throw Error('Ambiguous editor artifact');const editorFolder=path.dirname(records[0]);
- for(const name of ['Ned-editor-0.3.9.exe','zed-ned-editor-source-v1.28.1-0.3.9.tar.gz','build-0.3.9.json'])await cp(path.join(root,'.cache/ned/editor-download',editorFolder,name),path.join(root,'downloads/editor',name));
- await sourceEditorInputs(root);
+ for(const name of [`Ned-editor-${version}.exe`,`zed-ned-editor-source-v1.28.1-${version}.tar.gz`,`build-${version}.json`])await cp(path.join(root,'.cache/ned/editor-download',editorFolder,name),path.join(root,'downloads/editor',name));
+ const editorInputs=await sourceEditorInputs(root);
+ if(editorInputs.build.sourceCommit!==editor.head_sha)throw Error('Editor artifact source mismatch');
  run(process.execPath,['scripts/windows-test-bundle.mjs']);
- await commit(['release-runtime-lock.json','downloads/editor/Ned-editor-0.3.9.exe','downloads/editor/zed-ned-editor-source-v1.28.1-0.3.9.tar.gz','downloads/editor/build-0.3.9.json',...Object.keys({namespace:1,delete:1,compaction:1,native:1,python:1,upgrade:1}).flatMap(name=>[`downloads/${prefix}-windows-${name}-test.cjs`,`downloads/${prefix}-windows-${name}-test.cjs.sha256`])],'build: pin Ned 0.3.9 runtime, source editor and Windows fixtures');
+ const fixtureGroups=['upgrade'];
+ await commit(['release-runtime-lock.json',...Object.keys(editorInputs.files).map(name=>`downloads/editor/${name}`),
+  `downloads/editor/${editorInputs.identity.metadata}`,
+  ...fixtureGroups.flatMap(name=>[`downloads/${prefix}-windows-${name}-test.cjs`,`downloads/${prefix}-windows-${name}-test.cjs.sha256`])],
+  `build: pin Ned ${version} runtime, source editor and Windows fixtures`);
  const source=sha();
  run(process.execPath,['scripts/ned-package.mjs','release'],{env:{...process.env,NED_AUDIT_DISCARD_STAGE:'1'}});
  const audit=await json('release/ned/installer-audit.json');if(audit.sourceCommit!==source||audit.payloadComparison?.allStagedBytesVerified!==true)throw Error('Incomplete installer audit');
  const directory=`downloads/candidates/${source}`;await mkdir(path.join(root,directory),{recursive:true});
  for(const [from,to]of [[`${prefix}-win-x64.exe`,`${prefix}-win-x64.exe`],['installer-audit.json',`${prefix}-installer-audit.json`],['payload-manifest.json',`${prefix}-payload-manifest.json`]])await cp(path.join(root,'release/ned',from),path.join(root,directory,to));
- await commit([directory],'build: record immutable Ned 0.3.9 installer candidate');
+ await commit([directory],`build: record immutable Ned ${version} installer candidate`);
  const state='.cache/ned/release-state';await mkdir(path.join(root,state),{recursive:true});
  await cp(path.join(root,'.cache/ned/handover-sources'),path.join(root,state,'handover-sources'),{recursive:true});
- await cp(path.join(root,'.cache/ned/installer-audit-checkpoint-0.3.9.json'),path.join(root,state,'installer-audit-checkpoint-0.3.9.json'));
+ await cp(path.join(root,`.cache/ned/installer-audit-checkpoint-${version}.json`),path.join(root,state,`installer-audit-checkpoint-${version}.json`));
  for(const item of (await json('ghidra-runtime-lock.json')).artifacts.filter(a=>a.kind.endsWith('-source')))await cp(path.join(root,'.cache/ghidra',item.file),path.join(root,state,item.file));
  await writeFile(path.join(root,state,'candidate.json'),JSON.stringify({sourceCommit:source,candidateCommit:sha(),editorRun,installer:audit.installer},null,2)+'\n');
+ await output('version',version);
  await output('source_sha',source);await output('candidate_commit',sha());
 }else throw Error('Unsupported release phase');

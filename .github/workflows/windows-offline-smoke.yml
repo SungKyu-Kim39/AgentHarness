@@ -12,7 +12,7 @@ on:
         type: string
         default: ''
       editor_run:
-        description: Immutable successful 0.3.9 editor build run ID
+        description: Immutable successful editor build run ID
         type: string
         default: ''
       runtime_source_probe:
@@ -41,6 +41,7 @@ jobs:
           lfs: false
           persist-credentials: false
       - name: Measure the previous installer on the same Windows runner
+        if: env.NED_ARTIFACT_VERSION != '0.3.10'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -101,7 +102,7 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
           $group = "Ned-CI-$env:GITHUB_RUN_ID"
           "NED_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          foreach ($program in @($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'), (Join-Path $install 'resources\opencode-cli.exe'), (Join-Path $install 'resources\runtime\windows-x64\ghidra\jdk\bin\java.exe'))) {
+          foreach ($program in (@($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'), (Join-Path $install 'resources\opencode-cli.exe'), (Join-Path $install 'resources\runtime\windows-x64\ghidra\jdk\bin\java.exe')) | Where-Object { $_ })) {
             New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
           }
           $result = @(& $python -I -B distribution/openviking-import-check.py 2>&1)
@@ -126,7 +127,7 @@ jobs:
           "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_ENGINE=$(Join-Path $install 'resources\opencode-cli.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $files = @(Get-ChildItem $install -Recurse -File)
-          $baseline = Get-Content baseline-smoke.json -Raw | ConvertFrom-Json
+          $baseline = if (Test-Path baseline-smoke.json) { Get-Content baseline-smoke.json -Raw | ConvertFrom-Json }
           [ordered]@{
             schemaVersion=1; product='Ned'; version=$env:NED_ARTIFACT_VERSION; openVikingVersion=$expectedVersion
             candidateSource=$env:NED_CANDIDATE_SOURCE; installerSha256=$env:NED_ARTIFACT_SHA256
@@ -135,7 +136,7 @@ jobs:
             baselineInstallerMilliseconds=$baseline.installerMilliseconds
             baselineInstalledFiles=$baseline.installedFiles
             baselineInstalledBytes=$baseline.installedBytes
-            comparisonOrder='baseline then candidate; single Windows Server runner, not a Win10/11 acceptance benchmark'
+            comparisonOrder=$(if ($baseline) { 'baseline then candidate; Windows Server runner' } else { 'candidate clean install; Windows Server runner' })
             installedFiles=$files.Count
             installedBytes=($files | Measure-Object Length -Sum).Sum
             openVikingImport=$true; tokenizerEncodings=7; bundledNode=$true
@@ -165,7 +166,7 @@ jobs:
           $proof | Add-Member -NotePropertyName newInstallerAcceptance -NotePropertyValue $false
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Verify 0.5.4 data migration using the installed Windows runtimes
-        if: env.NED_ARTIFACT_VERSION != '0.3.7'
+        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -180,7 +181,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify file deletion with the installed Windows Node runtime
-        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != ''
+        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -195,7 +196,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows file deletion test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify real engine compaction length recovery
-        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9') || env.NED_ARTIFACT_VERSION == '0.3.10') && env.NED_TEST_NODE != ''
+        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9')) && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -210,7 +211,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows compaction test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify Git writes, external reads, Ghidra and large OVPack recovery
-        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9') || env.NED_ARTIFACT_VERSION == '0.3.10') && env.NED_TEST_NODE != ''
+        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9')) && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -245,7 +246,7 @@ jobs:
           }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify installed Python tools with a preinstalled Conda environment
-        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9') || env.NED_ARTIFACT_VERSION == '0.3.10') && env.NED_TEST_NODE != ''
+        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9')) && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -287,6 +288,46 @@ jobs:
             Get-Content windows-upgrade-stderr.txt -ErrorAction SilentlyContinue
           }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
+      - name: Update the published 0.3.9 install and verify user global skills
+        if: env.NED_ARTIFACT_VERSION == '0.3.10'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $install = Split-Path $env:NED_TEST_NODE
+          $previous = Join-Path $env:RUNNER_TEMP 'Ned-0.3.9-previous.exe'
+          $audit = Get-Content 'downloads/Ned-0.3.9-installer-audit.json' -Raw | ConvertFrom-Json
+          $url = 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/af68e9a2fa55c98596d83b3503680bab3ecb2dad/downloads/Ned-0.3.9-win-x64.exe'
+          & curl.exe --fail --location --retry 2 --output $previous $url
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $previous -Algorithm SHA256).Hash -ne $audit.installer.sha256) { throw 'Published 0.3.9 installer hash mismatch' }
+          $uninstall = Start-Process -FilePath (Join-Path $install 'Uninstall Ned.exe') -ArgumentList @('/S', "_?=$install") -Wait -PassThru
+          $uninstall.Refresh()
+          if ($uninstall.ExitCode -ne 0) { throw 'Clean candidate uninstall failed' }
+          $old = Start-Process -FilePath $previous -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          $old.Refresh()
+          if ($old.ExitCode -ne 0) { throw 'Published 0.3.9 installation failed' }
+          Remove-Item $previous -Force
+          $skills = Join-Path $env:APPDATA 'Ned\skills\ned-release-fixture'
+          $reference = Join-Path $skills 'references\guidance.md'
+          New-Item -ItemType Directory (Split-Path $reference) -Force | Out-Null
+          $main = Join-Path $skills 'SKILL.md'
+          Set-Content $main -Encoding utf8 -Value @('---','name: ned-release-fixture','description: Windows upgrade verification','---','Persistent skill')
+          Set-Content $reference -Encoding utf8 -Value 'Persistent reference'
+          $before = Get-FileHash $main,$reference
+          $upgrade = Start-Process -FilePath $env:NED_SMOKE_EXE -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          $upgrade.Refresh()
+          if ($upgrade.ExitCode -ne 0) { throw '0.3.10 update failed' }
+          foreach ($file in $before) {
+            if ((Get-FileHash $file.Path).Hash -ne $file.Hash) { throw 'User global skill changed during update' }
+          }
+          $info = Get-Content (Join-Path $install 'resources\ned\build-info.json') -Raw | ConvertFrom-Json
+          if ($info.version -ne '0.3.10' -or $info.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Wrong version after update' }
+          foreach ($obsolete in @('skill-seed','personal-pack-recovery.py')) {
+            if (Test-Path (Join-Path $install "resources\ned\$obsolete")) { throw "Removed resource remains after update: $obsolete" }
+          }
+          $proof = Get-Content windows-offline-smoke.json -Raw | ConvertFrom-Json
+          $proof | Add-Member -NotePropertyName upgradedFrom -NotePropertyValue '0.3.9'
+          $proof | Add-Member -NotePropertyName userGlobalSkillsPreserved -NotePropertyValue $true
+          $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Restore disposable runner firewall configuration
         if: always()
         shell: pwsh
@@ -608,10 +649,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Build and audit immutable installer candidate
         id: candidate
-        run: node scripts/release-0.3.9.mjs candidate
+        run: node scripts/release-candidate.mjs candidate
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: ned-0.3.9-release-state-${{ steps.candidate.outputs.source_sha }}
+          name: ned-${{ steps.candidate.outputs.version }}-release-state-${{ steps.candidate.outputs.source_sha }}
           path: .cache/ned/release-state
           include-hidden-files: true
           compression-level: 0
