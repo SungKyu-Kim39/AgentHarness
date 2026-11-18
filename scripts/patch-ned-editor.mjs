@@ -15,13 +15,17 @@ function patchTerminalPanel(source) {
  let text=replaceOne(source,'        let assistant_enabled = self.assistant_enabled;','        let workspace = self.workspace.clone();\n        let assistant_enabled = self.assistant_enabled;');
  text=replaceOne(text,'                            .menu(move |window, cx| {\n                                let focus_handle = focus_handle.clone();',
   '                            .menu({\n                                let workspace = workspace.clone();\n                                move |window, cx| {\n                                let focus_handle = focus_handle.clone();');
+ text=replaceOne(text,
+  '                                let menu = ContextMenu::build(window, cx, |menu, _, _| {\n                                    menu.context(focus_handle.clone())',
+  `                                let managed = cfg!(windows) && std::env::var_os("NED_MANAGED_TERMINAL").is_some()
+                                    && workspace.read_with(cx, |workspace, cx| !workspace.project().read(cx).is_remote()).unwrap_or(false);
+                                let menu = ContextMenu::build(window, cx, |menu, _, _| {
+                                    menu.context(focus_handle.clone())`);
  text=replaceOne(text,`                                    menu.context(focus_handle.clone())
                                         .action(
                                             "New Terminal",
                                             workspace::NewTerminal::default().boxed_clone(),
                                         )`,`                                    let menu = menu.context(focus_handle.clone());
-                                    let managed = cfg!(windows) && std::env::var_os("NED_MANAGED_TERMINAL").is_some()
-                                        && workspace.read_with(cx, |workspace, cx| !workspace.project().read(cx).is_remote()).unwrap_or(false);
                                     let menu = if managed {
                                         let powershell = workspace.clone();
                                         let cmd = workspace.clone();

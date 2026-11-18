@@ -456,6 +456,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Pinned Rust installation failed' }
           Set-Location $env:NED_EDITOR_SOURCE
           if ('${{ inputs.artifact_version }}' -eq 'terminal-editor-probe') {
+            $env:CARGO_BUILD_JOBS = [Math]::Min(4, [Environment]::ProcessorCount)
             & cargo --config .cargo/bundle-config.toml check --release --locked --package terminal_view --target x86_64-pc-windows-msvc
             exit $LASTEXITCODE
           }
