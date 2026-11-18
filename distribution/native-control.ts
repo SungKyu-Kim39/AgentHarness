@@ -124,7 +124,7 @@ export class NativeRuntime {
       progress('skills');
       await this.tools.start((done,total)=>{if(done%100===0||done===total)progress('skills',`${done}/${total}개 문서`);});
       const skillDirectory = managedResource(this.resources, 'skills');
-      const catalog = this.tools.skills.catalog();
+      const catalog = this.tools.skills.catalog().filter(skill => skill.scope !== 'user');
       this.engineConfig = JSON.stringify(engineConfiguration(config, this.models, catalog.map(s => s.id), catalog.length ? skillDirectory : undefined, this.tools));
       this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => { for (const listener of this.knowledgeListeners) listener(); });
       // Local skills and the model engine do not depend on knowledge/index availability.

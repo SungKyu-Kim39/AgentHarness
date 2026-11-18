@@ -188,6 +188,7 @@ Section "Ned"
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "NoModify" 1
   WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "NoRepair" 1
   CreateDirectory "$APPDATA\Ned"
+  CreateDirectory "$APPDATA\Ned\skills"
   IfFileExists "$APPDATA\Ned\settings.enc.json" import_done
   IfFileExists "$APPDATA\L-Vibe\settings.enc.json" import_done
   IfFileExists "$APPDATA\Ned\config-import.json" open_config
@@ -231,5 +232,5 @@ Section "Uninstall"
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned"
   ${EndIf}
   RMDir /r "$INSTDIR"
-  ; APPDATA\Ned, including encrypted settings and history, is retained.
+  ; APPDATA\Ned, including global skills, encrypted settings and history, is retained.
 SectionEnd

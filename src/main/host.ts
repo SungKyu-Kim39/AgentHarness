@@ -58,7 +58,7 @@ export class Host {
       this.redactor,
     );
     this.knowledge = options.knowledge ?? new OpenVikingService(options.runtime, options.data, () => this.emit());
-    if (options.skills) this.skills = new OfflineSkills(options.skills);
+    if (options.skills) this.skills = new OfflineSkills(options.skills, path.join(options.data, 'skills'));
   }
   async initialize() {
     try {

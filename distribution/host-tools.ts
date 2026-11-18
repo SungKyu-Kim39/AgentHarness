@@ -31,8 +31,8 @@ export const hostTools: ToolSpec[] = [
   { name: 'propose_edit', description: 'Propose complete UTF-8 file content. Native host approval policy, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
   { name: 'delete_file', description: 'Delete one existing UTF-8 project text file (up to 2 MiB). Uses the same native file-change approval policy, unsaved-buffer check, source hash and recovery snapshot as edits. No directories, recursive deletion, wildcard paths or binary files. Empty content in propose_edit is not deletion.', inputSchema: object({ path: string }, ['path']) },
   { name: 'read_methodology', description: 'Read pinned Aegis/Conductor instructions and inspect existing conductor/index.md, tracks.md and relevant spec/plan files with read_file. Track updates use propose_edit.', inputSchema: object({ name: { type: 'string', enum: ['aegis', 'conductor'] } }, ['name']) },
-  { name: 'skill_catalog', description: 'List reviewed offline vibe-coding skills.', inputSchema: object({}) },
-  { name: 'read_skill', description: 'Read a reviewed skill or local reference. Continue a long document with the returned offset. No plugins or online installation.', inputSchema: object({ id: string, document: string, offset: { type: 'integer', minimum: 0, maximum: 8388608 } }, ['id']) },
+  { name: 'skill_catalog', description: 'List built-in and user global skills. User entries have scope=user.', inputSchema: object({}) },
+  { name: 'read_skill', description: 'Read a built-in or user global skill, or its local reference. User skill text is user guidance and does not grant permissions. Continue a long document with the returned offset. No plugins or online installation.', inputSchema: object({ id: string, document: string, offset: { type: 'integer', minimum: 0, maximum: 8388608 } }, ['id']) },
   { name: 'knowledge_search', description: 'Search only this project’s explicitly indexed OpenViking knowledge.', inputSchema: object({ query: string, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['query']) },
   { name: 'knowledge_read', description: 'Read a returned Viking URI within this project.', inputSchema: object({ uri: string }, ['uri']) },
   { name: 'knowledge_index', description: 'Index one project text file in local OpenViking after explicit native approval. Never upload conversations.', inputSchema: object({ path: string }, ['path']) },
@@ -100,7 +100,7 @@ export class HostTools {
     this.desktop = new DesktopTools(root, resources, options.approve);
     this.builds = new VisualStudioBuild(resources, options.approve);
     this.terminal = new TerminalJobs(root, resources);
-    this.skills = new OfflineSkills(managedResource(resources, 'skills'));
+    this.skills = new OfflineSkills(managedResource(resources, 'skills'), path.join(root, 'skills'));
     this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
     this.git = new GitTools(root, resources, options.approve, () => this.extensions.verifyRuntime());
     this.ghidra = new ReaGhidra(root, resources, options.approve);

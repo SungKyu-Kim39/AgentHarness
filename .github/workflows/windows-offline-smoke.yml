@@ -6,7 +6,7 @@ on:
         description: Exact immutable installer build
         default: 0.3.8
         type: choice
-        options: ['0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
+        options: ['0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
       candidate_source:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
@@ -29,7 +29,7 @@ permissions:
   contents: read
 jobs:
   offline-install:
-    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe' && inputs.artifact_version != 'release-build' && inputs.artifact_version != 'terminal-source-probe' && inputs.artifact_version != 'terminal-editor-probe'
+    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe' && inputs.artifact_version != 'release-build' && inputs.artifact_version != 'terminal-source-probe' && inputs.artifact_version != 'terminal-editor-probe' && inputs.artifact_version != 'global-skills-source-probe'
     runs-on: windows-2022
     timeout-minutes: 30
     env:
@@ -385,7 +385,7 @@ jobs:
 
 
   editor-source-build:
-    if: inputs.artifact_version == 'editor-source-build' || inputs.artifact_version == 'terminal-source-probe' || inputs.artifact_version == 'terminal-editor-probe'
+    if: inputs.artifact_version == 'editor-source-build' || inputs.artifact_version == 'terminal-source-probe' || inputs.artifact_version == 'terminal-editor-probe' || inputs.artifact_version == 'global-skills-source-probe'
     runs-on: windows-2022
     timeout-minutes: 360
     permissions:
@@ -405,7 +405,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - name: Verify the Windows terminal host paths
-        if: inputs.artifact_version != 'terminal-editor-probe'
+        if: inputs.artifact_version == 'editor-source-build' || inputs.artifact_version == 'terminal-source-probe'
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
         shell: pwsh
@@ -418,8 +418,19 @@ jobs:
           $env:NED_SHELL_TEST_PYTHON = (Get-Command python.exe).Source
           & node --import tsx --test tests/terminal-jobs.windows.test.ts
           if ($LASTEXITCODE -ne 0) { throw 'Windows terminal host test failed' }
+      - name: Verify global skills survive an NSIS update
+        if: inputs.artifact_version == 'global-skills-source-probe'
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          npm ci --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'Installer test prerequisites failed' }
+          & node --test tests/global-skills.windows.test.mjs
+          if ($LASTEXITCODE -ne 0) { throw 'Global skills installer upgrade test failed' }
       - name: Prepare the pinned source and Ned UI changes
-        if: inputs.artifact_version != 'terminal-source-probe'
+        if: inputs.artifact_version == 'editor-source-build' || inputs.artifact_version == 'terminal-editor-probe'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -445,7 +456,7 @@ jobs:
           "NED_EDITOR_SOURCE=$source" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_EDITOR_OUTPUT=$out" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
       - name: Build the edited Windows x64 executable
-        if: inputs.artifact_version != 'terminal-source-probe'
+        if: inputs.artifact_version == 'editor-source-build' || inputs.artifact_version == 'terminal-editor-probe'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'

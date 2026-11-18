@@ -89,3 +89,36 @@ test('the real pinned v2 engine discovers the offline skill bundle from the inst
     assert.ok(skill.content.includes('Ned offline adaptation'));
   }
 });
+
+test('a user global skill stays available after the installed resources are replaced', async t => {
+  const { tools, resources, root, project } = await fixture(t);
+  const data = path.join(root, 'data');
+  const folder = path.join(data, 'skills', 'team-review');
+  const entry = path.join(folder, 'SKILL.md');
+  const source = '---\nname: team-review\ndescription: 사내 리뷰 기준으로 검토합니다.\n---\nUse the review checklist.';
+  await mkdir(path.join(folder, 'references'), { recursive: true });
+  await writeFile(entry, source);
+  await writeFile(path.join(folder, 'references', 'review.md'), 'review reference');
+  await writeFile(path.join(folder, 'run.cmd'), '@echo off');
+  for (const id of ['goal-framing', 'invalid-global']) {
+    await mkdir(path.join(data, 'skills', id));
+    await writeFile(path.join(data, 'skills', id, 'SKILL.md'), source);
+  }
+  await writeFile(path.join(data, 'skills', 'goal-framing', 'SKILL.md'), source.replace('team-review', 'goal-framing'));
+
+  await tools.skills.load();
+  const catalog = JSON.parse(await tools.call('skill_catalog', {}, 'first-session'));
+  assert.deepEqual(catalog.filter((skill: { scope?: string }) => skill.scope === 'user'),
+    [{ id: 'team-review', name: 'team-review', description: '사내 리뷰 기준으로 검토합니다.', scope: 'user' }]);
+
+  await rm(path.join(resources, 'ned/skills'), { recursive: true });
+  await cp('vendor/skills', path.join(resources, 'ned/skills'), { recursive: true });
+  const upgraded = new HostTools(data, resources, { project: async () => project, approve: async () => false, knowledge: () => undefined, redactor: new Redactor() });
+  await upgraded.skills.load();
+  assert.match(await upgraded.call('read_skill', { id: 'team-review' }, 'other-project-session'), /Use the review checklist/);
+  assert.match(await upgraded.call('read_skill', { id: 'team-review', document: 'references/review.md' }, 'other-project-session'), /review reference/);
+  for (const document of ['../goal-framing/SKILL.md', 'run.cmd']) {
+    await assert.rejects(upgraded.call('read_skill', { id: 'team-review', document }, 'other-project-session'));
+  }
+  assert.equal(await readFile(entry, 'utf8'), source);
+});
