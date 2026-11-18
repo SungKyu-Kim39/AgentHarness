@@ -66,13 +66,16 @@ const oldDownloads=await readFile(path.join(root,'downloads/README.md'),'utf8');
 await writeFile(path.join(root,'downloads/README.md'),`# Ned 0.3.9\n\n최신 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE로 업데이트합니다. 기존 설정·대화·지식·편집기 환경과 사용자 수정 스킬을 보존합니다.\n\n- [반입 TGZ](https://github.com/${repo}/releases/download/v0.3.9/${prefix}-windows-x64.tgz) — ${bundle.bytes} bytes\n- [설치 EXE](https://github.com/${repo}/releases/download/v0.3.9/${prefix}-win-x64.exe) — ${audit.installer.bytes} bytes\n- [TGZ SHA-256](${prefix}-windows-x64.tgz.sha256) · [EXE SHA-256](${prefix}-win-x64.exe.sha256)\n- [변경 사항](../docs/changes-0.3.9.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../docs/validation-0.3.9.md)\n- [설치 감사](${prefix}-installer-audit.json) · [TGZ 검사](${prefix}-bundle-verification.json) · [Windows 결과](${prefix}-windows-offline-smoke.json) · [공개 확인](${prefix}-public-verification.json) · [배포 상태](${prefix}-release-state.json)\n\n기본 스킬 74종을 로컬 준비하고 변경분만 적용합니다. 지식 서비스의 준비가 대화를 막지 않으며 구체적인 시작 단계를 표시합니다. Studio 복구, CMD, 기존 개인 Zed 대화 가져오기와 EGM 7종을 포함합니다. 기본 Zed Agent의 필수 name·모델 통신 경로도 보완했습니다.\n\nWindows Server의 설치 후 ${tests}건 중 ${passed}건 통과·${skipped}건 제외·실패 0건입니다. 직원 Win10/11 GUI·실제 사내 모델·전체 외부 DNS/TCP 수용과는 구분합니다. 과거 태그·첨부는 보존합니다.\n\n---\n\n`+oldDownloads.replace('최신 배포입니다.','이전 배포입니다.'));
 await commit(['README.md','downloads/README.md',...['win-x64.exe','windows-x64.tgz','win-x64.exe.sha256','windows-x64.tgz.sha256','installer-audit.json','payload-manifest.json','bundle-manifest.json','bundle-verification.json'].map(suffix=>'downloads/'+prefix+'-'+suffix)],'release: record Ned 0.3.9 installer and offline bundle');
 const artifactCommit=sha(),files=['win-x64.exe','windows-x64.tgz','win-x64.exe.sha256','windows-x64.tgz.sha256','installer-audit.json','payload-manifest.json','bundle-manifest.json'].map(suffix=>prefix+'-'+suffix);
-let release;
-try{release=gh(['api',`repos/${repo}/releases/tags/v0.3.9`]);}catch{}
-if(release)throw Error('A 0.3.9 release already exists; refusing to replace it');
+const releaseRecord=()=> {
+ const releases=capture('gh',['api','--paginate',`repos/${repo}/releases?per_page=100`,'--jq','.[] | select(.tag_name == "v0.3.9")']);
+ return releases?JSON.parse(releases):undefined;
+};
+if(releaseRecord())throw Error('A 0.3.9 release already exists; refusing to replace it');
 run('gh',['release','create','v0.3.9','--target',source,'--title','Ned 0.3.9','--draft','--prerelease','--notes-file','docs/release-0.3.9.md',...files.map(name=>'downloads/'+name)]);
-release=gh(['api',`repos/${repo}/releases/tags/v0.3.9`]);
+const release=releaseRecord();
+if(!release?.draft||release.target_commitish!==source||release.assets.length!==files.length)throw Error('Draft release identity or asset count mismatch');
 for(const name of files){const asset=release.assets.find(a=>a.name===name);if(!asset||asset.digest!=='sha256:'+await fileHash(path.join(root,'downloads',name)))throw Error('Uploaded asset digest mismatch: '+name);}
-run('gh',['release','edit','v0.3.9','--draft=false']);
+run('gh',['api','--method','PATCH',`repos/${repo}/releases/${release.id}`,'-F','draft=false','--silent']);
 const published=gh(['api',`repos/${repo}/releases/tags/v0.3.9`]);if(published.draft||gh(['api',`repos/${repo}/commits/v0.3.9`]).sha!==source)throw Error('Published release identity mismatch');
 const verified=[];
 for(const asset of published.assets){
