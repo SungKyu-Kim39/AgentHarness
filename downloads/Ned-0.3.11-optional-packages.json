@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "version": "0.3.11",
+  "sourceCommit": "6222c4c312351ce2b45fd131851d132512092694",
+  "assets": [
+    {
+      "name": "Ned-0.3.11-core-win-x64.exe",
+      "bytes": 1032201071,
+      "sha256": "f82cd9535a08d758094c2166fecaf71c6b5bff921933f36d1b6e4bf100c5f054"
+    },
+    {
+      "name": "Ned-0.3.11-pack-reversing-windows-x64.tgz",
+      "bytes": 696498605,
+      "sha256": "b400b1d97f4fbfdc51ba2eba3555d898b5c017dec23e022bf88c66f97bad0ef5"
+    }
+  ]
+}
