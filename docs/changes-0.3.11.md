@@ -3,8 +3,10 @@
 - OpenViking Studio는 헬스 JSON을 창에서 열지 않으며, 작업 화면과 로컬 API가 준비된 다음 표시합니다.
 - Git 조회는 원본의 설정·인덱스·작업 트리를 변경하지 않고 상태·diff·이력을 한도가 있는 구조화된 결과로 돌려줍니다. 경로·상태 필터가 지원됩니다.
 - Ned Agent의 슬래시 목록에서 `/compact`와 글로벌·프로젝트 스킬을 사용할 수 있습니다. 기본 대화는 특수 데스크톱·리버싱 도구 스키마를 생략합니다.
+- `%APPDATA%\Ned\skills`에 저장한 글로벌 스킬을 `skill_catalog`, `read_skill`, `/skill-<ID>`로 조회하고 적용할 수 있습니다. 개인 Windows 프로필의 `%USERPROFILE%\.agents\skills`는 Ned의 스킬 탐색과 외부 파일 조회에서 차단합니다.
 - CMD·PowerShell은 일반 환경변수를 전달하며, 전체 권한에서도 단순 프로젝트 읽기 이외의 셸 명령은 매번 확인합니다.
 - [프로젝트 지식과 개인 공통 지식](knowledge-notes.md)을 사용자가 승인한 내용으로 쌓고 검색할 수 있습니다. 갱신과 삭제도 승인합니다.
+- `importedAreas: 0`이어도 개인 메모리를 새로 저장할 수 있습니다. 첫 저장을 승인하면 Ned가 개인 영역을 만들고, 저장한 메모리는 여러 프로젝트에서 검색할 수 있습니다.
 - 전체 설치본에 더해 [Core와 리버싱 팩](offline-packs.md)을 제공합니다. 사내 Windows 서명과 원본 Zed 호환 빌드는 [배포 정책](license-policy.md)에 설명합니다.
 
 0.3.7에서 바로 업데이트하는 경우 [누적 변경](upgrade-from-0.3.7.md)을 확인합니다.
