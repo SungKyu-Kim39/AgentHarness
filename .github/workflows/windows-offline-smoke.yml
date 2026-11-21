@@ -11,6 +11,10 @@ on:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
         default: ''
+      candidate_run:
+        description: Successful Actions build containing the immutable candidate installers
+        type: string
+        default: ''
       editor_run:
         description: Immutable successful editor build run ID
         type: string
@@ -27,6 +31,7 @@ on:
       # 0.3.8 uses an explicit immutable candidate_source dispatch before publication.
 permissions:
   contents: read
+  actions: read
 jobs:
   offline-install:
     if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe' && inputs.artifact_version != 'release-build' && inputs.artifact_version != 'terminal-source-probe' && inputs.artifact_version != 'terminal-editor-probe' && inputs.artifact_version != 'global-skills-source-probe'
@@ -66,6 +71,8 @@ jobs:
           Remove-Item (Split-Path (Split-Path $install)) -Recurse -Force -ErrorAction SilentlyContinue
           Remove-Item $exe -Force
       - name: Download and verify the exact published installer
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -75,9 +82,23 @@ jobs:
           if ($env:NED_CANDIDATE_SOURCE -and $audit.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Candidate provenance mismatch' }
           "NED_ARTIFACT_SHA256=$($audit.installer.sha256)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $exe = Join-Path $env:RUNNER_TEMP "Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-          $url = "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-          & curl.exe --fail --location --retry 2 --output $exe $url
-          if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
+          if ($env:NED_ARTIFACT_VERSION -eq '0.3.11' -and $env:NED_CANDIDATE_SOURCE) {
+            $candidateRun = '${{ inputs.candidate_run }}'
+            if ($candidateRun -notmatch '^[0-9]+$') { throw 'Candidate Actions run ID required' }
+            $files = Join-Path $env:RUNNER_TEMP 'ned-immutable-candidate'
+            gh run download $candidateRun --repo $env:GITHUB_REPOSITORY --name "ned-0.3.11-installer-assets-$env:NED_CANDIDATE_SOURCE" --dir $files
+            if ($LASTEXITCODE -ne 0) { throw 'Candidate Actions download failed' }
+            $exe = Join-Path $files (Split-Path $exe -Leaf)
+            "NED_SMOKE_CANDIDATE_DIR=$files" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
+          } else {
+            $url = if ($env:NED_ARTIFACT_VERSION -eq '0.3.11') {
+              "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:NED_ARTIFACT_VERSION/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
+            } else {
+              "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
+            }
+            & curl.exe --fail --location --retry 2 --output $exe $url
+            if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
+          }
           if ((Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $audit.installer.sha256) { throw 'Installer SHA-256 mismatch' }
           "NED_SMOKE_EXE=$exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
       - name: Install into a missing directory and test bundled Python offline
@@ -350,13 +371,17 @@ jobs:
           $install = Split-Path $env:NED_TEST_NODE
           $directory = if ($env:NED_CANDIDATE_SOURCE) { 'downloads/candidates/' + $env:NED_CANDIDATE_SOURCE } else { 'downloads' }
           $record = Get-Content "$directory/Ned-$env:NED_ARTIFACT_VERSION-optional-packages.json" -Raw | ConvertFrom-Json
-          if ($record.sourceCommit -ne $env:NED_CANDIDATE_SOURCE -or $record.assets.Count -ne 2) { throw 'Optional manifest mismatch' }
+          if (($env:NED_CANDIDATE_SOURCE -and $record.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) -or $record.assets.Count -ne 2) { throw 'Optional manifest mismatch' }
           $items = @{}
           foreach ($item in $record.assets) {
             if ($item.name -notmatch '^Ned-0\.3\.11-(?:core-win-x64\.exe|pack-reversing-windows-x64\.tgz)$') { throw 'Unexpected optional asset' }
             $file = Join-Path $env:RUNNER_TEMP $item.name
-            & curl.exe --fail --location --retry 2 --output $file "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/$($item.name)"
-            if ($LASTEXITCODE -ne 0 -or (Get-FileHash $file -Algorithm SHA256).Hash -ne $item.sha256) { throw 'Optional download hash mismatch' }
+            if ($env:NED_SMOKE_CANDIDATE_DIR) { $file = Join-Path $env:NED_SMOKE_CANDIDATE_DIR $item.name }
+            else {
+              & curl.exe --fail --location --retry 2 --output $file "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:NED_ARTIFACT_VERSION/$($item.name)"
+              if ($LASTEXITCODE -ne 0) { throw 'Optional release download failed' }
+            }
+            if ((Get-FileHash $file -Algorithm SHA256).Hash -ne $item.sha256) { throw 'Optional download hash mismatch' }
             $items[$item.name] = $file
           }
           $core = $items['Ned-0.3.11-core-win-x64.exe']
@@ -701,6 +726,16 @@ jobs:
       - name: Build and audit immutable installer candidate
         id: candidate
         run: node scripts/release-candidate.mjs candidate
+      - name: Store candidate binaries outside Git LFS
+        if: steps.candidate.outputs.version == '0.3.11'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ned-${{ steps.candidate.outputs.version }}-installer-assets-${{ steps.candidate.outputs.source_sha }}
+          path: |
+            release/ned/Ned-0.3.11*-win-x64.exe
+            release/ned/Ned-0.3.11-pack-reversing-windows-x64.tgz
+          compression-level: 0
+          if-no-files-found: error
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ned-${{ steps.candidate.outputs.version }}-release-state-${{ steps.candidate.outputs.source_sha }}

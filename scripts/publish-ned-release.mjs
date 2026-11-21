@@ -26,6 +26,7 @@ const proof=await json('.cache/ned/windows-validation/windows-offline-smoke.json
 const candidatePath=`downloads/candidates/${source}`;
 const audit=await json(`${candidatePath}/${prefix}-installer-audit.json`);
 const previousVersion=version==='0.3.11'?'0.3.10':'0.3.9';
+const actionsTransport=version==='0.3.11';
 const optionalName=`${prefix}-optional-packages.json`;
 const optional=version==='0.3.11'?await json(`${candidatePath}/${optionalName}`):undefined;
 if(optional&&(optional.sourceCommit!==source||optional.assets.length!==2||proof.coreAndReversingPackVerified!==true||proof.userDataPreserved!==true))throw Error('Optional packages or user data preservation lack installed validation');
@@ -39,6 +40,7 @@ for(const name of groups){
 }
 const finalManifest=`downloads/${prefix}-bundle-manifest.json`;
 const stagedAlready=await exists(finalManifest);
+const binaryAsset=name=>name.endsWith('.exe')||name.endsWith('.tgz');
 let bundle;
 let artifactCommit;
 const releaseUrl=`https://github.com/${repo}/releases/tag/${tag}`;
@@ -47,16 +49,35 @@ if(optional)files.push(optionalName,...optional.assets.flatMap(item=>[item.name,
 if(stagedAlready){
   bundle=await json(finalManifest);
   artifactCommit=capture('git',['log','-1','--format=%H','--',finalManifest]);
-  run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include='+files.filter(name=>name.endsWith('.exe')||name.endsWith('.tgz')).map(name=>'downloads/'+name).join(',')]);
+  if(actionsTransport){
+   const recover=process.env.NED_PUBLISH_RECOVERY_RUN;
+   if(/^\d+$/.test(recover??'')){
+    run('gh',['run','download',recover,'--name',`ned-${version}-publish-recovery-${source}`,'--dir','downloads']);
+   }else run('gh',['release','download',tag,'--dir','downloads',...files.filter(binaryAsset).flatMap(name=>['--pattern',name])]);
+  }else run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include='+files.filter(binaryAsset).map(name=>'downloads/'+name).join(',')]);
 }else{
 run('gh',['run','download',candidateRun,'--name','ned-'+version+'-release-state-'+source,'--dir','.cache/ned/release-state']);
 const state=await json('.cache/ned/release-state/candidate.json');if(state.sourceCommit!==source||state.installer.sha256!==audit.installer.sha256)throw Error('Build state mismatch');
 await cp(path.join(root,'.cache/ned/release-state/handover-sources'),path.join(root,'.cache/ned/handover-sources'),{recursive:true});
 await mkdir(path.join(root,'.cache/ghidra'),{recursive:true});
 for(const item of (await json('ghidra-runtime-lock.json')).artifacts.filter(a=>a.kind.endsWith('-source')))await cp(path.join(root,'.cache/ned/release-state',item.file),path.join(root,'.cache/ghidra',item.file));
-run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include='+[`${candidatePath}/${prefix}-win-x64.exe`,...(optional?.assets.map(item=>candidatePath+'/'+item.name)??[]),'downloads/astryx/*.zip',`downloads/editor/*${version}*`].join(',')]);
 const output='release/ned';await mkdir(path.join(root,output),{recursive:true});
-for(const [from,to]of [[`${prefix}-win-x64.exe`,`${prefix}-win-x64.exe`],[`${prefix}-installer-audit.json`,'installer-audit.json'],[`${prefix}-payload-manifest.json`,'payload-manifest.json']])await cp(path.join(root,candidatePath,from),path.join(root,output,to));
+let binaryDirectory=candidatePath;
+if(actionsTransport){
+ binaryDirectory='.cache/ned/candidate-binaries';
+ run('gh',['run','download',candidateRun,'--name',`ned-${version}-installer-assets-${source}`,'--dir',binaryDirectory]);
+ run('gh',['run','download',String(state.editorRun),'--pattern',`ned-editor-${version}-*`,'--dir','.cache/ned/final-editor']);
+ const {readdir}=await import('node:fs/promises');
+ const archive=`zed-ned-editor-source-v1.28.1-${version}.tar.gz`;
+ const editorFile=(await readdir(path.join(root,'.cache/ned/final-editor'),{recursive:true})).find(name=>path.basename(name)===archive);
+ const editorBuild=await json(`downloads/editor/build-${version}.json`);
+ const pinned=editorBuild.files.find(item=>item.name===archive), editorSource=path.join(root,'.cache/ned/final-editor',editorFile??'missing');
+ if(!pinned||await fileHash(editorSource)!==pinned.sha256)throw Error('Corresponding editor source does not match build metadata');
+ await cp(editorSource,path.join(root,'downloads/editor',archive));
+ run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include=downloads/astryx/*.zip']);
+}else run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include='+[`${candidatePath}/${prefix}-win-x64.exe`,'downloads/astryx/*.zip',`downloads/editor/*${version}*`].join(',')]);
+await cp(path.join(root,binaryDirectory,`${prefix}-win-x64.exe`),path.join(root,output,`${prefix}-win-x64.exe`));
+for(const [from,to]of [[`${prefix}-installer-audit.json`,'installer-audit.json'],[`${prefix}-payload-manifest.json`,'payload-manifest.json']])await cp(path.join(root,candidatePath,from),path.join(root,output,to));
 if(await fileHash(path.join(root,output,`${prefix}-win-x64.exe`))!==audit.installer.sha256)throw Error('Candidate LFS bytes mismatch');
 const windows={...proof,workflowRunId:Number(validationRun),workflowCommit:validation.head_sha,tests,passed,skipped,failed:0};
 await writeFile(path.join(root,`downloads/${prefix}-windows-offline-smoke.json`),JSON.stringify(windows,null,2)+'\n');
@@ -84,7 +105,7 @@ await writeFile(path.join(root,`downloads/${prefix}-win-x64.exe.sha256`),audit.i
 if(optional){
  await cp(path.join(root,candidatePath,optionalName),path.join(root,'downloads',optionalName));
  for(const item of optional.assets){
-  const file=path.join(root,candidatePath,item.name);
+  const file=path.join(root,binaryDirectory,item.name);
   if((await fileHash(file))!==item.sha256)throw Error('Optional package bytes mismatch');
   await cp(file,path.join(root,'downloads',item.name));
   await writeFile(path.join(root,'downloads',item.name+'.sha256'),item.sha256+'  '+item.name+'\n');
@@ -100,7 +121,7 @@ await writeFile(path.join(root,'README.md'),readme);
 const optionalLinks=optional?'\n- '+optional.assets.map(item=>`[${item.name.includes('-core-')?'Core 설치 EXE':'리버싱 팩'}](${releaseUrl.replace('/tag/','/download/')}/${item.name}) · [SHA-256](${item.name}.sha256)`).join('\n- '):'';
 const oldDownloads=await readFile(path.join(root,'downloads/README.md'),'utf8');
 await writeFile(path.join(root,'downloads/README.md'),`# Ned ${version}\n\nWindows x64 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식과 사용자 글로벌 스킬은 보존됩니다.\n\n- [반입 TGZ](https://github.com/${repo}/releases/download/${tag}/${prefix}-windows-x64.tgz) · ${bundle.bytes} bytes\n- [설치 EXE](https://github.com/${repo}/releases/download/${tag}/${prefix}-win-x64.exe) · ${audit.installer.bytes} bytes${optionalLinks}\n- [TGZ SHA-256](${prefix}-windows-x64.tgz.sha256) · [EXE SHA-256](${prefix}-win-x64.exe.sha256)\n- [변경 사항](../docs/changes-${version}.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../${validationFile})\n- [설치 감사](${prefix}-installer-audit.json) · [TGZ 검사](${prefix}-bundle-verification.json) · [Windows 결과](${prefix}-windows-offline-smoke.json) · [공개 다운로드 검증](${prefix}-public-verification.json) · [배포 상태](${prefix}-release-state.json)\n\n---\n\n`+oldDownloads.replace(/최신 사전 릴리스입니다\./,'이전 사전 릴리스입니다.'));
-await commit(['README.md','downloads/README.md',...files.map(name=>'downloads/'+name),`downloads/${prefix}-bundle-verification.json`],`release: record Ned ${version} installer and offline bundle`);
+await commit(['README.md','downloads/README.md',...files.filter(name=>!actionsTransport||!binaryAsset(name)).map(name=>'downloads/'+name),`downloads/${prefix}-bundle-verification.json`],`release: record Ned ${version} installer and offline bundle`);
 artifactCommit=sha();
 }
 if(bundle.version!==version||bundle.sourceCommit!==source||bundle.installer.sha256!==audit.installer.sha256||

@@ -14,6 +14,10 @@ on:
         description: Immutable product source SHA
         required: false
         default: ''
+      recovery_run:
+        description: Optional failed publish run containing the exact already staged release bytes
+        required: false
+        default: ''
       validation_run:
         description: Successful Windows offline smoke run ID
         required: true
@@ -30,6 +34,7 @@ jobs:
       NED_VERSION: ${{ inputs.version }}
       NED_VALIDATION_RUN: ${{ inputs.validation_run }}
       NED_CANDIDATE_RUN: ${{ inputs.candidate_run }}
+      NED_PUBLISH_RECOVERY_RUN: ${{ inputs.recovery_run }}
       NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -47,6 +52,18 @@ jobs:
       - name: Finalize and publish the installed release bytes
         if: inputs.version == '0.3.10' || inputs.version == '0.3.11'
         run: node scripts/publish-ned-release.mjs
+      - name: Preserve exact staged binaries for recovery
+        if: failure() && inputs.version == '0.3.11'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ned-${{ inputs.version }}-publish-recovery-${{ inputs.candidate_source }}
+          path: |
+            downloads/Ned-0.3.11-win-x64.exe
+            downloads/Ned-0.3.11-windows-x64.tgz
+            downloads/Ned-0.3.11-core-win-x64.exe
+            downloads/Ned-0.3.11-pack-reversing-windows-x64.tgz
+          compression-level: 0
+          if-no-files-found: ignore
       - name: Verify published files and Windows validation
         if: inputs.version != '0.3.10' && inputs.version != '0.3.11'
         shell: bash
