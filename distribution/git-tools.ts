@@ -155,7 +155,7 @@ export class GitTools {
         default: {
           const args = input.operation === 'show' ? ['show','--no-notes','--no-show-signature',...diff,input.revision ?? 'HEAD']
             : ['diff',...diff,...(input.operation === 'staged' ? ['--cached'] : [])];
-          code = await readRecords([...args,'--format=', '--name-only','-z',...argumentsPaths].filter(value => value !== '--format=' || input.operation === 'show'), '\0');
+          code = await readRecords([...args, ...(input.operation === 'show' ? ['--format='] : []), '--name-only','-z',...argumentsPaths], '\0');
           if (code === 0) {
             const result = await this.run(project, work, [...prefix,...args,...argumentsPaths], signal, extra, { keep: 20000 });
             code = result.code; preview = result.text; previewTruncated = result.truncated;

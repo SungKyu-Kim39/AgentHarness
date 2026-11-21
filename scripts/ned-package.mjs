@@ -22,14 +22,14 @@ const version = (await json(path.join(root,'package.json'))).version;
 const revision=process.env.NED_BUILD_REVISION ?? '';
 if(revision && revision!=='rebuild1')throw new Error('Unsupported build revision');
 const artifactVersion=version+(revision?'-'+revision:'');
-const output = path.join(root,'release/ned');
+const vendorEditor = process.env.NED_VENDOR_EDITOR === '1';
+const output = path.join(root,vendorEditor ? 'release/ned-vendor' : 'release/ned');
 const cache = path.join(root,'.cache/ned');
 process.env.ELECTRON_BUILDER_CACHE ??= path.join(cache,'builder-cache');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
 const signing = nedSigning();
-const vendorEditor = process.env.NED_VENDOR_EDITOR === '1';
 const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11'].includes(version);
 if(['0.3.7','0.3.8'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
@@ -38,8 +38,8 @@ if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mo
 const run = (command,args,options={}) => execFileSync(command,args,{cwd:root,stdio:'inherit',...options});
 const exists = p => access(p).then(()=>true,()=>false);
 async function releaseDoc(file) {
-  const current=path.join(root,'docs',file);
-  return await exists(current)?current:path.join(root,'docs/archive',file.startsWith('validation-')?'validations':'releases',file);
+  const archived=path.join(root,'docs/archive',file.startsWith('validation-')?'validations':'releases',file);
+  return await exists(archived)?archived:path.join(root,'docs',file);
 }
 async function prepareZed() {
   const lock = await json(path.join(root,'ned-runtime-lock.json'));

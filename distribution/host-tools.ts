@@ -232,7 +232,13 @@ export class HostTools {
     if (name === 'read_file') { const a = z.object({ path: pathArg }).strict().parse(args); return files.read(a.path); }
     if (name === 'read_external_file' || name === 'list_external_directory') {
       const a = z.object({ path: pathArg }).strict().parse(args);
-      const external = new ExternalRead(() => this.options.fullAccess?.() === true, [this.root, this.resources]);
+      const privateRoots = [this.root, this.resources];
+      const home = process.env.USERPROFILE;
+      if (home && path.isAbsolute(home)) privateRoots.push(
+        path.join(home, '.agents', 'skills'), path.join(home, '.opencode'), path.join(home, '.config', 'opencode'));
+      for (const folder of [process.env.APPDATA, process.env.LOCALAPPDATA])
+        if (folder && path.isAbsolute(folder)) privateRoots.push(path.join(folder, 'Zed'));
+      const external = new ExternalRead(() => this.options.fullAccess?.() === true, privateRoots);
       return name === 'read_external_file' ? external.read(a.path, signal) : external.list(a.path, signal);
     }
     if (name === 'search_text') {

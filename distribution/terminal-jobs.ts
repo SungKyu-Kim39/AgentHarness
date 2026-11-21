@@ -14,8 +14,8 @@ export function terminalEnvironment(parent: NodeJS.ProcessEnv): NodeJS.ProcessEn
   for (const [name, value] of Object.entries(parent)) {
     const key = name.toUpperCase();
     if (value === undefined || omitted.has(key) ||
-        /^(?:NED_|OPENCODE_|ELECTRON_|NODE_OPTIONS$|NODE_PATH$|PYTHONPATH$|PYTHONHOME$|GIT_|AWS_|AZURE_|GOOGLE_APPLICATION_CREDENTIALS$|SSH_AUTH_SOCK$)/.test(key) ||
-        /(?:API_?KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTHORIZATION)/.test(key)) continue;
+        /^(?:NED_|OPENCODE_|ELECTRON_|NODE_OPTIONS$|NODE_PATH$|PYTHONPATH$|PYTHONHOME$|GIT_|AWS_|AZURE_|GOOGLE_APPLICATION_CREDENTIALS$|SSH_AUTH_SOCK$|GITHUB_PAT$|GH_PAT$)/.test(key) ||
+        /(?:API_?KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTHORIZATION|AUTH_?KEY|PRIVATE_?KEY)/.test(key)) continue;
     result[knownNames[key] ?? key] = value;
   }
   return result;

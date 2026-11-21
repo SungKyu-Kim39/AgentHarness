@@ -108,4 +108,4 @@ Astryx는 MIT 라이선스입니다. 전용 스킬의 원본과 수정 내역은
 
 인증서를 사용할 수 있는 Windows 빌드 PC에서 `NED_SIGNTOOL`에 절대 경로, `NED_SIGN_THUMBPRINT`에 인증서 지문, `NED_SIGN_TIMESTAMP_URL`에 승인된 HTTPS 타임스탬프 주소를 지정하고 `npm run ned:release`를 실행합니다. SignTool은 Windows 인증서 저장소를 사용합니다. 실행 파일 리소스를 적용한 뒤 호스트·편집기를 서명하고, NSIS 제거 프로그램과 설치 EXE를 서명한 뒤 해시를 계산합니다.
 
-별도의 호환 빌드에서는 `NED_VENDOR_EDITOR=1`을 지정해 Windows에서 원본 Zed 서명을 검증하고 그 실행 파일을 그대로 사용합니다. 이 빌드에서는 수정 Zed의 메뉴·About·터미널 셸 메뉴가 제공되지 않습니다. Ned의 바로가기 아이콘은 설치 리소스에서 지정합니다. 빌드 프로필과 배포 해시를 따로 기록합니다.
+별도의 호환 빌드에서는 `NED_VENDOR_EDITOR=1`을 지정해 Windows에서 원본 Zed 서명을 검증하고 그 실행 파일을 그대로 사용합니다. Windows용 innoextract는 `NED_INNOEXTRACT`에 지정합니다. 결과물은 `release/ned-vendor`에 생성됩니다. 이 빌드에서는 수정 Zed의 메뉴·About·터미널 셸 메뉴가 제공되지 않습니다. Ned의 바로가기 아이콘은 설치 리소스에서 지정합니다. 빌드 프로필과 배포 해시를 따로 기록합니다.
