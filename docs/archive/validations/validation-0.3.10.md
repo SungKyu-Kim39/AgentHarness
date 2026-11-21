@@ -27,4 +27,4 @@ Windows 10/11용 설치본의 실제 메뉴와 Studio 창은 별도 확인 범�
 
 설치 EXE는 1535084915 bytes, SHA-256 `72ec13b53e75e70bd7ed8129fcebe39e7b67b7fc68871e3ee0f1464e6d1a41dd`입니다. 준비본과 추출본의 60143개 파일을 모두 대조했습니다.
 
-[실행 결과](../downloads/Ned-0.3.10-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.10-installer-audit.json) · [반입 TGZ](../downloads/README.md)
+[실행 결과](../../../downloads/Ned-0.3.10-windows-offline-smoke.json) · [설치 감사](../../../downloads/Ned-0.3.10-installer-audit.json) · [반입 TGZ](../../../downloads/README.md)

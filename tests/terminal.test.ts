@@ -15,3 +15,20 @@ test('CMD selection survives an update; both independent terminals preserve JSON
  for(const task of tasks.slice(1)){assert.equal(task.cwd,'$ZED_WORKTREE_ROOT');assert.equal(task.use_new_terminal,true);}
  assert.match(await readFile(tasksFile,'utf8'),/MY_TASK/);
 });
+
+test('shell inheritance excludes host secrets and only literal project reads are eligible for automatic approval', async t => {
+ const { terminalEnvironment } = await import('../distribution/terminal-jobs');
+ const { isProjectShellRead } = await import('../distribution/host-tools');
+ const { ProjectFiles } = await import('../src/main/files');
+ const env = terminalEnvironment({ PATH:'current-path', TEAM_SDK:'sdk', APIKey:'private', ned_internal:'private', NED_TERMINAL_ENV_EXCLUDE:'CUSTOM', custom:'private' });
+ assert.equal(env.Path,'current-path');
+ assert.equal(env.TEAM_SDK,'sdk');
+ assert.deepEqual(Object.keys(env).sort(),['Path','TEAM_SDK']);
+ const root = await mkdtemp(path.join(tmpdir(),'ned-shell-guard-')); t.after(() => rm(root,{recursive:true,force:true}));
+ await writeFile(path.join(root,'safe.txt'),'text'); const files = new ProjectFiles(root);
+ assert.equal(await isProjectShellRead(files,'powershell','Get-Content safe.txt'),true);
+ assert.equal(await isProjectShellRead(files,'cmd','dir'),true);
+ for (const command of ['Get-Content ../secret.txt','Get-Content safe.txt; Remove-Item safe.txt','Remove-Item safe.txt -Recurse -Force','git push --force','Get-Content safe.txt > output']) {
+  assert.equal(await isProjectShellRead(files,'powershell',command),false);
+ }
+});

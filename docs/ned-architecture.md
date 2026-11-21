@@ -1,8 +1,8 @@
 # Ned의 구성과 데이터 흐름
 
-Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.3.9 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
+Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.3.11 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
 
-Zed는 코드 편집과 탐색, 대화 화면을 제공합니다. Ned Agent를 선택하면 OpenCode가 세션을 진행하고 필요한 호스트 도구를 호출합니다. 기본 Zed Agent를 선택하면 Zed 자체 하네스가 도구를 선택·실행하며 OpenCode나 Ned ACP를 사용하지 않습니다. Ned 호스트는 설정과 키, 승인, 프로젝트 접근, 프로세스 실행·종료와 사내 모델 연결을 관리합니다. Aegis·Conductor, 스킬 67개, OpenViking, Serena, Graphify, REA와 MCP도 이 호스트를 통해 연결합니다.
+Zed는 코드 편집과 탐색, 대화 화면을 제공합니다. Ned Agent를 선택하면 OpenCode가 세션을 진행하고 필요한 호스트 도구를 호출합니다. 기본 Zed Agent를 선택하면 Zed 자체 하네스가 도구를 선택·실행하며 OpenCode나 Ned ACP를 사용하지 않습니다. Ned 호스트는 설정과 키, 승인, 프로젝트 접근, 프로세스 실행·종료와 사내 모델 연결을 관리합니다. Aegis·Conductor, 스킬 74개, OpenViking, Serena, Graphify, REA와 MCP도 이 호스트를 통해 연결합니다.
 
 ```mermaid
 flowchart LR
@@ -93,7 +93,7 @@ Windows ACP 실행은 Zed → 번들 Python 콘솔 감독 프로세스 → Elect
 
 Zed는 주로 GPL-3.0-or-later이며 Apache-2.0 구성 요소도 있습니다. 대응 소스와 제3자 고지를 함께 제공하며, Ned 호스트의 라이선스와 구분합니다. 최소 OS는 Windows 10 1903 이상·Windows 11 22H2 이상 x64입니다.
 
-0.3.7에서는 Windows Server 설치와 OpenViking·토크나이저·Node 로딩을 확인했습니다. 실제 사내 Windows GUI·모델 서버·네트워크·실행과 종료 검증은 [검증 기록](validation-0.3.7.md)의 범위에 따라 이어갑니다. 원본 0.3.1의 AppData와 빈 시작 화면 수정 이력은 [시작 수정 안내](ned-startup-fix-1.md)에 남겼습니다.
+0.3.7에서는 Windows Server 설치와 OpenViking·토크나이저·Node 로딩을 확인했습니다. 실제 사내 Windows GUI·모델 서버·네트워크·실행과 종료 검증은 [검증 기록](archive/validations/validation-0.3.7.md)의 범위에 따라 이어갑니다. 원본 0.3.1의 AppData와 빈 시작 화면 수정 이력은 [시작 수정 안내](archive/fixes/ned-startup-fix-1.md)에 남겼습니다.
 
 ## 편집기 표시와 Astryx
 
@@ -112,3 +112,7 @@ HostTools는 검증한 로컬 카탈로그를 먼저 준비하고 지식 서비�
 트랜잭션으로 병합합니다. 모델 지정·sandbox 승인은 상속하지 않습니다.
 EGM의 Goldfish는 새 읽기 전용 하위 세션과 별도 시스템 지침을 사용하고 부모 대화·개인 기억과
 자동 스킬 주입을 전달하지 않습니다. 기존 하위 Agent 동시 두 개 한도는 공유합니다.
+
+## 사용자 지식과 선택 팩
+
+사용자가 승인한 프로젝트 지식과 개인 공통 지식을 OpenViking에 저장합니다. 개인 영역은 첫 저장 때 준비하며, 기존 가져온 지식은 읽기 범위로 보존합니다. [지식 사용법](knowledge-notes.md)을 참고하세요. 전체 설치본과 Core는 같은 호스트와 편집기를 사용하며, Core에 없는 REA/Ghidra는 [선택 팩](offline-packs.md)으로 설치합니다.

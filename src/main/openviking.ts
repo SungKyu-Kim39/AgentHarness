@@ -12,6 +12,18 @@ import { verifyFiles } from './parallel-files';
 import { PersonalKnowledge } from './personal-knowledge';
 import { migrateVikingNamespace, backupVikingAccount, vikingAccount } from './openviking-namespace';
 import type { AgentConfig, AppState } from '../shared/contracts';
+const personalNotes = 'viking://user/local-user/resources/ned-personal';
+export type KnowledgeScope = 'project' | 'personal';
+export function savedKnowledgeId(title: string) {
+  return createHash('sha256').update(title.trim().normalize('NFC')).digest('hex').slice(0, 24);
+}
+function knowledgeNoteRoot(scope: KnowledgeScope, project: string) {
+  return scope === 'personal' ? personalNotes : knowledgeRoot(project) + '/ned-notes';
+}
+function knowledgeNoteUri(scope: KnowledgeScope, project: string, id: string) {
+  if (!/^[a-f0-9]{24}$/.test(id)) throw new Error('저장된 지식 ID가 올바르지 않습니다.');
+  return knowledgeNoteRoot(scope, project) + '/' + id + '.md';
+}
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
   configure(config?: AgentConfig): Promise<void>;
@@ -21,6 +33,9 @@ export interface KnowledgeService {
   close(): Promise<void>;
   personalSearch?(query: string, limit: number): Promise<string>;
   personalRead?(uri: string): Promise<string>;
+  saveNote?(scope: KnowledgeScope, project: string, title: string, content: string, id: string, signal?: AbortSignal): Promise<string>;
+  deleteNote?(scope: KnowledgeScope, project: string, id: string, signal?: AbortSignal): Promise<string>;
+  listNotes?(scope: KnowledgeScope, project: string, signal?: AbortSignal): Promise<string>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
 type StartupStage = 'bundle' | 'configuration' | 'process' | 'health' | 'namespace';
@@ -64,6 +79,7 @@ export class OpenVikingService implements KnowledgeService {
   private diagnosticWrites = Promise.resolve();
   private modelEvents: unknown[] = [];
   private personal?: PersonalKnowledge;
+  private writingNotes = new Set<string>();
   private namespaceAbort?: AbortController;
   private startupStage: StartupStage = 'bundle';
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch) {}
@@ -208,7 +224,7 @@ export class OpenVikingService implements KnowledgeService {
     return { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': this.account,
       'X-OpenViking-User': user, ...(this.maintenance ? { 'X-OpenViking-Role': 'admin' } : {}) };
   }
-  private async request(route: string, body?: unknown, timeout: number | false = false, method?: 'GET' | 'POST' | 'PUT', signal?: AbortSignal, user = 'local-user'): Promise<any> {
+  private async request(route: string, body?: unknown, timeout: number | false = false, method?: 'GET' | 'POST' | 'PUT' | 'DELETE', signal?: AbortSignal, user = 'local-user'): Promise<any> {
     const form = body instanceof FormData;
     const headers = { ...this.credentials(user), ...(form ? {} : { 'Content-Type': 'application/json' }) };
     const response = timeout === false && !form
@@ -223,8 +239,65 @@ export class OpenVikingService implements KnowledgeService {
     const json = JSON.parse(text); if (json.status === 'error') throw new Error(vikingErrorCode(text)); return json;
   }
   private ready() { if (this.value.status !== 'ready' || this.exited) throw new Error('OpenViking이 준비되지 않았습니다. 모델·번들 설정을 확인하세요.'); }
-  async personalSearch(query: string, limit: number) { this.ready(); return this.personal!.search(query, limit); }
-  async personalRead(uri: string) { this.ready(); return this.personal!.read(uri); }
+  private async noteExists(uri: string, signal?: AbortSignal) {
+    return this.request('/api/v1/fs/stat?uri=' + encodeURIComponent(uri), undefined, false, 'GET', signal).then(() => true, error => {
+      if (error?.status === 404) return false;
+      throw error;
+    });
+  }
+  async personalSearch(query: string, limit: number) {
+    this.ready();
+    const imported = JSON.parse(await this.personal!.search(query, limit));
+    if (!await this.noteExists(personalNotes)) return JSON.stringify({ ...imported, personalNotesAvailable: false });
+    const response = await this.request('/api/v1/search/find', { query, target_uri: personalNotes, limit, read_content: false });
+    const matches = (response.result?.resources ?? []).filter((item: {uri?: string}) => typeof item.uri === 'string' && item.uri.startsWith(personalNotes + '/'));
+    const results = [...imported.results, ...matches.map(({uri, abstract, score}: {uri: string; abstract?: string; score?: number}) => ({uri, abstract, score}))]
+      .sort((a,b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, limit);
+    return JSON.stringify({ ...imported, personalNotesAvailable: true, results });
+  }
+  async personalRead(uri: string) {
+    this.ready();
+    if (uri.startsWith(personalNotes + '/') && /^[a-f0-9]{24}\.md$/.test(uri.slice(personalNotes.length + 1)))
+      return JSON.stringify(await this.request('/api/v1/content/read?uri=' + encodeURIComponent(uri) + '&limit=300'));
+    return this.personal!.read(uri);
+  }
+  async saveNote(scope: KnowledgeScope, project: string, title: string, content: string, id: string, signal?: AbortSignal) {
+    this.ready();
+    const root = knowledgeNoteRoot(scope, project);
+    const uri = knowledgeNoteUri(scope, project, id);
+    if (this.writingNotes.has(uri)) throw new Error('해당 지식을 변경하는 다른 작업이 있습니다.');
+    this.writingNotes.add(uri);
+    try {
+      for (const folder of scope === 'personal' ? ['viking://user/local-user/resources', root] : ['viking://resources/ned', knowledgeRoot(project), root]) {
+        if (!await this.noteExists(folder, signal)) {
+          try { await this.request('/api/v1/fs/mkdir', { uri: folder }, false, 'POST', signal); }
+          catch (error) { if ((error as {status?: number}).status !== 409 || !await this.noteExists(folder, signal)) throw error; }
+        }
+      }
+      const mode = await this.noteExists(uri, signal) ? 'replace' : 'create';
+      await this.request('/api/v1/content/write', {
+        uri, content: '# ' + title + '\n\n' + content, mode, wait: true, processing_mode: 'vectors_only', edit_source: 'manual'
+      }, false, 'POST', signal);
+      return JSON.stringify({ status: 'saved', scope, id, uri, title });
+    } finally { this.writingNotes.delete(uri); }
+  }
+  async deleteNote(scope: KnowledgeScope, project: string, id: string, signal?: AbortSignal) {
+    this.ready();
+    const uri = knowledgeNoteUri(scope, project, id);
+    if (this.writingNotes.has(uri)) throw new Error('해당 지식을 변경하는 다른 작업이 있습니다.');
+    this.writingNotes.add(uri);
+    try {
+      if (await this.noteExists(uri, signal)) await this.request('/api/v1/fs?uri=' + encodeURIComponent(uri) + '&wait=true', undefined, false, 'DELETE', signal);
+      return JSON.stringify({ status: 'deleted', scope, id, uri });
+    } finally { this.writingNotes.delete(uri); }
+  }
+  async listNotes(scope: KnowledgeScope, project: string, signal?: AbortSignal) {
+    this.ready();
+    const root = knowledgeNoteRoot(scope, project);
+    if (!await this.noteExists(root, signal)) return JSON.stringify({ scope, entries: [] });
+    const result = await this.request('/api/v1/fs/ls?uri=' + encodeURIComponent(root) + '&limit=100', undefined, false, 'GET', signal);
+    return JSON.stringify({ scope, root, entries: result.result });
+  }
   async search(project: string, query: string, limit: number) {
     this.ready(); const root = knowledgeRoot(project);
     const result = await this.request('/api/v1/search/find', { query, target_uri: root, limit, read_content: false });

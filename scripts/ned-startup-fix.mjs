@@ -24,7 +24,7 @@ const raw=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(outp
 const installer=(await readFile('distribution/ned/apply-startup-fix.py','utf8')).replace('__MANIFEST_SHA256__',hash(raw));await writeFile(output+'/apply-startup-fix.py',installer);
 for(const [name,args] of [['APPLY_FIX',''],['ROLLBACK_FIX',' --rollback']])await writeFile(output+'/'+name+'.cmd','@echo off\r\nsetlocal\r\nset "NED_FIX_PY=%LOCALAPPDATA%\\Programs\\Ned\\resources\\runtime\\windows-x64\\openviking\\python\\python.exe"\r\nif not exist "%NED_FIX_PY%" (echo NED_BUNDLED_PYTHON_NOT_FOUND & pause & exit /b 1)\r\n"%NED_FIX_PY%" -I -B "%~dp0apply-startup-fix.py"'+args+'\r\nset "NED_FIX_EXIT=%ERRORLEVEL%"\r\necho EXIT_CODE=%NED_FIX_EXIT%\r\npause\r\nexit /b %NED_FIX_EXIT%\r\n');
 for(const [from,to] of [['editor-probe.py','editor-probe.py'],['check-editor.cmd','CHECK_EDITOR.cmd'],['zed-sources.json','zed-sources.json']])await cp('distribution/ned/'+from,output+'/'+to);
-await writeFile(output+'/README.txt',await readFile('docs/ned-startup-fix-1.txt'));
+await writeFile(output+'/README.txt',await readFile('docs/archive/fixes/ned-startup-fix-1.txt'));
 await verifyAsciiTree(output);
 const archive=path.resolve('downloads/Ned-startup-fix-1.tgz');execFileSync('tar',['-czf',archive,'-C',output,'.']);verifyAsciiTar(archive);
 await writeFile(archive+'.sha256',hash(await readFile(archive))+'  '+path.basename(archive)+'\n');

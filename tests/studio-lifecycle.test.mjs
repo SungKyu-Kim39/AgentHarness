@@ -10,13 +10,13 @@ function fixture(proxy=Promise.resolve(),load=()=>Promise.resolve(),options={}) 
  const windows=[],hooks={},diagnostics=[];let cleared=0,tick,now=1000;const state=options.state??{};class Clock extends Date {static now(){return now;}}
  const isolated={setProxy:()=>proxy,setPermissionRequestHandler(){},setPermissionCheckHandler(){},on(){},clearStorageData:async()=>{cleared++;},webRequest:Object.fromEntries(['onBeforeRequest','onBeforeSendHeaders','onHeadersReceived'].map(key=>[key,handler=>{hooks[key]=handler;}]))};
  class Window extends EventEmitter {
-  destroyed=false;focused=0;webContents=new EventEmitter();
+  destroyed=false;focused=0;visible=false;webContents=new EventEmitter();
   constructor(options){super();this.options=options;this.webContents.setWindowOpenHandler=handler=>{this.popup=handler;};this.webContents.executeJavaScript=async script=>{assert.ok(!script.includes('private-run-token'));this.bootstrap=script;if(script.includes('sidebar-wrapper'))return state.phase ?? 'waiting';};windows.push(this);}
-  setMenu(){}show(){}focus(){this.focused++;}isDestroyed(){return this.destroyed;}
-  loadURL(url){this.url=url;return load();}destroy(){this.destroyed=true;this.emit('closed');}
+  setMenu(){}show(){this.visible=true;}isVisible(){return this.visible;}focus(){this.focused++;}isDestroyed(){return this.destroyed;}
+  loadURL(url){assert.ok(!url.endsWith('/health'));this.url=url;return load();}destroy(){this.destroyed=true;this.emit('closed');}
  }
  const electron={BrowserWindow:Window,session:{fromPartition:name=>{assert.ok(!name.startsWith('persist:'));return isolated;}}};
- const module={exports:{}};vm.runInNewContext(compiled.outputFiles[0].text,{module,exports:module.exports,require:name=>name==='electron'?electron:require(name),URL,Date:Clock,setInterval:fn=>{tick=fn;return {unref(){}};},clearInterval(){tick=undefined;}});
+ const module={exports:{}};vm.runInNewContext(compiled.outputFiles[0].text,{module,exports:module.exports,__dirname: '/app',require:name=>name==='electron'?electron:require(name),URL,Date:Clock,setInterval:fn=>{tick=fn;return {unref(){}};},clearInterval(){tick=undefined;}});
  return {studio:new module.exports.OpenVikingStudio(event=>diagnostics.push(event)),windows,hooks,diagnostics,cleared:()=>cleared,advance:async ms=>{now+=ms;tick?.();await new Promise(resolve=>setImmediate(resolve));}};
 }
 const connection={baseUrl:'http://127.0.0.1:12345',headers:{Authorization:'Bearer private-run-token','X-OpenViking-Account':'ned','X-OpenViking-Role':'admin','X-API-Key':'private-run-token'}};

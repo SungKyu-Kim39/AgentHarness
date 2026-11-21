@@ -2,7 +2,7 @@
 
 # L-Vibe 0.2.2 — 오프라인 설치 검증 후보
 
-공식 OpenCode Desktop/CLI v2.2.6 (`dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`) 기반입니다. `releaseReady`는 false이며 Windows 실행 실환경 검증 완료를 의미하지 않습니다. MCP 6종의 별도 실제 Linux 호출은 [기존 검증 기록](mcp-validation.md)에 있습니다.
+공식 OpenCode Desktop/CLI v2.2.6 (`dc2ffcf8bf26f9e669b6aa22b95f50e12be15e06`) 기반입니다. `releaseReady`는 false이며 Windows 실행 실환경 검증 완료를 의미하지 않습니다. MCP 6종의 별도 실제 Linux 호출은 [기존 검증 기록](../../mcp-validation.md)에 있습니다.
 
 ## 코드·빌드 검증 — 2026-11-10 UTC
 
@@ -34,7 +34,7 @@
 - 앱 ASAR SHA-256: `c195326d1b0189ebf465ef48acead10ba334a05e14b6d6ebfde423e1b1687f26`. 앱 EXE SHA-256: `b9c8cccfb6c2eda8cd99d7515a32fd81696265c6ecbcfaab66d5cdbb32f0b3ab`.
 - NSIS는 파일별 zlib 모드이며 컴파일러/번들 버전을 변경하지 않았습니다. L-Vibe 자체의 배포 서명은 없습니다. EXE 정적 검사는 Windows 설치·실행 검증을 대신하지 않습니다.
 
-TGZ는 이 EXE·빈 설정 예제·검증 기록/상태·런타임 audit·라이선스·대응 소스·커밋된 앱 소스를 포함합니다. 실제 EXE 해시와 모든 런타임 manifest/앱/CLI를 다시 확인한 뒤 생성합니다. archive의 SHA-256은 옆 `.sha256` 파일로 제공합니다. 최종 TGZ `L-Vibe-0.2.2-windows-x64.tgz`는 **1,121,427,289 bytes**, SHA-256 `43fa97c107f168b0121b7c7d720b879ac1391e04d01cc01d4a93bbfe24594b8a`입니다. 내부 23개 파일의 체크섬, 0.2.2 설치 안내, EXE와 감사 기록 및 대응 소스를 전부 대조했습니다. sourceCommit은 `b8722666e20e0525d320e636f5b41e689e2879b3`입니다. [다운로드 안내](../downloads/README.md)를 따릅니다. 게시 커밋 `6b624d81b9ebc9bfa75637dcc56e4e201cea9af0`의 공개 EXE/TGZ 주소에서 HTTP 200을 확인하고 전체 파일을 스트리밍하여 바이트 수와 SHA-256을 재계산했습니다. 두 파일 모두 로컬 산출물·Git LFS object ID·옆의 `.sha256`과 일치했습니다. 실제 응답 호스트는 `media.githubusercontent.com`입니다. 원격 전체 다운로드 검증까지 완료했습니다.
+TGZ는 이 EXE·빈 설정 예제·검증 기록/상태·런타임 audit·라이선스·대응 소스·커밋된 앱 소스를 포함합니다. 실제 EXE 해시와 모든 런타임 manifest/앱/CLI를 다시 확인한 뒤 생성합니다. archive의 SHA-256은 옆 `.sha256` 파일로 제공합니다. 최종 TGZ `L-Vibe-0.2.2-windows-x64.tgz`는 **1,121,427,289 bytes**, SHA-256 `43fa97c107f168b0121b7c7d720b879ac1391e04d01cc01d4a93bbfe24594b8a`입니다. 내부 23개 파일의 체크섬, 0.2.2 설치 안내, EXE와 감사 기록 및 대응 소스를 전부 대조했습니다. sourceCommit은 `b8722666e20e0525d320e636f5b41e689e2879b3`입니다. [다운로드 안내](../../../downloads/README.md)를 따릅니다. 게시 커밋 `6b624d81b9ebc9bfa75637dcc56e4e201cea9af0`의 공개 EXE/TGZ 주소에서 HTTP 200을 확인하고 전체 파일을 스트리밍하여 바이트 수와 SHA-256을 재계산했습니다. 두 파일 모두 로컬 산출물·Git LFS object ID·옆의 `.sha256`과 일치했습니다. 실제 응답 호스트는 `media.githubusercontent.com`입니다. 원격 전체 다운로드 검증까지 완료했습니다.
 
 ## 남은 Windows 수용
 

@@ -25,7 +25,11 @@ run('gh',['run','download',validationRun,'--name','windows-offline-smoke-'+versi
 const proof=await json('.cache/ned/windows-validation/windows-offline-smoke.json');
 const candidatePath=`downloads/candidates/${source}`;
 const audit=await json(`${candidatePath}/${prefix}-installer-audit.json`);
-if(proof.version!==version||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!=='0.3.9'||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
+const previousVersion=version==='0.3.11'?'0.3.10':'0.3.9';
+const optionalName=`${prefix}-optional-packages.json`;
+const optional=version==='0.3.11'?await json(`${candidatePath}/${optionalName}`):undefined;
+if(optional&&(optional.sourceCommit!==source||optional.assets.length!==2||proof.coreAndReversingPackVerified!==true||proof.userDataPreserved!==true))throw Error('Optional packages or user data preservation lack installed validation');
+if(proof.version!==version||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){
  const text=await readFile(path.join(root,`.cache/ned/windows-validation/windows-${name}-test.txt`),'utf8');
@@ -39,6 +43,7 @@ let bundle;
 let artifactCommit;
 const releaseUrl=`https://github.com/${repo}/releases/tag/${tag}`;
 const files=['win-x64.exe','windows-x64.tgz','win-x64.exe.sha256','windows-x64.tgz.sha256','installer-audit.json','payload-manifest.json','bundle-manifest.json'].map(suffix=>prefix+'-'+suffix);
+if(optional)files.push(optionalName,...optional.assets.flatMap(item=>[item.name,item.name+'.sha256']));
 if(stagedAlready){
   bundle=await json(finalManifest);
   artifactCommit=capture('git',['log','-1','--format=%H','--',finalManifest]);
@@ -49,7 +54,7 @@ const state=await json('.cache/ned/release-state/candidate.json');if(state.sourc
 await cp(path.join(root,'.cache/ned/release-state/handover-sources'),path.join(root,'.cache/ned/handover-sources'),{recursive:true});
 await mkdir(path.join(root,'.cache/ghidra'),{recursive:true});
 for(const item of (await json('ghidra-runtime-lock.json')).artifacts.filter(a=>a.kind.endsWith('-source')))await cp(path.join(root,'.cache/ned/release-state',item.file),path.join(root,'.cache/ghidra',item.file));
-run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include='+[`${candidatePath}/${prefix}-win-x64.exe`,'downloads/astryx/*.zip',`downloads/editor/*${version}*`].join(',')]);
+run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include='+[`${candidatePath}/${prefix}-win-x64.exe`,...(optional?.assets.map(item=>candidatePath+'/'+item.name)??[]),'downloads/astryx/*.zip',`downloads/editor/*${version}*`].join(',')]);
 const output='release/ned';await mkdir(path.join(root,output),{recursive:true});
 for(const [from,to]of [[`${prefix}-win-x64.exe`,`${prefix}-win-x64.exe`],[`${prefix}-installer-audit.json`,'installer-audit.json'],[`${prefix}-payload-manifest.json`,'payload-manifest.json']])await cp(path.join(root,candidatePath,from),path.join(root,output,to));
 if(await fileHash(path.join(root,output,`${prefix}-win-x64.exe`))!==audit.installer.sha256)throw Error('Candidate LFS bytes mismatch');
@@ -57,16 +62,16 @@ const windows={...proof,workflowRunId:Number(validationRun),workflowCommit:valid
 await writeFile(path.join(root,`downloads/${prefix}-windows-offline-smoke.json`),JSON.stringify(windows,null,2)+'\n');
 const notesFile=`docs/release-${version}.md`;
 const notes=await readFile(path.join(root,notesFile),'utf8');
-const verificationSummary=`설치 파일 ${audit.payloadComparison.files.toLocaleString('en-US')}개를 준비본과 대조했습니다. Windows Server에서 새 설치, 0.3.9 업데이트와 사용자 글로벌 스킬 보존을 확인했고 설치본 대상 검사 ${passed}건이 통과했습니다. 직원 PC의 Windows 10·11 GUI와 실제 사내 모델 검증은 남아 있어 사전 릴리스로 제공합니다.\n\n[Windows 검사](https://github.com/${repo}/actions/runs/${validationRun}) · [검증 기록](https://github.com/${repo}/blob/main/docs/validation-${version}.md)\n`;
+const verificationSummary=`설치 파일 ${audit.payloadComparison.files.toLocaleString('en-US')}개를 준비본과 대조했습니다. Windows Server에서 새 설치, ${previousVersion} 업데이트와 사용자 글로벌 스킬 보존을 확인했고 설치본 대상 검사 ${passed}건이 통과했습니다. 직원 PC의 Windows 10·11 GUI와 실제 사내 모델 검증은 남아 있어 사전 릴리스로 제공합니다.\n\n[Windows 검사](https://github.com/${repo}/actions/runs/${validationRun}) · [검증 기록](https://github.com/${repo}/blob/main/docs/validation-${version}.md)\n`;
 await writeFile(path.join(root,notesFile),notes.replace('<!-- windows-verification -->',verificationSummary));
 const validationFile=`docs/validation-${version}.md`;
 let record=await readFile(path.join(root,validationFile),'utf8');
 record=record.split('\n## 설치 파일과 Windows 결과\n')[0].replace(/현재 게시된 배포본은 .*?\.\n/,'').trimEnd()+'\n';
-record+=`\n## 설치 파일과 Windows 결과\n\n제품 소스는 \`${source}\`입니다. Windows Server에 최종 EXE를 새로 설치해 ${tests}건 중 ${passed}건 통과, ${skipped}건 제외, 실패 0건을 확인했습니다. 0.3.9에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.\n\n설치 EXE는 ${audit.installer.bytes} bytes, SHA-256 \`${audit.installer.sha256}\`입니다. 준비본과 추출본의 ${audit.payloadComparison.files}개 파일을 모두 대조했습니다.\n\n[실행 결과](../downloads/${prefix}-windows-offline-smoke.json) · [설치 감사](../downloads/${prefix}-installer-audit.json) · [반입 TGZ](../downloads/README.md)\n`;
+record+=`\n## 설치 파일과 Windows 결과\n\n제품 소스는 \`${source}\`입니다. Windows Server에 최종 EXE를 새로 설치해 ${tests}건 중 ${passed}건 통과, ${skipped}건 제외, 실패 0건을 확인했습니다. ${previousVersion}에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.\n\n설치 EXE는 ${audit.installer.bytes} bytes, SHA-256 \`${audit.installer.sha256}\`입니다. 준비본과 추출본의 ${audit.payloadComparison.files}개 파일을 모두 대조했습니다.\n\n[실행 결과](../downloads/${prefix}-windows-offline-smoke.json) · [설치 감사](../downloads/${prefix}-installer-audit.json) · [반입 TGZ](../downloads/README.md)\n`;
 await writeFile(path.join(root,validationFile),record);
 let handoff=await readFile(path.join(root,'HANDOFF.md'),'utf8');
 handoff=handoff.replace('최신 배포 기준은 **Ned 0.3.9**입니다.',`최신 사전 릴리스는 **Ned ${version}**입니다.`);
-handoff=handoff.replace('<!-- current-release -->',`## ${version} 배포 기준\n\n소스 \`${source}\`를 사용했습니다. Windows 새 설치·0.3.9 업데이트와 ${passed}개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](${validationFile})\n`);
+handoff=handoff.replace('<!-- current-release -->',`## ${version} 배포 기준\n\n소스 \`${source}\`를 사용했습니다. Windows 새 설치·${previousVersion} 업데이트와 ${passed}개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](${validationFile})\n`);
 await writeFile(path.join(root,'HANDOFF.md'),handoff);
 await commit([validationFile,notesFile,'HANDOFF.md',`downloads/${prefix}-windows-offline-smoke.json`],`docs: record installed Windows validation for Ned ${version}`);
 run(process.execPath,['scripts/ned-package.mjs','bundle']);
@@ -76,6 +81,15 @@ for(const [from,to]of [[`${prefix}-win-x64.exe`,`${prefix}-win-x64.exe`],[`${pre
  const dest='downloads/'+to;if(await exists(dest))throw Error('Immutable final file exists: '+to);await cp(path.join(root,output,from),path.join(root,dest));
 }
 await writeFile(path.join(root,`downloads/${prefix}-win-x64.exe.sha256`),audit.installer.sha256+'  '+prefix+'-win-x64.exe\n');
+if(optional){
+ await cp(path.join(root,candidatePath,optionalName),path.join(root,'downloads',optionalName));
+ for(const item of optional.assets){
+  const file=path.join(root,candidatePath,item.name);
+  if((await fileHash(file))!==item.sha256)throw Error('Optional package bytes mismatch');
+  await cp(file,path.join(root,'downloads',item.name));
+  await writeFile(path.join(root,'downloads',item.name+'.sha256'),item.sha256+'  '+item.name+'\n');
+ }
+}
 const verification={schemaVersion:1,version,sourceCommit:source,bundleSourceCommit:bundle.bundleSourceCommit,archive:bundle.archive,bytes:bundle.bytes,sha256:bundle.sha256,files:bundle.files,allPathsAscii:true,correspondingSourcesChecked:true,installer:audit.installer,windowsRunId:Number(validationRun)};
 await writeFile(path.join(root,`downloads/${prefix}-bundle-verification.json`),JSON.stringify(verification,null,2)+'\n');
 let readme=await readFile(path.join(root,'README.md'),'utf8');
@@ -83,14 +97,16 @@ readme=readme.replace(/^최신 사전 릴리스는 .*$/m,`최신 사전 릴리�
  .replace(/최신 배포는 .*?입니다\./,`최신 배포는 [Ned ${version}](${releaseUrl})입니다.`)
  .replace('현재 배포 기준은 0.3.9입니다.',`현재 배포 기준은 ${version}입니다.`);
 await writeFile(path.join(root,'README.md'),readme);
+const optionalLinks=optional?'\n- '+optional.assets.map(item=>`[${item.name.includes('-core-')?'Core 설치 EXE':'리버싱 팩'}](${releaseUrl.replace('/tag/','/download/')}/${item.name}) · [SHA-256](${item.name}.sha256)`).join('\n- '):'';
 const oldDownloads=await readFile(path.join(root,'downloads/README.md'),'utf8');
-await writeFile(path.join(root,'downloads/README.md'),`# Ned ${version}\n\nWindows x64 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식과 사용자 글로벌 스킬은 보존됩니다.\n\n- [반입 TGZ](https://github.com/${repo}/releases/download/${tag}/${prefix}-windows-x64.tgz) · ${bundle.bytes} bytes\n- [설치 EXE](https://github.com/${repo}/releases/download/${tag}/${prefix}-win-x64.exe) · ${audit.installer.bytes} bytes\n- [TGZ SHA-256](${prefix}-windows-x64.tgz.sha256) · [EXE SHA-256](${prefix}-win-x64.exe.sha256)\n- [변경 사항](../docs/changes-${version}.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../${validationFile})\n- [설치 감사](${prefix}-installer-audit.json) · [TGZ 검사](${prefix}-bundle-verification.json) · [Windows 결과](${prefix}-windows-offline-smoke.json) · [공개 다운로드 검증](${prefix}-public-verification.json) · [배포 상태](${prefix}-release-state.json)\n\n---\n\n`+oldDownloads.replace(/최신 사전 릴리스입니다\./,'이전 사전 릴리스입니다.'));
+await writeFile(path.join(root,'downloads/README.md'),`# Ned ${version}\n\nWindows x64 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식과 사용자 글로벌 스킬은 보존됩니다.\n\n- [반입 TGZ](https://github.com/${repo}/releases/download/${tag}/${prefix}-windows-x64.tgz) · ${bundle.bytes} bytes\n- [설치 EXE](https://github.com/${repo}/releases/download/${tag}/${prefix}-win-x64.exe) · ${audit.installer.bytes} bytes${optionalLinks}\n- [TGZ SHA-256](${prefix}-windows-x64.tgz.sha256) · [EXE SHA-256](${prefix}-win-x64.exe.sha256)\n- [변경 사항](../docs/changes-${version}.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../${validationFile})\n- [설치 감사](${prefix}-installer-audit.json) · [TGZ 검사](${prefix}-bundle-verification.json) · [Windows 결과](${prefix}-windows-offline-smoke.json) · [공개 다운로드 검증](${prefix}-public-verification.json) · [배포 상태](${prefix}-release-state.json)\n\n---\n\n`+oldDownloads.replace(/최신 사전 릴리스입니다\./,'이전 사전 릴리스입니다.'));
 await commit(['README.md','downloads/README.md',...files.map(name=>'downloads/'+name),`downloads/${prefix}-bundle-verification.json`],`release: record Ned ${version} installer and offline bundle`);
 artifactCommit=sha();
 }
 if(bundle.version!==version||bundle.sourceCommit!==source||bundle.installer.sha256!==audit.installer.sha256||
    await fileHash(path.join(root,'downloads',prefix+'-win-x64.exe'))!==audit.installer.sha256||
    await fileHash(path.join(root,'downloads',prefix+'-windows-x64.tgz'))!==bundle.sha256)throw Error('Release files do not match the verified candidate');
+for(const item of optional?.assets??[])if(await fileHash(path.join(root,'downloads',item.name))!==item.sha256)throw Error('Optional package does not match verified bytes');
 const releaseRecord=()=> {
  const releases=capture('gh',['api','--paginate',`repos/${repo}/releases?per_page=100`,'--jq',`.[] | select(.tag_name == ${JSON.stringify(tag)})`]);
  return releases?JSON.parse(releases):undefined;
@@ -115,6 +131,7 @@ if(release.assets.length!==files.length)throw Error('Incomplete release upload')
 for(const asset of release.assets){
  if(asset.digest!=='sha256:'+await fileHash(path.join(root,'downloads',asset.name)))throw Error('Uploaded asset digest mismatch: '+asset.name);
 }
+if(release.draft)run('gh',['release','edit',tag,'--notes-file',`docs/release-${version}.md`]);
 if(release.draft)run('gh',['api','--method','PATCH',`repos/${repo}/releases/${release.id}`,'-F','draft=false','--silent']);
 const published=gh(['api',`repos/${repo}/releases/tags/${tag}`]);
 if(published.draft||published.assets.length!==files.length||published.assets.some(asset=>!files.includes(asset.name))||gh(['api',`repos/${repo}/commits/${tag}`]).sha!==source)throw Error('Published release identity mismatch');

@@ -5,10 +5,10 @@ import { mkdtemp, rm, cp } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { OpenVikingService } from '../src/main/openviking';
+import { OpenVikingService, savedKnowledgeId } from '../src/main/openviking';
 import { configSchema } from '../src/shared/contracts';
 const executable = path.resolve(process.env.NED_TEST_CURRENT_PYTHON??'.cache/openviking/env-linux/bin/python3');
-test('real pinned OpenViking starts and restarts without registering bundled skills and keeps project knowledge scoped', { skip: !existsSync(executable), timeout: 300000 }, async t => {
+test('real pinned OpenViking starts and restarts without skill registration and manages scoped project and personal notes', { skip: !existsSync(executable), timeout: 300000 }, async t => {
   const root = await mkdtemp(path.join(tmpdir(), 'ned-viking-'));
   const requests: string[] = [];
   const endpoint = createServer(async (req, res) => {
@@ -45,6 +45,17 @@ test('real pinned OpenViking starts and restarts without registering bundled ski
   const found = await viking.search('p1', 'Ned', 3);
   assert.ok(found.includes('p1'), found);
   await assert.rejects(viking.read('p2', 'viking://resources/ned/p1/file.txt'));
+  const id = savedKnowledgeId('Ned build');
+  const projectNote = JSON.parse(await viking.saveNote('project', 'p1', 'Ned build', 'Use the x64 development prompt.', id).catch(error => assert.fail(error.message + '\n' + diagnostics)));
+  assert.match(await viking.read('p1', projectNote.uri), /development prompt/);
+  await assert.rejects(viking.read('p2', projectNote.uri));
+  const personal = JSON.parse(await viking.saveNote('personal', 'p1', 'Ned build', 'Prefer clear commit messages.', id).catch(error => assert.fail(error.message + '\n' + diagnostics)));
+  assert.match(await viking.personalRead(personal.uri), /commit messages/);
+  assert.match(await viking.personalSearch('commit messages', 3), new RegExp(id));
+  await viking.saveNote('personal', 'p2', 'Ned build', 'Prefer short commit subjects.', id);
+  assert.match(await viking.personalRead(personal.uri), /short commit subjects/);
+  await viking.deleteNote('personal', 'p2', id);
+  await assert.rejects(viking.personalRead(personal.uri));
   assert.ok(requests.every(route => ['/v1/embeddings', '/v1/chat/completions'].includes(route)), JSON.stringify(requests));
   await viking.close();
 });

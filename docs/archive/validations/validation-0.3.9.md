@@ -68,7 +68,7 @@ Windows용으로 번들한 검사도 Linux에서 50건 중 42건 통과·8건 �
 
 설치 EXE는 1535624809 bytes, SHA-256 `83e49a5bca3872d4772a70a1d212f6f6f294e2ed13d13c304d351e6aece36c04`입니다. 준비본과 추출본의 61386개 파일을 전부 대조했습니다. 0.3.9용 소스 빌드 편집기·대응 소스, 실제 생성한 runtime lock, 준비 스킬과 EGM/Studio lock, YAML ISC 원문을 포함했습니다.
 
-Windows 검사 상세·개수와 설치 측정은 [실행 결과](../downloads/Ned-0.3.9-windows-offline-smoke.json), 설치 전체 파일은 [감사 기록](../downloads/Ned-0.3.9-installer-audit.json), TGZ 검사·해시는 [다운로드 안내](../downloads/README.md)에 보존합니다.
+Windows 검사 상세·개수와 설치 측정은 [실행 결과](../../../downloads/Ned-0.3.9-windows-offline-smoke.json), 설치 전체 파일은 [감사 기록](../../../downloads/Ned-0.3.9-installer-audit.json), TGZ 검사·해시는 [다운로드 안내](../../../downloads/README.md)에 보존합니다.
 
 ## 별도 수용 범위
 

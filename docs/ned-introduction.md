@@ -96,6 +96,6 @@ OpenViking은 Ned와 함께 시작하고 종료하며, 데이터는 사용자 �
 
 효과는 모델 성능과 프로젝트의 준비 상태에 따라 달라집니다. 제안한 코드는 기존 리뷰·빌드·테스트 절차에서 확인해야 합니다. 0.3.7의 Windows Server 설치·로딩 검사와 실제 직원 PC의 Windows 10·11 GUI·사내 모델 전체 검증도 구분하고 있습니다.
 
-설치는 [폐쇄망 설치 안내](offline-setup.md), 모델 변경은 [설정 복구 안내](configuration-recovery.md), 개인 자료는 [지식 이관 안내](openviking-personal-migration.md)를 참고하세요. [현재 수정 빌드 검증 기록](validation-0.3.7-rebuild1.md)과 [라이선스 정책](license-policy.md)에는 확인한 범위와 남은 검토 항목을 정리했습니다.
+설치는 [폐쇄망 설치 안내](offline-setup.md), 모델 변경은 [설정 복구 안내](configuration-recovery.md), 개인 자료는 [지식 이관 안내](openviking-personal-migration.md)를 참고하세요. [현재 수정 빌드 검증 기록](archive/validations/validation-0.3.7-rebuild1.md)과 [라이선스 정책](license-policy.md)에는 확인한 범위와 남은 검토 항목을 정리했습니다.
 
 0.3.9는 기본 스킬의 사전 준비·변경분 적용과 지식 서비스의 백그라운드 시작을 적용합니다. 기존 개인 Zed 대화는 [선택 가져오기](zed-history-import.md), CMD/PowerShell은 [터미널 선택](offline-setup.md), EGM 7종은 [설계·검토 안내](egm.md)에서 확인합니다.

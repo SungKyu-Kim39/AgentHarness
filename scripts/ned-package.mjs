@@ -14,6 +14,7 @@ import { brandEditor, verifyEditorIcon } from './ned-editor-branding.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
 import { prepareRebuild, rebuildBaseline, payloadInventory } from './ned-rebuild.mjs';
 import { prepareRelease, refreshReleaseHost } from './ned-release.mjs';
+import {nedSigning} from './ned-signing.mjs';
 import {installSourceEditor,verifySourceEditor} from './ned-source-editor.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
@@ -27,13 +28,19 @@ process.env.ELECTRON_BUILDER_CACHE ??= path.join(cache,'builder-cache');
 const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
-const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10'].includes(version);
+const signing = nedSigning();
+const vendorEditor = process.env.NED_VENDOR_EDITOR === '1';
+const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11'].includes(version);
 if(['0.3.7','0.3.8'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
 const run = (command,args,options={}) => execFileSync(command,args,{cwd:root,stdio:'inherit',...options});
 const exists = p => access(p).then(()=>true,()=>false);
+async function releaseDoc(file) {
+  const current=path.join(root,'docs',file);
+  return await exists(current)?current:path.join(root,'docs/archive',file.startsWith('validation-')?'validations':'releases',file);
+}
 async function prepareZed() {
   const lock = await json(path.join(root,'ned-runtime-lock.json'));
   for (const item of lock.artifacts) {
@@ -62,9 +69,22 @@ async function prepareZed() {
   await rm(payload,{recursive:true,force:true});await cp(path.join(destination,'app'),payload,{recursive:true});
   await cp(path.join(destination,'code$GetInstallDir'),payload,{recursive:true});
   await rm(path.join(payload,'tools/auto_update_helper.exe'),{force:true});
-  const branded=brandEditor(await readFile(path.join(payload,'Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
-  await writeFile(path.join(payload,'Zed.exe'),branded.bytes);
-  await writeFile(path.join(cache,'editor-branding.json'),JSON.stringify(branded.record,null,2)+'\n');
+  const editor = path.join(payload,'Zed.exe');
+  if (vendorEditor) {
+    if (process.platform !== 'win32') throw Error('Vendor signature verification requires a Windows release machine.');
+    run('powershell.exe',['-NoProfile','-NonInteractive','-Command',
+      'if ((Get-AuthenticodeSignature -LiteralPath $env:NED_VENDOR_ZED).Status -ne "Valid") { exit 1 }'],
+      {env:{...process.env,NED_VENDOR_ZED:editor}});
+    const hash = await fileHash(editor);
+    await writeFile(path.join(cache,'editor-branding.json'),JSON.stringify({
+      schemaVersion:1,component:'Zed v1.28.1 original editor',vendorOriginal:true,originalSha256:hash,modifiedSha256:hash,
+      authenticode:'verified unchanged Windows vendor signature'
+    },null,2)+'\n');
+  } else {
+    const branded=brandEditor(await readFile(editor),await readFile(path.join(root,'assets/ned-icon.ico')));
+    await writeFile(editor,branded.bytes);
+    await writeFile(path.join(cache,'editor-branding.json'),JSON.stringify(branded.record,null,2)+'\n');
+  }
   await access(path.join(payload,'Zed.exe'));
   await verifyAsciiTree(payload);return payload;
 }
@@ -100,7 +120,7 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       ...['egm-lock.json','studio-assets-lock.json'].map(file=>({from:path.join(root,file),to:'ned/locks/'+file})),
-      ...['egm.md','zed-history-import.md','changes-0.3.10.md','upgrade-from-0.3.7.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
+      ...['egm.md','zed-history-import.md','changes-'+version+'.md','upgrade-from-0.3.7.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
       {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
       {from:path.join(root,'scripts/sidecar-supervisor.py'),to:'ned/python-supervisor.py'},
       {from:path.join(root,'distribution/python-runner.py'),to:'ned/python-runner.py'},
@@ -166,13 +186,14 @@ async function audit() {
       if(await fileHash(path.join(extracted,file))!==payloadHashes[file]) throw new Error('Installer bytes differ: '+file);
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
     if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
-    verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
-    const sourceEditor=(version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))?await verifySourceEditor(root,resources):undefined;
-    if(['0.3.9','0.3.10'].includes(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
-    if(version==='0.3.10')for(const file of ['skill-seed','personal-pack-recovery.py'])
+    if (!editorBranding.vendorOriginal) verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
+    if (signing) { signing.verify(installer); signing.verify(path.join(extracted,'Ned.exe')); signing.verify(path.join(extracted,'Uninstall Ned.exe')); if (!editorBranding.vendorOriginal) signing.verify(path.join(resources,'zed/Zed.exe')); }
+    const sourceEditor=!editorBranding.vendorOriginal && (version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version))?await verifySourceEditor(root,resources):undefined;
+    if(['0.3.9','0.3.10','0.3.11'].includes(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
+    if(['0.3.10','0.3.11'].includes(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
       if(await exists(path.join(resources,'ned',file)))throw Error('Removed OpenViking resource still in installer: '+file);
     let astryx;
-    if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))){
+    if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version))){
       const lock=await json(path.join(root,'astryx-offline-lock.json'));
       if(await fileHash(path.join(resources,'ned/astryx',lock.archive.name))!==lock.archive.sha256||await fileHash(path.join(resources,'ned/astryx/astryx-offline-lock.json'))!==await fileHash(path.join(root,'astryx-offline-lock.json')))throw Error('Installed Astryx assets differ from the reviewed lock');
       astryx={version:lock.version,archive:lock.archive,referenceCount:lock.referenceCount,upstreamCliExecuted:false};
@@ -180,7 +201,7 @@ async function audit() {
     const baseline=revision&&!fullRelease?await rebuildBaseline(root,version,revision):undefined;
     const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
-    for(const name of ['openviking','mcp','rea','agent-desktop',...(['0.3.8','0.3.9','0.3.10'].includes(version)?['ghidra']:[]),'skills']) {
+    for(const name of ['openviking','mcp','rea','agent-desktop',...(['0.3.8','0.3.9','0.3.10','0.3.11'].includes(version)?['ghidra']:[]),'skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
@@ -224,16 +245,16 @@ async function bundle() {
   const name=`Ned-${artifactVersion}-windows-x64`, stage=path.join(output,name);
   await rm(stage,{recursive:true,force:true});await mkdir(stage,{recursive:true});
   await cp(installer,path.join(stage,path.basename(installer)));
-  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[`docs/validation-${artifactVersion}.md`,'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[await releaseDoc(`validation-${artifactVersion}.md`),'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
-  if(fullRelease)await cp(path.join(root,['0.3.9','0.3.10'].includes(version)?'docs/skills-0.3.9.md':'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
+  if(fullRelease)await cp(path.join(root,['0.3.9','0.3.10','0.3.11'].includes(version)?'docs/skills-0.3.9.md':'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
-  if(['0.3.8','0.3.9','0.3.10'].includes(version))for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(stage,to));
+  if(['0.3.8','0.3.9','0.3.10','0.3.11'].includes(version))for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));
   }
-  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd'],['distribution/export-openviking-personal-no-vectors.cmd','EXPORT_PERSONAL_NO_VECTORS.cmd'],['distribution/ned/agent-probe.py','agent-probe.py'],['distribution/ned/check-agent.cmd','CHECK_AGENT.cmd'],['distribution/ned/desktop-probe.ps1','desktop-probe.ps1'],['docs/ned-user-guide.md','USER_GUIDE.md'],['docs/approval-modes.md','APPROVAL_MODES.md'],['docs/agent-desktop.md','DESKTOP_GUIDE.md']]) await cp(path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['docs/configuration-recovery.md','CONFIGURATION_RECOVERY.txt'],['docs/windows-diagnostics.md','WINDOWS_DIAGNOSTICS.txt'],['docs/model-controls.md','MODEL_CONTROLS.txt'],['docs/openviking-personal-migration.md','PERSONAL_KNOWLEDGE_MIGRATION.txt'],['THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'],['distribution/openviking-import-check.py','openviking-import-check.py'],['distribution/export-openviking-personal.py','export-openviking-personal.py'],['distribution/export-openviking-personal.cmd','EXPORT_PERSONAL.cmd'],['distribution/export-openviking-personal-no-vectors.cmd','EXPORT_PERSONAL_NO_VECTORS.cmd'],['distribution/ned/agent-probe.py','agent-probe.py'],['distribution/ned/check-agent.cmd','CHECK_AGENT.cmd'],['distribution/ned/desktop-probe.ps1','desktop-probe.ps1'],['docs/ned-user-guide.md','USER_GUIDE.md'],['docs/approval-modes.md','APPROVAL_MODES.md'],['docs/agent-desktop.md','DESKTOP_GUIDE.md']]) await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   await writeFile(path.join(stage,'CHECK_DESKTOP.cmd'),'@echo off\r\npowershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0desktop-probe.ps1"\r\necho EXIT_CODE=%ERRORLEVEL%\r\npause\r\n');
   await cp(path.join(root,'distribution/export-openviking-check.cmd'),path.join(stage,'CHECK_EXPORT.cmd'));
   await writeFile(path.join(stage,'CHECK_OPENVIKING.cmd'),(await readFile(path.join(root,'distribution/check-openviking.cmd'),'utf8')).replaceAll('L-Vibe','Ned').replaceAll('L_VIBE','NED'));
@@ -244,21 +265,30 @@ async function bundle() {
     if(await fileHash(sourceFile)!==item.sha256)throw Error('Offline corresponding-source handover is incomplete');
     await cp(sourceFile,path.join(stage,'source',item.handoverFile));
   }
-  if(['0.3.8','0.3.9','0.3.10'].includes(version))for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
+  if(['0.3.8','0.3.9','0.3.10','0.3.11'].includes(version))for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
     const file=path.join(root,'.cache/ghidra',item.file);if(await fileHash(file)!==item.sha256)throw Error('Ghidra/JDK corresponding source hash mismatch');await cp(file,path.join(stage,'source',item.file));
   }
-  if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version))){
+  if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version))){
     await cp(path.join(root,'docs/zed-native-agent.md'),path.join(stage,'ZED_NATIVE_AGENT.md'));
     await cp(path.join(root,'docs/subagents.md'),path.join(stage,'SUBAGENTS.md'));
-    if(['0.3.9','0.3.10'].includes(version))for(const file of ['egm.md','zed-history-import.md','changes-0.3.10.md','upgrade-from-0.3.7.md'])await cp(path.join(root,'docs',file),path.join(stage,file));
+    if(['0.3.9','0.3.10','0.3.11'].includes(version))for(const file of ['egm.md','zed-history-import.md','changes-'+version+'.md','upgrade-from-0.3.7.md'])await cp(await releaseDoc(file),path.join(stage,file));
     await cp(path.join(root,'docs/astryx.md'),path.join(stage,'ASTRYX.md'));
     await mkdir(path.join(stage,'astryx'),{recursive:true});
     const astryx=await json(path.join(root,'astryx-offline-lock.json'));
     const kit=path.join(root,'downloads/astryx',astryx.archive.name);if(await fileHash(kit)!==astryx.archive.sha256)throw Error('Astryx kit hash mismatch');
     await cp(kit,path.join(stage,'astryx',astryx.archive.name));
-    const editor=await editorVersion(root);
-    await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
+    if (report.editorBranding?.vendorOriginal) {
+      const lock = await json(path.join(root,'ned-runtime-lock.json'));
+      const original = lock.artifacts.find(item => item.file === 'zed-source-v1.28.1.tar.gz');
+      const archive = path.join(cache,'archives',original.file);
+      if (await fileHash(archive) !== original.sha256) throw Error('Vendor corresponding source hash mismatch');
+      await cp(archive,path.join(stage,'source',original.file));
+    } else {
+      const editor=await editorVersion(root);
+      await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
+    }
   }
+  if(version==='0.3.11') for(const file of ['knowledge-notes.md','offline-packs.md','changes-0.3.11.md']) await cp(await releaseDoc(file),path.join(stage,file));
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);
   run('git',['archive','--format=tar.gz','--output='+source,commit,':(exclude)downloads']);
@@ -280,12 +310,67 @@ if(mode==='release-prepare') {
   await prepareRelease(root,cache,staged,version,await getPath7za(),true);
 }
 else if(mode==='release') {
-  await prepareRelease(root,cache,staged,version,await getPath7za());
+  const seven = await getPath7za();
+  await prepareRelease(root,cache,staged,version,seven);
   await refreshReleaseHost(root,cache,staged,version,buildCommit);
-  if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10'].includes(version)))await installSourceEditor(root,staged);
-  await stamp();await verifyAsciiTree(staged);
+  const editorRecord = path.join(staged,'resources/ned/editor-branding.json');
+  if (vendorEditor) {
+    const payload = await prepareZed(), destination = path.join(staged,'resources/zed');
+    await rm(destination,{recursive:true,force:true}); await cp(payload,destination,{recursive:true});
+    await cp(path.join(cache,'editor-branding.json'),editorRecord);
+  } else if (version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version)) {
+    await installSourceEditor(root,staged);
+  }
+  await stamp();
+  if (signing) {
+    signing.sign(path.join(staged,'Ned.exe'));
+    if (!vendorEditor) {
+      const editor = path.join(staged,'resources/zed/Zed.exe');
+      signing.sign(editor);
+      const record = await json(editorRecord);
+      record.modifiedSha256 = await fileHash(editor);
+      record.authenticode = 'verified Ned enterprise Authenticode signature';
+      await writeFile(editorRecord,JSON.stringify(record,null,2)+'\n');
+    }
+  }
+  await verifyAsciiTree(staged);
   const nsis=await getMakeNsisPath('0.0.0');
-  run(nsis.path,[process.env.NED_VERBOSE_INSTALLER==='1'?'-V4':'-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
+  const buildInstaller = (filename, flags = []) => {
+    run(nsis.path,[process.env.NED_VERBOSE_INSTALLER==='1'?'-V4':'-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+filename,
+      '-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),...flags,...(signing?.nsis ?? []),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
+    signing?.sign(filename);
+  };
+  buildInstaller(installer);
+  if (version === '0.3.11') {
+    const core = path.join(output,`Ned-${version}-core-win-x64.exe`);
+    const pack = path.join(output,`Ned-${version}-pack-reversing-windows-x64.tgz`);
+    const runtime = path.join(staged,'resources/runtime/windows-x64');
+    const content = path.join(cache,'reversing-pack');
+    await rm(content,{recursive:true,force:true}); await mkdir(content,{recursive:true});
+    const sources = path.join(content,'source'); await mkdir(sources);
+    const components = {};
+    for (const name of ['rea','ghidra']) {
+      const folder = path.join(runtime,name);
+      components[name] = await fileHash(path.join(folder,'manifest.json'));
+      await cp(folder,path.join(content,name),{recursive:true});
+    }
+    for (const source of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(item=>item.kind.endsWith('-source'))) {
+      const filename = path.join(root,'.cache/ghidra',source.file);
+      if (await fileHash(filename) !== source.sha256) throw Error('Reversing corresponding source hash mismatch');
+      await cp(filename,path.join(sources,source.file));
+    }
+    await cp(path.join(root,'distribution/ned/install-reversing-pack.ps1'),path.join(content,'INSTALL.ps1'));
+    await cp(path.join(root,'docs/offline-packs.md'),path.join(content,'README.md'));
+    await writeFile(path.join(content,'pack.json'),JSON.stringify({schemaVersion:1,id:'reversing',version,sourceCommit:buildCommit,components},null,2)+'\n');
+    await verifyAsciiTree(content);
+    run('tar',['-czf',pack,'-C',content,'.']);
+    await rm(content,{recursive:true,force:true});
+    buildInstaller(core,['-DNED_CORE=1']);
+    run(seven,['t',core],{stdio:'ignore'});
+    const assets = [];
+    for (const file of [core, pack]) assets.push({ name:path.basename(file), bytes:(await stat(file)).size, sha256:await fileHash(file) });
+    await writeFile(path.join(output,`Ned-${version}-optional-packages.json`),JSON.stringify({schemaVersion:1,version,sourceCommit:buildCommit,assets},null,2)+'\n');
+  }
   await audit();
 }
 else if(mode==='rebuild') {

@@ -26,14 +26,32 @@ function text(content: unknown): string {
   return '';
 }
 
+export const specializedTools = [
+  { prefix: 'desktop_', trigger: /(?:desktop|\bGUI\b|데스크톱|데스크탑|계산기|메모장|그림판|앱.*(?:클릭|실행|열어)|창.*(?:열어|클릭)|open.*calculator|click.*window)/i },
+  { prefix: 'rea_', trigger: /(?:\bghidra\b|\brea\b|리버싱|역공학|디컴파일|디스어셈블|decompil|disassembl|binary.*analy|바이너리.*분석)/i },
+];
+
+export function specializedToolRequested(name: string, request: string) {
+  const group = specializedTools.find(group => name.replace(/^ned_host_/, '').startsWith(group.prefix));
+  return !group || group.trigger.test(request.replace(/```[\s\S]*?```/g, ' '));
+}
+
+export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: Array<{ function?: { name?: string } }>}) {
+  if (!Array.isArray(body.tools) || !Array.isArray(body.messages)) return;
+  const user = body.messages.filter(message => message.role === 'user').at(-1);
+  const request = user ? text(user.content).split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0] : '';
+  body.tools = body.tools.filter(tool => specializedToolRequested(tool.function?.name ?? '', request));
+}
+
 /** Local shortlist only; the answering model still checks semantic relevance and may choose another skill. */
-export async function automaticSkillContext(skills: OfflineSkills, input: unknown, maximumBytes = 18000): Promise<string | undefined> {
+export async function automaticSkillContext(skills: OfflineSkills, input: unknown, maximumBytes = 6500): Promise<string | undefined> {
   if (maximumBytes < Buffer.byteLength(JSON.stringify(automaticSkillPolicy))) return;
   if (!Array.isArray(input)) return;
   const messages = input.slice(-80) as Message[];
   const users = messages.filter(m => m.role === 'user').slice(-4).map(m => text(m.content).slice(-6000));
   if (!users.length || /(?:스킬.*(?:사용하지|쓰지)\s*마|do not use (?:any )?skills|no skills)/i.test(users.at(-1)!)) return;
   if (/^(?:You MUST summarize the conversation above into a structured summary|Update the existing checkpoint in the conversation above into one consolidated summary|The previous response did not fill in the required summary template)/.test(users.at(-1)!.trim())) return;
+  if (users.at(-1)!.startsWith('사용자가 선택한 Ned 스킬 /skill-')) return;
   const latest = users.at(-1)!.replace(/```[\s\S]*?```/g, ' ');
   const context = users.join('\n');
   let lastUser = messages.length - 1;
@@ -54,7 +72,7 @@ export async function automaticSkillContext(skills: OfflineSkills, input: unknow
   const language = latest.length < 8 && !selected.length;
   if (language) return;
   const instructions = automaticSkillPolicy;
-  if (!selected.length) return instructions;
+  if (!selected.length) return;
   const perDocument = Math.floor((maximumBytes - Buffer.byteLength(instructions) - 1024) / selected.length);
   if (perDocument < 1000) return instructions;
   const documents = [];
@@ -67,6 +85,7 @@ export async function automaticSkillContext(skills: OfflineSkills, input: unknow
     while (end > 0 && end < bytes.length && (bytes[end] & 0xc0) === 0x80) end--;
     documents.push(`Automatically loaded${userSkill ? ' user skill' : ''}: ${id}\n${bytes.subarray(0,end).toString('utf8')}${end < bytes.length ? '\n[Excerpt only: read_skill retrieves the reviewed document and references when needed.]' : ''}`);
   }
-  const result = instructions + '\n\n' + documents.join('\n\n');
+  const candidates = selected.map(id => id + ' — ' + catalog.find(entry => entry.id === id)!.description.split(/\r?\n/, 1)[0].slice(0, 120)).join('\n');
+  const result = 'Relevant Ned skills:\n' + candidates + '\n\n' + documents.join('\n\n');
   return Buffer.byteLength(JSON.stringify(result)) <= maximumBytes ? result : instructions;
 }

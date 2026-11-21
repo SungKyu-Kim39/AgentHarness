@@ -103,3 +103,9 @@ AGPL 5조의 aggregate 규정은 별개 저작물의 단순 집합과 결합 저
 Ned 메뉴와 About 화면은 고정한 Zed 1.28.1 원본 소스를 수정해 빌드합니다. 기존 아이콘 변경과 별도로 Rust 소스 두 파일과 About 이미지가 바뀝니다. 원본 라이선스·저작권·Cargo.lock을 유지하며 수정한 대응 소스 아카이브는 반입 TGZ의 source/에 함께 제공합니다. 설치 폴더에는 작은 변경 기록과 소스 위치·해시 안내를 두어 불필요한 설치 용량을 줄입니다. About 화면에도 기반 Zed 버전과 소스 정보를 남깁니다.
 
 Astryx는 MIT 라이선스입니다. 전용 스킬의 원본과 수정 내역은 vendor/skills/astryx에, React 시작 프로젝트의 개별 의존성 라이선스는 해당 node_modules에 있습니다. Ned의 앱 라이선스가 이 라이선스들을 대체하지 않습니다. 시작 프로젝트를 다른 곳에 배포할 때도 저작권·LICENSE·NOTICE를 보존해야 합니다.
+
+## Ned 0.3.11 사내 서명
+
+인증서를 사용할 수 있는 Windows 빌드 PC에서 `NED_SIGNTOOL`에 절대 경로, `NED_SIGN_THUMBPRINT`에 인증서 지문, `NED_SIGN_TIMESTAMP_URL`에 승인된 HTTPS 타임스탬프 주소를 지정하고 `npm run ned:release`를 실행합니다. SignTool은 Windows 인증서 저장소를 사용합니다. 실행 파일 리소스를 적용한 뒤 호스트·편집기를 서명하고, NSIS 제거 프로그램과 설치 EXE를 서명한 뒤 해시를 계산합니다.
+
+별도의 호환 빌드에서는 `NED_VENDOR_EDITOR=1`을 지정해 Windows에서 원본 Zed 서명을 검증하고 그 실행 파일을 그대로 사용합니다. 이 빌드에서는 수정 Zed의 메뉴·About·터미널 셸 메뉴가 제공되지 않습니다. Ned의 바로가기 아이콘은 설치 리소스에서 지정합니다. 빌드 프로필과 배포 해시를 따로 기록합니다.

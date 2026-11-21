@@ -1,4 +1,4 @@
-> 이 문서는 당시 L-Vibe의 배포·검토 기록입니다. 버전·경로·해시는 당시 값을 유지합니다. 최신 구성은 [Ned 0.3.7 검증 기록](validation-0.3.7.md)을 참고하세요.
+> 이 문서는 당시 L-Vibe의 배포·검토 기록입니다. 버전·경로·해시는 당시 값을 유지합니다. 최신 구성은 [Ned 0.3.7 검증 기록](../validations/validation-0.3.7.md)을 참고하세요.
 
 # OpenViking Windows 내부 소켓 수정 패치 1
 
@@ -27,14 +27,14 @@ Windows CPython 3.12의 `socket.socketpair()`는 내부 loopback TCP 연결을 �
 
 앱을 종료한 뒤 패치 폴더의 **CHECK_IMPORT.cmd**를 실행합니다. 설치된 수정 launcher의 정책을 사용하며, 실제 모델 설정/키를 읽지 않고 임시 HOME에서 모듈만 가져옵니다. `OPENVIKING_IMPORT_OK`는 모듈 검사 성공이며 모델 인증·전체 서비스 준비 성공까지 뜻하지 않습니다. 실패하면 마지막 오류와 `EXIT_CODE`로 다음 원인을 구분합니다.
 
-0.2.4 전체 EXE에는 시작 실패 단계(번들·설정 준비·프로세스 실행/종료·health 시간 초과)와 안전한 코드/숫자만 기록하는 `startup-status.json`도 추가했습니다. 이 작은 패치는 launcher만 고치므로 **기존 Desktop에 새 오류 진단 UI를 추가하지 않습니다.** 새 진단 기능과 수정이 함께 포함된 전체 설치본은 [다운로드 안내](../downloads/README.md)를 따릅니다.
+0.2.4 전체 EXE에는 시작 실패 단계(번들·설정 준비·프로세스 실행/종료·health 시간 초과)와 안전한 코드/숫자만 기록하는 `startup-status.json`도 추가했습니다. 이 작은 패치는 launcher만 고치므로 **기존 Desktop에 새 오류 진단 UI를 추가하지 않습니다.** 새 진단 기능과 수정이 함께 포함된 전체 설치본은 [다운로드 안내](../../../downloads/README.md)를 따릅니다.
 
 ## 검증 범위
 
 - Windows 방식의 TCP socketpair를 Linux에서 재현하여 `asyncio` self-pipe 성공, 모델 중계 포트 허용, 다른 로컬/외부 연결 및 외부 DNS 차단을 함께 검사했습니다.
 - 동일한 TCP 소켓 정책으로 실제 고정 OpenViking 0.5.4의 server app import 성공을 확인했습니다. Linux에서 Windows 방식을 재현한 결과이며 Windows DLL 로딩/서비스 실행 검증을 대신하지 않습니다.
 - 패치의 데이터 보존, 변조/알 수 없는 설치본 거부, 중단 상태 재개, 중복 적용, manifest 교체 실패 시 rollback을 실제 임시 파일에서 검사했습니다.
-- 원본 Python manifest SHA-256: `8d2fbf5aef25d431433feb5f34f09cbf908c025476cb7ac024f6e3674b473a3d`. 수정 원본 코드와 생성 스크립트는 [openviking-launch.py](../scripts/openviking-launch.py), [openviking-hotfix.mjs](../scripts/openviking-hotfix.mjs), [복구 installer](../distribution/openviking-loopback-fix.py)에 있습니다. 새 해시는 패치의 `PATCH-MANIFEST.json`, 반입 파일 해시는 옆 `.sha256`에 제공합니다.
+- 원본 Python manifest SHA-256: `8d2fbf5aef25d431433feb5f34f09cbf908c025476cb7ac024f6e3674b473a3d`. 수정 원본 코드와 생성 스크립트는 [openviking-launch.py](../../../scripts/openviking-launch.py), [openviking-hotfix.mjs](../../../scripts/openviking-hotfix.mjs), [복구 installer](../../../distribution/openviking-loopback-fix.py)에 있습니다. 새 해시는 패치의 `PATCH-MANIFEST.json`, 반입 파일 해시는 옆 `.sha256`에 제공합니다.
 - 사용자 Windows PC의 실제 패치 적용/재시작 결과와 사내 모델 연결 확인은 별도로 남깁니다. `releaseReady: false`를 유지합니다.
 
 전체 `npm run verify`는 **56개 통과, 실패·건너뜀 0**, 루트 타입 검사·스킬 34개·Desktop overlay 검증을 통과했습니다. 패치의 실제 생성 파일을 임시 설치본에 적용하고 원본 설정 보존·반복 적용 및 TGZ 10개 파일의 내용/ASCII 이름을 대조했습니다. 이는 Windows에서 패치를 실행한 검사는 아닙니다.

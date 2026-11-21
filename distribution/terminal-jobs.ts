@@ -6,6 +6,21 @@ import { terminalShell, type TerminalKind } from './ned/terminal';
 
 // PowerShell may wait for end-of-input before it evaluates an encoded
 // command. Keep the supervisor's control pipe open, but give the shell EOF.
+// Run with a user's ordinary Windows environment, never the private engine credentials.
+export function terminalEnvironment(parent: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+  const omitted = new Set(Object.entries(parent).find(([name]) => name.toUpperCase() === 'NED_TERMINAL_ENV_EXCLUDE')?.[1]?.split(',').map(name => name.trim().toUpperCase()) ?? []);
+  const knownNames: Record<string, string> = { PATH: 'Path', SYSTEMROOT: 'SystemRoot', COMSPEC: 'ComSpec', PSMODULEPATH: 'PSModulePath', PROGRAMFILES: 'ProgramFiles', PROGRAMW6432: 'ProgramW6432' };
+  const result: NodeJS.ProcessEnv = Object.create(null);
+  for (const [name, value] of Object.entries(parent)) {
+    const key = name.toUpperCase();
+    if (value === undefined || omitted.has(key) ||
+        /^(?:NED_|OPENCODE_|ELECTRON_|NODE_OPTIONS$|NODE_PATH$|PYTHONPATH$|PYTHONHOME$|GIT_|AWS_|AZURE_|GOOGLE_APPLICATION_CREDENTIALS$|SSH_AUTH_SOCK$)/.test(key) ||
+        /(?:API_?KEY|TOKEN|SECRET|PASSWORD|PASSWD|CREDENTIAL|AUTHORIZATION)/.test(key)) continue;
+    result[knownNames[key] ?? key] = value;
+  }
+  return result;
+}
+
 const noninteractiveLaunch = 'import subprocess,sys; sys.exit(subprocess.call(sys.argv[1:], stdin=subprocess.DEVNULL))';
 
 type Job = {
@@ -52,17 +67,15 @@ export class TerminalJobs {
     const systemRoot = process.env.SystemRoot ?? 'C:\\Windows';
     const shell = terminalShell(job.shell, systemRoot);
     const python = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
-    const env: NodeJS.ProcessEnv = { SystemRoot: systemRoot, WINDIR: systemRoot,
-      Path: process.env.Path ?? process.env.PATH, ComSpec: terminalShell('cmd', systemRoot).program };
-    for (const name of ['SystemDrive', 'ProgramData', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432',
-      'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'HOMEDRIVE', 'HOMEPATH', 'TEMP', 'TMP', 'PATHEXT', 'PROCESSOR_ARCHITECTURE']) {
-      if (process.env[name]) env[name] = process.env[name];
-    }
+    const env = terminalEnvironment(process.env);
+    env.SystemRoot = systemRoot;
+    env.WINDIR = systemRoot;
+    env.ComSpec = terminalShell('cmd', systemRoot).program;
     let batch: string | undefined;
     try {
       let args: string[];
       if (job.shell === 'powershell') {
-        env.PSModulePath = [
+        env.PSModulePath ??= [
           path.join(path.dirname(shell.program), 'Modules'),
           path.join(env.ProgramW6432 ?? env.ProgramFiles ?? path.join(path.parse(systemRoot).root, 'Program Files'), 'WindowsPowerShell', 'Modules'),
         ].join(path.delimiter);

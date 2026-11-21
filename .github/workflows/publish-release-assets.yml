@@ -38,17 +38,17 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        if: inputs.version == '0.3.10'
+        if: inputs.version == '0.3.10' || inputs.version == '0.3.11'
         with:
           node-version: '24.22.1'
       - name: Install pinned release tools
-        if: inputs.version == '0.3.10'
+        if: inputs.version == '0.3.10' || inputs.version == '0.3.11'
         run: npm ci --no-audit --no-fund
       - name: Finalize and publish the installed release bytes
-        if: inputs.version == '0.3.10'
+        if: inputs.version == '0.3.10' || inputs.version == '0.3.11'
         run: node scripts/publish-ned-release.mjs
       - name: Verify published files and Windows validation
-        if: inputs.version != '0.3.10'
+        if: inputs.version != '0.3.10' && inputs.version != '0.3.11'
         shell: bash
         run: |
           node --input-type=module <<'JS'
@@ -99,7 +99,7 @@ jobs:
           await writeFile('release-assets/list.json',JSON.stringify(files));
           JS
       - name: Upload without replacing existing assets
-        if: inputs.version != '0.3.10'
+        if: inputs.version != '0.3.10' && inputs.version != '0.3.11'
         shell: bash
         run: |
           node --input-type=module <<'JS'

@@ -127,3 +127,21 @@ test('a user global skill stays available after the installed resources are repl
   }
   assert.equal(await readFile(entry, 'utf8'), source);
 });
+
+test('managed project skills are isolated and take precedence over user globals', async t => {
+  const { tools, root } = await fixture(t);
+  const first = path.join(root,'first'), second = path.join(root,'second');
+  for (const [folder, body] of [
+    [path.join(first,'.ned/skills/mine'),'project'],
+    [path.join(second,'.agents/skills/mine'),'compatibility home'],
+    [path.join(root,'data/skills/mine'),'global'],
+  ]) {
+    await mkdir(folder,{recursive:true});
+    await writeFile(path.join(folder,'SKILL.md'),'---\nname: mine\ndescription: a local skill\n---\n'+body);
+  }
+  await tools.skills.load();
+  assert.match(await tools.skills.read('mine','SKILL.md',0,first), /\nproject$/);
+  assert.match(await tools.skills.read('mine','SKILL.md',0,second), /\nglobal$/);
+  assert.equal((await tools.skills.userCatalog(first))[0].scope,'project');
+  assert.equal((await tools.skills.userCatalog(second))[0].scope,'user');
+});

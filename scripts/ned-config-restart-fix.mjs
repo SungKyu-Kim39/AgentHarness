@@ -24,7 +24,7 @@ const manifest={schemaVersion:1,product:'Ned',targetVersion:'0.3.1',hostVersion:
 const raw=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(output+'/manifest.json',raw);
 await writeFile(output+'/apply-host-fix.py',(await readFile('distribution/ned/apply-host-fix.py','utf8')).replace('__MANIFEST_SHA256__',hash(raw)));
 for(const [name,args] of [['APPLY_FIX',''],['ROLLBACK_FIX',' --rollback']])await writeFile(output+'/'+name+'.cmd','@echo off\r\nsetlocal\r\nset "NED_FIX_PY=%LOCALAPPDATA%\\Programs\\Ned\\resources\\runtime\\windows-x64\\openviking\\python\\python.exe"\r\nif not exist "%NED_FIX_PY%" (echo NED_BUNDLED_PYTHON_NOT_FOUND & pause & exit /b 1)\r\n"%NED_FIX_PY%" -I -B "%~dp0apply-host-fix.py"'+args+'\r\nset "NED_FIX_EXIT=%ERRORLEVEL%"\r\necho EXIT_CODE=%NED_FIX_EXIT%\r\npause\r\nexit /b %NED_FIX_EXIT%\r\n');
-await writeFile(output+'/README.txt',await readFile('docs/ned-config-restart-fix-1.txt'));
+await writeFile(output+'/README.txt',await readFile('docs/archive/fixes/ned-config-restart-fix-1.txt'));
 await verifyAsciiTree(output);
 const archive=path.resolve('downloads/Ned-config-restart-fix-1.tgz');execFileSync('tar',['-czf',archive,'-C',output,'.']);verifyAsciiTar(archive);
 await writeFile(archive+'.sha256',hash(await readFile(archive))+'  '+path.basename(archive)+'\n');

@@ -6,7 +6,7 @@ on:
         description: Exact immutable installer build
         default: 0.3.8
         type: choice
-        options: ['0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
+        options: ['0.3.11', '0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
       candidate_source:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
@@ -41,7 +41,7 @@ jobs:
           lfs: false
           persist-credentials: false
       - name: Measure the previous installer on the same Windows runner
-        if: env.NED_ARTIFACT_VERSION != '0.3.10'
+        if: env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -166,7 +166,7 @@ jobs:
           $proof | Add-Member -NotePropertyName newInstallerAcceptance -NotePropertyValue $false
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Verify 0.5.4 data migration using the installed Windows runtimes
-        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10'
+        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -181,7 +181,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify file deletion with the installed Windows Node runtime
-        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10'
+        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -270,7 +270,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Installed Windows Python tools failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify skills, history, settings and terminal behavior after installation
-        if: always() && (env.NED_ARTIFACT_VERSION == '0.3.9' || env.NED_ARTIFACT_VERSION == '0.3.10') && env.NED_TEST_NODE != ''
+        if: always() && (env.NED_ARTIFACT_VERSION == '0.3.9' || env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -288,18 +288,19 @@ jobs:
             Get-Content windows-upgrade-stderr.txt -ErrorAction SilentlyContinue
           }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
-      - name: Update the published 0.3.9 install and verify user global skills
-        if: env.NED_ARTIFACT_VERSION == '0.3.10'
+      - name: Update the previous installed release and verify user data
+        if: env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
           if ((Split-Path $env:NED_TEST_NODE) -ne $install) { throw 'Unexpected disposable installer path' }
-          $previous = Join-Path $env:RUNNER_TEMP 'Ned-0.3.9-previous.exe'
-          $audit = Get-Content 'downloads/Ned-0.3.9-installer-audit.json' -Raw | ConvertFrom-Json
-          $url = 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/af68e9a2fa55c98596d83b3503680bab3ecb2dad/downloads/Ned-0.3.9-win-x64.exe'
+          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.11') { '0.3.10' } else { '0.3.9' }
+          $previous = Join-Path $env:RUNNER_TEMP "Ned-$baseline-previous.exe"
+          $audit = Get-Content "downloads/Ned-$baseline-installer-audit.json" -Raw | ConvertFrom-Json
+          $url = "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v$baseline/Ned-$baseline-win-x64.exe"
           & curl.exe --fail --location --retry 2 --output $previous $url
-          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $previous -Algorithm SHA256).Hash -ne $audit.installer.sha256) { throw 'Published 0.3.9 installer hash mismatch' }
+          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $previous -Algorithm SHA256).Hash -ne $audit.installer.sha256) { throw 'Published installer hash mismatch' }
           $uninstall = Start-Process -FilePath (Join-Path $install 'Uninstall Ned.exe') -ArgumentList @('/S', "_?=$install") -Wait -PassThru
           $uninstall.Refresh()
           if ($uninstall.ExitCode -ne 0) { throw "Clean candidate uninstall failed: $($uninstall.ExitCode)" }
@@ -308,7 +309,7 @@ jobs:
           if (Test-Path -LiteralPath $install) { Remove-Item -LiteralPath $install -Recurse -Force }
           $old = Start-Process -FilePath $previous -ArgumentList @('/S', "/D=$install") -Wait -PassThru
           $old.Refresh()
-          if ($old.ExitCode -ne 0) { throw "Published 0.3.9 installation failed: $($old.ExitCode)" }
+          if ($old.ExitCode -ne 0) { throw "Previous installation failed: $($old.ExitCode)" }
           Remove-Item $previous -Force
           $skills = Join-Path $env:APPDATA 'Ned\skills\ned-release-fixture'
           $reference = Join-Path $skills 'references\guidance.md'
@@ -316,21 +317,67 @@ jobs:
           $main = Join-Path $skills 'SKILL.md'
           Set-Content $main -Encoding utf8 -Value @('---','name: ned-release-fixture','description: Windows upgrade verification','---','Persistent skill')
           Set-Content $reference -Encoding utf8 -Value 'Persistent reference'
-          $before = Get-FileHash $main,$reference
+          $dataRoot = Join-Path $env:APPDATA 'Ned'
+          $saved = @('settings.enc.json','editor\threads\threads.db','openviking\data\update-fixture.txt')
+          $savedPaths = foreach ($relative in $saved) {
+            $file = Join-Path $dataRoot $relative
+            New-Item -ItemType Directory -Path (Split-Path $file) -Force | Out-Null
+            if (!(Test-Path -LiteralPath $file)) { Set-Content -LiteralPath $file -Value 'Ned installer preservation fixture' }
+            $file
+          }
+          $before = Get-FileHash -LiteralPath (@($main,$reference)+$savedPaths)
           $upgrade = Start-Process -FilePath $env:NED_SMOKE_EXE -ArgumentList @('/S', "/D=$install") -Wait -PassThru
           $upgrade.Refresh()
-          if ($upgrade.ExitCode -ne 0) { throw '0.3.10 update failed' }
+          if ($upgrade.ExitCode -ne 0) { throw 'Candidate update failed' }
           foreach ($file in $before) {
-            if ((Get-FileHash $file.Path).Hash -ne $file.Hash) { throw 'User global skill changed during update' }
+            if ((Get-FileHash $file.Path).Hash -ne $file.Hash) { throw 'User data changed during update' }
           }
           $info = Get-Content (Join-Path $install 'resources\ned\build-info.json') -Raw | ConvertFrom-Json
-          if ($info.version -ne '0.3.10' -or $info.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Wrong version after update' }
+          if ($info.version -ne $env:NED_ARTIFACT_VERSION -or $info.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Wrong version after update' }
           foreach ($obsolete in @('skill-seed','personal-pack-recovery.py')) {
             if (Test-Path (Join-Path $install "resources\ned\$obsolete")) { throw "Removed resource remains after update: $obsolete" }
           }
           $proof = Get-Content windows-offline-smoke.json -Raw | ConvertFrom-Json
-          $proof | Add-Member -NotePropertyName upgradedFrom -NotePropertyValue '0.3.9'
+          $proof | Add-Member -NotePropertyName upgradedFrom -NotePropertyValue $baseline
           $proof | Add-Member -NotePropertyName userGlobalSkillsPreserved -NotePropertyValue $true
+          $proof | Add-Member -NotePropertyName userDataPreserved -NotePropertyValue $true
+          $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
+      - name: Install Core and its optional reversing pack offline
+        if: env.NED_ARTIFACT_VERSION == '0.3.11'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $install = Split-Path $env:NED_TEST_NODE
+          $directory = if ($env:NED_CANDIDATE_SOURCE) { 'downloads/candidates/' + $env:NED_CANDIDATE_SOURCE } else { 'downloads' }
+          $record = Get-Content "$directory/Ned-$env:NED_ARTIFACT_VERSION-optional-packages.json" -Raw | ConvertFrom-Json
+          if ($record.sourceCommit -ne $env:NED_CANDIDATE_SOURCE -or $record.assets.Count -ne 2) { throw 'Optional manifest mismatch' }
+          $items = @{}
+          foreach ($item in $record.assets) {
+            if ($item.name -notmatch '^Ned-0\.3\.11-(?:core-win-x64\.exe|pack-reversing-windows-x64\.tgz)$') { throw 'Unexpected optional asset' }
+            $file = Join-Path $env:RUNNER_TEMP $item.name
+            & curl.exe --fail --location --retry 2 --output $file "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/$($item.name)"
+            if ($LASTEXITCODE -ne 0 -or (Get-FileHash $file -Algorithm SHA256).Hash -ne $item.sha256) { throw 'Optional download hash mismatch' }
+            $items[$item.name] = $file
+          }
+          $core = $items['Ned-0.3.11-core-win-x64.exe']
+          $upgrade = Start-Process -FilePath $core -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          $upgrade.Refresh()
+          if ($upgrade.ExitCode -ne 0) { throw 'Core install failed' }
+          $runtime = Join-Path $install 'resources\runtime\windows-x64'
+          foreach ($component in @('rea','ghidra')) { if (Test-Path (Join-Path $runtime $component)) { throw 'Core unexpectedly bundles reversing files' } }
+          $source = Join-Path $env:RUNNER_TEMP 'reversing-pack'
+          New-Item -ItemType Directory -Path $source -Force | Out-Null
+          & tar.exe -xzf $items['Ned-0.3.11-pack-reversing-windows-x64.tgz'] -C $source
+          if ($LASTEXITCODE -ne 0) { throw 'Offline pack extraction failed' }
+          & (Join-Path $source 'INSTALL.ps1')
+          $pack = Join-Path $env:APPDATA 'Ned\packs\reversing\0.3.11'
+          $before = Get-FileHash (Join-Path $pack 'rea\manifest.json'),(Join-Path $pack 'ghidra\manifest.json')
+          $again = Start-Process -FilePath $core -ArgumentList @('/S', "/D=$install") -Wait -PassThru
+          $again.Refresh()
+          if ($again.ExitCode -ne 0) { throw 'Core reinstall failed' }
+          foreach ($file in $before) { if ((Get-FileHash -LiteralPath $file.Path).Hash -ne $file.Hash) { throw 'Pack changed after Core update' } }
+          $proof = Get-Content windows-offline-smoke.json -Raw | ConvertFrom-Json
+          $proof | Add-Member -NotePropertyName coreAndReversingPackVerified -NotePropertyValue $true
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Restore disposable runner firewall configuration
         if: always()

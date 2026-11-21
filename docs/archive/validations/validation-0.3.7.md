@@ -58,7 +58,7 @@ Windows Server 2022/10.0.20348의 실행 43540857847에서 새 폴더 생성, �
 | 설치된 파일 | 94,237개 | 55,926개 |
 | 논리 설치 크기 | 3,375,883,034 bytes | 3,024,551,545 bytes, 10.41% 감소 |
 
-실행 43542694638에서 같은 설치·로딩 검사를 다시 통과했습니다. 모델 질문과 데스크톱 조작은 하지 않았습니다. 이 수치는 같은 Windows Server 실행기에서 기준 버전 다음 후보를 설치한 1회 비교입니다. 직원 PC의 Windows 10·11 성능과 GUI 검증으로 일반화하지 않습니다. [원본 요약](../downloads/Ned-0.3.7-windows-offline-smoke.json)과 [실행 기록](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638)을 제공합니다.
+실행 43542694638에서 같은 설치·로딩 검사를 다시 통과했습니다. 모델 질문과 데스크톱 조작은 하지 않았습니다. 이 수치는 같은 Windows Server 실행기에서 기준 버전 다음 후보를 설치한 1회 비교입니다. 직원 PC의 Windows 10·11 성능과 GUI 검증으로 일반화하지 않습니다. [원본 요약](../../../downloads/Ned-0.3.7-windows-offline-smoke.json)과 [실행 기록](https://github.com/SungKyu-Kim39/AgentHarness/actions/runs/43542694638)을 제공합니다.
 
 ## 설치기와 공개 파일 대조
 
@@ -68,6 +68,6 @@ EXE에서 호스트 초기화, 각 구성 요소 manifest, 최적화 보고서, 
 
 [공개 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7)는 prerelease이며 `draft=false`입니다. 소스·태그는 위 최종 소스와 같고, 반입 파일 커밋은 `f0e7b9b0132e46aef406657689a99e8b542b8517`입니다. TGZ는 1,169,734,854 bytes, SHA-256은 `8365eae5018d6a801d838a8d74e5169a40de18a1c5ab70a857a966d12c89680a`입니다.
 
-공개 EXE·TGZ와 체크섬·메타데이터 여덟 개를 인증 없이 전체 다운로드해 크기와 SHA-256을 확인했습니다. 릴리스 페이지도 HTTP 200과 두 다운로드 링크를 확인했습니다. 파일은 릴리스 본문의 고정 Git LFS 링크로 제공하며 이전 배포물·태그는 보존했습니다. [공개 검증](../downloads/Ned-0.3.7-public-verification.json)과 [릴리스 상태](../downloads/Ned-0.3.7-release-state.json)에 결과가 있습니다.
+공개 EXE·TGZ와 체크섬·메타데이터 여덟 개를 인증 없이 전체 다운로드해 크기와 SHA-256을 확인했습니다. 릴리스 페이지도 HTTP 200과 두 다운로드 링크를 확인했습니다. 파일은 릴리스 본문의 고정 Git LFS 링크로 제공하며 이전 배포물·태그는 보존했습니다. [공개 검증](../../../downloads/Ned-0.3.7-public-verification.json)과 [릴리스 상태](../../../downloads/Ned-0.3.7-release-state.json)에 결과가 있습니다.
 
 실제 Win10·Win11 GUI, 사내 모델과 외부망 차단 환경의 전체 검증을 마치기 전까지 `releaseReady`는 false로 유지합니다.

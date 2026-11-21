@@ -68,7 +68,7 @@ ACP 연결과 같은 인증된 공유 이벤트 피드를 구독해 연결된 �
 
 설치된 Ned Node에서 체크섬을 확인한 `Ned-0.3.8-rebuild1-windows-{namespace,delete,compaction,native,python}-test.cjs`를 각각 `--test`로 실행했습니다. SDK 이관 1건, 삭제 9건, 실제 엔진 요약 1건, Git·외부 읽기·Ghidra·대규모 패키지·기본 Zed 모델 중계·Astryx·소스 편집기·서브에이전트 20건, Conda 1건으로 총 32건 모두 통과했습니다. 새 편집기의 실제 PE 로딩도 확인했으며 GUI 조작 수용과 구분합니다. OpenViking 0.5.5·토크나이저 7종·Node 로딩, 없는 설치 폴더 생성과 사용자 자료 폴더 설치 거절도 확인했습니다.
 
-모델은 localhost 합성 서버만 사용했습니다. 해당 실행 파일의 Internet 송신은 Windows 방화벽으로 차단했습니다. 실제 사내 Qwen/BGE와 직원 Windows 10·11 GUI·데스크톱 조작·전체 DNS/TCP 관찰은 별도 수용 범위입니다. [기계 판독 결과](../downloads/Ned-0.3.8-rebuild1-windows-offline-smoke.json)를 함께 제공합니다.
+모델은 localhost 합성 서버만 사용했습니다. 해당 실행 파일의 Internet 송신은 Windows 방화벽으로 차단했습니다. 실제 사내 Qwen/BGE와 직원 Windows 10·11 GUI·데스크톱 조작·전체 DNS/TCP 관찰은 별도 수용 범위입니다. [기계 판독 결과](../../../downloads/Ned-0.3.8-rebuild1-windows-offline-smoke.json)를 함께 제공합니다.
 
 ## Windows 검사 도구의 정리 순서
 
@@ -78,4 +78,4 @@ ACP 연결과 같은 인증된 공유 이벤트 피드를 구독해 연결된 �
 
 ## 공개 배포와 다운로드 확인
 
-[GitHub Release](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1)에 EXE·TGZ·체크섬·감사 자료 7개를 첨부했습니다. 게시 실행은 44015060571이며, 7개 파일을 인증 없이 전체 다운로드해 크기와 SHA-256을 다시 확인했습니다. 반입 TGZ는 1,913,956,648 bytes이고 경로·대응 소스 해시 검사를 통과했습니다. [공개 검사](../downloads/Ned-0.3.8-rebuild1-public-verification.json)와 [배포 상태](../downloads/Ned-0.3.8-rebuild1-release-state.json)를 함께 남겼습니다.
+[GitHub Release](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1)에 EXE·TGZ·체크섬·감사 자료 7개를 첨부했습니다. 게시 실행은 44015060571이며, 7개 파일을 인증 없이 전체 다운로드해 크기와 SHA-256을 다시 확인했습니다. 반입 TGZ는 1,913,956,648 bytes이고 경로·대응 소스 해시 검사를 통과했습니다. [공개 검사](../../../downloads/Ned-0.3.8-rebuild1-public-verification.json)와 [배포 상태](../../../downloads/Ned-0.3.8-rebuild1-release-state.json)를 함께 남겼습니다.

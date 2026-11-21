@@ -44,7 +44,7 @@ const manifest={schemaVersion:1,product:'Ned',targetVersion:'0.3.3',fixId:'ned-j
 const raw=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(output+'/manifest.json',raw);
 await writeFile(output+'/apply-jsonc-fix.py',(await readFile('distribution/ned/apply-jsonc-fix.py','utf8')).replace('__MANIFEST_SHA256__',hash(raw)));
 for(const [name,args] of [['APPLY_FIX',''],['ROLLBACK_FIX',' --rollback']])await writeFile(output+'/'+name+'.cmd','@echo off\r\nsetlocal\r\nset "NED_FIX_PY=%LOCALAPPDATA%\\Programs\\Ned\\resources\\runtime\\windows-x64\\openviking\\python\\python.exe"\r\nif not exist "%NED_FIX_PY%" (echo NED_BUNDLED_PYTHON_NOT_FOUND & pause & exit /b 1)\r\n"%NED_FIX_PY%" -I -S -B "%~dp0apply-jsonc-fix.py"'+args+'\r\nset "NED_FIX_EXIT=%ERRORLEVEL%"\r\necho EXIT_CODE=%NED_FIX_EXIT%\r\npause\r\nexit /b %NED_FIX_EXIT%\r\n');
-await cp('docs/ned-jsonc-startup-fix-1.txt',output+'/README.txt');await cp('LICENSE',output+'/LICENSE.txt');
+await cp('docs/archive/fixes/ned-jsonc-startup-fix-1.txt',output+'/README.txt');await cp('LICENSE',output+'/LICENSE.txt');
 await verifyAsciiTree(output);
 execFileSync('tar',['-czf',archive,'-C',output,'.']);verifyAsciiTar(archive);
 const bytes=(await stat(archive)).size,sha256=hash(await readFile(archive));

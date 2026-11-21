@@ -4,13 +4,13 @@
 
 ## 0.3.10 배포 기준
 
-소스 `7cc5cef166690c64b64e545cda1b38e034bd285d`를 사용했습니다. Windows 새 설치·0.3.9 업데이트와 12개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.10.md)
+소스 `7cc5cef166690c64b64e545cda1b38e034bd285d`를 사용했습니다. Windows 새 설치·0.3.9 업데이트와 12개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/archive/validations/validation-0.3.10.md)
 
 
 버전 구현을 맡으면 설치 EXE·반입 TGZ·문서·체크섬과 GitHub 릴리스까지 한 작업으로
 마무리합니다. 고정 Zed 빌드 후 설치 후보를 생성하고, Windows에서 해당 EXE의 SHA-256을
 맞춰 새 설치·직전 버전 업데이트·변경 기능을 검증합니다. 이후 같은 EXE를 TGZ에 넣고
-공개 첨부를 검증합니다. [0.3.10 변경 사항](docs/changes-0.3.10.md)
+공개 첨부를 검증합니다. [0.3.10 변경 사항](docs/archive/releases/changes-0.3.10.md)
 
 ## 0.3.9 배포 기준
 
@@ -23,7 +23,7 @@
 Studio 표시 확인·실패 재시도, CMD/PowerShell 선택, 개인 Zed Agent DB 가져오기,
 EGM 7종과 읽기 전용 Goldfish 역할을 구현했습니다. 스킬은 74종입니다.
 Zed 필수 프로필 name·capability와 첫 메시지 프록시 경로 호환성도 보완했습니다.
-[변경 사항](docs/changes-0.3.9.md), [검증 기록](docs/validation-0.3.9.md)을 먼저 읽습니다.
+[변경 사항](docs/archive/releases/changes-0.3.9.md), [검증 기록](docs/archive/validations/validation-0.3.9.md)을 먼저 읽습니다.
 
 0.3.9용 소스 빌드 편집기와 runtime lock, 설치 감사 및 Windows 실행기 검증을 완료했습니다. 실제 직원 Windows GUI와 사내 모델 수용은 별도입니다.
 Linux 전체 232건 중 202건 통과·30건 제외·실패 0건이며 후속 SDK·데이터 대상 8건과
@@ -39,7 +39,7 @@ Goldfish는 새로운 호스트 소유 세션과 제한된 읽기 도구를 사�
 
 ## 0.3.8 rebuild1 배포 기준
 
-[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1)의 EXE·TGZ·체크섬·감사 자료 7개를 게시했고 인증 없는 전체 다운로드 해시를 확인했습니다. [다운로드 안내](downloads/README.md), [배포 상태](downloads/Ned-0.3.8-rebuild1-release-state.json), [검증 기록](docs/validation-0.3.8-rebuild1.md)을 기준으로 이어갑니다.
+[릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1)의 EXE·TGZ·체크섬·감사 자료 7개를 게시했고 인증 없는 전체 다운로드 해시를 확인했습니다. [다운로드 안내](downloads/README.md), [배포 상태](downloads/Ned-0.3.8-rebuild1-release-state.json), [검증 기록](docs/archive/validations/validation-0.3.8-rebuild1.md)을 기준으로 이어갑니다.
 
 제품 소스는 `1be374cb1af9f16923688d5499d86ba771218dd4`, 반입 파일 커밋은 `16d75164ff44ba2bbf9662d5e78801270816196d`, 검사·감사 소스는 `8b894aed9ee6a5b4a5859c1868cd20f2abe9b4ef`입니다. EXE는 1,534,583,160 bytes, SHA-256 `74291ef0eaf204f562c3e14e6b24a62852ada5f66cb83013617a066d50bbb1d3`입니다. TGZ는 1,913,956,648 bytes, SHA-256 `dfd20c9b57473ca6c80b7aeb1c9fa84deb6585d2ac6b4648f4af889d242680b3`입니다. 대응 소스 두 묶음과 수정 편집기 소스는 TGZ의 source/에 있습니다. 기존 게시 파일과 태그는 불변이며 이후 수정은 새 빌드 식별자로 구분합니다.
 
@@ -69,13 +69,13 @@ Linux 전체 회귀 199건 중 189건 통과·10건 환경별 제외·실패 0�
 
 첫 대화 HTTP 400은 중복 system 메시지 호환성을 수정하고 비밀 없는 진단을 추가했습니다. 사내 서버의 정확한 거절 원인은 미확정입니다. 기존 모델 실패와 임베딩 성공 로그는 약 5시간 차이이므로 동시 부하를 입증하지 않습니다. 모델 생성 대기에 임의의 제한을 추가하지 않습니다.
 
-새 EXE는 기존 후보를 덮어쓰지 않고 별도 소스 커밋 디렉터리에서 검증했습니다. `downloads/candidates/`의 첫 후보는 공통 감독기 수정 전이므로 직원 배포용으로 사용하지 않습니다. `python-source-probe`·`runtime_source_probe` 결과도 최종 설치본 검사와 혼동하지 않습니다. [0.3.8 검증 기록](docs/validation-0.3.8.md)에 중간 실패와 최종 결과를 함께 남겼습니다.
+새 EXE는 기존 후보를 덮어쓰지 않고 별도 소스 커밋 디렉터리에서 검증했습니다. `downloads/candidates/`의 첫 후보는 공통 감독기 수정 전이므로 직원 배포용으로 사용하지 않습니다. `python-source-probe`·`runtime_source_probe` 결과도 최종 설치본 검사와 혼동하지 않습니다. [0.3.8 검증 기록](docs/archive/validations/validation-0.3.8.md)에 중간 실패와 최종 결과를 함께 남겼습니다.
 
 ## 이전 0.3.7 수정 빌드
 
 [수정 빌드 릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1)를 공개 prerelease로 게시했습니다. 첨부 서버는 작은 체크섬에도 HTTP 401을 반환하므로, EXE·TGZ는 릴리스 본문의 고정 Git LFS 링크에서 받습니다. [릴리스 상태](downloads/Ned-0.3.7-rebuild1-release-state.json)에 공개 페이지·메타데이터 확인과 첨부 실패를 구분해 기록했습니다.
 
-수정 EXE·TGZ는 `0.3.7-rebuild1`로 구분하며, 기존 버전·배포 파일은 보존합니다. 호스트 빌드 소스는 `b096614b23bbc7101ba1659c3313194155b24c26`, 두 반입 파일이 함께 있는 커밋은 `348787c011ed2bc5cac8a0074a75f4376ee601e2`입니다. [다운로드 안내](downloads/README.md)와 [검증 기록](docs/validation-0.3.7-rebuild1.md)을 기준으로 이어갑니다.
+수정 EXE·TGZ는 `0.3.7-rebuild1`로 구분하며, 기존 버전·배포 파일은 보존합니다. 호스트 빌드 소스는 `b096614b23bbc7101ba1659c3313194155b24c26`, 두 반입 파일이 함께 있는 커밋은 `348787c011ed2bc5cac8a0074a75f4376ee601e2`입니다. [다운로드 안내](downloads/README.md)와 [검증 기록](docs/archive/validations/validation-0.3.7-rebuild1.md)을 기준으로 이어갑니다.
 
 OpenViking 0.5.5·LiteLLM 1.103.10, `ned` 계정·스킬 이름의 검증 이관, `ned_host_delete_file`을 반영했습니다. 삭제는 기존 권한 모드와 ACP 버퍼 검사, 파일 충돌 검사, 원본 스냅샷을 사용하며 2 MiB 이하 UTF-8 파일 하나만 지원합니다. [저장소 이관과 원본 보존](docs/openviking-0.5.5-update.md)에 실패·재시작 처리와 백업 위치를 설명합니다.
 
@@ -135,7 +135,7 @@ Windows Server [실행 43792692526](https://github.com/SungKyu-Kim39/AgentHarnes
 
 준비 결과는 `release-runtime-lock.json`에 고정합니다. MCP와 데스크톱의 검사도 정확히 대응하는 원본·최적화 manifest만 허용합니다. 호스트·ACP는 소스에서 다시 빌드하고 호스트 ASAR에는 사용하지 않는 의존성을 넣지 않습니다. 빌드 의존성은 `scripts/prepare-acp.mjs`와 `scripts/acp-build/package-lock.json`으로 따로 준비합니다.
 
-Windows 비교에서는 LZMA가 용량은 줄였지만 설치를 54,182ms에서 90,792ms로 늦춰 채택하지 않았습니다. 최종 zlib는 같은 실행기의 기준 50,497ms에서 38,935ms로 줄었습니다. 설치 파일 수는 94,237개에서 55,926개, 논리 크기는 3,375,883,034에서 3,024,551,545 bytes로 줄었습니다. 실험과 최종 결과는 [0.3.7 검증 기록](docs/validation-0.3.7.md)에 있습니다.
+Windows 비교에서는 LZMA가 용량은 줄였지만 설치를 54,182ms에서 90,792ms로 늦춰 채택하지 않았습니다. 최종 zlib는 같은 실행기의 기준 50,497ms에서 38,935ms로 줄었습니다. 설치 파일 수는 94,237개에서 55,926개, 논리 크기는 3,375,883,034에서 3,024,551,545 bytes로 줄었습니다. 실험과 최종 결과는 [0.3.7 검증 기록](docs/archive/validations/validation-0.3.7.md)에 있습니다.
 
 ## 빌드 PC 준비
 
@@ -183,11 +183,11 @@ npm run bundle:offline
 
 | 증상 | 확인한 원인과 현재 처리 | 기록 |
 | --- | --- | --- |
-| 편집기 조기 panic·로그 없음 | 전용 프로필의 표준 AppData 폴더 누락. 0.3.2에 시작 화면과 함께 반영 | [시작 수정](docs/ned-startup-fix-1.md) |
-| ACP가 exit code 0으로 종료 | PowerShell 실행 수명이 먼저 종료. 번들 Python 콘솔 감독기로 표준 입출력 유지 | [ACP·설정 수정](docs/ned-config-restart-fix-1.md) |
-| `Cannot find module './impl/format'` | jsonc-parser UMD 상대 모듈 누락. 0.3.4부터 ESM과 실제 번들 초기화 검사 | [0.3.4 기록](docs/validation-0.3.4.md) |
-| 업데이트 뒤 글꼴·배치 초기화 | 현재 JSONC 대신 일부 키·오래된 appearance 사용. 현재 설정·키맵·DB 경로 보존 | [0.3.3 기록](docs/validation-0.3.3.md) |
-| 스냅샷 창 신원 오류 | agent-desktop 축약 응답과 호스트 요구 불일치. 0.3.6에서 캡처 전후 목록으로 검사 | [0.3.6 기록](docs/validation-0.3.6.md) |
+| 편집기 조기 panic·로그 없음 | 전용 프로필의 표준 AppData 폴더 누락. 0.3.2에 시작 화면과 함께 반영 | [시작 수정](docs/archive/fixes/ned-startup-fix-1.md) |
+| ACP가 exit code 0으로 종료 | PowerShell 실행 수명이 먼저 종료. 번들 Python 콘솔 감독기로 표준 입출력 유지 | [ACP·설정 수정](docs/archive/fixes/ned-config-restart-fix-1.md) |
+| `Cannot find module './impl/format'` | jsonc-parser UMD 상대 모듈 누락. 0.3.4부터 ESM과 실제 번들 초기화 검사 | [0.3.4 기록](docs/archive/validations/validation-0.3.4.md) |
+| 업데이트 뒤 글꼴·배치 초기화 | 현재 JSONC 대신 일부 키·오래된 appearance 사용. 현재 설정·키맵·DB 경로 보존 | [0.3.3 기록](docs/archive/validations/validation-0.3.3.md) |
+| 스냅샷 창 신원 오류 | agent-desktop 축약 응답과 호스트 요구 불일치. 0.3.6에서 캡처 전후 목록으로 검사 | [0.3.6 기록](docs/archive/validations/validation-0.3.6.md) |
 | Open Folder 뒤 `0xc000041d` | 정확한 원인 미확정. 내부 선택창과 호스트의 시스템 선택창으로 분리 | [진단](docs/windows-diagnostics.md) |
 | 내보내기 선확인 HTTP 500 | 기존 서버 `fs/stat` 단계 실패. 최소 `fs/ls`와 안전한 진단 도구 제공 | [개인 지식 이관](docs/openviking-personal-migration.md) |
 

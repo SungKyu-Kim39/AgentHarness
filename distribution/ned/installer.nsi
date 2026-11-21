@@ -18,6 +18,9 @@ SetCompressor zlib
 SetDatablockOptimize on
 Icon "${NED_ICON}"
 UninstallIcon "${NED_ICON}"
+!ifdef NED_SIGNTOOL
+!uninstfinalize '"${NED_SIGNTOOL}" ${NED_SIGN_ARGS} "%1"'
+!endif
 ShowInstDetails show
 ShowUninstDetails show
 !define MUI_ABORTWARNING
@@ -161,7 +164,11 @@ Section "Ned"
   RMDir /r "$INSTDIR\locales"
   SetOutPath "$INSTDIR"
   ClearErrors
-  File /r "${NED_APP_DIR}\*"
+  !ifdef NED_CORE
+    File /r /x rea /x ghidra "${NED_APP_DIR}\*"
+  !else
+    File /r "${NED_APP_DIR}\*"
+  !endif
   IfErrors install_failed
   IfFileExists "$INSTDIR\resources\zed\Zed.exe" 0 install_failed
   IfFileExists "$INSTDIR\resources\zed\bin\zed.exe" 0 install_failed
@@ -177,8 +184,8 @@ Section "Ned"
   install_verified:
   WriteUninstaller "$INSTDIR\Uninstall Ned.exe"
   CreateDirectory "$SMPROGRAMS\Ned"
-  CreateShortcut "$SMPROGRAMS\Ned\Ned.lnk" "$INSTDIR\Ned.exe"
-  CreateShortcut "$DESKTOP\Ned.lnk" "$INSTDIR\Ned.exe"
+  CreateShortcut "$SMPROGRAMS\Ned\Ned.lnk" "$INSTDIR\Ned.exe" "" "$INSTDIR\resources\ned\icon.ico"
+  CreateShortcut "$DESKTOP\Ned.lnk" "$INSTDIR\Ned.exe" "" "$INSTDIR\resources\ned\icon.ico"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "DisplayName" "Ned"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "DisplayVersion" "${NED_VERSION}"
   WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "Publisher" "Ned"

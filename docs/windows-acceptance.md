@@ -1,6 +1,6 @@
 # Windows·사내망 배포 확인 목록
 
-이 목록은 직원 PC에서 확인할 절차입니다. 체크하지 않은 항목은 미확인으로 남깁니다. Linux·합성 모델 검사와 EXE 생성, Windows Server 결과는 [0.3.7 검증 기록](validation-0.3.7.md)에 따로 있습니다.
+이 목록은 직원 PC에서 확인할 절차입니다. 체크하지 않은 항목은 미확인으로 남깁니다. Linux·합성 모델 검사와 EXE 생성, Windows Server 결과는 [0.3.7 검증 기록](archive/validations/validation-0.3.7.md)에 따로 있습니다.
 
 ## 실행 환경 기록
 

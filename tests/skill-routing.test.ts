@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { automaticSkillContext } from '../src/main/skill-routing';
+import { hideUnrequestedTools, automaticSkillContext } from '../src/main/skill-routing';
 import { OfflineSkills } from '../src/main/skills';
 import { ModelGateway } from '../src/main/model-gateway';
 import { createServer } from 'node:http';
@@ -27,7 +27,7 @@ test('ordinary Korean and English requests automatically load relevant verified 
   for (const [request,expected] of [['실행하면 갑자기 종료되는 오류를 고쳐줘','diagnosing-bugs'],['Polish the spacing in this dashboard','unslop'],['이 글의 번역투를 윤문해줘','humanize-korean'],['Make a small browser game','game-studio']]) {
     const context = await automaticSkillContext(offline,[{role:'user',content:request}]);
     assert.ok(context?.includes('Automatically loaded: '+expected),request);
-    assert.ok(context!.includes('heuristic, not a mandatory keyword branch'));
+    assert.ok(context!.includes('Relevant Ned skills:'));
     assert.ok((context!.match(/Automatically loaded:/g)??[]).length<=3);
   }
 });
@@ -81,4 +81,14 @@ test('compaction/replay work is not styled and tight context budgets never add u
   const context=await automaticSkillContext(offline,messages,3500);assert.ok(context&&Buffer.byteLength(context)<=3500);
   for(const prompt of ['You MUST summarize the conversation above into a structured summary that will be given to another agent to resume the work.','Update the existing checkpoint in the conversation above into one consolidated summary.'])
     assert.equal(await automaticSkillContext(offline,[...messages,{role:'user',content:prompt}]),undefined);
+});
+
+test('a normal coding request omits specialized tool schemas and preserves requested families', () => {
+  const tools = ['ned_host_read_file','ned_host_desktop_snapshot','ned_host_rea_ghidra'].map(name => ({function:{name}}));
+  const ordinary = {messages:[{role:'user',content:'함수의 타입을 정리해줘'}],tools:[...tools]};
+  hideUnrequestedTools(ordinary);
+  assert.deepEqual(ordinary.tools,[tools[0]]);
+  const desktop = {messages:[{role:'user',content:'계산기를 열어줘'}],tools:[...tools]};
+  hideUnrequestedTools(desktop);
+  assert.deepEqual(desktop.tools,tools.slice(0,2));
 });

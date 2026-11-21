@@ -18,4 +18,4 @@
 
 검증 환경은 Linux 6.18.57 x86_64 개발 실행기와 Node.js v24.22.1입니다. 테스트 API는 로컬 합성 서버이며 사내 endpoint나 실제 키는 사용하지 않았습니다.
 
-upstream 전체 Bun 의존성 설치·공식 전체 lint/typecheck·Desktop 실제 실행·Win10/11 설치/ACL·DNS/TCP·실제 사내 모델·OpenViking 등 서비스 연결 실환경 검증은 아직 실행하지 않았습니다. [구현 계획](implementation-plan.md)의 다음 단계와 [배포 차단 목록](../distribution/readiness.json)을 따릅니다.
+upstream 전체 Bun 의존성 설치·공식 전체 lint/typecheck·Desktop 실제 실행·Win10/11 설치/ACL·DNS/TCP·실제 사내 모델·OpenViking 등 서비스 연결 실환경 검증은 아직 실행하지 않았습니다. [구현 계획](../../implementation-plan.md)의 다음 단계와 [배포 차단 목록](../../../distribution/readiness.json)을 따릅니다.

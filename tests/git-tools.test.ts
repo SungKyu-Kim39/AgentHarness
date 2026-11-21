@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdtemp, mkdir, readFile, writeFile, rm, realpath } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm, realpath, truncate } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { GitTools } from '../distribution/git-tools';
@@ -63,4 +63,22 @@ test('changed approved inputs, configuration includes and executable clean filte
   await assert.rejects(tools.execute(project, 'stage', ['file.txt']), /필터/);
   await git(['config', 'include.path', '../external-config']);
   await assert.rejects(tools.execute(project, 'stage', ['file.txt']), /include/);
+});
+
+test('inspection streams bounded status and previews without copying large packs', { skip: !binary }, async t => {
+  const { project, git, tools } = await fixture(t);
+  await writeFile(path.join(project,'first.txt'),'original');
+  await git(['add','first.txt']); await git(['commit','-m','fixture']);
+  await writeFile(path.join(project,'first.txt'),'changed');
+  for (let i=0; i<45; i++) await writeFile(path.join(project,'untracked-'+i+'.txt'),'fixture');
+  const fake = path.join(project,'.git','objects','pack','pack-unreferenced.pack');
+  await writeFile(fake,''); await truncate(fake, 64 * 1024 * 1024 + 1);
+  const summary = await tools.inspect(project,{operation:'status',limit:3});
+  assert.equal(summary.total,46); assert.equal(summary.records.length,3); assert.equal(summary.truncated,true);
+  const filtered = await tools.inspect(project,{operation:'status',paths:['first.txt'],statuses:['M']});
+  assert.deepEqual(filtered.records,[' M first.txt']);
+  const diff = await tools.inspect(project,{operation:'diff',paths:['first.txt']});
+  assert.equal(diff.status,'ok'); assert.match(diff.preview ?? '', /changed/);
+  const show = await tools.inspect(project,{operation:'show',revision:'HEAD'});
+  assert.equal(show.status,'ok'); assert.match(show.preview ?? '', /original/);
 });

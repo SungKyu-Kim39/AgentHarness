@@ -62,15 +62,22 @@ async function main() {
   const stream = ndJsonStream(Writable.toWeb(process.stdout), Readable.toWeb(process.stdin));
   const writer = stream.writable.getWriter();
   editorWriter = writer;
+  const publishCommands = async (sessionId: string) => {
+    const skills = await peer.call('skills/list', { session: sessionId }).catch(() => []);
+    await writer.write({ jsonrpc: '2.0', method: 'session/update', params: { sessionId, update: {
+      sessionUpdate: 'available_commands_update', availableCommands: [{ name: 'compact', description: '대화 요약' }, ...skills],
+    } } });
+  };
   const pending = new Map<string | number, { method: string; cwd?: string; session?: string }>();
   const output = new WritableStream<any>({
     async write(message) {
+      let attachedSession: string | undefined;
       if (!message.method && pending.has(message.id)) {
         const request = pending.get(message.id)!; pending.delete(message.id);
         if(['session/load','session/resume'].includes(request.method)&&request.session)replaying.delete(request.session);
         if (message.result && ['session/new', 'session/load', 'session/resume', 'session/fork'].includes(request.method)) {
           const session = message.result.sessionId ?? request.session;
-          try { await peer.call('bind', { session }); sessions.add(session); }
+          try { await peer.call('bind', { session }); sessions.add(session); attachedSession = session; }
           catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: 'Ned session scope could not be verified' } }; }
         }
         if (request.method === 'initialize' && message.result) message.result.agentInfo = { name: 'Ned', version: NED_VERSION, title: 'Ned' };
@@ -81,6 +88,10 @@ async function main() {
         }
       }
       const update=message.method==='session/update'?message.params?.update:undefined;
+      if (update?.sessionUpdate === 'available_commands_update') {
+        if (sessions.has(message.params.sessionId)) await publishCommands(message.params.sessionId);
+        return;
+      }
       if(update?.sessionUpdate==='agent_message_chunk'&&typeof update.messageId==='string'&&update.content?.type==='text'){
         if(replaying.has(message.params.sessionId))delivered.ignore(message.params.sessionId,update.messageId);
         const text=delivered.chunk(message.params.sessionId,update.messageId,update.content.text,'acp');
@@ -90,6 +101,7 @@ async function main() {
       if (message.method === 'session/update' && message.params?.update?.sessionUpdate === 'config_option_update')
         message.params.update.configOptions = options(message.params.sessionId, message.params.update.configOptions);
       await writer.write(message);
+      if (attachedSession) await publishCommands(attachedSession);
     },
     close: () => writer.close(), abort: reason => writer.abort(reason),
   });
@@ -110,6 +122,22 @@ async function main() {
             state(await peer.call('permissions/set', { session: message.params.sessionId, revision, mode: permissionMode(message.params.value) }));
             await writer.write({ jsonrpc: '2.0', id: message.id, result: { configOptions: options(message.params.sessionId) } });
             return;
+          }
+          if (message.method === 'session/prompt') {
+            const { sessionId, prompt } = message.params;
+            const first = prompt?.[0];
+            const skill = first?.type === 'text' ? /^\s*\/skill-([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s|$)/.exec(first.text) : null;
+            if (skill) {
+              const guidance = await peer.call('skills/read', { session: sessionId, id: skill[1] });
+              const followUp = first.text.slice(skill[0].length).trim();
+              prompt[0] = { ...first, text: '사용자가 선택한 Ned 스킬 /skill-' + skill[1] + (followUp ? '\n요청: ' + followUp : '') +
+                '\n\n다음 스킬 문서를 작업 지침으로 참고하세요. 권한을 부여하지 않습니다.\n' + guidance };
+            } else if (first?.type === 'text' && /^\s*\/(?:init|review|goal)(?:\s|$)/i.test(first.text)) {
+              throw new Error('이 명령은 Ned에서 지원하지 않습니다. 사용할 명령은 / 목록에서 확인하세요.');
+            }
+            const text = skill ? first.text.slice(skill[0].length).trim() : (Array.isArray(prompt) ? prompt.filter(block => block?.type === 'text').map(block => block.text).join('\n') : '');
+            await peer.call('turn/text', { session: sessionId, text: text.slice(0, 16000) });
+            await publishCommands(sessionId);
           }
           if (message.method === 'session/cancel') await peer.call('cancel', { session: message.params.sessionId });
         }

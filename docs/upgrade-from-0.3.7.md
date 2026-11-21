@@ -28,4 +28,8 @@ Ned와 개인 Zed를 종료한 뒤 0.3.10 TGZ를 새 폴더에 풀고 EXE를 실
 편집기 배치·지식·사용자 수정 스킬이 유지됩니다. 구버전 지식 이관이 필요한 경우 원본을
 보존하고 상태 메뉴에 결과를 표시합니다. 개인 Zed 원본 대화는 별도의 가져오기 메뉴에서 선택합니다.
 
-[설치 안내](offline-setup.md) · [대화 가져오기](zed-history-import.md) · [Git](git-and-binary-analysis.md) · [EGM](egm.md) · [검증 기록](validation-0.3.10.md)
+[설치 안내](offline-setup.md) · [대화 가져오기](zed-history-import.md) · [Git](git-and-binary-analysis.md) · [EGM](egm.md) · [검증 기록](archive/validations/validation-0.3.10.md)
+
+## 0.3.11 추가 변경
+
+[0.3.11 변경 사항](changes-0.3.11.md)은 Studio, Git 조회, 스킬·터미널 정책, 지식 저장과 선택 팩을 정리합니다.

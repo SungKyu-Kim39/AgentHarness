@@ -1,4 +1,4 @@
-> 이 문서는 초기 구성의 조사·구현 기록입니다. 아래 버전과 결과는 당시 기준이며, 현재 배포 상태는 [Ned 0.3.7 검증 기록](validation-0.3.7.md)에서 확인할 수 있습니다.
+> 이 문서는 초기 구성의 조사·구현 기록입니다. 아래 버전과 결과는 당시 기준이며, 현재 배포 상태는 [Ned 0.3.7 검증 기록](archive/validations/validation-0.3.7.md)에서 확인할 수 있습니다.
 
 # MCP 6종 소스 검증 — 2026-11-10 UTC
 
@@ -37,6 +37,6 @@ Windows PE import table 698개를 정적으로 조사하여 ONNXRuntime의 MSVCP
 
 Windows Chrome for Testing 157.0.8103.50을 확보했고 완성 staging의 21,031개 파일을 manifest와 전수 대조했습니다. `complete=true`, 누락은 없습니다. 완성 manifest SHA-256은 `002382abd6455f38e943182384b6bddb9e3c1973aae2ef13db6fab1387d901d1`입니다. Chrome ZIP SHA-256은 `36088dd9c76c992f6e745fc20f94aca873f69c3331ce25ea3df36835cc4af73f`이며 공식 응답 MD5·ZIP CRC와 대조했습니다. 이전 정책 403/미완성 manifest 기록은 현재 상태로 사용하지 않습니다.
 
-NSIS의 원본 데이터 2 GB 한계를 피하도록 파일별 zlib 모드로 전체 EXE를 생성했습니다. 실제 EXE archive를 검사·추출한 뒤 MCP 21,031개 파일 전체를 현재 manifest와 대조했습니다. 상세 EXE·앱·CLI 해시와 48개 회귀 검사 결과는 [0.2.2 검증 상태](validation-0.2.2.md)에 있습니다. 이 설치 리소스 검사는 위 Linux 실호출 검사와 구분합니다.
+NSIS의 원본 데이터 2 GB 한계를 피하도록 파일별 zlib 모드로 전체 EXE를 생성했습니다. 실제 EXE archive를 검사·추출한 뒤 MCP 21,031개 파일 전체를 현재 manifest와 대조했습니다. 상세 EXE·앱·CLI 해시와 48개 회귀 검사 결과는 [0.2.2 검증 상태](archive/validations/validation-0.2.2.md)에 있습니다. 이 설치 리소스 검사는 위 Linux 실호출 검사와 구분합니다.
 
 Windows 10/11 일반 사용자 설치·6종 실호출·DLL·경로/ACL·Job Object 자식 종료·DNS/TCP 관찰, 실제 사내 Qwen·임베딩 검증이 남아 있습니다. `releaseReady`는 false입니다.

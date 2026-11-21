@@ -6,6 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { ProjectFiles } from './files';
 import { PrivateMcpClient, type McpToolResult } from './mcp-client';
+import { GitTools } from '../../distribution/git-tools';
 import { BrowserProxy } from './browser-proxy';
 import runtimeLock from '../../mcp-runtime-lock.json';
 import { matchesPinnedRuntimeManifest } from './runtime-pins';
@@ -15,7 +16,7 @@ const str = { type: 'string' };
 const obj = (properties: Record<string, unknown>, required: string[]) => ({ type: 'object', properties, required, additionalProperties: false });
 export const extensionTools: ExtensionTool[] = [
   { name: 'semantic_symbols', description: 'Actual read-only Serena + pinned clangd C/C++ overview, definition or references, in a controlled project snapshot. Reports compile/SDK limitations. On failure explicitly label text-search fallback.', inputSchema: obj({ operation: { type: 'string', enum: ['overview', 'definition', 'references'] }, path: str, symbol: str }, ['operation', 'path']) },
-  { name: 'git_inspect', description: 'Actual Git MCP status, diff, log or show in a sanitized repository snapshot. No commit, checkout, hooks, network or repository changes.', inputSchema: obj({ operation: { type: 'string', enum: ['status', 'diff', 'staged', 'log', 'show'] }, revision: str }, ['operation']) },
+  { name: 'git_inspect', description: 'Read-only bundled Git status, diff, log or show with bounded records and optional literal project paths. Status filters: M, A, D, U, ? and others.', inputSchema: obj({ operation: { type: 'string', enum: ['status', 'diff', 'staged', 'log', 'show'] }, revision: str, paths: { type: 'array', items: str, maxItems: 32 }, statuses: { type: 'array', items: str, maxItems: 8 }, limit: { type: 'integer', minimum: 1, maximum: 500 } }, ['operation']) },
   { name: 'document_read', description: 'Actual MarkItDown MCP converts a selected local PDF, DOCX, PPTX, XLSX, XLS, CSV or text file to Markdown. No URL, cloud, OCR, macros or document editing.', inputSchema: obj({ path: str }, ['path']) },
   { name: 'data_query', description: 'Actual DuckDB Local MCP: one SELECT over copied CSV/TSV/Parquet inputs (views input_0, input_1, ...) or one local .duckdb database. No HTTP, extensions, external files, SQL settings or writes. Up to 200 rows.', inputSchema: obj({ paths: { type: 'array', items: str, minItems: 1, maxItems: 8 }, sql: str }, ['paths', 'sql']) },
   { name: 'browser_check', description: 'Actual Playwright or Chrome DevTools MCP checks one local HTTP development page after native approval. Returns accessibility snapshot and console errors; optional screenshot and DevTools performance trace with reload. Isolated browser, one origin, GET/HEAD only; no clicks, JavaScript tools, uploads, internet or personal profiles.', inputSchema: obj({ url: str, backend: { type: 'string', enum: ['playwright', 'devtools'] }, screenshot: { type: 'boolean' }, performance: { type: 'boolean' } }, ['url', 'backend']) },
@@ -28,6 +29,7 @@ export class McpExtensions {
   private stopping = new Set<Promise<void>>();
   private stopped = false; private uncertain = false;
   private verified?: Promise<void>;
+  private git?: GitTools;
   constructor(readonly root: string, readonly resources: string, readonly options: { approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>; reservedPorts?(): number[]; paths?: ExtensionPaths; diagnostic?(text: string): void }) {}
   private paths(): ExtensionPaths {
     if (this.options.paths) return this.options.paths;
@@ -76,37 +78,25 @@ export class McpExtensions {
       budget.bytes += data.length; await mkdir(path.dirname(target), { recursive: true, mode: 0o700 }); await writeFile(target, data, { mode: 0o600 });
     } finally { await file.close(); }
   }
-  private async snapshot(project: string, work: string, git = false, budget = { bytes: 0 }) {
+  private async snapshot(project: string, work: string, budget = { bytes: 0 }) {
     const files = new ProjectFiles(project); const source = path.join(work, 'source');
     await mkdir(source, { recursive: true, mode: 0o700 });
     for (const relative of await files.list()) {
-      if (!git && (relative.split('/').some(p => ['.serena', '.clangd', '.cache', '.vscode', '.idea'].includes(p.toLowerCase())) || /(^|\/)(opencode\.jsonc?|\.mcp\.json|compile_flags\.txt)$/i.test(relative))) continue;
+      if ((relative.split('/').some(p => ['.serena', '.clangd', '.cache', '.vscode', '.idea'].includes(p.toLowerCase())) || /(^|\/)(opencode\.jsonc?|\.mcp\.json|compile_flags\.txt)$/i.test(relative))) continue;
       const original = await files.resolve(relative); const stat = await lstat(original);
       if (stat.isFile() && stat.size <= 2 * 1024 * 1024) await this.copy(original, path.join(source, relative), budget, 2 * 1024 * 1024);
-    }
-    if (git) {
-      const metadata = await files.resolve('.git');
-      if (!(await lstat(metadata)).isDirectory()) throw new Error('프로젝트 안의 일반 .git 디렉터리가 필요합니다. 외부 worktree는 지원하지 않습니다.');
-      let count = 0;
-      const visit = async (relative: string, depth: number) => {
-        if (depth > 12) throw new Error('Git 메타데이터 깊이 제한 초과');
-        const resolved = await files.resolve('.git/' + relative); const stat = await lstat(resolved);
-        if (stat.isDirectory()) for (const entry of await readdir(resolved)) await visit(relative + '/' + entry, depth + 1);
-        else {
-          if (++count > 20000 || /(^|\/)(alternates|http-alternates|commondir|gitdir|config|hooks)$/.test(relative)) throw new Error('외부 Git 저장소 연결 또는 비정상 메타데이터는 허용하지 않습니다.');
-          await this.copy(resolved, path.join(source, '.git', relative), budget);
-        }
-      };
-      for (const relative of ['HEAD', 'index', 'objects', 'refs', 'packed-refs', 'shallow']) {
-        if (await access(path.join(metadata, relative)).then(() => true, () => false)) await visit(relative, 0);
-      }
-      await writeFile(path.join(source, '.git/config'), '[core]\nrepositoryformatversion = 0\nbare = false\nfilemode = false\nhooksPath = /dev/null\n');
     }
     return source;
   }
   async call(name: string, args: unknown, project: string, signal?: AbortSignal): Promise<McpToolResult> {
     if (this.stopped || this.uncertain || this.stopping.size || [...this.clients].some(c => c.stopping)) throw new Error('MCP 종료가 확인되지 않았거나 앱이 중지되었습니다. 새 실행을 차단합니다.');
     signal?.throwIfAborted();
+    if (name === 'git_inspect') {
+      const a = z.object({ operation: z.enum(['status', 'diff', 'staged', 'log', 'show']), revision: z.string().regex(/^[a-zA-Z0-9_./~^{}@+-]{1,128}$/).refine(s => !s.startsWith('-')).optional(), paths: z.array(relative).max(32).optional(), statuses: z.array(z.string().regex(/^[MADRCUT?!]$/)).max(8).optional(), limit: z.number().int().min(1).max(500).optional() }).strict().parse(args);
+      this.git ??= new GitTools(this.root, this.resources, this.options.approve, () => this.verify(), this.paths().git);
+      const result = await this.git.inspect(project, a, signal);
+      return { isError: result.status !== 'ok', content: [{ type: 'text', text: JSON.stringify(result) }] };
+    }
     await this.verify(); signal?.throwIfAborted();
     const base = path.join(this.root, 'mcp-work'); await mkdir(base, { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(base, 'run-')); const paths = this.paths(); const files = new ProjectFiles(project);
@@ -118,15 +108,8 @@ export class McpExtensions {
     };
     try {
       let service: string; let tool: string; let parameters: Record<string, unknown>; let note = ''; let screenshot = false; let performance = false;
-      const gitBudget = { bytes: 0 };
       let extra: Record<string, unknown> = {};
-      if (name === 'git_inspect') {
-        const a = z.object({ operation: z.enum(['status', 'diff', 'staged', 'log', 'show']), revision: z.string().regex(/^[a-zA-Z0-9_./~^{}@+-]{1,128}$/).refine(s => !s.startsWith('-')).optional() }).strict().parse(args);
-        const source = await this.snapshot(project, work, true, gitBudget); service = 'git';
-        tool = { status: 'git_status', diff: 'git_diff_unstaged', staged: 'git_diff_staged', log: 'git_log', show: 'git_show' }[a.operation];
-        parameters = { repo_path: source, ...(a.operation === 'show' ? { revision: a.revision ?? 'HEAD' } : {}), ...(a.operation === 'log' ? { max_count: 20 } : {}) };
-        note = 'Sanitized repository snapshot; original repository and config untouched. Tracked files are copied from the index (up to 20,000 files, 64 MiB/file, 256 MiB total). Untracked discovery is limited to the host file list (4,000 files, 2 MiB/file; dependency/build folders excluded).';
-      } else if (name === 'semantic_symbols') {
+      if (name === 'semantic_symbols') {
         const a = z.object({ operation: z.enum(['overview', 'definition', 'references']), path: relative, symbol: z.string().min(1).max(512).optional() }).strict().parse(args);
         if (a.operation !== 'overview' && !a.symbol) throw new Error('심볼 이름이 필요합니다.');
         await files.resolve(a.path); const source = await this.snapshot(project, work); await access(path.join(source, a.path));
@@ -173,21 +156,9 @@ export class McpExtensions {
       const launchArgs = process.platform === 'win32' ? ['-I', '-B', paths.supervisor, executable, ...argv] : argv;
       const env: NodeJS.ProcessEnv = { HOME: work, USERPROFILE: work, APPDATA: work, LOCALAPPDATA: work, PATH: path.dirname(paths.git), TEMP: work, TMP: work, ELECTRON_RUN_AS_NODE: '1', PYTHONDONTWRITEBYTECODE: '1', DO_NOT_TRACK: '1' };
       for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR']) if (process.env[key]) env[key] = process.env[key];
-      const allowedTools = service === 'playwright' ? ['browser_navigate', 'browser_snapshot', 'browser_console_messages', 'browser_take_screenshot', 'browser_close'] : service === 'devtools' ? ['navigate_page', 'take_snapshot', 'list_console_messages', 'take_screenshot', 'performance_start_trace', 'close_page'] : service === 'git' ? [tool, 'ned_snapshot_tracked_paths'] : [tool];
+      const allowedTools = service === 'playwright' ? ['browser_navigate', 'browser_snapshot', 'browser_console_messages', 'browser_take_screenshot', 'browser_close'] : service === 'devtools' ? ['navigate_page', 'take_snapshot', 'list_console_messages', 'take_screenshot', 'performance_start_trace', 'close_page'] : [tool];
       client = new PrivateMcpClient({ executable: binary, args: launchArgs, cwd: work, env, allowedTools, timeout: 90000, diagnostic: this.options.diagnostic });
       this.clients.add(client); signal?.addEventListener('abort', abort, { once: true }); signal?.throwIfAborted();
-      if (service === 'git') {
-        const index = await client.call('ned_snapshot_tracked_paths', {}, signal);
-        if (index.isError) throw new Error('Git index의 읽기 범위를 확인하지 못했습니다.');
-        const tracked = z.array(relative).max(20000).parse(JSON.parse(index.content.filter(c => c.type === 'text').map(c => c.text).join('')));
-        for (const relative of tracked) {
-          signal?.throwIfAborted();
-          if (relative.split('/').some(p => p.toLowerCase() === '.git')) throw new Error('Git index가 내부 관리 경로를 가리킵니다.');
-          const original = await files.resolve(relative).catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return undefined; throw error; });
-          const target = path.join(work, 'source', relative);
-          if (original && !await access(target).then(() => true, () => false)) await this.copy(original, target, gitBudget);
-        }
-      }
       const result = await client.call(tool, parameters, signal);
       if (service === 'serena') {
         const context = await readFile(path.join(work, 'analysis-context.json'), 'utf8').catch(() => '{}');
@@ -215,7 +186,7 @@ export class McpExtensions {
   }
   async close() {
     this.stopped = true;
-    const results = await Promise.allSettled([...this.clients].map(client => client.close()));
+    const results = await Promise.allSettled([...this.clients].map(client => client.close()).concat(this.git?.close() ?? []));
     if (results.some(r => r.status === 'rejected')) { this.uncertain = true; throw new Error('MCP 자식 프로세스 중지를 확인하지 못했습니다.'); }
   }
 }

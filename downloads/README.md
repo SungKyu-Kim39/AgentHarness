@@ -5,7 +5,7 @@ Windows x64 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 
 - [반입 TGZ](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.10/Ned-0.3.10-windows-x64.tgz) · 1914968917 bytes
 - [설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.10/Ned-0.3.10-win-x64.exe) · 1535084915 bytes
 - [TGZ SHA-256](Ned-0.3.10-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.10-win-x64.exe.sha256)
-- [변경 사항](../docs/changes-0.3.10.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../docs/validation-0.3.10.md)
+- [변경 사항](../docs/archive/releases/changes-0.3.10.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../docs/archive/validations/validation-0.3.10.md)
 - [설치 감사](Ned-0.3.10-installer-audit.json) · [TGZ 검사](Ned-0.3.10-bundle-verification.json) · [Windows 결과](Ned-0.3.10-windows-offline-smoke.json) · [공개 다운로드 검증](Ned-0.3.10-public-verification.json) · [배포 상태](Ned-0.3.10-release-state.json)
 
 ---
@@ -17,7 +17,7 @@ Windows x64 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 
 - [반입 TGZ](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.9/Ned-0.3.9-windows-x64.tgz) — 1915581654 bytes
 - [설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.9/Ned-0.3.9-win-x64.exe) — 1535624809 bytes
 - [TGZ SHA-256](Ned-0.3.9-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.9-win-x64.exe.sha256)
-- [변경 사항](../docs/changes-0.3.9.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../docs/validation-0.3.9.md)
+- [변경 사항](../docs/archive/releases/changes-0.3.9.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../docs/archive/validations/validation-0.3.9.md)
 - [설치 감사](Ned-0.3.9-installer-audit.json) · [TGZ 검사](Ned-0.3.9-bundle-verification.json) · [Windows 결과](Ned-0.3.9-windows-offline-smoke.json) · [공개 확인](Ned-0.3.9-public-verification.json) · [배포 상태](Ned-0.3.9-release-state.json)
 
 기본 스킬 74종을 로컬 준비하고 변경분만 적용합니다. 지식 서비스의 준비가 대화를 막지 않으며 구체적인 시작 단계를 표시합니다. Studio 복구, CMD, 기존 개인 Zed 대화 가져오기와 EGM 7종을 포함합니다. 기본 Zed Agent의 필수 name·모델 통신 경로도 보완했습니다.
@@ -33,7 +33,7 @@ Windows Server의 설치 후 52건 중 52건 통과·0건 제외·실패 0건입
 - [폐쇄망 반입 TGZ · 설치 EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8-rebuild1/Ned-0.3.8-rebuild1-windows-x64.tgz) — 1,913,956,648 bytes
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8-rebuild1/Ned-0.3.8-rebuild1-win-x64.exe) — 1,534,583,160 bytes
 - [TGZ SHA-256](Ned-0.3.8-rebuild1-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.8-rebuild1-win-x64.exe.sha256)
-- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1) · [검증 기록](../docs/validation-0.3.8-rebuild1.md) · [Windows 32건](Ned-0.3.8-rebuild1-windows-offline-smoke.json) · [전체 파일 대조](Ned-0.3.8-rebuild1-installer-audit.json) · [반입 묶음 검사](Ned-0.3.8-rebuild1-bundle-verification.json) · [공개 다운로드 검사](Ned-0.3.8-rebuild1-public-verification.json) · [배포 상태](Ned-0.3.8-rebuild1-release-state.json)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8-rebuild1) · [검증 기록](../docs/archive/validations/validation-0.3.8-rebuild1.md) · [Windows 32건](Ned-0.3.8-rebuild1-windows-offline-smoke.json) · [전체 파일 대조](Ned-0.3.8-rebuild1-installer-audit.json) · [반입 묶음 검사](Ned-0.3.8-rebuild1-bundle-verification.json) · [공개 다운로드 검사](Ned-0.3.8-rebuild1-public-verification.json) · [배포 상태](Ned-0.3.8-rebuild1-release-state.json)
 
 Ned Agent는 조사·지정 파일 구현을 실제 하위 Agent에게 위임합니다. 부모의 모델·프로젝트·권한을 따르고, 동시에 두 작업을 실행합니다. 하위 결과를 부모 대화에 통합하며 부모의 첫 답변이 끝난 뒤에도 편집기에 전달합니다. 대화 중지·새 요청·앱 종료 시 하위 작업도 정리합니다. [서브에이전트 안내](../docs/subagents.md)를 참고하세요.
 
@@ -56,7 +56,7 @@ Windows Server 실행기의 설치 시간은 48.173초입니다. 직원 Windows 
 - [폐쇄망 반입 TGZ · EXE/설정/설명서/검증/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-windows-x64.tgz) — 1,837,611,541 bytes
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.8/Ned-0.3.8-win-x64.exe) — 1,511,354,669 bytes
 - [TGZ SHA-256](Ned-0.3.8-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.8-win-x64.exe.sha256)
-- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8) · [검증 보고서](../docs/validation-0.3.8.md) · [전체 파일 대조](Ned-0.3.8-installer-audit.json) · [반입 묶음 검사](Ned-0.3.8-bundle-verification.json) · [Windows 검사](Ned-0.3.8-windows-offline-smoke.json) · [배포 상태](Ned-0.3.8-release-state.json)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.8) · [검증 보고서](../docs/archive/validations/validation-0.3.8.md) · [전체 파일 대조](Ned-0.3.8-installer-audit.json) · [반입 묶음 검사](Ned-0.3.8-bundle-verification.json) · [Windows 검사](Ned-0.3.8-windows-offline-smoke.json) · [배포 상태](Ned-0.3.8-release-state.json)
 
 GitHub Release 첨부 파일 7개를 인증 없이 전부 다운로드해 크기와 SHA-256을 확인했습니다. [공개 다운로드 결과](Ned-0.3.8-public-verification.json)를 남겼습니다. 첨부 다운로드가 어려울 때는 [TGZ 보조 링크](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-windows-x64.tgz)와 [EXE 보조 링크](https://github.com/SungKyu-Kim39/AgentHarness/raw/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-win-x64.exe)를 사용할 수 있습니다.
 
@@ -83,7 +83,7 @@ Ghidra·Java를 포함해 설치 논리 크기는 약 3.93GB입니다. 이번 Wi
 - [폐쇄망 반입 TGZ · 설치 EXE/설정/상세 설명서/대응 소스](https://github.com/SungKyu-Kim39/AgentHarness/raw/348787c011ed2bc5cac8a0074a75f4376ee601e2/downloads/Ned-0.3.7-rebuild1-windows-x64.tgz) — 1,182,931,028 bytes
 - [설치 EXE 단독](https://github.com/SungKyu-Kim39/AgentHarness/raw/348787c011ed2bc5cac8a0074a75f4376ee601e2/downloads/Ned-0.3.7-rebuild1-win-x64.exe) — 1,045,627,103 bytes
 - [TGZ SHA-256](Ned-0.3.7-rebuild1-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.7-rebuild1-win-x64.exe.sha256)
-- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1) · [검증 기록](../docs/validation-0.3.7-rebuild1.md) · [전체 파일 대조](Ned-0.3.7-rebuild1-installer-audit.json) · [반입 묶음 검사](Ned-0.3.7-rebuild1-bundle-verification.json) · [공개 다운로드 검사](Ned-0.3.7-rebuild1-public-verification.json)
+- [릴리스](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.7-rebuild1) · [검증 기록](../docs/archive/validations/validation-0.3.7-rebuild1.md) · [전체 파일 대조](Ned-0.3.7-rebuild1-installer-audit.json) · [반입 묶음 검사](Ned-0.3.7-rebuild1-bundle-verification.json) · [공개 다운로드 검사](Ned-0.3.7-rebuild1-public-verification.json)
 
 OpenViking을 0.5.5로 업데이트하고 LiteLLM은 해당 버전의 의존 조건에 맞춰 1.103.10으로 고정했습니다. 새 계정·프로젝트 지식·기본 스킬에는 `ned` 이름을 사용합니다. 기존 자료는 비공개 원본 백업과 임시 복원·재색인을 거쳐 새 활성 경로로 전환합니다. 과거 이름을 찾는 호환 코드와 백업은 보존합니다. [업데이트 안내](../docs/openviking-0.5.5-update.md)를 확인하세요.
 
@@ -164,7 +164,7 @@ Windows 폴더 선택 문제 대응: **알림 영역 Ned → 프로젝트 폴더
 
 검사45개 통과, 선택적 Windows/Wine 실행1개 제외. 고정 NSIS 컴파일·타입·빌드·스킬 36개·실제 Linux OpenCode/ACP 연동과 설치 EXE/TGZ 해시·ASCII·소스 대응 검사를 수행했습니다. 실제 Windows 설치·폴더 선택·데스크톱 조작·사내망 전체 기능 검증은 별도 확인 대상입니다.
 
-[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/validation-0.3.6.md) · [라이선스](../docs/license-policy.md)
+[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/archive/validations/validation-0.3.6.md) · [라이선스](../docs/license-policy.md)
 
 ---
 
@@ -182,7 +182,7 @@ Ned·개인 Zed를 종료하고 EXE로 업데이트합니다. 기존 모델 설�
 
 빌드·타입·기본 스킬 36개 검증, 집중 검사39개(실패0/선택적 Wine 실행1개 제외), 실제 Linux OpenCode/ACP의 메뉴 설정·자동 수정·모델 선택 유지·해제 동기화·이전 선택 거절 검사를 통과했습니다. 실제 설치 EXE의 앱 번들 초기화/구성 요소 해시/ASCII 경로와 TGZ 내부 EXE/소스를 대조했습니다. Windows 실제 메뉴 렌더링과 사내망 전체 기능 검증은 별도 배포 확인 대상입니다. 0.3.4의 시작 오류/내보내기 수정도 포함하며 이전 패치를 추가 적용하지 않습니다.
 
-[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/validation-0.3.5.md) · [라이선스](../docs/license-policy.md)
+[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/archive/validations/validation-0.3.5.md) · [라이선스](../docs/license-policy.md)
 
 ---
 
@@ -200,7 +200,7 @@ Ned와 개인 Zed를 종료하고 새 폴더에 압축 해제한 EXE로 업데�
 
 새 버전 집중 검사는 20개 통과(실패 0, 선택적 Wine 설치 실행 1개 제외)했고 타입/빌드/스킬 36개 검사가 통과했습니다. 실제 EXE에서 추출한 앱 번들의 모듈 초기화와 구성 요소 해시, ASCII 경로 및 TGZ 내부 EXE·대응 소스를 대조했습니다. 실제 Windows/사내망 전체 기능 검증 결과와 구분합니다. 원본 0.3.3 배포 파일과 패치는 아래에 그대로 보존합니다.
 
-[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/validation-0.3.4.md) · [라이선스](../docs/license-policy.md)
+[설치 안내](../docs/offline-setup.md) · [검증 범위](../docs/archive/validations/validation-0.3.4.md) · [라이선스](../docs/license-policy.md)
 
 ---
 
@@ -208,7 +208,7 @@ Ned와 개인 Zed를 종료하고 새 폴더에 압축 해제한 EXE로 업데�
 
 ## 0.3.3 실행 오류 수정 패치
 
-`Cannot find module './impl/format'`은 0.3.3 JSONC 라이브러리 번들 오류입니다. [실행 수정 패치 1 · 약 4.2MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-jsonc-startup-fix-1.tgz)를 새 폴더에 압축 해제합니다. Ned·개인 Zed를 종료하고 `APPLY_FIX.cmd`를 실행하여 `applied` 또는 `already-applied`, `EXIT_CODE=0`을 확인한 뒤 기존 바로가기로 실행합니다. 설정·대화·지식·편집기 환경을 유지하며 원래 앱 번들을 백업합니다. 복구는 `ROLLBACK_FIX.cmd`입니다. 원본 0.3.3 EXE/TGZ는 변경하지 않았으므로 해당 설치본에는 이 패치가 필요합니다. [적용 안내](../docs/ned-jsonc-startup-fix-1.txt) · [SHA-256](Ned-jsonc-startup-fix-1.tgz.sha256) · [검증](Ned-jsonc-startup-fix-1-validation.json).
+`Cannot find module './impl/format'`은 0.3.3 JSONC 라이브러리 번들 오류입니다. [실행 수정 패치 1 · 약 4.2MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-jsonc-startup-fix-1.tgz)를 새 폴더에 압축 해제합니다. Ned·개인 Zed를 종료하고 `APPLY_FIX.cmd`를 실행하여 `applied` 또는 `already-applied`, `EXIT_CODE=0`을 확인한 뒤 기존 바로가기로 실행합니다. 설정·대화·지식·편집기 환경을 유지하며 원래 앱 번들을 백업합니다. 복구는 `ROLLBACK_FIX.cmd`입니다. 원본 0.3.3 EXE/TGZ는 변경하지 않았으므로 해당 설치본에는 이 패치가 필요합니다. [적용 안내](../docs/archive/fixes/ned-jsonc-startup-fix-1.txt) · [SHA-256](Ned-jsonc-startup-fix-1.tgz.sha256) · [검증](Ned-jsonc-startup-fix-1-validation.json).
 
 ## OpenViking 자료 내보내기 수정 도구 2
 
@@ -226,7 +226,7 @@ Ned와 개인 Zed를 완전히 종료하고 새 폴더에 압축 해제한 EXE�
 
 전체 회귀 119개와 마지막 변경 집중 36개·설정 정책 4개 검사가 통과했습니다. 실제 설치 EXE의 파일/구성 요소 해시와 Ned 아이콘을 검사했고, TGZ 내부 EXE가 같은 해시임을 대조했습니다. 사용자 Windows 진단에서는 네이티브/감독 MCP와 창 18개 조회가 성공했으며, 새 Ned에서의 실제 계산기 조작·작업표시줄 표시는 아직 별도 확인 대상입니다. 아이콘 리소스를 바꾼 관리형 Zed 이미지의 실행 코드·버전 정보는 보존했으며 수정본에는 코드 서명이 없습니다. 원본 소스/고지/변경 스크립트와 해시를 포함합니다.
 
-[설치 안내](../docs/offline-setup.md) · [승인 모드](../docs/approval-modes.md) · [데스크톱 도구](../docs/agent-desktop.md) · [검증 범위](../docs/validation-0.3.3.md) · [라이선스](../docs/license-policy.md). 1.0 실환경 검증 완료를 선언한 릴리스는 아닙니다.
+[설치 안내](../docs/offline-setup.md) · [승인 모드](../docs/approval-modes.md) · [데스크톱 도구](../docs/agent-desktop.md) · [검증 범위](../docs/archive/validations/validation-0.3.3.md) · [라이선스](../docs/license-policy.md). 1.0 실환경 검증 완료를 선언한 릴리스는 아닙니다.
 
 ---
 
@@ -240,17 +240,17 @@ Ned와 개인 Zed를 완전히 종료하고 새 폴더에 압축 해제한 EXE�
 
 설정 가져오기 후 자동 재시작, Windows ACP 콘솔 감독 프로세스, 빈 시작 화면, `ned_host_*` 도구·MCP 이름, 기본 한국어 AGENTS 지침을 포함합니다. Ned/Zed를 완전히 종료한 뒤 새 폴더에 반입 TGZ를 해제하고 EXE로 설치합니다. 기존 설정·이력·지식은 유지합니다. 새 0.3.2 설치에는 아래의 이전 패치를 별도로 적용하지 않습니다.
 
-첫 실행 시 `%APPDATA%\Ned\editor\config\AGENTS.md`에 한국어 기본 지침을 추가하며, 기존 내용과 같은 지침은 보존합니다. [설치 안내](../docs/offline-setup.md) · [소개](../docs/ned-introduction.md) · [검증 범위](../docs/validation-0.3.2.md). 전체 검사 110개와 마지막 한국어 집중 검사가 통과했으며 실제 추출본의 ASCII 경로·구성 요소 해시를 확인했습니다. 전체 Win10/Win11·사내망 실환경 검증 완료를 선언한 1.0 릴리스는 아닙니다.
+첫 실행 시 `%APPDATA%\Ned\editor\config\AGENTS.md`에 한국어 기본 지침을 추가하며, 기존 내용과 같은 지침은 보존합니다. [설치 안내](../docs/offline-setup.md) · [소개](../docs/ned-introduction.md) · [검증 범위](../docs/archive/validations/validation-0.3.2.md). 전체 검사 110개와 마지막 한국어 집중 검사가 통과했으며 실제 추출본의 ASCII 경로·구성 요소 해시를 확인했습니다. 전체 Win10/Win11·사내망 실환경 검증 완료를 선언한 1.0 릴리스는 아닙니다.
 
 ---
 
 # Ned 0.3.1 설정·ACP 수정 패치
 
-[Ned 설정 자동 적용·Windows ACP 수정 패치 1 (약 4.2MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-config-restart-fix-1.tgz)은 원본 0.3.1 또는 시작 수정 패치 1 적용본에 사용합니다. Ned/Zed 완전 종료 → 새 폴더에 압축 해제 → `APPLY_FIX.cmd` → `applied`/`already-applied`, `EXIT_CODE=0` 확인 → Ned 실행 순서입니다. 시작 수정도 포함하며 기존 설정·키·지식은 유지합니다. [안내](../docs/ned-config-restart-fix-1.md) · [해시](Ned-config-restart-fix-1.tgz.sha256) · [검증](Ned-config-restart-fix-1-validation.json). 사용자가 Windows ACP 모델 목록·대화와 JSON 가져오기 후 자동 재시작·적용 성공을 확인했습니다. 도구 이름 Ned 통일은 후속 전체 0.3.2 설치본에 포함합니다.
+[Ned 설정 자동 적용·Windows ACP 수정 패치 1 (약 4.2MB)](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-config-restart-fix-1.tgz)은 원본 0.3.1 또는 시작 수정 패치 1 적용본에 사용합니다. Ned/Zed 완전 종료 → 새 폴더에 압축 해제 → `APPLY_FIX.cmd` → `applied`/`already-applied`, `EXIT_CODE=0` 확인 → Ned 실행 순서입니다. 시작 수정도 포함하며 기존 설정·키·지식은 유지합니다. [안내](../docs/archive/fixes/ned-config-restart-fix-1.md) · [해시](Ned-config-restart-fix-1.tgz.sha256) · [검증](Ned-config-restart-fix-1-validation.json). 사용자가 Windows ACP 모델 목록·대화와 JSON 가져오기 후 자동 재시작·적용 성공을 확인했습니다. 도구 이름 Ned 통일은 후속 전체 0.3.2 설치본에 포함합니다.
 
 ## Ned 0.3.1 시작 수정 패치 1
 
-기본 0.3.1에서 Windows AppData 경로 오류가 확인됐습니다. [시작 수정 패치 1 · 약 4.2MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-startup-fix-1.tgz)을 새 폴더에 해제하고, Ned/Zed 종료 후 `APPLY_FIX.cmd`를 실행합니다. `applied`/`already-applied`, EXIT_CODE=0을 확인하고 Ned를 실행합니다. [상세 안내](../docs/ned-startup-fix-1.md) · [해시](Ned-startup-fix-1.tgz.sha256) · [검증 기록](Ned-startup-fix-1-validation.json)
+기본 0.3.1에서 Windows AppData 경로 오류가 확인됐습니다. [시작 수정 패치 1 · 약 4.2MB](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-startup-fix-1.tgz)을 새 폴더에 해제하고, Ned/Zed 종료 후 `APPLY_FIX.cmd`를 실행합니다. `applied`/`already-applied`, EXIT_CODE=0을 확인하고 Ned를 실행합니다. [상세 안내](../docs/archive/fixes/ned-startup-fix-1.md) · [해시](Ned-startup-fix-1.tgz.sha256) · [검증 기록](Ned-startup-fix-1-validation.json)
 
 이 패치는 표준 private AppData 구성, 시작 화면/최근 프로젝트 진입, 안전한 panic 위치 진단을 제공합니다. 원본을 백업하며 `ROLLBACK_FIX.cmd`로 복구할 수 있습니다. 모델 설정·대화·지식은 바꾸지 않습니다. 실제 GUI 성공은 설치 PC에서 확인 중입니다. 아래의 기존 전체 설치 파일은 이 별도 패치를 포함하지 않습니다.
 
@@ -270,7 +270,7 @@ Windows x64 검증 후보입니다. 시작 안내창, agent-desktop 승인 도�
 
 기존 L-Vibe와 Zed를 완전히 종료하고 TGZ의 EXE로 설치한 뒤 **Ned 바로가기**를 실행합니다. 기존 설정·기록·지식은 원본을 보존하여 이관합니다. 첫 실행은 Ned 아이콘과 단계별 문구를 표시합니다. 모델·임베딩 대기는 기본 시간 제한을 두지 않습니다.
 
-[검증 보고서](../docs/validation-0.3.1.md) · [실제 설치 EXE 추출 감사](Ned-0.3.1-installer-audit.json) · [반입 manifest](Ned-0.3.1-manifest.json) · [검사 결과](Ned-0.3.1-validation.json) · [공개 다운로드 확인](Ned-0.3.1-public-verification.json) · [설치 안내](../docs/offline-setup.md) · [agent-desktop 범위](../docs/agent-desktop.md)
+[검증 보고서](../docs/archive/validations/validation-0.3.1.md) · [실제 설치 EXE 추출 감사](Ned-0.3.1-installer-audit.json) · [반입 manifest](Ned-0.3.1-manifest.json) · [검사 결과](Ned-0.3.1-validation.json) · [공개 다운로드 확인](Ned-0.3.1-public-verification.json) · [설치 안내](../docs/offline-setup.md) · [agent-desktop 범위](../docs/agent-desktop.md)
 
 94,237개 설치 파일의 ASCII 경로와 고정 구성 요소를 실제 EXE에서 대조했습니다. TGZ 안의 EXE 해시도 일치합니다. 빌드 소스는 `38f174d12ef91679138a46e29be562b326e6f8d0`입니다. 릴리스의 직접 다운로드 링크는 이 저장소의 LFS 파일을 가리킵니다. 현재 연결의 releases 첨부 업로드는 401로 거절되어 별도 첨부 파일은 제공하지 못했습니다.
 
@@ -298,7 +298,7 @@ Windows x64 검증 후보입니다. 시작 안내창, agent-desktop 승인 도�
 
 TGZ를 압축 해제하고 EXE 설치 → 중앙 JSON 편집 → Ned 실행 → 프로젝트 선택 → Ctrl+Shift+A로 Ned 대화를 엽니다. 기존 L-Vibe·Zed는 먼저 종료합니다. 모델·기록·지식은 원본을 보존하여 이관합니다.
 
-[소개](../docs/ned-introduction.md) · [설치·설정](../docs/offline-setup.md) · [검증 상태](../docs/validation-0.3.0.md) · [라이선스](../docs/license-policy.md) · [파일 manifest](Ned-0.3.0-manifest.json) · [실제 EXE 추출 감사](Ned-0.3.0-installer-audit.json) · [공개 다운로드 검증](Ned-0.3.0-public-verification.json)
+[소개](../docs/ned-introduction.md) · [설치·설정](../docs/offline-setup.md) · [검증 상태](../docs/archive/validations/validation-0.3.0.md) · [라이선스](../docs/license-policy.md) · [파일 manifest](Ned-0.3.0-manifest.json) · [실제 EXE 추출 감사](Ned-0.3.0-installer-audit.json) · [공개 다운로드 검증](Ned-0.3.0-public-verification.json)
 
 설치기 SHA-256: `78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b`
 
@@ -347,7 +347,7 @@ MCP 6종·고정 브라우저·기본 스킬 34개와 기존 개인 지식 가�
 
 실제 EXE 추출 94,210개 파일 및 ASAR 11,584개 경로가 모두 ASCII이며 런타임 전수 해시를 확인했습니다. 실제 ASAR에서 무제한 응답 대기 기본값과 수정 코드를 확인했습니다. TGZ 38개 항목/35개 파일·34개 체크섬, 소스 548개 항목도 검사했습니다. 소스 커밋은 `924833e321173fe20a237ab0123702a135d6fae4`입니다.
 
-[0.2.7 검증 보고서](../docs/validation-0.2.7.md) · [EXE 검사 기록](L-Vibe-0.2.7-runtime-audit.json) · [TGZ 검사 기록](L-Vibe-0.2.7-bundle-audit.json) · [설치 안내](../docs/offline-setup.md) · [설정 복구](../docs/configuration-recovery.md)
+[0.2.7 검증 보고서](../docs/archive/validations/validation-0.2.7.md) · [EXE 검사 기록](L-Vibe-0.2.7-runtime-audit.json) · [TGZ 검사 기록](L-Vibe-0.2.7-bundle-audit.json) · [설치 안내](../docs/offline-setup.md) · [설정 복구](../docs/configuration-recovery.md)
 
 파일은 **work/downloads의 Git LFS**로 제공합니다. GitHub Releases와 구분합니다. 위 링크로 받을 때 Git LFS 설치는 필요하지 않습니다. 소스 clone의 작은 pointer 파일을 설치본으로 사용하지 않습니다. 이전 0.2.6과 검사 기록도 보존합니다.
 

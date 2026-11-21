@@ -1,8 +1,8 @@
 # Ned
 
-[0.3.10 변경 사항](docs/changes-0.3.10.md) · [검증](docs/validation-0.3.10.md)
+[0.3.11 변경 사항](docs/changes-0.3.11.md) · [검증](docs/validation-0.3.11.md)
 
-최신 사전 릴리스는 [Ned 0.3.10](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.10)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.3.10.md).
+최신 사전 릴리스는 [Ned 0.3.10](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.10)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/archive/validations/validation-0.3.10.md).
 
 Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이기 위해 만들었습니다.
 
@@ -12,7 +12,7 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
 
-0.3.10은 Ned Agent의 CMD·PowerShell 실행과 터미널 패널의 셸 선택, 사용자 글로벌 스킬을 제공합니다. OpenViking Studio의 화면 확인과 재시도를 보완했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
+0.3.11에는 [지식 저장·검색](docs/knowledge-notes.md)과 [Core·리버싱 팩](docs/offline-packs.md)을 추가했습니다. Studio, Git 조회, 슬래시 스킬과 터미널 정책을 보완했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
 
 0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가했습니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 
@@ -20,7 +20,7 @@ AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를
 
 최신 배포는 [Ned 0.3.10](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.10)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
 
-원본 0.3.8은 프로젝트별 Conda 환경 선택과 Python 실행·빌드, Git 커밋, REA/Ghidra 분석, OpenViking Studio와 실패한 개인 지식 가져오기 복구를 추가했습니다. 요약 출력 한도와 공통 프로세스 감독기도 보완했습니다. OpenViking 0.5.5와 스킬 66개를 유지합니다. [검증 기록](docs/validation-0.3.8.md)에서 확인한 동작과 남은 수용 범위를 볼 수 있습니다.
+원본 0.3.8은 프로젝트별 Conda 환경 선택과 Python 실행·빌드, Git 커밋, REA/Ghidra 분석, OpenViking Studio와 실패한 개인 지식 가져오기 복구를 추가했습니다. 요약 출력 한도와 공통 프로세스 감독기도 보완했습니다. OpenViking 0.5.5와 스킬 66개를 유지합니다. [검증 기록](docs/archive/validations/validation-0.3.8.md)에서 확인한 동작과 남은 수용 범위를 볼 수 있습니다.
 
 0.3.7에서는 기본 스킬을 66개로 늘리고, 요청과 대화 문맥에 맞는 지침을 자동으로 불러오도록 했습니다. Python SDK의 파일 배치와 호스트 번들을 정리해 설치 부담도 줄였습니다.
 
@@ -32,7 +32,7 @@ AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를
 | 설치 후 파일 수 | 94,237개 | 55,926개 |
 | 설치 시간 | 50.497초 | 38.935초 |
 
-설치 시간은 같은 Windows Server 실행기에서 이전 버전과 새 버전을 차례로 설치한 결과입니다. 직원 PC의 Windows 10·11에서는 하드웨어와 보안 프로그램에 따라 달라질 수 있습니다. 검사 환경과 남은 확인 항목은 [0.3.7 검증 기록](docs/validation-0.3.7.md)에 정리했습니다.
+설치 시간은 같은 Windows Server 실행기에서 이전 버전과 새 버전을 차례로 설치한 결과입니다. 직원 PC의 Windows 10·11에서는 하드웨어와 보안 프로그램에 따라 달라질 수 있습니다. 검사 환경과 남은 확인 항목은 [0.3.7 검증 기록](docs/archive/validations/validation-0.3.7.md)에 정리했습니다.
 
 ## 처음 사용하는 방법
 

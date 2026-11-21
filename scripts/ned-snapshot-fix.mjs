@@ -44,7 +44,7 @@ const manifest={schemaVersion:1,product:'Ned',fixId:'ned-desktop-snapshot-1',sou
 const raw=Buffer.from(JSON.stringify(manifest,null,2)+'\n');await writeFile(output+'/manifest.json',raw);
 await writeFile(output+'/apply-snapshot-fix.py',(await readFile('distribution/ned/apply-snapshot-fix.py','utf8')).replace('__MANIFEST_SHA256__',sha(raw)));
 for(const[name,args]of[['APPLY_FIX',''],['ROLLBACK_FIX',' --rollback']])await writeFile(output+'/'+name+'.cmd','@echo off\r\nsetlocal\r\nset "NED_FIX_PY=%LOCALAPPDATA%\\Programs\\Ned\\resources\\runtime\\windows-x64\\openviking\\python\\python.exe"\r\nif not exist "%NED_FIX_PY%" (echo NED_BUNDLED_PYTHON_NOT_FOUND & pause & exit /b 1)\r\n"%NED_FIX_PY%" -I -S -B "%~dp0apply-snapshot-fix.py"'+args+'\r\nset "NED_FIX_EXIT=%ERRORLEVEL%"\r\necho EXIT_CODE=%NED_FIX_EXIT%\r\npause\r\nexit /b %NED_FIX_EXIT%\r\n');
-await cp('docs/ned-snapshot-fix-1.txt',output+'/README.txt');await cp('LICENSE',output+'/LICENSE.txt');await verifyAsciiTree(output);
+await cp('docs/archive/fixes/ned-snapshot-fix-1.txt',output+'/README.txt');await cp('LICENSE',output+'/LICENSE.txt');await verifyAsciiTree(output);
 execFileSync('tar',['-czf',archive,'-C',output,'.']);verifyAsciiTar(archive);
 const bytes=(await stat(archive)).size,archiveSha256=sha(await readFile(archive));
 await writeFile(archive+'.sha256',archiveSha256+'  '+path.basename(archive)+'\n');

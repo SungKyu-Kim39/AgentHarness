@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ProjectFiles } from '../src/main/files';
 import { PrivateMcpClient } from '../src/main/mcp-client';
@@ -17,15 +17,30 @@ export class ReaGhidra {
   private busy = false;
   private stopped = false;
   private uncertain = false;
-  private verified?: Promise<void>;
+  private verified?: Promise<string>;
   private abort = new AbortController();
   constructor(private root: string, private resources: string,
     private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>, private launch?: Launch) {}
-  private async verify() {
-    if (this.launch) return;
-    return this.verified ??= (async () => {
+  async verifiedRuntime(): Promise<string> {
+    const bundled = path.join(this.resources, 'runtime/windows-x64');
+    if (this.launch) return bundled;
+    const current = this.verified ??= (async () => {
+      const bundledRea = await lstat(path.join(bundled, 'rea')).then(() => true, () => false);
+      const pack = path.join(this.root, 'packs', 'reversing', releaseLock.version);
+      const runtime = bundledRea ? bundled : pack;
+      for (const part of bundledRea ? [] : ['packs', 'packs/reversing', 'packs/reversing/' + releaseLock.version]) {
+        const folder = path.join(this.root, part);
+        const info = await lstat(folder).catch(() => undefined);
+        if (!info?.isDirectory() || info.isSymbolicLink()) throw new Error('선택형 리버싱 팩을 설치한 뒤 다시 실행하세요.');
+      }
+      if (path.relative(runtime, await realpath(runtime))) throw new Error('REA/Ghidra 런타임 링크는 허용하지 않습니다.');
       for (const name of ['rea', 'ghidra']) {
-        const base = path.join(this.resources, 'runtime/windows-x64', name), bytes = await readFile(path.join(base, 'manifest.json'));
+        const base = path.join(runtime, name);
+        const info = await lstat(base);
+        if (!info.isDirectory() || info.isSymbolicLink()) throw new Error('REA/Ghidra 런타임 폴더가 올바르지 않습니다.');
+        const record = await lstat(path.join(base, 'manifest.json'));
+        if (!record.isFile() || record.isSymbolicLink()) throw new Error('REA/Ghidra manifest 파일이 올바르지 않습니다.');
+        const bytes = await readFile(path.join(base, 'manifest.json'));
         const expected = (releaseLock.components as Record<string, { manifestSha256: string }>)[name]?.manifestSha256;
         if (!expected || createHash('sha256').update(bytes).digest('hex') !== expected) throw new Error('REA/Ghidra 고정 manifest가 일치하지 않습니다.');
         const manifest = JSON.parse(bytes.toString()), expectedFiles = new Set(['manifest.json', ...manifest.files.map((f: { path: string }) => f.path)]);
@@ -44,7 +59,10 @@ export class ReaGhidra {
           if (!info.isFile() || info.isSymbolicLink() || createHash('sha256').update(await readFile(file)).digest('hex') !== item.sha256) throw new Error('REA/Ghidra 번들 무결성 확인 실패');
         }
       }
+      return runtime;
     })();
+    try { return await current; }
+    catch (error) { if (this.verified === current) this.verified = undefined; throw error; }
   }
   async call(session: string, project: string, input: Input, signal?: AbortSignal) {
     signal = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
@@ -52,7 +70,7 @@ export class ReaGhidra {
     if (input.operation !== 'functions' && !input.procedure) throw new Error('먼저 functions 결과에서 함수명 또는 주소를 확인하고 procedure를 지정하세요.');
     this.busy = true;
     try {
-      signal?.throwIfAborted(); await this.verify();
+      signal?.throwIfAborted(); const runtime = await this.verifiedRuntime();
       const source = await new ProjectFiles(project).resolve(input.path), info = await lstat(source);
       if (!info.isFile() || info.isSymbolicLink() || info.size > 64 * 1024 * 1024) throw new Error('64 MiB 이하의 프로젝트 바이너리만 분석할 수 있습니다.');
       const bytes = await readFile(source); if (bytes.length > 64 * 1024 * 1024) throw new Error('바이너리 크기가 변경되었습니다.');
@@ -73,7 +91,7 @@ export class ReaGhidra {
         const work = await mkdtemp(path.join(this.root, 'ghidra-analysis/session-'));
         const target = path.join(work, 'target.bin'); await writeFile(target, bytes, { mode: 0o600 });
         const base = path.join(this.resources, 'runtime/windows-x64');
-        const launch = this.launch ?? { rea: path.join(base, 'rea/scripts/rea.mjs'), ghidra: path.join(base, 'ghidra/ghidra'), java: path.join(base, 'ghidra/jdk'), guard: path.join(base, 'ghidra/network-guard.jar'), worker: path.join(this.resources, 'ned/rea-ghidra-worker.mjs') };
+        const launch = this.launch ?? { rea: path.join(runtime, 'rea/scripts/rea.mjs'), ghidra: path.join(runtime, 'ghidra/ghidra'), java: path.join(runtime, 'ghidra/jdk'), guard: path.join(runtime, 'ghidra/network-guard.jar'), worker: path.join(this.resources, 'ned/rea-ghidra-worker.mjs') };
         const env: NodeJS.ProcessEnv = {
           HOME: work, USERPROFILE: work, APPDATA: work, LOCALAPPDATA: work, XDG_CONFIG_HOME: work, XDG_CACHE_HOME: work,
           TEMP: work, TMP: work, TMPDIR: work, ELECTRON_RUN_AS_NODE: '1', DO_NOT_TRACK: '1',

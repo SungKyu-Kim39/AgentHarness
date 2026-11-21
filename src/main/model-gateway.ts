@@ -3,6 +3,7 @@ import { request as httpsRequest } from 'node:https';
 import { randomBytes } from 'node:crypto';
 import type { AgentConfig } from '../shared/contracts';
 import { isCompaction, summaryRequest, summaryOutcome, summaryUsage, withSummaryUsage } from './compaction-policy';
+import { hideUnrequestedTools } from './skill-routing';
 import { classifyModelHttpError, modelRequestShape, modelHttpExplanation } from './model-http-error';
 
 export interface ModelTransport {
@@ -74,6 +75,7 @@ export class ModelGateway {
         const original = body;
         const withoutThinking = (policy?.disableQwenThinking ?? true) && /qwen/i.test(this.config.model.id);
         if (compacting) body = summaryRequest(original, summaryLimit, false, withoutThinking);
+        if (this.behavior === 'ned' && this.skillContext && !compacting) hideUnrequestedTools(body);
         const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
         if (guidance && Array.isArray(body.messages)) {
           const first = body.messages[0];

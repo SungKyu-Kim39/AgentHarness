@@ -28,8 +28,8 @@ ACP 번들이 읽는 원본 192개 파일을 고정 OpenCode 소스 아카이브
 
 빌드 소스는 `fd4ad45ec00a8831fc951dab5c27365cc1eb7015`입니다. `npm run package:win`으로 설치기를 생성하고 7-Zip으로 실제 EXE를 다시 풀어 검사했습니다. 설치기 파일 94,216개·디렉터리 8,739개가 ASCII이며, OpenViking 63,069개·MCP 21,031개·REA 9,019개·스킬 259개/34종의 고정 파일 해시를 대조했습니다. 새 실행기의 제품명 Ned와 7개 크기의 아이콘 이미지 일치, ACP용 Electron Node 실행 모드도 확인했습니다.
 
-`npm run bundle:offline` 결과 TGZ는 1,128,796,546 bytes, SHA-256 `674ea4dc96640282ea21f5dee6586a6ff9167aadb15878c07fa2bfdc9330f711`입니다. 내부 EXE는 1,132,157,259 bytes, SHA-256 `78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b`입니다. TGZ의 21개 항목과 내부 소스 묶음의 519개 항목을 검사하고 EXE를 스트리밍 해시하여 동일성을 확인했습니다. [다운로드·manifest](../downloads/README.md)에 근거를 함께 제공합니다.
+`npm run bundle:offline` 결과 TGZ는 1,128,796,546 bytes, SHA-256 `674ea4dc96640282ea21f5dee6586a6ff9167aadb15878c07fa2bfdc9330f711`입니다. 내부 EXE는 1,132,157,259 bytes, SHA-256 `78c6d5e9190ea2175e8e6542ca235b5afa6ecc6dffdec224e0bc4a336fb8b10b`입니다. TGZ의 21개 항목과 내부 소스 묶음의 519개 항목을 검사하고 EXE를 스트리밍 해시하여 동일성을 확인했습니다. [다운로드·manifest](../../../downloads/README.md)에 근거를 함께 제공합니다.
 
 이 검사는 Linux에서의 파일·패키지 검증입니다. 실제 Windows에서 아이콘이 표시되고 프로그램이 정상 작동했다는 판정은 포함하지 않습니다.
 
-공개 게시 후 TGZ 전체 GET을 수행하여 1,128,796,546 bytes와 SHA-256 일치를 확인했습니다. EXE 단독 링크는 HEAD 크기와 HTTP 206 범위 요청의 65,536 bytes PE 헤더(MZ)를 확인했습니다. EXE 단독 전체 GET은 반복하지 않았으며 로컬 전체 해시·LFS OID·TGZ 내부 EXE 해시로 동일성을 대조했습니다. [공개 검증 기록](../downloads/Ned-0.3.0-public-verification.json)을 참조합니다.
+공개 게시 후 TGZ 전체 GET을 수행하여 1,128,796,546 bytes와 SHA-256 일치를 확인했습니다. EXE 단독 링크는 HEAD 크기와 HTTP 206 범위 요청의 65,536 bytes PE 헤더(MZ)를 확인했습니다. EXE 단독 전체 GET은 반복하지 않았으며 로컬 전체 해시·LFS OID·TGZ 내부 EXE 해시로 동일성을 대조했습니다. [공개 검증 기록](../../../downloads/Ned-0.3.0-public-verification.json)을 참조합니다.

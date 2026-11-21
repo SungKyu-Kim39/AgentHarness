@@ -64,6 +64,15 @@ export class AgentOwner {
           await this.runtime.activateEditScope(params.session);
           this.sessions.set(params.session, peer); attached.add(params.session); return {};
         }
+        if (method === 'turn/text') {
+          if (!attached.has(params?.session) || typeof params?.text !== 'string') throw new Error('Session not attached');
+          this.runtime.setTurnText(params.session, params.text);
+          return {};
+        }
+        if (method === 'skills/list' || method === 'skills/read') {
+          if (!attached.has(params?.session)) throw new Error('Session not attached');
+          return method === 'skills/list' ? this.runtime.skillCommands(params.session) : this.runtime.slashSkill(params.session, params.id);
+        }
         if (method === 'cancel') {
           if (!attached.has(params?.session)) throw new Error('Session not attached');
           await this.runtime.interruptSession(params.session); return {};

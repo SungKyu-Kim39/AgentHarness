@@ -127,3 +127,7 @@ Example: <작은 로컬 파일로 재현할 요청>
 0.3.8의 Git 스테이징·커밋과 Ghidra는 검토된 호스트 도구로 기본 제공하므로 별도 MCP 설치가 필요하지 않습니다. Ghidra·JDK 잠금 값과 Java 네트워크 가드는 `ghidra-runtime-lock.json`, `scripts/bundle-ghidra.py`, `distribution/rea-ghidra-worker.mjs`에서 확인합니다. 사용법은 [Git·바이너리 분석 안내](git-and-binary-analysis.md)를 따릅니다.
 
 EGM 0.1.1의 7개 워크플로는 0.3.9에 기본 포함됩니다. 직원 PC에서 원본 플러그인 설치기나 의존성 설치를 실행하지 않습니다. 고정 원본과 Ned 어댑터, 읽기 전용 Goldfish 역할을 사용하는 방법은 [EGM 안내](egm.md)를 참고하세요.
+
+## 프로젝트 스킬과 슬래시 명령
+
+프로젝트 전용 스킬은 `<프로젝트>/.ned/skills/<ID>/SKILL.md`에 둡니다. Ned Agent의 입력창에서 `/skill-<ID>`를 고르거나 `skill_catalog`로 목록을 확인할 수 있습니다. 같은 ID이면 번들 스킬, 현재 프로젝트 스킬, 사용자 글로벌 스킬 순으로 적용합니다. 슬래시 목록에는 `/compact`와 사용자·프로젝트 스킬을 표시합니다. 개인 홈의 `.agents/skills`는 Ned 스킬 경로에 포함되지 않습니다.

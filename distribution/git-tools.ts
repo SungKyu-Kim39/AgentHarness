@@ -1,12 +1,15 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { constants } from 'node:fs';
-import { copyFile, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
+import { StringDecoder } from 'node:string_decoder';
+import { copyFile, cp, lstat, mkdir, mkdtemp, open, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ProjectFiles } from '../src/main/files';
 
 const digest = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
 const oid = /^[a-f0-9]{40}(?:[a-f0-9]{24})?$/;
+type GitInspect = {operation: 'status' | 'diff' | 'staged' | 'log' | 'show'; revision?: string; paths?: string[]; statuses?: string[]; limit?: number};
+type GitCapture = { keep: number; onChunk?: (bytes: Buffer) => void };
 type Selection = { path: string; mode: string; hash?: string; bytes?: Buffer };
 /** Local Git writes only. No shell, hooks, signing, credentials, remote or filters. */
 export class GitTools {
@@ -19,7 +22,7 @@ export class GitTools {
     private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>,
     private verify: () => Promise<void>, private binary = path.join(resources, 'runtime/windows-x64/mcp/git/cmd/git.exe')) {}
 
-  private async run(project: string, work: string, args: string[], signal?: AbortSignal, extra: NodeJS.ProcessEnv = {}) {
+  private async run(project: string, work: string, args: string[], signal?: AbortSignal, extra: NodeJS.ProcessEnv = {}, capture?: GitCapture) {
     signal = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     signal?.throwIfAborted();
     if (this.stopped || this.uncertain) throw new Error('Git 실행이 중지되었거나 이전 프로세스 종료가 확인되지 않았습니다.');
@@ -39,7 +42,8 @@ export class GitTools {
     const argv = supervised ? ['-I', '-B', path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py'), this.binary, ...fixed] : fixed;
     const child = spawn(executable, argv, { cwd: project, env, windowsHide: true, shell: false, detached: !supervised, stdio: 'pipe' });
     this.children.add(child); child.stdin.on('error', () => {});
-    let output = Buffer.alloc(0), overflow = false, aborted = false;
+    const chunks: Buffer[] = [];
+    let length = 0, overflow = false, aborted = false;
     let confirm: NodeJS.Timeout | undefined;
     let rejectStop: ((error: Error) => void) | undefined;
     const stop = () => {
@@ -48,19 +52,121 @@ export class GitTools {
       else if (child.pid) { try { process.kill(-child.pid, 'SIGKILL'); } catch {} }
       confirm ??= setTimeout(() => { this.uncertain = true; child.kill('SIGKILL'); rejectStop?.(new Error('Git 자식 프로세스 종료 확인 실패. 새 실행을 차단합니다.')); }, 8000);
     };
-    const collect = (bytes: Buffer) => { if (output.length + bytes.length > 8 * 1024 * 1024) { overflow = true; stop(); } else output = Buffer.concat([output, bytes]); };
+    const collect = (bytes: Buffer) => {
+      const room = (capture?.keep ?? 8 * 1024 * 1024) - length;
+      if (bytes.length > room) {
+        overflow = true;
+        if (!capture) { stop(); return; }
+      }
+      capture?.onChunk?.(bytes);
+      if (room > 0) { const part = bytes.subarray(0, room); chunks.push(part); length += part.length; }
+    };
     child.stdout.on('data', collect); child.stderr.on('data', () => {});
     const timer = setTimeout(stop, 60000); // Local Git command budget; never a model-queue deadline.
     signal?.addEventListener('abort', stop, { once: true }); if (signal?.aborted) stop();
     try {
       const code = await new Promise<number | null>((resolve, reject) => { rejectStop = reject; child.once('error', reject); child.once('close', resolve); });
       if (this.uncertain) throw new Error('Git 자식 프로세스 종료 확인 실패. 새 실행을 차단합니다.');
-      if (aborted || signal?.aborted || overflow) throw new Error('Git 실행을 중지했습니다. 커밋 단계였다면 git_inspect로 실제 HEAD를 확인하세요.');
-      return { code, text: output.toString('utf8'), bytes: output };
+      if (aborted || signal?.aborted) throw new Error('Git 실행을 중지했습니다. 커밋 단계였다면 git_inspect로 실제 HEAD를 확인하세요.');
+      const output = Buffer.concat(chunks, length);
+      return { code, text: output.toString('utf8'), bytes: output, truncated: overflow };
     } finally {
       clearTimeout(timer); clearTimeout(confirm); signal?.removeEventListener('abort', stop); if (!this.uncertain) this.children.delete(child);
     }
   }
+  async inspect(project: string, input: GitInspect, signal?: AbortSignal) {
+    await this.verify();
+    signal?.throwIfAborted();
+    const files = new ProjectFiles(project);
+    for (const name of input.paths ?? []) {
+      const found = await files.resolve(name, true);
+      if (!found) throw new Error('Git 경로 필터는 프로젝트 안의 상대 경로만 지원합니다.');
+    }
+    const git = await files.resolve('.git');
+    const objects = await files.resolve('.git/objects');
+    if (!(await lstat(git)).isDirectory() || !(await lstat(objects)).isDirectory()) throw new Error('일반 프로젝트 Git 저장소가 필요합니다.');
+    const parent = path.join(this.root, 'git-operations');
+    await mkdir(parent, { recursive: true, mode: 0o700 });
+    const work = await mkdtemp(path.join(parent, 'inspect-'));
+    try {
+      const sanitized = path.join(work, 'repo');
+      await mkdir(sanitized);
+      await mkdir(path.join(sanitized, 'refs'));
+      await mkdir(path.join(work, 'hooks'));
+      await writeFile(path.join(work, 'empty'), '');
+      await writeFile(path.join(sanitized, 'config'), '[core]\nrepositoryformatversion = 0\nfilemode = false\nlogallrefupdates = false\n');
+      // Reuse large immutable object packs in place. Only vetted local objects are
+      // reachable, and the private repository never loads the original Git config.
+      const verifyTree = async (folder: string, depth = 0) => {
+        if (depth > 12) throw new Error('Git 메타데이터 깊이 제한을 초과했습니다.');
+        for (const entry of await readdir(folder, { withFileTypes: true })) {
+          signal?.throwIfAborted();
+          if (entry.isSymbolicLink() || /^(?:alternates|http-alternates|grafts|commit-graph-chain)$/i.test(entry.name) || /\.promisor$/i.test(entry.name))
+            throw new Error('외부 Git 저장소 연결이나 링크는 지원하지 않습니다.');
+          if (entry.isDirectory()) await verifyTree(path.join(folder, entry.name), depth + 1);
+          else if (!entry.isFile()) throw new Error('Git 메타데이터 파일 형식이 올바르지 않습니다.');
+        }
+      };
+      await verifyTree(objects);
+      for (const name of ['HEAD', 'index', 'packed-refs', 'shallow', 'refs', ...((await readdir(git)).filter(name => /^sharedindex\.[a-f0-9]{40}$/.test(name)))]) {
+        const target = path.join(git, name);
+        const info = await lstat(target).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'ENOENT') throw error; });
+        if (!info) continue;
+        if (info.isSymbolicLink()) throw new Error('Git 메타데이터 링크는 지원하지 않습니다.');
+        if (name === 'refs' && info.isDirectory()) {
+          await verifyTree(target);
+          await cp(target, path.join(sanitized, name), { recursive: true, filter: async file => { signal?.throwIfAborted(); return !(await lstat(file)).isSymbolicLink(); } });
+        } else if (info.isFile()) await copyFile(target, path.join(sanitized, name));
+        else throw new Error('Git 메타데이터 파일 형식이 올바르지 않습니다.');
+      }
+      const extra = { GIT_DIR: sanitized, GIT_WORK_TREE: project, GIT_OBJECT_DIRECTORY: objects, GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1' };
+      const argumentsPaths = ['--', ...(input.paths ?? [])];
+      const prefix = ['-c','core.commitGraph=false','-c','core.multiPackIndex=false'];
+      const diff = ['--no-ext-diff','--no-textconv','--no-renames','--ignore-submodules=all'];
+      const limit = input.limit ?? 100;
+      const records: string[] = [];
+      let total = 0, size = 0, omitted = false, buffer = '';
+      const readRecords = async (args: string[], separator: string, select: (record: string) => boolean = () => true) => {
+        const decoder = new StringDecoder('utf8');
+        const collect = (text: string) => {
+          const rows = (buffer + text).split(separator);
+          buffer = (rows.pop() ?? '').slice(0, 20000);
+          if (buffer.length === 20000) omitted = true;
+          for (const row of rows) if (row && select(row)) {
+            total++;
+            const bytes = Buffer.byteLength(row);
+            if (records.length < limit && size + bytes <= 16000) { records.push(row); size += bytes; }
+            else omitted = true;
+          }
+        };
+        const result = await this.run(project, work, [...prefix, ...args], signal, extra, { keep: 0, onChunk: bytes => collect(decoder.write(bytes)) });
+        collect(decoder.end() + separator);
+        return result.code;
+      };
+      let code: number | null;
+      let preview = '', previewTruncated = false;
+      switch (input.operation) {
+        case 'status':
+          code = await readRecords(['status','--porcelain=v1','-z','--untracked-files=all','--no-renames','--ignore-submodules=all',...argumentsPaths], '\0',
+            row => !input.statuses?.length || input.statuses.some(status => row.slice(0,2).includes(status)));
+          break;
+        case 'log':
+          code = await readRecords(['log','--no-show-signature','--no-notes','--format=%H%x09%s',...argumentsPaths], '\n'); break;
+        default: {
+          const args = input.operation === 'show' ? ['show','--no-notes','--no-show-signature',...diff,input.revision ?? 'HEAD']
+            : ['diff',...diff,...(input.operation === 'staged' ? ['--cached'] : [])];
+          code = await readRecords([...args,'--format=', '--name-only','-z',...argumentsPaths].filter(value => value !== '--format=' || input.operation === 'show'), '\0');
+          if (code === 0) {
+            const result = await this.run(project, work, [...prefix,...args,...argumentsPaths], signal, extra, { keep: 20000 });
+            code = result.code; preview = result.text; previewTruncated = result.truncated;
+          }
+        }
+      }
+      if (code !== 0) return { operation: input.operation, status: 'unavailable' as const, exitCode: code, records: [], total: null, truncated: false };
+      return { operation: input.operation, status: 'ok' as const, records, total, truncated: omitted || previewTruncated, ...(preview ? { preview } : {}) };
+    } finally { if (!this.uncertain) await rm(work, { recursive: true, force: true }); }
+  }
+
   async execute(project: string, operation: 'stage' | 'commit', paths: string[], message?: string,
     author?: { name: string; email: string }, signal?: AbortSignal, current?: () => Promise<boolean>) {
     if (this.busy || this.stopped || this.uncertain) throw new Error('다른 Git 작업이 실행 중이거나 종료가 확인되지 않았습니다.');
