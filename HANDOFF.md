@@ -1,6 +1,12 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.10**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.11**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+
+## 0.3.11 배포 기준
+
+제품 소스는 `6222c4c312351ce2b45fd131851d132512092694`입니다. Windows Server에서 13개 검사를 통과했고 0.3.10 업데이트, 사용자 데이터 보존, Core 재설치 후 리버싱 팩 보존을 확인했습니다. GitHub 릴리스의 12개 첨부 파일을 인증 없이 전체 다운로드해 SHA-256을 대조했습니다. 편집기와 설치본 후보는 Actions 아티팩트로 전달하고, 최종 바이너리는 GitHub 릴리스에서 제공합니다.
+
+[다운로드](downloads/README.md) · [변경 사항](docs/changes-0.3.11.md) · [검증 기록](docs/validation-0.3.11.md) · [사내 서명](docs/license-policy.md#ned-0311-사내-서명)
 
 ## 0.3.10 배포 기준
 

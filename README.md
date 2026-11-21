@@ -59,4 +59,4 @@ Ned 호스트는 설정과 승인, 서비스 실행·종료를 관리합니다. 
 
 빌드는 고정 OpenCode 소스와 Windows 런타임을 준비한 뒤 진행합니다. `npm run ned:prepare:acp`로 빌드 의존성을 준비하고, `npm run build`로 호스트와 ACP를, `npm run ned:release`로 설치기를 생성합니다. 자세한 절차와 코드 위치는 [개발 인계](HANDOFF.md), [아키텍처](docs/architecture.md), [어댑터 명세](docs/adapters.md)를 참고하세요.
 
-`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.10입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.
+`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.11입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.
