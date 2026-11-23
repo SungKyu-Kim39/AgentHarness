@@ -1,6 +1,6 @@
 # Ned
 
-[0.3.12 변경 사항](docs/changes-0.3.12.md) · [0.3.12 검증](docs/validation-0.3.12.md) · [0.3.11 변경 사항](docs/changes-0.3.11.md)
+[0.3.12 변경 사항](docs/changes-0.3.12.md) · [0.3.12 검증](docs/validation-0.3.12.md)
 
 최신 사전 릴리스는 [Ned 0.3.12 rebuild1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12-rebuild1)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.3.12-rebuild1.md).
 
@@ -12,27 +12,13 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
 
-0.3.12에서는 [권한 정책(터미널 최소 고위험 가드·외부 읽기·지식 저장 자동 승인)](docs/approval-modes.md)과 승인 팝업 최상단 표시, OpenViking·Studio 상시 진단을 보완하고 설치본을 전체 설치본 단일 배포로 단순화했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
+0.3.12에서는 [권한 정책(터미널 최소 고위험 가드·외부 읽기·지식 저장 자동 승인)](docs/approval-modes.md)과 승인 팝업 최상단 표시, OpenViking·Studio 상시 진단을 보완하고 설치본을 전체 설치본 단일 배포로 단순화했습니다.
 
-0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가했습니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
+Ned는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 제공합니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 
 ## 다운로드
 
-최신 배포는 [Ned 0.3.12 rebuild1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12-rebuild1)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
-
-원본 0.3.8은 프로젝트별 Conda 환경 선택과 Python 실행·빌드, Git 커밋, REA/Ghidra 분석, OpenViking Studio와 실패한 개인 지식 가져오기 복구를 추가했습니다. 요약 출력 한도와 공통 프로세스 감독기도 보완했습니다. OpenViking 0.5.5와 스킬 66개를 유지합니다. [검증 기록](docs/archive/validations/validation-0.3.8.md)에서 확인한 동작과 남은 수용 범위를 볼 수 있습니다.
-
-0.3.7에서는 기본 스킬을 66개로 늘리고, 요청과 대화 문맥에 맞는 지침을 자동으로 불러오도록 했습니다. Python SDK의 파일 배치와 호스트 번들을 정리해 설치 부담도 줄였습니다.
-
-아래 수치는 최초 0.3.7 배포의 비교 결과입니다. 수정 빌드의 파일 크기와 Windows 실행 결과는 다운로드 안내에서 별도로 제공합니다.
-
-| 항목 | 0.3.6 수정 빌드 1 | 0.3.7 |
-| --- | ---: | ---: |
-| 설치 EXE | 1,176,899,012 bytes | 1,040,612,708 bytes |
-| 설치 후 파일 수 | 94,237개 | 55,926개 |
-| 설치 시간 | 50.497초 | 38.935초 |
-
-설치 시간은 같은 Windows Server 실행기에서 이전 버전과 새 버전을 차례로 설치한 결과입니다. 직원 PC의 Windows 10·11에서는 하드웨어와 보안 프로그램에 따라 달라질 수 있습니다. 검사 환경과 남은 확인 항목은 [0.3.7 검증 기록](docs/archive/validations/validation-0.3.7.md)에 정리했습니다.
+최신 배포는 [Ned 0.3.12 rebuild1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12-rebuild1)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 0.3.12부터의 배포 파일을 같은 페이지에서 확인할 수 있습니다.
 
 ## 처음 사용하는 방법
 
@@ -51,7 +37,7 @@ Ned는 선택한 프로젝트의 코드를 읽고 검색한 뒤 수정안을 만
 
 기본 구성에는 Aegis·Conductor 지침, 스킬 74개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
 
-OpenViking은 Ned 실행 중 백그라운드에서 시작하고 Ned와 함께 종료합니다. Ned는 기본·사용자 스킬을 로컬 파일에서 읽습니다. 지식 서비스는 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [글로벌 스킬 등록](docs/extension-guide.md#사용자-글로벌-스킬-등록), [스킬 안내](docs/skills-0.3.9.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
+OpenViking은 Ned 실행 중 백그라운드에서 시작하고 Ned와 함께 종료합니다. Ned는 기본·사용자 스킬을 로컬 파일에서 읽습니다. 지식 서비스는 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [글로벌 스킬 등록](docs/extension-guide.md#사용자-글로벌-스킬-등록), [스킬 안내](docs/bundled-skills.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
 
 ## 개발과 배포
 

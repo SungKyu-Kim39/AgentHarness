@@ -97,7 +97,7 @@ Zed에서도 지식 서비스를 별도로 연결할 수 있습니다. Ned에는
 
 프로젝트는 알림 영역의 **Ned → 프로젝트 폴더 열기**에서 선택합니다. 이 창은 실제 Windows의 바탕화면·즐겨찾기를 탐색하고, 편집기 내부 Open Folder는 내부 경로 선택창을 사용합니다. 설치 위치는 D 드라이브 등으로 바꿀 수 있지만 사용자 데이터는 `%APPDATA%\Ned`에 유지됩니다.
 
-[소개와 활용](ned-introduction.md) · [설치 안내](offline-setup.md) · [0.3.7 검증 기록](archive/validations/validation-0.3.7.md) · [라이선스](license-policy.md)
+[소개와 활용](ned-introduction.md) · [설치 안내](offline-setup.md) · [0.3.12 검증 기록](validation-0.3.12.md) · [라이선스](license-policy.md)
 
 ## 기본 Zed Agent만 사용하고 싶다면
 

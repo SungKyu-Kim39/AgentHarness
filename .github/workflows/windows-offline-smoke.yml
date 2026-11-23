@@ -6,7 +6,7 @@ on:
         description: Exact immutable installer build
         default: 0.3.12-rebuild1
         type: choice
-        options: ['0.3.12-rebuild1', '0.3.12', '0.3.11', '0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
+        options: ['0.3.12-rebuild1', '0.3.12', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', 'editor-source-build']
       build_revision:
         description: Optional same-version repair revision (e.g. rebuild1)
         type: string
@@ -23,22 +23,12 @@ on:
         description: Immutable successful editor build run ID
         type: string
         default: ''
-      runtime_source_probe:
-        description: Validate the reviewed supervisor replacement on the old immutable candidate (not new installer acceptance)
-        type: boolean
-        default: false
-  push:
-    branches: [work]
-    paths:
-      - downloads/Ned-0.3.7-win-x64.exe
-      - downloads/Ned-0.3.7-rebuild1-win-x64.exe
-      # 0.3.8 uses an explicit immutable candidate_source dispatch before publication.
 permissions:
   contents: read
   actions: read
 jobs:
   offline-install:
-    if: inputs.artifact_version != 'python-source-probe' && inputs.artifact_version != 'editor-source-build' && inputs.artifact_version != 'native-agent-source-probe' && inputs.artifact_version != 'release-build' && inputs.artifact_version != 'terminal-source-probe' && inputs.artifact_version != 'terminal-editor-probe' && inputs.artifact_version != 'global-skills-source-probe'
+    if: startsWith(inputs.artifact_version, '0.3.12')
     runs-on: windows-2022
     timeout-minutes: 30
     env:
@@ -49,31 +39,6 @@ jobs:
         with:
           lfs: false
           persist-credentials: false
-      - name: Measure the previous installer on the same Windows runner
-        if: env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $exe = Join-Path $env:RUNNER_TEMP 'Ned-baseline.exe'
-          $url = 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/1392b93209ac9c9ba764eab52f099da1129bcbcc/downloads/Ned-0.3.6-rebuild1-win-x64.exe'
-          & curl.exe --fail --location --retry 2 --output $exe $url
-          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne '4ee7e8809c1a838e593c3654e99b1f37715fb625216290b7d89613463ea52252') { throw 'Baseline download/hash failed' }
-          $install = Join-Path $env:RUNNER_TEMP 'ned-baseline\missing-parent\Ned'
-          $watch = [Diagnostics.Stopwatch]::StartNew()
-          $process = Start-Process -FilePath $exe -ArgumentList @('/S', "/D=$install") -Wait -PassThru
-          $process.Refresh()
-          if ($process.ExitCode -ne 0) { throw 'Baseline installation failed' }
-          $watch.Stop()
-          $files = @(Get-ChildItem $install -Recurse -File)
-          [ordered]@{ version='0.3.6-rebuild1'; installerMilliseconds=$watch.ElapsedMilliseconds; installedFiles=$files.Count; installedBytes=($files | Measure-Object Length -Sum).Sum } | ConvertTo-Json | Set-Content baseline-smoke.json -Encoding utf8
-          $oldRuntime = Join-Path $env:RUNNER_TEMP 'ned-previous-openviking'
-          Copy-Item (Join-Path $install 'resources\runtime\windows-x64\openviking') $oldRuntime -Recurse
-          "NED_TEST_PREVIOUS_PYTHON=$oldRuntime\python\python.exe" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          $uninstall = Start-Process -FilePath (Join-Path $install 'Uninstall Ned.exe') -ArgumentList @('/S', "_?=$install") -Wait -PassThru
-          $uninstall.Refresh()
-          if ($uninstall.ExitCode -ne 0) { throw 'Baseline uninstall failed' }
-          Remove-Item (Split-Path (Split-Path $install)) -Recurse -Force -ErrorAction SilentlyContinue
-          Remove-Item $exe -Force
       - name: Download and verify the exact published installer
         env:
           GH_TOKEN: ${{ github.token }}
@@ -86,7 +51,7 @@ jobs:
           if ($env:NED_CANDIDATE_SOURCE -and $audit.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Candidate provenance mismatch' }
           "NED_ARTIFACT_SHA256=$($audit.installer.sha256)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $exe = Join-Path $env:RUNNER_TEMP "Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-          if (($env:NED_ARTIFACT_VERSION -in @('0.3.11','0.3.12','0.3.12-rebuild1')) -and $env:NED_CANDIDATE_SOURCE) {
+          if ($env:NED_CANDIDATE_SOURCE) {
             $candidateRun = '${{ inputs.candidate_run }}'
             if ($candidateRun -notmatch '^[0-9]+$') { throw 'Candidate Actions run ID required' }
             $files = Join-Path $env:RUNNER_TEMP 'ned-immutable-candidate'
@@ -95,11 +60,8 @@ jobs:
             $exe = Join-Path $files (Split-Path $exe -Leaf)
             "NED_SMOKE_CANDIDATE_DIR=$files" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           } else {
-            $url = if ($env:NED_ARTIFACT_VERSION -in @('0.3.11','0.3.12','0.3.12-rebuild1')) {
-              "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:NED_ARTIFACT_VERSION/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-            } else {
-              "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-            }
+            $url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:NED_ARTIFACT_VERSION/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
+            "NED_CANDIDATE_SOURCE=$($audit.sourceCommit)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
             & curl.exe --fail --location --retry 2 --output $exe $url
             if ($LASTEXITCODE -ne 0) { throw 'Installer download failed' }
           }
@@ -127,14 +89,14 @@ jobs:
           Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
           $group = "Ned-CI-$env:GITHUB_RUN_ID"
           "NED_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          foreach ($program in (@($python, $env:NED_TEST_PREVIOUS_PYTHON, (Join-Path $install 'Ned.exe'), (Join-Path $install 'resources\opencode-cli.exe'), (Join-Path $install 'resources\runtime\windows-x64\ghidra\jdk\bin\java.exe')) | Where-Object { $_ })) {
+          foreach ($program in (@($python, (Join-Path $install 'Ned.exe'), (Join-Path $install 'resources\opencode-cli.exe'), (Join-Path $install 'resources\runtime\windows-x64\ghidra\jdk\bin\java.exe')) | Where-Object { $_ })) {
             New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
           }
           $result = @(& $python -I -B distribution/openviking-import-check.py 2>&1)
           $exit = $LASTEXITCODE
           $result | ForEach-Object { Write-Host "$_" }
           if ($exit -ne 0 -or !($result -match 'OPENVIKING_IMPORT_OK') -or !($result -match 'TOKENIZERS_OK 7')) { throw 'Offline OpenViking/tokenizer import failed' }
-          $expectedVersion = if ($env:NED_ARTIFACT_VERSION -ne '0.3.7') { '0.5.5' } else { '0.5.4' }
+          $expectedVersion = '0.5.5'
           if (!($result -match "OPENVIKING_VERSION=$([regex]::Escape($expectedVersion))")) { throw 'Wrong bundled OpenViking version' }
           if (!($result -match 'OPENVIKING_ADAPTERS_OK')) { throw 'OpenViking queue/pack adapters failed' }
           if ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild1' -and !($result -match 'OPENVIKING_MIME_OK')) { throw 'OpenViking MIME configuration failed' }
@@ -153,150 +115,24 @@ jobs:
           "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_ENGINE=$(Join-Path $install 'resources\opencode-cli.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $files = @(Get-ChildItem $install -Recurse -File)
-          $baseline = if (Test-Path baseline-smoke.json) { Get-Content baseline-smoke.json -Raw | ConvertFrom-Json }
           [ordered]@{
             schemaVersion=1; product='Ned'; version=$env:NED_ARTIFACT_VERSION; openVikingVersion=$expectedVersion
             candidateSource=$env:NED_CANDIDATE_SOURCE; installerSha256=$env:NED_ARTIFACT_SHA256
             os=[Environment]::OSVersion.Version.ToString()
             installerMilliseconds=$watch.ElapsedMilliseconds
-            baselineInstallerMilliseconds=$baseline.installerMilliseconds
-            baselineInstalledFiles=$baseline.installedFiles
-            baselineInstalledBytes=$baseline.installedBytes
-            comparisonOrder=$(if ($baseline) { 'baseline then candidate; Windows Server runner' } else { 'candidate clean install; Windows Server runner' })
+            comparisonOrder='candidate clean install; Windows Server runner'
             installedFiles=$files.Count
             installedBytes=($files | Measure-Object Length -Sum).Sum
             openVikingImport=$true; tokenizerEncodings=7; bundledNode=$true
             privateDataInstallRejected=$true
             bundledRuntimeInternetBlockedByWindowsFirewall=$true
             importStepModelsPrompted=$false; intranetModelsPrompted=$false; desktopActions=0
-            namespaceTestUsesLocalSyntheticModels=($env:NED_ARTIFACT_VERSION -ne '0.3.7')
+            namespaceTestUsesLocalSyntheticModels=$true
             realWin10Win11GuiAcceptance=$false
           } | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
           Get-Content windows-offline-smoke.json
-      - name: Apply the reviewed common supervisor for source validation only
-        if: inputs.runtime_source_probe
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          if ($env:NED_CANDIDATE_SOURCE -ne '1bc5b3a049c4eafa7bbd163dd231bd8d5ba5b168') { throw 'Unreviewed source probe donor' }
-          $lock = Get-Content release-runtime-lock.json -Raw | ConvertFrom-Json
-          $resources = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources'
-          $runtime = Join-Path $resources 'runtime\windows-x64\openviking'
-          if ((Get-FileHash (Join-Path $runtime 'manifest.json') -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'd11f6caf6e1b807f74a87213c7a0f9654e2ac6b582ec1c7c4b3765c19edf2cb3') { throw 'Probe donor changed' }
-          if ((Get-FileHash scripts/sidecar-supervisor.py -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.supervisorSha256) { throw 'Supervisor source mismatch' }
-          if ((Get-FileHash downloads/Ned-0.3.8-supervisor-runtime-manifest.json -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.components.openviking.manifestSha256) { throw 'Supervisor manifest mismatch' }
-          Copy-Item scripts/sidecar-supervisor.py (Join-Path $runtime 'sidecar-supervisor.py') -Force
-          Copy-Item downloads/Ned-0.3.8-supervisor-runtime-manifest.json (Join-Path $runtime 'manifest.json') -Force
-          $proof = Get-Content windows-offline-smoke.json -Raw | ConvertFrom-Json
-          $proof | Add-Member -NotePropertyName runtimeSourceOverride -NotePropertyValue $true
-          $proof | Add-Member -NotePropertyName newInstallerAcceptance -NotePropertyValue $false
-          $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
-      - name: Verify 0.5.4 data migration using the installed Windows runtimes
-        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-namespace-test.cjs'
-          $expected = (Get-Content "$test.sha256").Split(' ')[0]
-          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Namespace test hash mismatch' }
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-namespace-test.txt -RedirectStandardError windows-namespace-stderr.txt -Wait -PassThru
-          $run.Refresh()
-          Get-Content windows-namespace-test.txt
-          Get-Content windows-namespace-stderr.txt
-          if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
-          Remove-Item Env:ELECTRON_RUN_AS_NODE
-      - name: Verify file deletion with the installed Windows Node runtime
-        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-delete-test.cjs'
-          $expected = (Get-Content "$test.sha256").Split(' ')[0]
-          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Delete test hash mismatch' }
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-delete-test.txt -RedirectStandardError windows-delete-stderr.txt -Wait -PassThru
-          $run.Refresh()
-          Get-Content windows-delete-test.txt
-          Get-Content windows-delete-stderr.txt
-          if ($run.ExitCode -ne 0) { throw 'Windows file deletion test failed' }
-          Remove-Item Env:ELECTRON_RUN_AS_NODE
-      - name: Verify real engine compaction length recovery
-        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9')) && env.NED_TEST_NODE != ''
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-compaction-test.cjs'
-          $expected = (Get-Content "$test.sha256").Split(' ')[0]
-          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Compaction test hash mismatch' }
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-compaction-test.txt -RedirectStandardError windows-compaction-stderr.txt -Wait -PassThru
-          $run.Refresh()
-          Get-Content windows-compaction-test.txt
-          Get-Content windows-compaction-stderr.txt
-          if ($run.ExitCode -ne 0) { throw 'Windows compaction test failed' }
-          Remove-Item Env:ELECTRON_RUN_AS_NODE
-      - name: Verify Git writes, external reads, Ghidra and large OVPack recovery
-        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9')) && env.NED_TEST_NODE != ''
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $resources = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources'
-          $env:NED_TEST_RESOURCES = $resources
-          $env:NED_TEST_GIT = Join-Path $resources 'runtime\windows-x64\mcp\git\cmd\git.exe'
-          $env:NED_TEST_PYTHON = $env:NED_TEST_CURRENT_PYTHON
-          $env:NED_TEST_RECOVERY_SCRIPT = Join-Path $resources 'ned\personal-pack-recovery.py'
-          $env:NED_TEST_LAUNCHER = Join-Path $resources 'runtime\windows-x64\openviking\launch.py'
-          $env:NED_TEST_TOKENIZERS = $env:NED_TEST_TOKENIZERS_DIR
-          $env:NED_TEST_GHIDRA = Join-Path $resources 'runtime\windows-x64\ghidra\ghidra'
-          $env:NED_TEST_JAVA = Join-Path $resources 'runtime\windows-x64\ghidra\jdk'
-          $env:NED_TEST_GHIDRA_WORKER = Join-Path $resources 'ned\rea-ghidra-worker.mjs'
-          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-native-test.cjs'
-          $expected = (Get-Content "$test.sha256").Split(' ')[0]
-          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Native test hash mismatch' }
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          # Start-Process -Wait waits for an entire Windows process tree and
-          # can hide completed test output behind a leftover descendant. Bound
-          # this synthetic CI fixture and always retain its diagnostic output.
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-native-test.txt -RedirectStandardError windows-native-stderr.txt -PassThru
-          try {
-            if (!$run.WaitForExit(720000)) {
-              & taskkill.exe /PID $run.Id /T /F | Out-Null
-              throw 'Windows native fixture exceeded its CI budget; see retained output'
-            }
-            $run.Refresh()
-            if ($run.ExitCode -ne 0) { throw 'Windows native operations test failed' }
-          } finally {
-            Get-Content windows-native-test.txt -ErrorAction SilentlyContinue
-            Get-Content windows-native-stderr.txt -ErrorAction SilentlyContinue
-          }
-          Remove-Item Env:ELECTRON_RUN_AS_NODE
-      - name: Verify installed Python tools with a preinstalled Conda environment
-        if: always() && (startsWith(env.NED_ARTIFACT_VERSION, '0.3.8') || startsWith(env.NED_ARTIFACT_VERSION, '0.3.9')) && env.NED_TEST_NODE != ''
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $candidates = @($env:CONDA, 'C:\Miniconda', 'C:\Miniconda3', 'C:\ProgramData\Miniconda3') | Where-Object { $_ }
-          $conda = $candidates | Where-Object { Test-Path (Join-Path $_ 'Scripts\conda.exe') } | Select-Object -First 1
-          if (!$conda) { throw 'Python integration requires preinstalled Windows Conda' }
-          $env:NED_TEST_CONDA_ROOT = $conda
-          $env:CONDA = $conda
-          $env:NED_TEST_RESOURCES = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources'
-          foreach ($program in @((Join-Path $conda 'python.exe'), (Join-Path $conda 'Scripts\conda.exe'))) {
-            New-NetFirewallRule -DisplayName $env:NED_FIREWALL_GROUP -Group $env:NED_FIREWALL_GROUP -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
-          }
-          $test = 'downloads/Ned-' + $env:NED_ARTIFACT_VERSION + '-windows-python-test.cjs'
-          $expected = (Get-Content "$test.sha256").Split(' ')[0]
-          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Python test hash mismatch' }
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-test.txt -RedirectStandardError windows-python-stderr.txt -Wait -PassThru
-          $run.Refresh()
-          Get-Content windows-python-test.txt
-          Get-Content windows-python-stderr.txt
-          if ($run.ExitCode -ne 0) { throw 'Installed Windows Python tools failed' }
-          Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify skills, history, settings and terminal behavior after installation
-        if: always() && (env.NED_ARTIFACT_VERSION == '0.3.9' || env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild1') && env.NED_TEST_NODE != ''
+        if: always() && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -315,13 +151,13 @@ jobs:
           }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Update the previous installed release and verify user data
-        if: env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild1'
+        if: env.NED_ARTIFACT_VERSION != '0.3.12'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
           if ((Split-Path $env:NED_TEST_NODE) -ne $install) { throw 'Unexpected disposable installer path' }
-          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild1') { '0.3.12' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.12') { '0.3.11' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.11') { '0.3.10' } else { '0.3.9' }
+          $baseline = '0.3.12'
           $previous = Join-Path $env:RUNNER_TEMP "Ned-$baseline-previous.exe"
           $audit = Get-Content "downloads/Ned-$baseline-installer-audit.json" -Raw | ConvertFrom-Json
           $url = "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v$baseline/Ned-$baseline-win-x64.exe"
@@ -381,91 +217,12 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: ${{ inputs.runtime_source_probe && 'windows-runtime-source-probe-0.3.8' || format('windows-offline-smoke-{0}', env.NED_ARTIFACT_VERSION) }}
+          name: windows-offline-smoke-${{ env.NED_ARTIFACT_VERSION }}
           path: |
             windows-offline-smoke.json
             windows-upgrade-test.txt
             windows-upgrade-stderr.txt
-            windows-namespace-test.txt
-            windows-namespace-stderr.txt
-            windows-delete-test.txt
-            windows-delete-stderr.txt
-            windows-compaction-test.txt
-            windows-compaction-stderr.txt
-            windows-native-test.txt
-            windows-native-stderr.txt
-            windows-python-test.txt
-            windows-python-stderr.txt
           if-no-files-found: ignore
-
-  python-source-probe:
-    if: inputs.artifact_version == 'python-source-probe'
-    runs-on: windows-2022
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          lfs: false
-          persist-credentials: false
-      - name: Install the immutable 0.3.7 runtime for a source-only Python probe
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $audit = Get-Content downloads/Ned-0.3.7-installer-audit.json -Raw | ConvertFrom-Json
-          $exe = Join-Path $env:RUNNER_TEMP 'Ned-python-probe-runtime.exe'
-          & curl.exe --fail --location --retry 2 --output $exe 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/refs/heads/work/downloads/Ned-0.3.7-win-x64.exe'
-          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne $audit.installer.sha256) { throw 'Probe runtime hash mismatch' }
-          $install = Join-Path $env:RUNNER_TEMP 'ned-python-probe-runtime'
-          $process = Start-Process $exe -ArgumentList @('/S', "/D=$install") -Wait -PassThru
-          $process.Refresh()
-          if ($process.ExitCode -ne 0) { throw 'Probe runtime installation failed' }
-          $resources = Join-Path $env:RUNNER_TEMP 'ned-python-source-resources'
-          New-Item -ItemType Directory -Path (Join-Path $resources 'ned') -Force | Out-Null
-          New-Item -ItemType Junction -Path (Join-Path $resources 'runtime') -Target (Join-Path $install 'resources\runtime') | Out-Null
-          Copy-Item distribution/python-runner.py (Join-Path $resources 'ned\python-runner.py')
-          Copy-Item scripts/sidecar-supervisor.py (Join-Path $resources 'ned\python-supervisor.py')
-          $candidates = @($env:CONDA, 'C:\Miniconda', 'C:\Miniconda3', 'C:\ProgramData\Miniconda3') | Where-Object { $_ }
-          $conda = $candidates | Where-Object { Test-Path (Join-Path $_ 'Scripts\conda.exe') } | Select-Object -First 1
-          if (!$conda) { throw 'This source probe requires preinstalled Windows Conda' }
-          "NED_TEST_CONDA_ROOT=$conda" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          "CONDA=$conda" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          "NED_TEST_RESOURCES=$resources" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          Get-NetFirewallProfile | Select-Object Name,Enabled | ConvertTo-Json | Set-Content python-firewall-before.json
-          Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
-          $group = "Ned-Python-CI-$env:GITHUB_RUN_ID"
-          "NED_PYTHON_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          foreach ($program in @((Join-Path $install 'Ned.exe'), (Join-Path $resources 'runtime\windows-x64\openviking\python\python.exe'), (Join-Path $conda 'python.exe'), (Join-Path $conda 'Scripts\conda.exe'))) {
-            New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program $program -RemoteAddress Internet | Out-Null
-          }
-      - name: Run current source with actual Conda and the fixed process supervisor
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-0.3.8-windows-python-test.cjs'
-          $expected = (Get-Content "$test.sha256").Split(' ')[0]
-          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Python probe hash mismatch' }
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          $run = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', '--test-reporter=tap', (Resolve-Path $test).Path) -RedirectStandardOutput windows-python-source-test.txt -RedirectStandardError windows-python-source-stderr.txt -Wait -PassThru
-          $run.Refresh()
-          Get-Content windows-python-source-test.txt
-          Get-Content windows-python-source-stderr.txt
-          if ($run.ExitCode -ne 0) { throw 'Windows Python source probe failed' }
-          Remove-Item Env:ELECTRON_RUN_AS_NODE
-      - name: Restore source-probe firewall
-        if: always()
-        shell: pwsh
-        run: |
-          if ($env:NED_PYTHON_FIREWALL_GROUP) { Get-NetFirewallRule -Group $env:NED_PYTHON_FIREWALL_GROUP -ErrorAction SilentlyContinue | Remove-NetFirewallRule }
-          if (Test-Path python-firewall-before.json) { foreach ($profile in (Get-Content python-firewall-before.json -Raw | ConvertFrom-Json)) { Set-NetFirewallProfile -Profile $profile.Name -Enabled $profile.Enabled } }
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: always()
-        with:
-          name: windows-python-source-probe
-          path: |
-            windows-python-source-test.txt
-            windows-python-source-stderr.txt
-
 
   editor-source-build:
     if: inputs.artifact_version == 'editor-source-build' || inputs.artifact_version == 'terminal-source-probe' || inputs.artifact_version == 'terminal-editor-probe' || inputs.artifact_version == 'global-skills-source-probe'
@@ -584,83 +341,6 @@ jobs:
           path: ${{ env.NED_EDITOR_OUTPUT }}
           if-no-files-found: error
 
-  native-agent-source-probe:
-    if: inputs.artifact_version == 'native-agent-source-probe'
-    runs-on: windows-2022
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          lfs: false
-          persist-credentials: false
-      - name: Prepare prior Node runtime and new Astryx assets for source tests
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $exe = Join-Path $env:RUNNER_TEMP 'Ned-prior.exe'
-          & curl.exe --fail --location --retry 2 --output $exe 'https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/bd4c4639dadfeef1a531833dcc9f823908a818bc/downloads/Ned-0.3.8-win-x64.exe'
-          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant() -ne '860d7cef5230ba632201f3bd51b134b58896f7f10f592d667a1cfaf1efaf7d27') { throw 'Prior installer mismatch' }
-          $install = Join-Path $env:RUNNER_TEMP 'ned-source-probe'
-          $process = Start-Process -FilePath $exe -ArgumentList @('/S', "/D=$install") -Wait -PassThru
-          if ($process.ExitCode -ne 0) { throw 'Prior runtime install failed' }
-          $group = "Ned-source-CI-$env:GITHUB_RUN_ID"
-          Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
-          New-NetFirewallRule -DisplayName $group -Group $group -Direction Outbound -Action Block -Program (Join-Path $install 'Ned.exe') -RemoteAddress Internet | Out-Null
-          "NED_FIREWALL_GROUP=$group" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          $lock = Get-Content astryx-offline-lock.json -Raw | ConvertFrom-Json
-          $kit = Join-Path $install ('resources\ned\astryx\' + $lock.archive.name)
-          New-Item -ItemType Directory (Split-Path $kit) -Force | Out-Null
-          & curl.exe --fail --location --retry 2 --output $kit "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/astryx/$($lock.archive.name)"
-          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $kit -Algorithm SHA256).Hash.ToLowerInvariant() -ne $lock.archive.sha256) { throw 'Astryx download mismatch' }
-          "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-      - name: Diagnose the source-built editor loader separately
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $record = Get-Content downloads/editor/build.json -Raw | ConvertFrom-Json
-          $entry = $record.files | Where-Object { $_.name -eq 'Ned-editor-0.3.8-rebuild1.exe' }
-          $editor = Join-Path (Split-Path $env:NED_TEST_NODE) 'resources\zed\Zed.exe'
-          & curl.exe --fail --location --retry 2 --output $editor "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/downloads/editor/$($entry.name)"
-          if ($LASTEXITCODE -ne 0 -or (Get-FileHash $editor -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'Source editor integrity mismatch' }
-          $stdout = Join-Path $env:RUNNER_TEMP 'editor-loader.stdout'
-          $stderr = Join-Path $env:RUNNER_TEMP 'editor-loader.stderr'
-          $probe = Start-Process -FilePath $editor -ArgumentList @('--printenv') -RedirectStandardOutput $stdout -RedirectStandardError $stderr -PassThru
-          $exited = $probe.WaitForExit(15000)
-          if (!$exited) { & taskkill.exe /PID $probe.Id /T /F | Out-Null }
-          $probe.Refresh()
-          $status = [ordered]@{ schemaVersion=1; sourceOnly=$true; exited=$exited; exitCode=$probe.ExitCode; stdoutBytes=(Get-Item $stdout).Length; stderrBytes=(Get-Item $stderr).Length; editorSha256=$entry.sha256 }
-          $status | ConvertTo-Json | Set-Content editor-loader-status.json -Encoding utf8
-          $status | ConvertTo-Json
-          Remove-Item $stdout,$stderr -Force
-          if (!$exited -or $probe.ExitCode -ne 0) { throw 'Source editor loader probe failed' }
-      - name: Exercise new native-agent transport and real Windows Astryx build
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $test = 'downloads/Ned-0.3.8-rebuild1-windows-native-test.cjs'
-          $expected = (Get-Content "$test.sha256").Split(' ')[0]
-          if ((Get-FileHash $test -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) { throw 'Source fixture mismatch' }
-          $env:ELECTRON_RUN_AS_NODE = '1'
-          $pattern = 'native Zed|native editor settings|closing a queued|installed Windows Astryx'
-          $process = Start-Process -FilePath $env:NED_TEST_NODE -ArgumentList @('--test', ('--test-name-pattern="' + $pattern + '"'), ('"' + (Resolve-Path $test).Path + '"')) -RedirectStandardOutput native-source-test.txt -RedirectStandardError native-source-stderr.txt -Wait -PassThru
-          Get-Content native-source-test.txt
-          if ($process.ExitCode -ne 0) { throw 'Native source probe failed' }
-          [ordered]@{ schemaVersion=1; sourceOnly=$true; newInstallerAcceptance=$false; usesPriorInstalledNode=$true; newAstryxFilesCopied=$true; modelEndpoints='localhost synthetic'; internetEgress='Ned Node blocked'; sourceCommit=$env:GITHUB_SHA } | ConvertTo-Json | Set-Content native-source-status.json -Encoding utf8
-      - name: Remove disposable firewall rules
-        if: always()
-        shell: pwsh
-        run: |
-          if ($env:NED_FIREWALL_GROUP) { Get-NetFirewallRule -Group $env:NED_FIREWALL_GROUP -ErrorAction SilentlyContinue | Remove-NetFirewallRule }
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: always()
-        with:
-          name: native-agent-source-probe
-          path: |
-            editor-loader-status.json
-            native-source-test.txt
-            native-source-stderr.txt
-            native-source-status.json
-
   release-build:
     if: inputs.artifact_version == 'release-build'
     runs-on: ubuntu-24.04
@@ -694,7 +374,7 @@ jobs:
         id: candidate
         run: node scripts/release-candidate.mjs candidate
       - name: Store candidate binaries outside Git LFS
-        if: steps.candidate.outputs.version == '0.3.11' || steps.candidate.outputs.version == '0.3.12' || steps.candidate.outputs.version == '0.3.12-rebuild1'
+        if: steps.candidate.outputs.version == '0.3.12' || steps.candidate.outputs.version == '0.3.12-rebuild1'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ned-${{ steps.candidate.outputs.version }}-installer-assets-${{ steps.candidate.outputs.source_sha }}

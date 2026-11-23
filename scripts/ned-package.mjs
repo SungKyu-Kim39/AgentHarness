@@ -9,10 +9,9 @@ import { extractFile } from '@electron/asar';
 import * as PE from 'pe-library';
 import { Data, Resource } from 'resedit';
 import { verifyAsciiTree, verifyAsciiTar } from './package-paths.mjs';
-import { verifyManifest, fileHash } from './installer-audit.mjs';
+import { verifyManifest, fileHash, payloadInventory } from './installer-audit.mjs';
 import { brandEditor, verifyEditorIcon } from './ned-editor-branding.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
-import { prepareRebuild, rebuildBaseline, payloadInventory } from './ned-rebuild.mjs';
 import { prepareRelease, refreshReleaseHost } from './ned-release.mjs';
 import {nedSigning} from './ned-signing.mjs';
 import {installSourceEditor,verifySourceEditor} from './ned-source-editor.mjs';
@@ -40,10 +39,7 @@ const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
 const run = (command,args,options={}) => execFileSync(command,args,{cwd:root,stdio:'inherit',...options});
 const exists = p => access(p).then(()=>true,()=>false);
-async function releaseDoc(file) {
-  const archived=path.join(root,'docs/archive',file.startsWith('validation-')?'validations':'releases',file);
-  return await exists(archived)?archived:path.join(root,'docs',file);
-}
+function releaseDoc(file) { return path.join(root,'docs',file); }
 async function prepareZed() {
   const lock = await json(path.join(root,'ned-runtime-lock.json'));
   for (const item of lock.artifacts) {
@@ -123,7 +119,7 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       ...['egm-lock.json','studio-assets-lock.json'].map(file=>({from:path.join(root,file),to:'ned/locks/'+file})),
-      ...['egm.md','zed-history-import.md','changes-'+version+'.md','upgrade-from-0.3.7.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
+      ...['egm.md','zed-history-import.md','changes-'+version+'.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
       {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
       {from:path.join(root,'scripts/sidecar-supervisor.py'),to:'ned/python-supervisor.py'},
       {from:path.join(root,'distribution/python-runner.py'),to:'ned/python-runner.py'},
@@ -201,26 +197,12 @@ async function audit() {
       if(await fileHash(path.join(resources,'ned/astryx',lock.archive.name))!==lock.archive.sha256||await fileHash(path.join(resources,'ned/astryx/astryx-offline-lock.json'))!==await fileHash(path.join(root,'astryx-offline-lock.json')))throw Error('Installed Astryx assets differ from the reviewed lock');
       astryx={version:lock.version,archive:lock.archive,referenceCount:lock.referenceCount,upstreamCliExecuted:false};
     }
-    const baseline=revision&&!fullRelease?await rebuildBaseline(root,version,revision):undefined;
     const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
     for(const name of ['openviking','mcp','rea','agent-desktop',...(ghidraRelease?['ghidra']:[]),'skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
-      components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
-    }
-    let rebuild;
-    if(revision&&!fullRelease){
-      const proof=await json(path.join(cache,revision,'provenance.json'));
-      if(proof.sourceCommit!==buildCommit||proof.buildRevision!==revision)throw new Error('Stale rebuild provenance');
-      const actual=await payloadInventory(extracted),generatedInstallerFiles={};
-      for(const name of ['$PLUGINSDIR/System.dll','$PLUGINSDIR/nsDialogs.dll','$PLUGINSDIR/modern-wizard.bmp','Uninstall Ned.exe']){
-        if(!actual[name])throw new Error('Missing generated installer file: '+name);
-        generatedInstallerFiles[name]=actual[name];delete actual[name];
-      }
-      const differences=[...new Set([...Object.keys(actual),...Object.keys(proof.payloadInventory)])].filter(name=>actual[name]!==proof.payloadInventory[name]);
-      if(differences.length)throw new Error('Installer payload differs from staging: '+differences.slice(0,10).join(', '));
-      const {payloadInventory:_,...summary}=proof;rebuild={...summary,generatedInstallerFiles};
+      components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
     }
     const runtimeOptimization=released?await json(path.join(resources,'ned/runtime-optimization.json')):undefined;
     if(released&&await fileHash(path.join(resources,'ned/runtime-optimization.json'))!==released.reportSha256)throw Error('Wrong optimization report');
@@ -238,7 +220,7 @@ async function audit() {
       await writeFile(path.join(output,'payload-manifest.json'),bytes);
       payloadComparison={files:Object.keys(actual).length,allStagedBytesVerified:true,manifestSha256:createHash('sha256').update(bytes).digest('hex'),generatedInstallerFiles};
     }
-    const report={auditSourceCommit:verifierCommit,buildRevision:revision||undefined,rebuild,runtimeOptimization,payloadComparison,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,sourceEditor,astryx,hostModuleSmoke,windowsAcceptance:false};
+    const report={auditSourceCommit:verifierCommit,buildRevision:revision||undefined,runtimeOptimization,payloadComparison,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,sourceEditor,astryx,hostModuleSmoke,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }
@@ -250,7 +232,7 @@ async function bundle() {
   await cp(installer,path.join(stage,path.basename(installer)));
   for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[await releaseDoc(`validation-${artifactVersion}.md`),'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
-  if(fullRelease)await cp(path.join(root,modernRelease?'docs/skills-0.3.9.md':'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
+  if(fullRelease)await cp(path.join(root,'docs/bundled-skills.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
   if(ghidraRelease)for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
@@ -274,7 +256,7 @@ async function bundle() {
   if(sourceEditorRelease){
     await cp(path.join(root,'docs/zed-native-agent.md'),path.join(stage,'ZED_NATIVE_AGENT.md'));
     await cp(path.join(root,'docs/subagents.md'),path.join(stage,'SUBAGENTS.md'));
-    if(modernRelease)for(const file of ['egm.md','zed-history-import.md','changes-'+version+'.md','upgrade-from-0.3.7.md'])await cp(await releaseDoc(file),path.join(stage,file));
+    if(modernRelease)for(const file of ['egm.md','zed-history-import.md','changes-'+version+'.md'])await cp(await releaseDoc(file),path.join(stage,file));
     await cp(path.join(root,'docs/astryx.md'),path.join(stage,'ASTRYX.md'));
     await mkdir(path.join(stage,'astryx'),{recursive:true});
     const astryx=await json(path.join(root,'astryx-offline-lock.json'));
@@ -349,18 +331,10 @@ else if(mode==='release') {
   buildInstaller(installer);
   await audit();
 }
-else if(mode==='rebuild') {
-  if(!revision)throw new Error('Set NED_BUILD_REVISION for a same-version rebuild');
-  const seven=await getPath7za();
-  await prepareRebuild(root,cache,staged,version,revision,buildCommit,seven);
-  const nsis=await getMakeNsisPath('0.0.0');
-  run(nsis.path,['-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
-  await audit();
-}
-else if(mode==='package') {if(revision)throw new Error('Use rebuild for a repair revision');await packageApp();await audit();}
+else if(mode==='package') {if(revision)throw new Error('Use release for a repair revision');await packageApp();await audit();}
 else if(mode==='stage') await packageApp(false);
 else if(mode==='audit') await audit();
 else if(mode==='bundle') await bundle();
 else if(mode==='dev') {await prepareZed();run(process.execPath,['scripts/ned-build.mjs']);if(process.platform!=='win32') throw new Error('Managed native development requires Windows; use the ACP integration tests on Linux.');run(path.join(root,'node_modules/electron/dist/electron.exe'),[path.join(cache,'app')],{env:{...process.env,NED_DEV_RESOURCES:path.join(staged,'resources')}});}
 else if(mode==='prepare') await prepareZed();
-else throw new Error('Usage: ned-package.mjs prepare|package|stage|rebuild|audit|bundle');
+else throw new Error('Usage: ned-package.mjs prepare|package|stage|release|audit|bundle');

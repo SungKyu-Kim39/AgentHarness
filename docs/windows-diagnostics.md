@@ -22,7 +22,7 @@ Ned를 닫고 반입 폴더의 **CHECK_OPENVIKING.cmd**를 실행해 보세요. 
 
 `OPENVIKING_IMPORT_OK`, `TOKENIZERS_OK 7`, `EXIT_CODE=0`이 나오면 모듈과 인코더 로딩은 정상입니다. 서비스 준비와 사내 API 인증·검색까지 확인한 결과는 아닙니다.
 
-토크나이저는 설치 리소스의 `tokenizers/assets.json`과 고정 데이터를 사용합니다. LiteLLM이 다른 캐시로 바꾸지 않도록 지정하고, 자료가 없거나 손상되면 온라인 복구를 시도하지 않습니다. 이전 0.2.4 이하 설치본의 복구는 [토크나이저 수정 안내](archive/fixes/openviking-tokenizer-fix.md)를 따릅니다.
+토크나이저는 설치 리소스의 `tokenizers/assets.json`과 고정 데이터를 사용합니다. LiteLLM이 다른 캐시로 바꾸지 않도록 지정하고, 자료가 없거나 손상되면 온라인 복구를 시도하지 않습니다.
 
 문의할 때는 경고 코드와 안전한 상태 기록, 검사 마지막 오류와 `EXIT_CODE`를 사용하세요. 전체 설정·키·DB·지식을 보내거나 삭제할 필요는 없습니다. 무결성 검사나 외부 DNS 차단을 풀어서 해결하지 않습니다.
 
