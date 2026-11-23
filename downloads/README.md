@@ -1,3 +1,15 @@
+# Ned 0.3.12 rebuild2
+
+Windows x64 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식과 사용자 글로벌 스킬은 보존됩니다.
+
+- [반입 TGZ](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-windows-x64.tgz) · 1914909413 bytes
+- [설치 EXE](https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-win-x64.exe) · 1535032629 bytes
+- [TGZ SHA-256](Ned-0.3.12-rebuild2-windows-x64.tgz.sha256) · [EXE SHA-256](Ned-0.3.12-rebuild2-win-x64.exe.sha256)
+- [변경 사항](../docs/changes-0.3.12.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../docs/validation-0.3.12-rebuild2.md)
+- [설치 감사](Ned-0.3.12-rebuild2-installer-audit.json) · [TGZ 검사](Ned-0.3.12-rebuild2-bundle-verification.json) · [Windows 결과](Ned-0.3.12-rebuild2-windows-offline-smoke.json) · [공개 다운로드 검증](Ned-0.3.12-rebuild2-public-verification.json) · [배포 상태](Ned-0.3.12-rebuild2-release-state.json)
+
+---
+
 # Ned 0.3.12 rebuild1
 
 Windows x64 사전 릴리스입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식과 사용자 글로벌 스킬은 보존됩니다.
