@@ -4,12 +4,12 @@ import path from 'node:path';
 import {
   STUDIO_RENDER_TIMEOUT_MS,
   sanitizeStudioUrl,
-  studioCsp,
   studioDiagnosticProbe,
   studioHeaders,
   studioOrigin,
   studioRenderProbe,
   studioRequestAllowed,
+  studioResponseHeaders,
   type StudioConnection,
 } from './studio-policy';
 
@@ -98,9 +98,7 @@ export class OpenVikingStudio {
         lastCode = details.statusCode === 401 || details.statusCode === 403 ? 'STUDIO_AUTH' : 'STUDIO_RESOURCE';
         this.diagnostic({ code: lastCode, httpStatus: details.statusCode, ...diagnosticContext() });
       }
-      const headers = { ...details.responseHeaders };
-      for (const key of Object.keys(headers)) if (/^content-security-policy(?:-report-only)?$/i.test(key)) delete headers[key];
-      answer({ responseHeaders: { ...headers, 'Content-Security-Policy': [studioCsp], 'Referrer-Policy': ['no-referrer'] } });
+      answer({ responseHeaders: studioResponseHeaders(origin, details.url, details.statusCode, details.responseHeaders ?? {}) });
     });
     const window = new BrowserWindow({ width: 1180, height: 800, minWidth: 760, minHeight: 500, show: false, title: 'Ned · OpenViking Studio', icon,
       webPreferences: { session: isolated, preload: path.join(__dirname, 'studio-preload.cjs'),
@@ -199,7 +197,8 @@ export class OpenVikingStudio {
           ...(typeof line === 'number' && Number.isFinite(line) ? { line } : {}),
         });
       }
-      if (!ready && /Content Security Policy|Refused to (?:load|execute)/i.test(message)) lastCode = 'STUDIO_POLICY';
+      if (!ready && /Failed to load module script|strict MIME type checking/i.test(message)) lastCode = 'STUDIO_MIME';
+      else if (!ready && /Content Security Policy|Refused to (?:load|execute)/i.test(message)) lastCode = 'STUDIO_POLICY';
     });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     const navigate = (event: Electron.Event, url: string) => {

@@ -34,7 +34,7 @@ const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12'].include
 const ghidraRelease = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12'].includes(version);
 const modernRelease = ['0.3.9','0.3.10','0.3.11','0.3.12'].includes(version);
 const sourceEditorRelease = (version==='0.3.8'&&revision==='rebuild1') || modernRelease;
-if(['0.3.7','0.3.8'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
+if(['0.3.7','0.3.8','0.3.12'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
@@ -287,7 +287,10 @@ async function bundle() {
       if (await fileHash(archive) !== original.sha256) throw Error('Vendor corresponding source hash mismatch');
       await cp(archive,path.join(stage,'source',original.file));
     } else {
-      const editor=await editorVersion(root);
+      const saved=process.env.NED_BUILD_REVISION;
+      let editor;
+      if(version==='0.3.12'&&revision==='rebuild1'){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
+      else editor=await editorVersion(root);
       await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
     }
   }

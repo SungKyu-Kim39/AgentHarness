@@ -21,6 +21,12 @@ def main():
         launch = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(launch)
         launch.restrict_python_network({"embedding": {"dense": {"api_base": "http://127.0.0.1:9/v1"}}})
+        if hasattr(launch, "configure_mime_types"):
+            import mimetypes
+            launch.configure_mime_types()
+            if mimetypes.guess_type("index.js")[0] not in ("text/javascript", "application/javascript") or mimetypes.guess_type("style.css")[0] != "text/css":
+                raise RuntimeError("Ned Studio MIME type configuration failed")
+            print("OPENVIKING_MIME_OK", flush=True)
         encodings = launch.configure_tokenizers(runtime / "tokenizers")
         try:
             from openviking.server.app import create_app

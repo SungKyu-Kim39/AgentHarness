@@ -19,6 +19,58 @@ export function studioRequestAllowed(origin: string, value: string) {
   } catch { return false; }
 }
 export const studioCsp = "default-src 'self'; script-src 'self' 'sha256-VOJLki7o5gkOb2u+he3o1ABQAVWyxBF7jGDloARlJ8Y=' blob: 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'";
+const STUDIO_STATIC_MIME_TYPES: Record<string, string> = {
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.html': 'text/html; charset=utf-8',
+  '.htm': 'text/html; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.map': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.wasm': 'application/wasm',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.webp': 'image/webp',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.txt': 'text/plain; charset=utf-8',
+};
+export function studioStaticContentType(origin: string, url: string, statusCode: number): string | undefined {
+  if (statusCode < 200 || statusCode >= 300 || !studioRequestAllowed(origin, url)) return undefined;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'http:' || parsed.origin !== origin) return undefined;
+    const pathname = parsed.pathname;
+    if (pathname === '/studio' || pathname === '/studio/') return 'text/html; charset=utf-8';
+    if (!pathname.startsWith('/studio/') && pathname !== '/favicon.ico' && pathname !== '/favicon.png') return undefined;
+    const dot = pathname.lastIndexOf('.');
+    const slash = pathname.lastIndexOf('/');
+    if (dot <= slash) return undefined;
+    return STUDIO_STATIC_MIME_TYPES[pathname.slice(dot).toLowerCase()];
+  } catch { return undefined; }
+}
+export function studioResponseHeaders(origin: string, url: string, statusCode: number, supplied: Record<string, string[]>) {
+  const headers: Record<string, string[]> = { ...supplied };
+  for (const key of Object.keys(headers)) {
+    if (/^content-security-policy(?:-report-only)?$/i.test(key)) delete headers[key];
+  }
+  const contentType = studioStaticContentType(origin, url, statusCode);
+  if (contentType) {
+    for (const key of Object.keys(headers)) {
+      if (/^content-type$/i.test(key)) delete headers[key];
+    }
+    headers['Content-Type'] = [contentType];
+  }
+  headers['Content-Security-Policy'] = [studioCsp];
+  headers['Referrer-Policy'] = ['no-referrer'];
+  return headers;
+}
 export function studioHeaders(connection: StudioConnection, url: string, supplied: Record<string, string>) {
   const headers = { ...supplied };
   for (const key of Object.keys(headers)) if (/^(authorization$|x-api-key$|x-openviking-)/i.test(key)) delete headers[key];

@@ -192,6 +192,33 @@ def restrict_python_network(config):
         socket.socketpair = lambda family=None, type=socket.SOCK_STREAM, proto=0: windows_socketpair(original_connect, family, type, proto)
 
 
+def configure_mime_types():
+    """Ignore Windows Registry MIME overrides (e.g. .js -> text/plain) for Studio static assets."""
+    import mimetypes
+    mimetypes.knownfiles = []
+    mimetypes.MimeTypes.read_windows_registry = lambda self, strict=True: None
+    mimetypes.init(files=[])
+    for ext, mime in (
+        (".js", "text/javascript"),
+        (".mjs", "text/javascript"),
+        (".css", "text/css"),
+        (".html", "text/html"),
+        (".htm", "text/html"),
+        (".json", "application/json"),
+        (".map", "application/json"),
+        (".svg", "image/svg+xml"),
+        (".wasm", "application/wasm"),
+        (".woff2", "font/woff2"),
+        (".woff", "font/woff"),
+        (".ttf", "font/ttf"),
+        (".otf", "font/otf"),
+        (".png", "image/png"),
+        (".ico", "image/x-icon"),
+        (".webp", "image/webp"),
+    ):
+        mimetypes.add_type(mime, ext, strict=True)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
@@ -202,6 +229,7 @@ def main():
     os.environ["OPENVIKING_CONFIG_FILE"] = args.config
     job_handle = windows_job()  # Keep the handle alive until process exit.
     restrict_python_network(config)
+    configure_mime_types()
     configure_tokenizers(os.environ.get("TIKTOKEN_CACHE_DIR"))
     from openviking.server.app import create_app
     configure_model_queue_wait()

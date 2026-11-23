@@ -5,8 +5,16 @@ import {createHash} from 'node:crypto';
 import {brandEditor,verifyEditorIcon} from './ned-editor-branding.mjs';
 import {editorVersion} from './ned-editor-version.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
+async function resolvedEditorVersion(root){
+ const saved=process.env.NED_BUILD_REVISION;
+ if(saved==='rebuild1'&&JSON.parse(await readFile(path.join(root,'package.json'),'utf8')).version==='0.3.12'){
+  delete process.env.NED_BUILD_REVISION;
+  try{return await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}
+ }
+ return editorVersion(root);
+}
 export async function sourceEditorInputs(root){
- const identity=await editorVersion(root),directory=path.join(root,'downloads/editor');
+ const identity=await resolvedEditorVersion(root),directory=path.join(root,'downloads/editor');
  const build=JSON.parse(await readFile(path.join(directory,identity.version==='0.3.8'&&identity.revision==='rebuild1'?'build.json':identity.metadata)));
  const lock=JSON.parse(await readFile(path.join(root,'ned-editor-source-lock.json')));
  if(build.schemaVersion!==1||build.version!==identity.version||(build.buildRevision??'')!==identity.revision||build.upstreamCommit!==lock.upstream.commit||!Array.isArray(build.files))throw Error('Unreviewed source-built editor metadata');

@@ -78,3 +78,16 @@ test('blocked requests, did-fail-load, and console errors produce STUDIO_BLOCKED
  assert.equal(event.consoleMessages[0].level,'error');
  f.studio.close();
 });
+
+test('onHeadersReceived fixes text/plain JS module responses and classifies MIME failures as STUDIO_MIME',async()=>{
+ const state={phase:'waiting'},f=fixture(Promise.resolve(),()=>Promise.resolve(),{state});
+ await f.studio.open(connection,'icon');
+ let received;
+ f.hooks.onHeadersReceived({url:connection.baseUrl+'/studio/assets/index-UnJqJNrj.js',statusCode:200,responseHeaders:{'content-type':['text/plain']}},value=>{received=value;});
+ assert.deepEqual(Array.from(received.responseHeaders['Content-Type']),['text/javascript; charset=utf-8']);
+ assert.equal(received.responseHeaders['content-type'],undefined);
+ f.windows[0].webContents.emit('console-message',{},3,'Failed to load module script: Expected a JavaScript-or-Wasm module script but the server responded with a MIME type of "text/plain".',0,connection.baseUrl+'/studio/assets/index-UnJqJNrj.js');
+ await f.advance(31000);
+ assert.equal(f.diagnostics.at(-1).code,'STUDIO_MIME');
+ f.studio.close();
+});

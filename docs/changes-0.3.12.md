@@ -17,3 +17,10 @@
   - Core 설치 EXE와 별도 리버싱 팩 TGZ(`INSTALL.ps1`) 이원화를 제거하고 전체 설치본(Full EXE/TGZ) 단일 배포로 단순화했습니다. 기존 0.3.11 Core+팩 설치 환경에서 제자리 업데이트할 때 남아 있는 `%APPDATA%\Ned\packs\reversing\0.3.11` 폴더는 충돌 없이 무시합니다.
   - 기본 대화에서 리버싱(REA/Ghidra)·데스크톱(`agent-desktop`) 도구 스키마를 요청 시에만 노출하는 지연 로딩은 그대로 유지합니다.
   - 알림 영역 **사용 안내** 메뉴의 버전 변경 사항 링크가 현재 설치 버전(`changes-0.3.12.md`)을 열도록 수정하고 지식 저장·검색 안내를 추가했습니다.
+
+## 0.3.12 rebuild1 수정 사항
+
+- **OpenViking Studio Windows 레지스트리 MIME 오류 수정**:
+  - 일부 Windows 10·11 PC에서 레지스트리(`HKCR\.js\Content Type`)가 `.js`를 `text/plain`으로 반환해 Electron Chromium이 `<script type="module">` 실행을 거부하고 `STUDIO_RENDER_TIMEOUT`이 발생하던 문제를 해결했습니다.
+  - OpenViking 런처(`launch.py`)의 `configure_mime_types()`가 Python `mimetypes`의 Windows 레지스트리 조회를 비활성화하고 표준 웹 자산 MIME 타입을 명시 등록하도록 보완했습니다.
+  - Electron Studio 호스트(`onHeadersReceived`)에서도 `/studio/` 정적 리소스(HTTP 2xx)의 `Content-Type`을 확장자 기준 표준 MIME 타입으로 정규화하고, 모듈 MIME 거부 콘솔 오류는 `STUDIO_MIME` 진단 코드로 구분 기록합니다.
