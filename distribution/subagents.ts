@@ -58,7 +58,7 @@ export const subagentReadTools = new Set([
 ]);
 export const goldfishReadTools = new Set(["read_file", "list_files", "read_skill"]);
 export const goldfishReviewers = new Set(["codebase_details","comprehension","design_critic","implementation_readiness","inventive_catalyst","structural","style","zoom_out"]);
-const editing = new Set(["propose_edit", "delete_file"]);
+const editing = new Set(["propose_edit", "patch_file", "delete_file"]);
 const active = (j: Job) =>
   ["queued", "running", "unconfirmed"].includes(j.state);
 const valid = (s: unknown): s is string =>

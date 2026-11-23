@@ -7,7 +7,7 @@ import {editorVersion} from './ned-editor-version.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function resolvedEditorVersion(root){
  const saved=process.env.NED_BUILD_REVISION;
- if(saved==='rebuild1'&&JSON.parse(await readFile(path.join(root,'package.json'),'utf8')).version==='0.3.12'){
+ if(/^rebuild[1-9][0-9]*$/.test(saved??'')&&JSON.parse(await readFile(path.join(root,'package.json'),'utf8')).version==='0.3.12'){
   delete process.env.NED_BUILD_REVISION;
   try{return await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}
  }

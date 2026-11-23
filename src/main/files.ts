@@ -218,4 +218,128 @@ export class ProjectFiles {
     if (!bytes.equals(Buffer.from(proposal.before, "utf8"))) throw new Error("UTF-8 텍스트 파일만 삭제할 수 있습니다. 외부 변경 여부도 확인하세요.");
     return { ...proposal, operation: "delete" };
   }
+  async proposePatch(
+    callId: string,
+    relative: string,
+    edits: TextPatchEdit[],
+  ): Promise<{ proposal: Proposal; replacements: number }> {
+    await this.resolve(relative, true);
+    const before = await this.read(relative);
+    const { after, replacements } = applyTextEdits(before, edits);
+    if (Buffer.byteLength(after) > MAX_FILE || after.includes("\0"))
+      throw new Error("텍스트 변경 크기 제한을 초과했습니다.");
+    return {
+      replacements,
+      proposal: {
+        id: randomUUID(),
+        callId,
+        path: relative,
+        before,
+        after,
+        baseHash: `file:${hash(before)}`,
+        status: "pending",
+      },
+    };
+  }
+}
+
+export interface TextPatchEdit {
+  oldText: string;
+  newText: string;
+  startLine?: number;
+  endLine?: number;
+  replaceAll?: boolean;
+}
+
+function lineOffsets(text: string): number[] {
+  const offsets = [0];
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === "\n") offsets.push(i + 1);
+  }
+  return offsets;
+}
+
+function findOccurrences(haystack: string, needle: string): number[] {
+  const hits: number[] = [];
+  let cursor = 0;
+  while (cursor <= haystack.length - needle.length) {
+    const index = haystack.indexOf(needle, cursor);
+    if (index < 0) break;
+    hits.push(index);
+    cursor = index + needle.length;
+  }
+  return hits;
+}
+
+export function applyTextEdits(
+  before: string,
+  edits: TextPatchEdit[],
+): { after: string; replacements: number } {
+  if (!Array.isArray(edits) || edits.length === 0)
+    throw new Error("적용할 부분 편집 항목이 최소 1개 이상 필요합니다.");
+  const usesCrlf = before.includes("\r\n");
+  const normalizeEol = (value: string) =>
+    usesCrlf
+      ? value.replace(/\r\n/g, "\n").replace(/\n/g, "\r\n")
+      : value.replace(/\r\n/g, "\n");
+  let current = before;
+  let totalReplacements = 0;
+  for (let idx = 0; idx < edits.length; idx++) {
+    const edit = edits[idx];
+    if (!edit.oldText)
+      throw new Error(`편집 #${idx + 1}의 oldText는 비어 있을 수 없습니다.`);
+    if (edit.oldText.includes("\0") || edit.newText.includes("\0"))
+      throw new Error("NUL 바이트는 텍스트 편집에 사용할 수 없습니다.");
+    const offsets = lineOffsets(current);
+    const totalLines = offsets.length;
+    let windowStart = 0;
+    let windowEnd = current.length;
+    if (edit.startLine !== undefined || edit.endLine !== undefined) {
+      const startLine = edit.startLine ?? 1;
+      const endLine = edit.endLine ?? totalLines;
+      if (
+        !Number.isInteger(startLine) ||
+        !Number.isInteger(endLine) ||
+        startLine < 1 ||
+        endLine < startLine ||
+        startLine > totalLines
+      )
+        throw new Error(
+          `편집 #${idx + 1}의 줄 범위(${startLine}~${endLine})가 파일 줄 수(${totalLines})와 맞지 않습니다.`,
+        );
+      windowStart = offsets[startLine - 1];
+      windowEnd = endLine < totalLines ? offsets[endLine] : current.length;
+    }
+    const slice = current.slice(windowStart, windowEnd);
+    let needle = edit.oldText;
+    let replacement = edit.newText;
+    let hits = findOccurrences(slice, needle);
+    if (hits.length === 0) {
+      const normalizedNeedle = normalizeEol(edit.oldText);
+      if (normalizedNeedle !== needle) {
+        hits = findOccurrences(slice, normalizedNeedle);
+        if (hits.length > 0) {
+          needle = normalizedNeedle;
+          replacement = normalizeEol(edit.newText);
+        }
+      }
+    }
+    if (hits.length === 0)
+      throw new Error(
+        `편집 #${idx + 1}의 oldText를 파일에서 찾지 못했습니다. 최신 파일을 다시 읽고 정확한 원문을 지정하세요.`,
+      );
+    if (hits.length > 1 && !edit.replaceAll)
+      throw new Error(
+        `편집 #${idx + 1}의 oldText가 ${hits.length}곳에서 일치해 모호합니다. 주변 문맥을 더 포함하거나 startLine/endLine 또는 replaceAll을 지정하세요.`,
+      );
+    const updatedSlice = edit.replaceAll
+      ? slice.split(needle).join(replacement)
+      : slice.slice(0, hits[0]) + replacement + slice.slice(hits[0] + needle.length);
+    current =
+      current.slice(0, windowStart) + updatedSlice + current.slice(windowEnd);
+    totalReplacements += edit.replaceAll ? hits.length : 1;
+  }
+  if (current === before)
+    throw new Error("부분 편집 결과 변경된 내용이 없습니다.");
+  return { after: current, replacements: totalReplacements };
 }

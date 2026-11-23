@@ -4,9 +4,9 @@ on:
     inputs:
       artifact_version:
         description: Exact immutable installer build
-        default: 0.3.12-rebuild1
+        default: 0.3.12-rebuild2
         type: choice
-        options: ['0.3.12-rebuild1', '0.3.12', '0.3.11', '0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
+        options: ['0.3.12-rebuild2', '0.3.12-rebuild1', '0.3.12', '0.3.11', '0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
       build_revision:
         description: Optional same-version repair revision (e.g. rebuild1)
         type: string
@@ -42,7 +42,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     env:
-      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.12' }}
+      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.12-rebuild2' }}
       NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -50,7 +50,7 @@ jobs:
           lfs: false
           persist-credentials: false
       - name: Measure the previous installer on the same Windows runner
-        if: env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1'
+        if: env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild2'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -86,7 +86,7 @@ jobs:
           if ($env:NED_CANDIDATE_SOURCE -and $audit.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Candidate provenance mismatch' }
           "NED_ARTIFACT_SHA256=$($audit.installer.sha256)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $exe = Join-Path $env:RUNNER_TEMP "Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-          if (($env:NED_ARTIFACT_VERSION -in @('0.3.11','0.3.12','0.3.12-rebuild1')) -and $env:NED_CANDIDATE_SOURCE) {
+          if (($env:NED_ARTIFACT_VERSION -in @('0.3.11','0.3.12','0.3.12-rebuild1','0.3.12-rebuild2')) -and $env:NED_CANDIDATE_SOURCE) {
             $candidateRun = '${{ inputs.candidate_run }}'
             if ($candidateRun -notmatch '^[0-9]+$') { throw 'Candidate Actions run ID required' }
             $files = Join-Path $env:RUNNER_TEMP 'ned-immutable-candidate'
@@ -95,7 +95,7 @@ jobs:
             $exe = Join-Path $files (Split-Path $exe -Leaf)
             "NED_SMOKE_CANDIDATE_DIR=$files" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           } else {
-            $url = if ($env:NED_ARTIFACT_VERSION -in @('0.3.11','0.3.12','0.3.12-rebuild1')) {
+            $url = if ($env:NED_ARTIFACT_VERSION -in @('0.3.11','0.3.12','0.3.12-rebuild1','0.3.12-rebuild2')) {
               "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:NED_ARTIFACT_VERSION/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
             } else {
               "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
@@ -137,7 +137,7 @@ jobs:
           $expectedVersion = if ($env:NED_ARTIFACT_VERSION -ne '0.3.7') { '0.5.5' } else { '0.5.4' }
           if (!($result -match "OPENVIKING_VERSION=$([regex]::Escape($expectedVersion))")) { throw 'Wrong bundled OpenViking version' }
           if (!($result -match 'OPENVIKING_ADAPTERS_OK')) { throw 'OpenViking queue/pack adapters failed' }
-          if ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild1' -and !($result -match 'OPENVIKING_MIME_OK')) { throw 'OpenViking MIME configuration failed' }
+          if (($env:NED_ARTIFACT_VERSION -in @('0.3.12-rebuild1','0.3.12-rebuild2')) -and !($result -match 'OPENVIKING_MIME_OK')) { throw 'OpenViking MIME configuration failed' }
           $sdk = Join-Path $install 'resources\runtime\windows-x64\openviking\python\Lib\site-packages\ned-sdk-code.zip'
           if (!(Test-Path $sdk)) { throw 'Packed SDK archive missing' }
           $stdout = Join-Path $env:RUNNER_TEMP 'ned-node.stdout.txt'
@@ -192,7 +192,7 @@ jobs:
           $proof | Add-Member -NotePropertyName newInstallerAcceptance -NotePropertyValue $false
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Verify 0.5.4 data migration using the installed Windows runtimes
-        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1'
+        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild2'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -207,7 +207,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify file deletion with the installed Windows Node runtime
-        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1'
+        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild1' && env.NED_ARTIFACT_VERSION != '0.3.12-rebuild2'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -296,7 +296,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Installed Windows Python tools failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify skills, history, settings and terminal behavior after installation
-        if: always() && (env.NED_ARTIFACT_VERSION == '0.3.9' || env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild1') && env.NED_TEST_NODE != ''
+        if: always() && (env.NED_ARTIFACT_VERSION == '0.3.9' || env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild1' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild2') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -315,13 +315,13 @@ jobs:
           }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Update the previous installed release and verify user data
-        if: env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild1'
+        if: env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild1' || env.NED_ARTIFACT_VERSION == '0.3.12-rebuild2'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
           if ((Split-Path $env:NED_TEST_NODE) -ne $install) { throw 'Unexpected disposable installer path' }
-          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild1') { '0.3.12' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.12') { '0.3.11' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.11') { '0.3.10' } else { '0.3.9' }
+          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild2') { '0.3.12-rebuild1' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild1') { '0.3.12' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.12') { '0.3.11' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.11') { '0.3.10' } else { '0.3.9' }
           $previous = Join-Path $env:RUNNER_TEMP "Ned-$baseline-previous.exe"
           $audit = Get-Content "downloads/Ned-$baseline-installer-audit.json" -Raw | ConvertFrom-Json
           $url = "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v$baseline/Ned-$baseline-win-x64.exe"
@@ -694,7 +694,7 @@ jobs:
         id: candidate
         run: node scripts/release-candidate.mjs candidate
       - name: Store candidate binaries outside Git LFS
-        if: steps.candidate.outputs.version == '0.3.11' || steps.candidate.outputs.version == '0.3.12' || steps.candidate.outputs.version == '0.3.12-rebuild1'
+        if: steps.candidate.outputs.version == '0.3.11' || steps.candidate.outputs.version == '0.3.12' || steps.candidate.outputs.version == '0.3.12-rebuild1' || steps.candidate.outputs.version == '0.3.12-rebuild2'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ned-${{ steps.candidate.outputs.version }}-installer-assets-${{ steps.candidate.outputs.source_sha }}

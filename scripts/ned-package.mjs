@@ -20,7 +20,7 @@ const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
 const revision=process.env.NED_BUILD_REVISION ?? '';
-if(revision && revision!=='rebuild1')throw new Error('Unsupported build revision');
+if(revision && !/^rebuild[1-9][0-9]*$/.test(revision))throw new Error('Unsupported build revision');
 const artifactVersion=version+(revision?'-'+revision:'');
 const vendorEditor = process.env.NED_VENDOR_EDITOR === '1';
 const output = path.join(root,vendorEditor ? 'release/ned-vendor' : 'release/ned');
@@ -289,7 +289,7 @@ async function bundle() {
     } else {
       const saved=process.env.NED_BUILD_REVISION;
       let editor;
-      if(version==='0.3.12'&&revision==='rebuild1'){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
+      if(version==='0.3.12'&&/^rebuild[1-9][0-9]*$/.test(revision)){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
       else editor=await editorVersion(root);
       await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
     }

@@ -151,7 +151,8 @@ export const hostTools: ToolSpec[] = [
   { name: 'read_external_file', description: 'Read one explicitly targeted local UTF-8 file outside the project, up to 2 MiB. Absolute path required. Prompts for approval in ask/edits modes and auto-approves in full-access mode. Read-only; no external writes, network paths or Ned/profile protected paths.', inputSchema: object({ path: string }, ['path']) },
   { name: 'list_external_directory', description: 'List up to 1000 entries of one explicit local directory outside the project. Absolute path required. Prompts for approval in ask/edits modes and auto-approves in full-access mode. Nonrecursive and read-only.', inputSchema: object({ path: string }, ['path']) },
   { name: 'search_text', description: 'Literal text search inside the project. This is text-search fallback, not semantic analysis.', inputSchema: object({ query: string }, ['query']) },
-  { name: 'propose_edit', description: 'Propose complete UTF-8 file content. Native host approval policy, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
+  { name: 'propose_edit', description: 'Create a new UTF-8 file or replace complete file content. For partial edits to an existing file, prefer patch_file. Native host approval policy, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
+  { name: 'patch_file', description: 'Apply targeted partial edits to an existing project UTF-8 text file without rewriting the whole file. Prefer patch_file over propose_edit when modifying an existing file. Each edit replaces exact oldText with newText (optional 1-indexed startLine/endLine or replaceAll). Uses the same native host approval policy, unsaved-buffer check, source conflict check and recovery snapshot as propose_edit. Read the current file first.', inputSchema: object({ path: string, edits: { type: 'array', minItems: 1, maxItems: 50, items: object({ oldText: string, newText: string, startLine: { type: 'integer', minimum: 1 }, endLine: { type: 'integer', minimum: 1 }, replaceAll: { type: 'boolean' } }, ['oldText', 'newText']) } }, ['path', 'edits']) },
   { name: 'delete_file', description: 'Delete one existing UTF-8 project text file (up to 2 MiB). Uses the same native file-change approval policy, unsaved-buffer check, source hash and recovery snapshot as edits. No directories, recursive deletion, wildcard paths or binary files. Empty content in propose_edit is not deletion.', inputSchema: object({ path: string }, ['path']) },
   { name: 'read_methodology', description: 'Read pinned Aegis/Conductor instructions and inspect existing conductor/index.md, tracks.md and relevant spec/plan files with read_file. Track updates use propose_edit.', inputSchema: object({ name: { type: 'string', enum: ['aegis', 'conductor'] } }, ['name']) },
   { name: 'skill_catalog', description: 'List bundled, user-global and current-project skills by ID. Use this tool for Ned skills instead of browsing external profile paths.', inputSchema: object({}) },
@@ -359,10 +360,22 @@ export class HostTools {
       }
       return '일반 텍스트 검색 결과 (의미 분석 아님)\n' + matches.join('\n');
     }
-    if (name === 'propose_edit' || name === 'delete_file') {
+    if (name === 'propose_edit' || name === 'patch_file' || name === 'delete_file') {
       const deleting = name === 'delete_file';
-      const a = deleting ? { ...z.object({ path: pathArg }).strict().parse(args), content: undefined } : z.object({ path: pathArg, content: z.string().max(2 * 1024 * 1024) }).strict().parse(args);
-      const label = deleting ? '파일 삭제' : '파일 수정';
+      const patching = name === 'patch_file';
+      const patchEditSchema = z.object({
+        oldText: z.string().min(1).max(512 * 1024),
+        newText: z.string().max(512 * 1024),
+        startLine: z.number().int().min(1).optional(),
+        endLine: z.number().int().min(1).optional(),
+        replaceAll: z.boolean().optional(),
+      }).strict();
+      const parsed = deleting
+        ? { ...z.object({ path: pathArg }).strict().parse(args), content: undefined, edits: undefined }
+        : patching
+          ? { ...z.object({ path: pathArg, edits: z.array(patchEditSchema).min(1).max(50) }).strict().parse(args), content: undefined }
+          : { ...z.object({ path: pathArg, content: z.string().max(2 * 1024 * 1024) }).strict().parse(args), edits: undefined };
+      const label = deleting ? '파일 삭제' : patching ? '파일 부분 수정' : '파일 수정';
       const previous = this.editQueue; let release!: () => void;
       this.editQueue = new Promise<void>(resolve => { release = resolve; });
       await previous;
@@ -371,15 +384,36 @@ export class HostTools {
         const policyEpoch = this.editPolicyEpoch;
         const editSignal = signal ? AbortSignal.any([signal, this.editPolicyAbort.signal]) : this.editPolicyAbort.signal;
         const request = await this.options.request?.(session);
-        const proposal = deleting ? await files.proposeDelete(randomUUID(), a.path) : await files.propose(randomUUID(), a.path, a.content ?? '');
+        let proposal: Proposal;
+        let replacements = 0;
+        if (deleting) {
+          proposal = await files.proposeDelete(randomUUID(), parsed.path);
+        } else if (patching) {
+          const result = await files.proposePatch(randomUUID(), parsed.path, parsed.edits!);
+          proposal = result.proposal;
+          replacements = result.replacements;
+        } else {
+          proposal = await files.propose(randomUUID(), parsed.path, parsed.content ?? '');
+        }
         await this.options.validateEdit?.(session, project, proposal, editSignal);
-        const preview = deleting && proposal.before.length > 20000 ? proposal.before.slice(0, 20000) + '\n(이하 생략 · 원본 전체는 스냅샷에 보관)' : proposal.before;
-        const detail = `대화: ${session}\n프로젝트: ${project}\n대상: ${a.path}\n작업: ${label}${deleting ? '\n원본 bytes: ' + Buffer.byteLength(proposal.before) + '\n원본 SHA-256: ' + proposal.baseHash.slice(5) : ''}\n\n변경 전\n${preview}\n\n변경 후\n${deleting ? '(파일이 삭제됩니다. 원본은 호스트 스냅샷에 보관합니다.)' : proposal.after}`;
+        let detail: string;
+        if (patching) {
+          const summary = parsed.edits!.map((edit, idx) => {
+            const range = edit.startLine !== undefined || edit.endLine !== undefined ? ` (줄 ${edit.startLine ?? 1}~${edit.endLine ?? '끝'})` : '';
+            const all = edit.replaceAll ? ' [모두 치환]' : '';
+            return `[편집 #${idx + 1}]${range}${all}\n- 변경 전:\n${edit.oldText}\n+ 변경 후:\n${edit.newText}`;
+          }).join('\n\n');
+          const bounded = summary.length > 20000 ? summary.slice(0, 20000) + '\n(이하 생략 · 원본 전체는 스냅샷에 보관)' : summary;
+          detail = `대화: ${session}\n프로젝트: ${project}\n대상: ${parsed.path}\n작업: ${label} (${replacements}곳 적용)\n\n${bounded}`;
+        } else {
+          const preview = deleting && proposal.before.length > 20000 ? proposal.before.slice(0, 20000) + '\n(이하 생략 · 원본 전체는 스냅샷에 보관)' : proposal.before;
+          detail = `대화: ${session}\n프로젝트: ${project}\n대상: ${parsed.path}\n작업: ${label}${deleting ? '\n원본 bytes: ' + Buffer.byteLength(proposal.before) + '\n원본 SHA-256: ' + proposal.baseHash.slice(5) : ''}\n\n변경 전\n${preview}\n\n변경 후\n${deleting ? '(파일이 삭제됩니다. 원본은 호스트 스냅샷에 보관합니다.)' : proposal.after}`;
+        }
         const granted = this.editGrant?.session === session && this.editGrant.project === project && this.editGrant.run === run && this.editGrant.request === request;
         const sessionGranted = this.sessionEditGrant?.session === session && this.sessionEditGrant.project === project;
         const decision: EditDecision = (granted || sessionGranted) ? { approved: true, autoApproveRequest: granted } : this.options.approveEdit
-          ? await this.options.approveEdit(`${label} 승인: ${a.path}`, detail, editSignal)
-          : { approved: await this.options.approve(`${label} 승인: ${a.path}`, detail, editSignal), autoApproveRequest: false };
+          ? await this.options.approveEdit(`${label} 승인: ${parsed.path}`, detail, editSignal)
+          : { approved: await this.options.approve(`${label} 승인: ${parsed.path}`, detail, editSignal), autoApproveRequest: false };
         const unchanged = !this.options.request || await this.options.request(session) === request;
         if (this.editPolicyEpoch !== policyEpoch || !unchanged || !decision.approved || !this.accepting || editSignal.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('수정이 거절되었거나 작업이 중지되었습니다. 파일을 변경하지 않았습니다.');
         if (decision.autoApproveSession) this.sessionEditGrant = { session, project };
@@ -389,6 +423,17 @@ export class HostTools {
         await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
         try { await files.apply(proposal, editSignal); }
         catch (error) { this.revokeEditApproval(); throw error; }
+        if (patching) {
+          return JSON.stringify({
+            status: 'applied',
+            operation: 'patch',
+            path: proposal.path,
+            editsApplied: replacements,
+            linesBefore: proposal.before.split('\n').length,
+            linesAfter: proposal.after.split('\n').length,
+            snapshot: proposal.id,
+          });
+        }
         return JSON.stringify({ status: deleting ? 'deleted' : 'applied', ...(deleting ? { operation: 'delete' } : {}), path: proposal.path, before: proposal.before, after: deleting ? null : proposal.after, snapshot: proposal.id });
       } finally { release(); }
     }

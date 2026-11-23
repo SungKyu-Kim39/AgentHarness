@@ -20,9 +20,9 @@ async function output(key,value){if(process.env.GITHUB_OUTPUT)await appendFile(p
 function checkedID(name){const value=process.env[name];if(!/^\d+$/.test(value??''))throw Error('Missing immutable workflow run: '+name);return value;}
 const {version}=await json('package.json');
 const revision=process.env.NED_BUILD_REVISION??'';
-if(!/^0\.3\.[1-9]\d+$/.test(version)||(revision&&revision!=='rebuild1')||(branch!==`codex/ned-${version}`&&branch!=='AG-work'))throw Error('Unexpected release version or branch');
+if(!/^0\.3\.[1-9]\d+$/.test(version)||(revision&&!/^rebuild[1-9][0-9]*$/.test(revision))||(branch!==`codex/ned-${version}`&&branch!=='AG-work'))throw Error('Unexpected release version or branch');
 const artifactVersion=version+(revision?'-'+revision:'');
-const editorArtifactVersion=version==='0.3.12'&&revision==='rebuild1'?version:artifactVersion;
+const editorArtifactVersion=version==='0.3.12'&&/^rebuild[1-9][0-9]*$/.test(revision)?version:artifactVersion;
 const prefix=`Ned-${artifactVersion}`;
 const mode=process.argv[2];
 if(mode==='candidate'){

@@ -24,3 +24,10 @@
   - 일부 Windows 10·11 PC에서 레지스트리(`HKCR\.js\Content Type`)가 `.js`를 `text/plain`으로 반환해 Electron Chromium이 `<script type="module">` 실행을 거부하고 `STUDIO_RENDER_TIMEOUT`이 발생하던 문제를 해결했습니다.
   - OpenViking 런처(`launch.py`)의 `configure_mime_types()`가 Python `mimetypes`의 Windows 레지스트리 조회를 비활성화하고 표준 웹 자산 MIME 타입을 명시 등록하도록 보완했습니다.
   - Electron Studio 호스트(`onHeadersReceived`)에서도 `/studio/` 정적 리소스(HTTP 2xx)의 `Content-Type`을 확장자 기준 표준 MIME 타입으로 정규화하고, 모듈 MIME 거부 콘솔 오류는 `STUDIO_MIME` 진단 코드로 구분 기록합니다.
+
+## 0.3.12 rebuild2 수정 사항
+
+- **부분 파일 편집 도구(`patch_file`) 추가**:
+  - 기존 파일 전체를 다시 출력해야 했던 `propose_edit`의 한계를 보완해, 기존 프로젝트 UTF-8 텍스트 파일에서 지정한 `oldText` → `newText` 구간만 교체하는 `patch_file` 도구를 추가했습니다(선택적 1-indexed `startLine`/`endLine` 범위 및 `replaceAll` 지원, 다중 편집 순차 적용).
+  - Windows CRLF(`\r\n`) 파일에 LF(`\n`) 패치를 전달해도 원본 줄바꿈 형식을 보존합니다.
+  - 기존 `propose_edit`과 동일한 권한 모드(`ask`·`edits`·`full`), Zed 미저장 버퍼 검사(`validateEdit`), SHA-256 충돌 검사, 전체 원본 복구 스냅샷, 워커 서브에이전트 `writePaths` 격리를 적용합니다. 승인창에서는 변경 hunk 요약만 표시하고 도구 반환값도 전체 원문을 되돌리지 않아 컨텍스트 소비를 줄입니다.
