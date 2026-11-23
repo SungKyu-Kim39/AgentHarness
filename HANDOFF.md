@@ -1,8 +1,11 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.12 rebuild2**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.13**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-## 0.3.13 작업 기준 (`AG-work`)
+## 0.3.13 배포 기준
+
+소스 `08b395b638d05ae1645d0006074dcdf9cf25d1d3`를 사용했습니다. Windows 새 설치·0.3.12-rebuild2 업데이트와 37개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.13.md)
+
 
 - OpenViking 개인화 대화 기억 자동 추출·회상 및 VLM 의미 요약(`src/main/session-memory.ts`, `src/main/openviking.ts`, `src/main/openviking-gateway.ts`, `distribution/native-control.ts`, `distribution/ned/agent.ts`, `distribution/ned/owner.ts`)을 구현했습니다.
 - "저장하지 않은 편집기 변경" 버퍼 가드 오탐 근본 수정(`distribution/ned/buffer-check.ts`, `src/main/files.ts`, `distribution/ned/agent.ts`, `distribution/ned/owner.ts`)을 포함했습니다.
