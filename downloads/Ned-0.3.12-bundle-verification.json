@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "version": "0.3.12",
+  "sourceCommit": "38fef304308afac4c7ed85a8270b29a9d884698c",
+  "bundleSourceCommit": "072bdd336fb77765db84c435537c47de5400bed5",
+  "archive": "Ned-0.3.12-windows-x64.tgz",
+  "bytes": 1914983873,
+  "sha256": "95bd2d1192f4e85d2016e79dd381b51a1f9b777006d38c326107e541a4f3733e",
+  "files": {
+    "encoding": "ascii",
+    "files": 55,
+    "directories": 2
+  },
+  "allPathsAscii": true,
+  "correspondingSourcesChecked": true,
+  "installer": {
+    "name": "Ned-0.3.12-win-x64.exe",
+    "bytes": 1535023457,
+    "sha256": "5a6c65895cf2fb79b5e260ab796685f5b6715f1ece4296ade56a70136dba3e88"
+  },
+  "windowsRunId": 45107541913
+}
