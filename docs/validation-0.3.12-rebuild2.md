@@ -15,3 +15,11 @@ Linux 단위 테스트와 Windows Server 스모크 검증은 실제 Windows 10·
 ## 남은 검증 범위
 
 - 실제 사내 Windows 10·11 PC와 사내 모델 환경에서 긴 소스 파일에 대한 `patch_file` 부분 편집 동작, 승인 팝업 최상단 표시 및 OpenViking Studio 렌더링 확인 (`releaseReady: false` 유지)
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `f49d866b2ebd8bcf131d22d91841cb6ad93b5d27`입니다. Windows Server에 최종 EXE를 새로 설치해 29건 중 29건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.12-rebuild1에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535032629 bytes, SHA-256 `56499c5d91c117ccaaa696653296bd763d68b62acc04e2e5960b5720017463e1`입니다. 준비본과 추출본의 60124개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.12-rebuild2-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.12-rebuild2-installer-audit.json) · [반입 TGZ](../downloads/README.md)
