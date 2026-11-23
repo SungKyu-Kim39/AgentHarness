@@ -2,7 +2,7 @@
 
 [0.3.12 변경 사항](docs/changes-0.3.12.md) · [0.3.12 검증](docs/validation-0.3.12.md) · [0.3.11 변경 사항](docs/changes-0.3.11.md)
 
-최신 사전 릴리스는 [Ned 0.3.12](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.3.12.md).
+최신 사전 릴리스는 [Ned 0.3.12 rebuild1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12-rebuild1)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.3.12-rebuild1.md).
 
 Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이기 위해 만들었습니다.
 
@@ -18,7 +18,7 @@ AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를
 
 ## 다운로드
 
-최신 배포는 [Ned 0.3.12](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
+최신 배포는 [Ned 0.3.12 rebuild1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12-rebuild1)입니다. [설치 EXE와 반입용 TGZ](downloads/README.md)에서 파일과 체크섬을 받을 수 있습니다. 이전 버전과 수정 패치도 같은 페이지에 보관합니다.
 
 원본 0.3.8은 프로젝트별 Conda 환경 선택과 Python 실행·빌드, Git 커밋, REA/Ghidra 분석, OpenViking Studio와 실패한 개인 지식 가져오기 복구를 추가했습니다. 요약 출력 한도와 공통 프로세스 감독기도 보완했습니다. OpenViking 0.5.5와 스킬 66개를 유지합니다. [검증 기록](docs/archive/validations/validation-0.3.8.md)에서 확인한 동작과 남은 수용 범위를 볼 수 있습니다.
 
@@ -59,4 +59,4 @@ Ned 호스트는 설정과 승인, 서비스 실행·종료를 관리합니다. 
 
 빌드는 고정 OpenCode 소스와 Windows 런타임을 준비한 뒤 진행합니다. `npm run ned:prepare:acp`로 빌드 의존성을 준비하고, `npm run build`로 호스트와 ACP를, `npm run ned:release`로 설치기를 생성합니다. 자세한 절차와 코드 위치는 [개발 인계](HANDOFF.md), [아키텍처](docs/architecture.md), [어댑터 명세](docs/adapters.md)를 참고하세요.
 
-`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.12입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.
+`work`에서 개발과 검증을 진행하고, 검증한 배포본을 `main`에 반영합니다. 현재 배포 기준은 0.3.12 rebuild1입니다. Windows Server 설치·로딩 검사와 직원 PC의 실제 GUI·사내 모델·외부망 차단 검사는 구분하며, 1.0 전체 검증은 아직 완료하지 않았습니다.

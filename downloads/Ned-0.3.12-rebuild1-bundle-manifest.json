@@ -1,0 +1,21 @@
+{
+  "product": "Ned",
+  "version": "0.3.12",
+  "buildRevision": "rebuild1",
+  "auditSourceCommit": "074905951678e2c406f3a0d893fb33394b276134",
+  "bundleSourceCommit": "f597a2dea86476497accab8de60115535d66f46a",
+  "sourceCommit": "074905951678e2c406f3a0d893fb33394b276134",
+  "archive": "Ned-0.3.12-rebuild1-windows-x64.tgz",
+  "bytes": 1914999284,
+  "sha256": "2df585f3dc5864f7094d40e1e4dfe700796a85a4c0cb29b51a64de8558b363c6",
+  "files": {
+    "encoding": "ascii",
+    "files": 55,
+    "directories": 2
+  },
+  "installer": {
+    "name": "Ned-0.3.12-rebuild1-win-x64.exe",
+    "bytes": 1535027559,
+    "sha256": "bbce9040a31c3445c7ca3463ccc627c9cbdbbe8c379ed9df7c8a7cd370bf1d2f"
+  }
+}
