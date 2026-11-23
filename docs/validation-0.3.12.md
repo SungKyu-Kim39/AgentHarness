@@ -24,3 +24,11 @@ Linux 단위 테스트와 NSIS 컴파일 확인은 실제 Windows 10·11 직원 
 
 - 실제 사내 Windows 10·11 직원 PC에서 승인 팝업의 Zed 상단 표시, 전체 권한 PowerShell·외부 읽기·지식 저장 무팝업 동작, OpenViking Studio 렌더링 및 진단 로그(`studio-status.json`, `request-diagnostics.json`) 확인
 - 실제 사내 LLM·임베딩 서버와 폐쇄망(외부망 차단) 환경에서의 최종 수용 확인 (`releaseReady: false` 유지)
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `38fef304308afac4c7ed85a8270b29a9d884698c`입니다. Windows Server에 최종 EXE를 새로 설치해 26건 중 26건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.11에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535023457 bytes, SHA-256 `5a6c65895cf2fb79b5e260ab796685f5b6715f1ece4296ade56a70136dba3e88`입니다. 준비본과 추출본의 60120개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.12-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.12-installer-audit.json) · [반입 TGZ](../downloads/README.md)
