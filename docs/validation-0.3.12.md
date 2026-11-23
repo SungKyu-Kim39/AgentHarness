@@ -22,5 +22,5 @@ Linux 단위 테스트와 NSIS 컴파일 확인은 실제 Windows 10·11 직원 
 
 ## 남은 검증 범위
 
-- Windows Server 설치기 후보 빌드(`Ned-0.3.12-win-x64.exe`, `Ned-0.3.12-windows-x64.tgz`) 및 0.3.11 → 0.3.12 제자리 업데이트·사용자 데이터 보존 확인
-- 실제 사내 Windows 10·11 PC에서 승인 팝업의 Zed 상단 표시, 전체 권한 PowerShell·지식 저장 무팝업 동작, OpenViking Studio 렌더링 및 진단 로그(`studio-status.json`, `request-diagnostics.json`) 확인
+- 실제 사내 Windows 10·11 직원 PC에서 승인 팝업의 Zed 상단 표시, 전체 권한 PowerShell·외부 읽기·지식 저장 무팝업 동작, OpenViking Studio 렌더링 및 진단 로그(`studio-status.json`, `request-diagnostics.json`) 확인
+- 실제 사내 LLM·임베딩 서버와 폐쇄망(외부망 차단) 환경에서의 최종 수용 확인 (`releaseReady: false` 유지)

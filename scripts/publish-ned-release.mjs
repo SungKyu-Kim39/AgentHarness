@@ -16,7 +16,7 @@ const {version}=await json('package.json');
 if(version!==process.env.NED_VERSION||!/^0\.3\.[1-9]\d+$/.test(version))throw Error('Unexpected release version');
 const prefix=`Ned-${version}`,tag=`v${version}`,groups=['upgrade'];
 const validationRun=process.env.NED_VALIDATION_RUN,candidateRun=process.env.NED_CANDIDATE_RUN,source=process.env.NED_CANDIDATE_SOURCE;
-if(branch!==`codex/ned-${version}`||!/^\d+$/.test(validationRun??'')||!/^\d+$/.test(candidateRun??'')||!/^[a-f0-9]{40}$/.test(source??''))throw Error('Invalid immutable release inputs');
+if((branch!==`codex/ned-${version}`&&branch!=='AG-work')||!/^\d+$/.test(validationRun??'')||!/^\d+$/.test(candidateRun??'')||!/^[a-f0-9]{40}$/.test(source??''))throw Error('Invalid immutable release inputs');
 const validation=gh(['api',`repos/${repo}/actions/runs/${validationRun}`]),candidate=gh(['api',`repos/${repo}/actions/runs/${candidateRun}`]);
 for(const item of [validation,candidate])if(item.conclusion!=='success'||item.path!=='.github/workflows/windows-offline-smoke.yml'||item.head_branch!==branch)throw Error('Release requires successful matching workflow runs');
 run('git',['merge-base','--is-ancestor',validation.head_sha,'HEAD']);
@@ -92,8 +92,9 @@ record=record.split('\n## 설치 파일과 Windows 결과\n')[0].replace(/현재
 record+=`\n## 설치 파일과 Windows 결과\n\n제품 소스는 \`${source}\`입니다. Windows Server에 최종 EXE를 새로 설치해 ${tests}건 중 ${passed}건 통과, ${skipped}건 제외, 실패 0건을 확인했습니다. ${previousVersion}에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.\n\n설치 EXE는 ${audit.installer.bytes} bytes, SHA-256 \`${audit.installer.sha256}\`입니다. 준비본과 추출본의 ${audit.payloadComparison.files}개 파일을 모두 대조했습니다.\n\n[실행 결과](../downloads/${prefix}-windows-offline-smoke.json) · [설치 감사](../downloads/${prefix}-installer-audit.json) · [반입 TGZ](../downloads/README.md)\n`;
 await writeFile(path.join(root,validationFile),record);
 let handoff=await readFile(path.join(root,'HANDOFF.md'),'utf8');
-handoff=handoff.replace('최신 배포 기준은 **Ned 0.3.9**입니다.',`최신 사전 릴리스는 **Ned ${version}**입니다.`);
-handoff=handoff.replace('<!-- current-release -->',`## ${version} 배포 기준\n\n소스 \`${source}\`를 사용했습니다. Windows 새 설치·${previousVersion} 업데이트와 ${passed}개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](${validationFile})\n`);
+handoff=handoff
+ .replace(/최신 (?:게시 )?(?:사전 릴리스|배포 기준)[은는] .*?(?:반영했습니다|입니다)\./,`최신 사전 릴리스는 **Ned ${version}**입니다.`)
+ .replace(new RegExp(`## ${version.replaceAll('.','\\.')} 작업 기준 \\(\`AG-work\`\\)|<!-- current-release -->`),`## ${version} 배포 기준\n\n소스 \`${source}\`를 사용했습니다. Windows 새 설치·${previousVersion} 업데이트와 ${passed}개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](${validationFile})\n\n### ${version} 주요 변경`);
 await writeFile(path.join(root,'HANDOFF.md'),handoff);
 await commit([validationFile,notesFile,'HANDOFF.md',`downloads/${prefix}-windows-offline-smoke.json`],`docs: record installed Windows validation for Ned ${version}`);
 run(process.execPath,['scripts/ned-package.mjs','bundle']);
@@ -115,9 +116,9 @@ if(optional){
 const verification={schemaVersion:1,version,sourceCommit:source,bundleSourceCommit:bundle.bundleSourceCommit,archive:bundle.archive,bytes:bundle.bytes,sha256:bundle.sha256,files:bundle.files,allPathsAscii:true,correspondingSourcesChecked:true,installer:audit.installer,windowsRunId:Number(validationRun)};
 await writeFile(path.join(root,`downloads/${prefix}-bundle-verification.json`),JSON.stringify(verification,null,2)+'\n');
 let readme=await readFile(path.join(root,'README.md'),'utf8');
-readme=readme.replace(/^최신 사전 릴리스는 .*$/m,`최신 사전 릴리스는 [Ned ${version}](${releaseUrl})입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](${validationFile}).`)
+readme=readme.replace(/^최신 (?:게시 )?사전 릴리스는 .*$/m,`최신 사전 릴리스는 [Ned ${version}](${releaseUrl})입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](${validationFile}).`)
  .replace(/최신 배포는 .*?입니다\./,`최신 배포는 [Ned ${version}](${releaseUrl})입니다.`)
- .replace('현재 배포 기준은 0.3.9입니다.',`현재 배포 기준은 ${version}입니다.`);
+ .replace(/현재 배포 기준은 0\.3\.\d+입니다\./,`현재 배포 기준은 ${version}입니다.`);
 await writeFile(path.join(root,'README.md'),readme);
 const optionalLinks=optional?'\n- '+optional.assets.map(item=>`[${item.name.includes('-core-')?'Core 설치 EXE':'리버싱 팩'}](${releaseUrl.replace('/tag/','/download/')}/${item.name}) · [SHA-256](${item.name}.sha256)`).join('\n- '):'';
 const oldDownloads=await readFile(path.join(root,'downloads/README.md'),'utf8');

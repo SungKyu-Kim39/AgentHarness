@@ -19,7 +19,7 @@ async function commit(files,message){
 async function output(key,value){if(process.env.GITHUB_OUTPUT)await appendFile(process.env.GITHUB_OUTPUT,key+'='+value+'\n');}
 function checkedID(name){const value=process.env[name];if(!/^\d+$/.test(value??''))throw Error('Missing immutable workflow run: '+name);return value;}
 const {version}=await json('package.json');
-if(!/^0\.3\.[1-9]\d+$/.test(version)||branch!==`codex/ned-${version}`)throw Error('Unexpected release version or branch');
+if(!/^0\.3\.[1-9]\d+$/.test(version)||(branch!==`codex/ned-${version}`&&branch!=='AG-work'))throw Error('Unexpected release version or branch');
 const prefix=`Ned-${version}`;
 const mode=process.argv[2];
 if(mode==='candidate'){
