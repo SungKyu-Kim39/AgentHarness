@@ -28,5 +28,11 @@
     "sha256": "78d7dd7eadbb79dceb7a7aadc3571a8c54ec85cabcf1c473deac7fdb864771c3",
     "sourceCommit": "b096614b23bbc7101ba1659c3313194155b24c26",
     "reason": "Reproduce the reviewed pre-optimization manifest before updateReleaseSupervisor applies the current host-owned supervisor."
+  },
+  "launcherBaseline": {
+    "file": "distribution/baselines/openviking-0.5.5-launch.py",
+    "sha256": "82a0222c2209f4c1e11676c7149eb705495b55e016cd5e8afcdd6740d54793c7",
+    "sourceCommit": "db39577e39f80aebb320260771dd3b35956d6899",
+    "reason": "Reproduce the reviewed pre-optimization manifest before updateReleaseLauncher applies the Windows MIME-safe launch.py."
   }
 }

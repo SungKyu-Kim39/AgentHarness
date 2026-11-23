@@ -147,11 +147,11 @@ def apply(target, record=False):
     shutil.copyfile(source, target / 'licenses/openviking-0.5.5-source.tar.gz')
     for script in ['openviking-launch.py', 'analysis-worker.py', 'sidecar-supervisor.py']:
         source_script = ROOT / 'scripts' / script
-        if script == 'sidecar-supervisor.py' and lock.get('supervisorBaseline'):
-            baseline = lock['supervisorBaseline']
+        baseline = lock.get('supervisorBaseline') if script == 'sidecar-supervisor.py' else lock.get('launcherBaseline') if script == 'openviking-launch.py' else None
+        if baseline:
             source_script = ROOT / baseline['file']
             if digest(source_script.read_bytes()) != baseline['sha256']:
-                raise RuntimeError('Reviewed supervisor preimage differs')
+                raise RuntimeError('Reviewed baseline preimage differs: ' + script)
         shutil.copyfile(source_script, target / script.replace('openviking-launch.py', 'launch.py'))
     updated = {**old_lock, 'openViking': {'version': lock['version'], 'source': lock['source']},
                'packages': sorted(packages.values(), key=lambda p: p['name'].lower())}
