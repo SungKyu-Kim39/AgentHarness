@@ -17,3 +17,11 @@ Linux 단위 테스트와 Windows Server 스모크 검증은 실제 Windows 10·
 
 - 실제 사내 Windows 10·11 PC(레지스트리 `.js` → `text/plain` 환경 포함)에서 OpenViking Studio 정상 렌더링 확인
 - 실제 사내 LLM·임베딩 서버와 폐쇄망(외부망 차단) 환경에서의 최종 수용 확인 (`releaseReady: false` 유지)
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `074905951678e2c406f3a0d893fb33394b276134`입니다. Windows Server에 최종 EXE를 새로 설치해 27건 중 27건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.12에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535027559 bytes, SHA-256 `bbce9040a31c3445c7ca3463ccc627c9cbdbbe8c379ed9df7c8a7cd370bf1d2f`입니다. 준비본과 추출본의 60122개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.12-rebuild1-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.12-rebuild1-installer-audit.json) · [반입 TGZ](../downloads/README.md)
