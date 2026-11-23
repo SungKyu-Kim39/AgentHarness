@@ -48,7 +48,8 @@ export interface KnowledgeService {
   commitMemorySession?(sessionId: string, timeoutMs?: number): Promise<{ taskId?: string }>;
   recallMemories?(query: string, limit?: number, timeoutMs?: number): Promise<MemoryRecallResult>;
 }
-export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
+export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void; semanticDebounceMs?: number; semanticRetryDelayMs?: number }
+type SemanticRefreshEntry = { timer: ReturnType<typeof setTimeout>; recursive: boolean; kind: 'note' | 'index' };
 type StartupStage = 'bundle' | 'configuration' | 'process' | 'health' | 'namespace';
 type StartupCode = 'OV_BUNDLE' | 'OV_CONFIGURATION' | 'OV_PROCESS_START' | 'OV_PROCESS_EXIT' | 'OV_HEALTH_TIMEOUT' | 'OV_NAMESPACE';
 type StartupDetail = { osError?: string; exitCode?: number; exitHex?: string; signal?: string; hint?: string; healthStatus?: number };
@@ -93,7 +94,7 @@ export class OpenVikingService implements KnowledgeService {
   private diagnosticSecrets: string[] = [];
   private personal?: PersonalKnowledge;
   private writingNotes = new Set<string>();
-  private semanticTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  private semanticTimers = new Map<string, SemanticRefreshEntry>();
   private namespaceAbort?: AbortController;
   private startupStage: StartupStage = 'bundle';
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch) {}
@@ -289,37 +290,77 @@ export class OpenVikingService implements KnowledgeService {
       throw error;
     });
   }
+  private semanticDebounceMs() { return this.testLaunch?.semanticDebounceMs ?? 1500; }
+  private semanticRetryDelayMs() { return this.testLaunch?.semanticRetryDelayMs ?? 2500; }
   private cancelSemanticRefresh(uri: string) {
     const existing = this.semanticTimers.get(uri);
-    if (existing) { clearTimeout(existing); this.semanticTimers.delete(uri); }
+    if (existing) { clearTimeout(existing.timer); this.semanticTimers.delete(uri); }
   }
-  private scheduleNoteSemanticRefresh(uri: string, body: string) {
-    this.cancelSemanticRefresh(uri);
+  private cancelChildSemanticRefreshes(parentUri: string) {
+    const prefix = parentUri.replace(/\/+$/, '') + '/';
+    for (const [key, entry] of this.semanticTimers) {
+      if (key.startsWith(prefix)) {
+        clearTimeout(entry.timer);
+        this.semanticTimers.delete(key);
+      }
+    }
+  }
+  private hasPendingParentRefresh(uri: string) {
+    for (const [key, entry] of this.semanticTimers) {
+      if (entry.recursive && uri.startsWith(key.replace(/\/+$/, '') + '/')) return true;
+    }
+    return false;
+  }
+  private runSemanticRefresh(uri: string, kind: 'note' | 'index', route: string, execute: () => Promise<unknown>, attempt = 1) {
     if (!this.isReady()) return;
-    // Debounce slightly so rapid consecutive updates/deletes to the same note
-    // do not collide with OpenViking's AGFS path lock while VLM runs.
+    if (kind === 'note' && this.writingNotes.has(uri)) {
+      this.scheduleSemanticTimer(uri, false, kind, this.semanticDebounceMs(), () => this.runSemanticRefresh(uri, kind, route, execute, attempt));
+      return;
+    }
+    void execute().catch(error => {
+      const status = typeof (error as { status?: unknown })?.status === 'number' ? (error as { status: number }).status : undefined;
+      const reason = error instanceof Error ? error.message : String(error);
+      const isConflict = status === 409 || reason === 'OV_CONFLICT';
+      if (isConflict && attempt === 1 && this.isReady()) {
+        this.recordRequestDiagnostic('POST', route, status ?? 409, 'OV_SEMANTIC_RETRY', `semantic_refresh(${kind}) conflict on ${uri}; scheduling retry`);
+        this.scheduleSemanticTimer(uri, kind === 'index', kind, this.semanticRetryDelayMs(), () => this.runSemanticRefresh(uri, kind, route, execute, 2));
+        return;
+      }
+      this.recordRequestDiagnostic('POST', route, status, 'OV_SEMANTIC_REFRESH_FAILED', `semantic_refresh(${kind}) failed on ${uri} (attempt ${attempt}): ${reason}`);
+    });
+  }
+  private scheduleSemanticTimer(uri: string, recursive: boolean, kind: 'note' | 'index', delayMs: number, task: () => void) {
+    this.cancelSemanticRefresh(uri);
     const timer = setTimeout(() => {
       this.semanticTimers.delete(uri);
-      if (!this.isReady() || this.writingNotes.has(uri)) return;
-      void this.request('/api/v1/content/write', {
-        uri, content: body, mode: 'replace', wait: false, processing_mode: 'semantic_and_vectors', edit_source: 'manual',
-      }, 15000, 'POST').catch(() => {});
-    }, 1500);
+      task();
+    }, delayMs);
     timer.unref();
-    this.semanticTimers.set(uri, timer);
+    this.semanticTimers.set(uri, { timer, recursive, kind });
+  }
+  private scheduleNoteSemanticRefresh(uri: string, body: string) {
+    if (!this.isReady() || this.hasPendingParentRefresh(uri)) return;
+    // Debounce slightly so rapid consecutive updates/deletes to the same note
+    // do not collide with OpenViking's AGFS path lock while VLM runs.
+    this.scheduleSemanticTimer(uri, false, 'note', this.semanticDebounceMs(), () => {
+      this.runSemanticRefresh(uri, 'note', '/api/v1/content/write', () =>
+        this.request('/api/v1/content/write', {
+          uri, content: body, mode: 'replace', wait: false, processing_mode: 'semantic_and_vectors', edit_source: 'manual',
+        }, 15000, 'POST'),
+      );
+    });
   }
   private scheduleIndexSemanticRefresh(target: string) {
-    this.cancelSemanticRefresh(target);
-    if (!this.isReady()) return;
-    const timer = setTimeout(() => {
-      this.semanticTimers.delete(target);
-      if (!this.isReady()) return;
-      void this.request('/api/v1/content/reindex', {
-        uri: target, mode: 'semantic_and_vectors', force: true, wait: false, recursive: true,
-      }, 15000, 'POST', undefined, 'local-user', { admin: true }).catch(() => {});
-    }, 1500);
-    timer.unref();
-    this.semanticTimers.set(target, timer);
+    if (!this.isReady() || this.hasPendingParentRefresh(target)) return;
+    this.cancelChildSemanticRefreshes(target);
+    this.scheduleSemanticTimer(target, true, 'index', this.semanticDebounceMs(), () => {
+      this.cancelChildSemanticRefreshes(target);
+      this.runSemanticRefresh(target, 'index', '/api/v1/content/reindex', () =>
+        this.request('/api/v1/content/reindex', {
+          uri: target, mode: 'semantic_and_vectors', force: true, wait: false, recursive: true,
+        }, 15000, 'POST', undefined, 'local-user', { admin: true }),
+      );
+    });
   }
   async personalSearch(query: string, limit: number) {
     this.ready();
@@ -359,7 +400,6 @@ export class OpenVikingService implements KnowledgeService {
     const root = knowledgeNoteRoot(scope, project);
     const uri = knowledgeNoteUri(scope, project, id);
     if (this.writingNotes.has(uri)) throw new Error('해당 지식을 변경하는 다른 작업이 있습니다.');
-    this.cancelSemanticRefresh(uri);
     this.writingNotes.add(uri);
     try {
       for (const folder of scope === 'personal' ? ['viking://user/local-user/resources', root] : ['viking://resources/ned', knowledgeRoot(project), root]) {
@@ -381,10 +421,10 @@ export class OpenVikingService implements KnowledgeService {
     this.ready();
     const uri = knowledgeNoteUri(scope, project, id);
     if (this.writingNotes.has(uri)) throw new Error('해당 지식을 변경하는 다른 작업이 있습니다.');
-    this.cancelSemanticRefresh(uri);
     this.writingNotes.add(uri);
     try {
       if (await this.noteExists(uri, signal)) await this.request('/api/v1/fs?uri=' + encodeURIComponent(uri) + '&wait=true', undefined, false, 'DELETE', signal);
+      this.cancelSemanticRefresh(uri);
       return JSON.stringify({ status: 'deleted', scope, id, uri });
     } finally { this.writingNotes.delete(uri); }
   }
@@ -419,7 +459,6 @@ export class OpenVikingService implements KnowledgeService {
     const upload = await response.json(); const id = upload.result?.temp_file_id ?? upload.temp_file_id;
     if (typeof id !== 'string') throw new Error('OpenViking 업로드 확인 실패');
     const target = knowledgeRoot(project) + '/' + createHash('sha256').update(filename).digest('hex').slice(0, 20);
-    this.cancelSemanticRefresh(target);
     await this.request('/api/v1/resources', { temp_file_id: id, to: target, wait: true, reason: '사용자가 선택한 프로젝트 텍스트 파일', processing_mode: 'vectors_only' });
     this.scheduleIndexSemanticRefresh(target);
     this.value.indexedFiles++; this.changed(); return `OpenViking 색인 완료: ${filename} (VLM 의미 요약 백그라운드 진행)`;
@@ -484,8 +523,12 @@ export class OpenVikingService implements KnowledgeService {
   }
   private async stop() {
     this.expectedExit = true;
-    for (const timer of this.semanticTimers.values()) clearTimeout(timer);
+    const pendingSemantic = this.semanticTimers.size;
+    for (const entry of this.semanticTimers.values()) clearTimeout(entry.timer);
     this.semanticTimers.clear();
+    if (pendingSemantic > 0) {
+      this.recordRequestDiagnostic('POST', '/api/v1/content/semantic-refresh', undefined, 'OV_SEMANTIC_PENDING_SHUTDOWN', `OpenViking stopped with ${pendingSemantic} pending semantic refresh task(s)`);
+    }
     await this.personal?.close(); this.personal = undefined;
     await this.diagnosticWrites.catch(() => {});
     const child = this.process;

@@ -74,3 +74,61 @@ test('ProjectFiles rejects non-UTF-8 (CP949/EUC-KR) files before buffer guard an
   assert.deepEqual(saved.subarray(0, 3), Buffer.from([0xef, 0xbb, 0xbf]));
   assert.equal(saved.toString('utf8'), '\uFEFFint a = 42;\r\nint b = 2;\r\n');
 });
+
+test('verifyEditorBuffer retries transient RPC errors within budget and fails fast on non-recoverable or aborted errors', async () => {
+  let calls = 0;
+  const recovered = await verifyEditorBuffer(
+    async () => {
+      calls++;
+      if (calls === 1) throw Object.assign(new Error('temporary RPC pipe hiccup'), { code: -32000 });
+      return { content: 'stable text\n' };
+    },
+    { before: 'stable text\r\n' },
+    { retryDelaysMs: [1, 1, 1] },
+  );
+  assert.deepEqual(recovered, { matches: true, attempts: 2 });
+
+  let persistentCalls = 0;
+  await assert.rejects(
+    verifyEditorBuffer(
+      async () => {
+        persistentCalls++;
+        throw Object.assign(new Error('temporary IO timeout'), { code: -32000 });
+      },
+      { before: 'stable text\n' },
+      { retryDelaysMs: [1, 1] },
+    ),
+    /편집기 버퍼 확인 실패/,
+  );
+  assert.equal(persistentCalls, 3);
+
+  let nonRecoverableCalls = 0;
+  await assert.rejects(
+    verifyEditorBuffer(
+      async () => {
+        nonRecoverableCalls++;
+        throw new Error('Unsupported binary encoding');
+      },
+      { before: 'stable text\n' },
+      { retryDelaysMs: [1, 1, 1] },
+    ),
+    /편집기 버퍼 확인 실패/,
+  );
+  assert.equal(nonRecoverableCalls, 1);
+
+  const ac = new AbortController();
+  ac.abort();
+  let abortedCalls = 0;
+  await assert.rejects(
+    verifyEditorBuffer(
+      async () => {
+        abortedCalls++;
+        throw new Error('temporary error');
+      },
+      { before: 'stable text\n' },
+      { retryDelaysMs: [1, 1], signal: ac.signal },
+    ),
+    /편집기 버퍼 확인 실패/,
+  );
+  assert.equal(abortedCalls, 1);
+});

@@ -209,6 +209,14 @@ async function start() {
       { label: 'Git 커밋·Ghidra·외부 자료 읽기', click: () => { void shell.openPath(path.join(resources, 'ned/git-and-binary-analysis.md')); } },
     ] },
     { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: () => setPermission('ask') },
+    {
+      label: (() => {
+        const mem = runtime.status().memory;
+        if (!mem?.enabled) return '자동 대화 기억 · 꺼짐 (설정 JSON으로 변경)';
+        return `자동 대화 기억 · 켜짐 (${mem.commitEveryTurns}턴마다 추출${mem.autoRecall ? ' · 자동 회상' : ' · 수동 검색'})`;
+      })(),
+      enabled: false,
+    },
     { label: 'OpenViking Studio 열기', click: async () => {
       try {
         if (quitting || configurationRestart.pending) return;

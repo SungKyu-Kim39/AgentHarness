@@ -29,9 +29,9 @@ const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
 const signing = nedSigning();
-const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13'].includes(version);
-const ghidraRelease = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13'].includes(version);
-const modernRelease = ['0.3.9','0.3.10','0.3.11','0.3.12','0.3.13'].includes(version);
+const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
+const ghidraRelease = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
+const modernRelease = ['0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
 const sourceEditorRelease = (version==='0.3.8'&&revision==='rebuild1') || modernRelease;
 if(['0.3.7','0.3.8','0.3.12'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
@@ -189,7 +189,7 @@ async function audit() {
     if (signing) { signing.verify(installer); signing.verify(path.join(extracted,'Ned.exe')); signing.verify(path.join(extracted,'Uninstall Ned.exe')); if (!editorBranding.vendorOriginal) signing.verify(path.join(resources,'zed/Zed.exe')); }
     const sourceEditor=!editorBranding.vendorOriginal && sourceEditorRelease?await verifySourceEditor(root,resources):undefined;
     if(modernRelease)for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
-    if(['0.3.10','0.3.11','0.3.12','0.3.13'].includes(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
+    if(['0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
       if(await exists(path.join(resources,'ned',file)))throw Error('Removed OpenViking resource still in installer: '+file);
     let astryx;
     if(sourceEditorRelease){
@@ -271,12 +271,12 @@ async function bundle() {
     } else {
       const saved=process.env.NED_BUILD_REVISION;
       let editor;
-      if(['0.3.12','0.3.13'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision)){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
+      if(['0.3.12','0.3.13','0.3.14'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision)){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
       else editor=await editorVersion(root);
       await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
     }
   }
-  if(['0.3.11','0.3.12','0.3.13'].includes(version)) for(const file of ['knowledge-notes.md','changes-'+version+'.md']) await cp(await releaseDoc(file),path.join(stage,file));
+  if(['0.3.11','0.3.12','0.3.13','0.3.14'].includes(version)) for(const file of ['knowledge-notes.md','changes-'+version+'.md']) await cp(await releaseDoc(file),path.join(stage,file));
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);
   run('git',['archive','--format=tar.gz','--output='+source,commit,':(exclude)downloads']);

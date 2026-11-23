@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { readFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { atomicJSON, type Redactor } from './config';
@@ -27,6 +28,9 @@ export interface MemorySyncEntry {
   ovSessionId: string;
   syncedIds: string[];
   uncommittedTurns: number;
+  watermarkCount?: number;
+  watermarkCreatedAt?: number;
+  sessionOptedOut?: boolean;
   lastCommittedAt?: string;
 }
 
@@ -54,38 +58,77 @@ export interface SessionMemoryPolicy {
 }
 
 const COMPACTION_PROMPT_RE = /^(?:You MUST summarize the conversation above into a structured summary|Update the existing checkpoint in the conversation above into one consolidated summary|The previous response did not fill in the required summary template)/;
-const MEMORY_OPTOUT_RE = /(?:기억.*(?:사용하지|쓰지|참고하지)\s*마|메모리.*(?:사용하지|쓰지)\s*마|do not use (?:any )?memor(?:y|ies)|no memor(?:y|ies))/i;
+const SESSION_MEMORY_OPTOUT_RE = /(?:(?:이|이번)\s*(?:세션|대화)(?:은|는|을|를|\s+내용)?\s*(?:기억|메모리|저장).*(?:하지\s*마|끄|꺼|중단|금지|제외|사용하지\s*마|쓰지\s*마)|(?:do\s+not|don't)\s+(?:remember|save|store|record|use\s+memor(?:y|ies)\s+for)\s+this\s+(?:session|conversation)|disable\s+memor(?:y|ies)\s+for\s+this\s+(?:session|conversation))/i;
+const TURN_MEMORY_OPTOUT_RE = /(?:(?:기억|메모리).*(?:하지\s*마|사용하지\s*마|쓰지\s*마|참고하지\s*마|저장하지\s*마|남기지\s*마)|(?:이(?:건|것은|내용은?)\s*)?(?:기억|저장)하지\s*마|(?:do\s+not|don't)\s+(?:remember|save\s+to\s+memor(?:y|ies)|use\s+(?:any\s+)?memor(?:y|ies))|\bno\s+memor(?:y|ies)\b)/i;
 const SKILL_GUIDANCE_MARKER = '\n\n다음 스킬 문서를 작업 지침으로 참고하세요.';
+
+export const DEFAULT_COMMIT_EVERY_TURNS = 6;
+export const MIN_COMMIT_EVERY_TURNS = 1;
+export const MAX_COMMIT_EVERY_TURNS = 50;
+export const MAX_SYNCED_IDS_PER_SESSION = 400;
 
 const MAX_USER_CHARS = 6000;
 const MAX_ASSISTANT_CHARS = 6000;
 const MAX_TOOL_OUTPUT_CHARS = 600;
 const MAX_TOOL_ARGS_CHARS = 160;
 const MAX_TURN_TOOLS_CHARS = 2000;
-const MAX_SYNCED_IDS_PER_SESSION = 400;
 const MAX_RECALL_BYTES = 3500;
 const RECALL_MIN_SCORE = 0.35;
 const RECALL_CACHE_TTL_MS = 60_000;
 const RECALL_CACHE_MAX = 32;
 
+export function isSessionMemoryOptOut(text: string): boolean {
+  return SESSION_MEMORY_OPTOUT_RE.test(text);
+}
+
+export function isTurnMemoryOptOut(text: string): boolean {
+  return SESSION_MEMORY_OPTOUT_RE.test(text) || TURN_MEMORY_OPTOUT_RE.test(text);
+}
+
+export function clampCommitEveryTurns(raw: unknown): number {
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || !Number.isInteger(raw) || raw <= 0) {
+    return DEFAULT_COMMIT_EVERY_TURNS;
+  }
+  return Math.min(MAX_COMMIT_EVERY_TURNS, Math.max(MIN_COMMIT_EVERY_TURNS, raw));
+}
+
 export function resolveMemoryPolicy(config?: AgentConfig): SessionMemoryPolicy {
   if (!config?.openViking?.enabled) {
-    return { enabled: false, autoRecall: false, commitEveryTurns: 6 };
+    return { enabled: false, autoRecall: false, commitEveryTurns: DEFAULT_COMMIT_EVERY_TURNS };
   }
   const memory = config.openViking.memory;
   return {
     enabled: memory?.enabled ?? true,
     autoRecall: memory?.autoRecall ?? true,
-    commitEveryTurns: memory?.commitEveryTurns ?? 6,
+    commitEveryTurns: clampCommitEveryTurns(memory?.commitEveryTurns),
   };
+}
+
+/**
+ * Produces a deterministic, collision-resistant OpenViking session ID within 96 ASCII chars.
+ * Long or sanitized IDs include a SHA-256 suffix so similarly-prefixed sessions never collide.
+ */
+export function buildOvSessionId(sessionId: string): string {
+  const clean = sessionId.replace(/[^a-zA-Z0-9_-]/g, '_');
+  if (clean.length <= 92 && clean === sessionId) {
+    return 'ned-' + clean;
+  }
+  const digest = createHash('sha256').update(sessionId).digest('hex').slice(0, 16);
+  return 'ned-' + clean.slice(0, 75) + '-' + digest;
 }
 
 export function scrubMemoryText(input: string, redactor?: Redactor): string {
   let text = redactor ? redactor.text(input) : input;
   text = text
+    .replace(/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z0-9 ]*PRIVATE KEY-----/g, '[REDACTED_PRIVATE_KEY]')
+    .replace(/-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*$/g, '[REDACTED_PRIVATE_KEY]')
+    .replace(/\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g, '[REDACTED_JWT]')
+    .replace(/\b(?:AKIA|ASIA|AIDA|AROA|AIPA|ANPA|ANVA)[A-Z0-9]{16}\b/g, '[REDACTED]')
+    .replace(/:\/\/([^/\s:@]{1,128}):([^/\s@]{1,256})@/g, '://[REDACTED]:[REDACTED]@')
     .replace(/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{8,}/gi, '$1 [REDACTED]')
-    .replace(/\b(sk|pk|ghp|gho|ghu|ghs|ghr|github_pat|xoxb|xoxp|AIza)[A-Za-z0-9_-]{12,}\b/g, '[REDACTED]')
-    .replace(/((?:api[_-]?key|secret|password|passwd|token|authorization)\s*[:=]\s*["']?)[^\s"',;}{]{6,}/gi, '$1[REDACTED]');
+    .replace(/\b(?:sk|pk|ghp|gho|ghu|ghs|ghr|github_pat|xoxb|xoxp|AIza)[A-Za-z0-9_-]{12,}\b/g, '[REDACTED]')
+    .replace(/((?:api[_-]?key|secret|password|passwd|pwd|token|authorization)\s*[:=]\s*)(?:"[^"\r\n]{1,256}"|'[^'\r\n]{1,256}')/gi, '$1"[REDACTED]"')
+    .replace(/((?:api[_-]?key|secret|password|passwd|pwd|token|authorization)\s*[:=]\s*["']?)[^\s"',;}{]{6,}/gi, '$1[REDACTED]');
   return text;
 }
 
@@ -144,32 +187,69 @@ export function cleanUserMessageText(raw: string): string {
   return text.trim();
 }
 
+export interface ExtractMemoryState {
+  syncedIds: ReadonlySet<string>;
+  watermarkCount?: number;
+  watermarkCreatedAt?: number;
+  sessionOptedOut?: boolean;
+}
+
+export interface ExtractedMemoryBatch {
+  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  newlySyncedIds: string[];
+  completedTurns: number;
+  sessionOptedOut: boolean;
+}
+
 export function extractMemoryMessages(
   engineMessages: readonly OpenCodeSessionMessage[],
-  syncedIds: ReadonlySet<string>,
+  syncedOrState: ReadonlySet<string> | ExtractMemoryState,
   redactor?: Redactor,
-): { messages: Array<{ role: 'user' | 'assistant'; content: string }>; newlySyncedIds: string[]; completedTurns: number } {
+): ExtractedMemoryBatch {
+  const state: ExtractMemoryState = syncedOrState instanceof Set
+    ? { syncedIds: syncedOrState }
+    : (syncedOrState as ExtractMemoryState);
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   const newlySyncedIds: string[] = [];
   let completedTurns = 0;
+  let sessionOptedOut = state.sessionOptedOut ?? false;
+  let skipCurrentTurn = false;
+  let relevantIndex = 0;
 
   for (const msg of engineMessages) {
-    if (!msg?.id || typeof msg.id !== 'string' || syncedIds.has(msg.id)) continue;
+    if (!msg?.id || typeof msg.id !== 'string') continue;
+    if (msg.type !== 'user' && msg.type !== 'assistant') continue;
+
+    const idx = relevantIndex++;
+    const alreadySynced = state.syncedIds.has(msg.id)
+      || (state.watermarkCount !== undefined && idx < state.watermarkCount)
+      || (state.watermarkCreatedAt !== undefined && typeof msg.time?.created === 'number' && msg.time.created <= state.watermarkCreatedAt);
 
     if (msg.type === 'user') {
       const cleaned = cleanUserMessageText(typeof msg.text === 'string' ? msg.text : '');
+      if (isSessionMemoryOptOut(cleaned)) {
+        sessionOptedOut = true;
+        skipCurrentTurn = true;
+      } else if (isTurnMemoryOptOut(cleaned)) {
+        skipCurrentTurn = true;
+      } else if (cleaned && !COMPACTION_PROMPT_RE.test(cleaned)) {
+        skipCurrentTurn = false;
+      }
+
+      if (alreadySynced) continue;
       newlySyncedIds.push(msg.id);
-      if (!cleaned || COMPACTION_PROMPT_RE.test(cleaned)) continue;
+      if (sessionOptedOut || skipCurrentTurn || !cleaned || COMPACTION_PROMPT_RE.test(cleaned)) continue;
       const safe = truncateText(scrubMemoryText(cleaned, redactor), MAX_USER_CHARS);
       if (safe) messages.push({ role: 'user', content: safe });
       continue;
     }
 
     if (msg.type === 'assistant') {
+      if (alreadySynced) continue;
       // Wait until the assistant message finishes before syncing so partial streaming text is never captured.
       if (msg.time?.completed === undefined) continue;
       newlySyncedIds.push(msg.id);
-      if (msg.error) continue;
+      if (sessionOptedOut || skipCurrentTurn || msg.error) continue;
       const parts = Array.isArray(msg.content) ? msg.content : [];
       const textBlocks = parts
         .filter(p => p?.type === 'text' && typeof p.text === 'string')
@@ -199,7 +279,7 @@ export function extractMemoryMessages(
     }
   }
 
-  return { messages, newlySyncedIds, completedTurns };
+  return { messages, newlySyncedIds, completedTurns, sessionOptedOut };
 }
 
 function extractChatMessageText(content: unknown): string {
@@ -213,14 +293,21 @@ function extractChatMessageText(content: unknown): string {
   return '';
 }
 
-export function extractRecallQuery(chatMessages: unknown): string | undefined {
+export function extractRecallQuery(chatMessages: unknown, redactor?: Redactor): string | undefined {
   if (!Array.isArray(chatMessages)) return undefined;
   const users = chatMessages.filter((m: any) => m?.role === 'user');
-  const latestRaw = users.length ? extractChatMessageText(users.at(-1)?.content) : '';
+  if (!users.length) return undefined;
+  for (const userMsg of users) {
+    const cleanedPrev = cleanUserMessageText(extractChatMessageText(userMsg?.content));
+    if (isSessionMemoryOptOut(cleanedPrev)) return undefined;
+  }
+  const latestRaw = extractChatMessageText(users.at(-1)?.content);
   const cleaned = cleanUserMessageText(latestRaw);
-  if (!cleaned || COMPACTION_PROMPT_RE.test(cleaned) || MEMORY_OPTOUT_RE.test(cleaned)) return undefined;
-  const query = cleaned.replace(/```[\s\S]*?```/g, ' ').replace(/\s+/g, ' ').trim();
-  if (query.length < 4) return undefined;
+  if (!cleaned || COMPACTION_PROMPT_RE.test(cleaned) || isTurnMemoryOptOut(cleaned)) return undefined;
+  const scrubbed = scrubMemoryText(cleaned, redactor);
+  const query = scrubbed.replace(/```[\s\S]*?```/g, ' ').replace(/\s+/g, ' ').trim();
+  const meaningful = query.replace(/\[REDACTED(?:_JWT|_PRIVATE_KEY)?\]/g, '').replace(/[^\p{L}\p{N}]/gu, '');
+  if (query.length < 4 || meaningful.length < 2) return undefined;
   return query.slice(0, 1000);
 }
 
@@ -272,16 +359,20 @@ export class SessionMemoryManager {
   private status: MemoryStatusSnapshot;
 
   constructor(private deps: SessionMemoryDependencies) {
+    const commitEveryTurns = clampCommitEveryTurns(deps.policy.commitEveryTurns);
+    this.deps = { ...deps, policy: { ...deps.policy, commitEveryTurns } };
     this.status = {
       schemaVersion: 1,
-      enabled: deps.policy.enabled,
-      autoRecall: deps.policy.autoRecall,
-      commitEveryTurns: deps.policy.commitEveryTurns,
+      enabled: this.deps.policy.enabled,
+      autoRecall: this.deps.policy.autoRecall,
+      commitEveryTurns,
       syncedTurns: 0,
       commitsScheduled: 0,
       recallsInjected: 0,
     };
   }
+
+  policy(): SessionMemoryPolicy { return { ...this.deps.policy }; }
 
   private syncFile() { return path.join(this.deps.root, 'openviking', 'memory-sync.json'); }
   private statusFile() { return path.join(this.deps.root, 'openviking', 'memory-status.json'); }
@@ -330,10 +421,6 @@ export class SessionMemoryManager {
     return tracked;
   }
 
-  private ovSessionId(sessionId: string) {
-    return 'ned-' + sessionId.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 96);
-  }
-
   onSessionActivated(sessionId: string) {
     if (!this.deps.policy.enabled || this.closed) return;
     const previous = this.activeSessionId;
@@ -370,20 +457,45 @@ export class SessionMemoryManager {
 
       const engineMessages = await this.deps.fetchSessionMessages(sessionId);
       const entry = this.syncState[sessionId] ?? {
-        ovSessionId: this.ovSessionId(sessionId),
+        ovSessionId: buildOvSessionId(sessionId),
         syncedIds: [],
         uncommittedTurns: 0,
       };
       const syncedSet = new Set(entry.syncedIds);
-      const { messages, newlySyncedIds, completedTurns } = extractMemoryMessages(engineMessages, syncedSet, this.deps.redactor);
+      const { messages, newlySyncedIds, completedTurns, sessionOptedOut } = extractMemoryMessages(
+        engineMessages,
+        {
+          syncedIds: syncedSet,
+          watermarkCount: entry.watermarkCount,
+          watermarkCreatedAt: entry.watermarkCreatedAt,
+          sessionOptedOut: entry.sessionOptedOut,
+        },
+        this.deps.redactor,
+      );
 
       if (messages.length > 0) {
         await knowledge.ensureMemorySession(entry.ovSessionId);
         await knowledge.appendSessionMessages(entry.ovSessionId, messages);
       }
-      if (newlySyncedIds.length > 0) {
-        entry.syncedIds = [...entry.syncedIds, ...newlySyncedIds].slice(-MAX_SYNCED_IDS_PER_SESSION);
+      if (newlySyncedIds.length > 0 || sessionOptedOut !== Boolean(entry.sessionOptedOut)) {
+        const combined = [...entry.syncedIds, ...newlySyncedIds];
+        if (combined.length > MAX_SYNCED_IDS_PER_SESSION) {
+          const dropCount = combined.length - MAX_SYNCED_IDS_PER_SESSION;
+          const droppedIds = new Set(combined.slice(0, dropCount));
+          let droppedMaxCreated = entry.watermarkCreatedAt;
+          for (const msg of engineMessages) {
+            if (msg?.id && droppedIds.has(msg.id) && typeof msg.time?.created === 'number') {
+              droppedMaxCreated = droppedMaxCreated === undefined ? msg.time.created : Math.max(droppedMaxCreated, msg.time.created);
+            }
+          }
+          entry.watermarkCount = (entry.watermarkCount ?? 0) + dropCount;
+          if (droppedMaxCreated !== undefined) entry.watermarkCreatedAt = droppedMaxCreated;
+          entry.syncedIds = combined.slice(-MAX_SYNCED_IDS_PER_SESSION);
+        } else {
+          entry.syncedIds = combined;
+        }
         entry.uncommittedTurns += completedTurns;
+        if (sessionOptedOut) entry.sessionOptedOut = true;
         this.syncState[sessionId] = entry;
         if (completedTurns > 0) {
           this.status.syncedTurns += completedTurns;
@@ -427,7 +539,7 @@ export class SessionMemoryManager {
     const knowledge = this.deps.knowledge();
     if (!knowledge?.isReady?.() || !knowledge.recallMemories) return undefined;
 
-    const query = extractRecallQuery(chatMessages);
+    const query = extractRecallQuery(chatMessages, this.deps.redactor);
     if (!query) return undefined;
 
     const now = Date.now();

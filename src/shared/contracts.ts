@@ -8,7 +8,7 @@ const endpoint = z.string().trim().url().superRefine((value, ctx) => {
 export const openVikingMemorySchema = z.object({
   enabled: z.boolean().default(true),
   autoRecall: z.boolean().default(true),
-  commitEveryTurns: z.number().int().min(1).max(100).default(6),
+  commitEveryTurns: z.number().int().min(1).max(50).default(6),
 }).strict();
 export const openVikingSchema = z.object({
   enabled: z.boolean().default(true),

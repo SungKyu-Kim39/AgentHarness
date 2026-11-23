@@ -181,7 +181,7 @@ export class NativeRuntime {
   }
   async activateEditScope(session: string) { this.tools?.activateEditScope(session,await this.sessionProject(session)); }
   revokeEditApproval() { this.tools?.revokeEditApproval(); }
-  status() { return { models: this.models.map(m => ({ name: m.name, id: m.id })), knowledge: this.knowledge?.state() }; }
+  status() { return { models: this.models.map(m => ({ name: m.name, id: m.id })), knowledge: this.knowledge?.state(), memory: this.memory?.policy() }; }
   async canonicalProject(directory: string) {
     const selected = await realpath(directory);
     if (!(await stat(selected)).isDirectory()) throw new Error('프로젝트 폴더를 선택하세요.');

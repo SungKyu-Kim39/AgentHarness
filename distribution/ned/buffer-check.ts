@@ -44,10 +44,18 @@ function waitWithSignal(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
+function isNonRecoverableBufferError(error: any, signal?: AbortSignal): boolean {
+  if (signal?.aborted) return true;
+  if (error?.name === 'AbortError') return true;
+  if (error?.code === -32601 || error?.code === -32602) return true;
+  const message = typeof error?.message === 'string' ? error.message : '';
+  return /\b(?:utf-?8|encoding|binary|invalid params|method not found|permission denied|access denied)\b|바이너리|인코딩/i.test(message);
+}
+
 /**
  * Verifies Zed's current in-memory buffer against the on-disk text.
- * Retries briefly on mismatch so Zed's background file-watcher reload can catch
- * up after an earlier disk write to a cached (even closed-tab) BufferStore entry.
+ * Retries briefly on mismatch (Zed BufferStore file-watcher reload lag) and on
+ * transient RPC/IO failures within the same bounded retry budget.
  */
 export async function verifyEditorBuffer(
   readTextFile: () => Promise<{ content?: unknown }>,
@@ -59,12 +67,14 @@ export async function verifyEditorBuffer(
   const diskHasBom = disk.startsWith('\uFEFF');
   const diskHasStandaloneCr = /\r(?!\n)/.test(disk);
   let lastEditorLength: number | undefined;
+  let lastError: unknown;
   let attempts = 0;
 
   for (let i = 0; i <= delays.length; i++) {
     attempts++;
     try {
       const result = await readTextFile();
+      lastError = undefined;
       if (typeof result?.content === 'string') {
         lastEditorLength = result.content.length;
         if (buffersMatch(result.content, disk)) {
@@ -78,12 +88,19 @@ export async function verifyEditorBuffer(
       if (params.missing && error?.code === -32002) {
         return { matches: true, attempts };
       }
-      throw new Error('편집기 버퍼 확인 실패. 파일을 저장한 뒤 다시 요청하세요.');
+      lastError = error;
+      if (isNonRecoverableBufferError(error, options.signal) || i >= delays.length) {
+        throw new Error('편집기 버퍼 확인 실패. 파일을 저장한 뒤 다시 요청하세요.');
+      }
     }
 
     if (i < delays.length) {
       await waitWithSignal(delays[i], options.signal);
     }
+  }
+
+  if (lastError) {
+    throw new Error('편집기 버퍼 확인 실패. 파일을 저장한 뒤 다시 요청하세요.');
   }
 
   return {

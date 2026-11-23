@@ -6,13 +6,43 @@ Ned에 “이 빌드 절차를 이 프로젝트에 기억해줘” 또는 “이
 
 “Ned에 저장한 프로젝트 지식 목록을 보여줘”, “방금 저장한 빌드 절차를 수정해줘”, “이 지식을 삭제해줘”처럼 요청할 수 있습니다. 갱신과 삭제도 같은 [권한 설정](approval-modes.md)을 따릅니다. 동일한 범위와 제목은 기존 지식의 갱신으로 처리합니다. Ned는 관련 지식의 출처를 표시하며, 기존에 가져온 OpenViking 개인 자료와 자동 추출된 개인 기억을 함께 검색·열람할 수 있습니다.
 
-## 자동 개인화 기억 및 VLM 의미 요약 (0.3.13+)
+## 자동 개인화 기억 및 VLM 의미 요약 (0.3.13+, 0.3.14 보강)
 
-OpenViking이 활성화되어 있으면 Ned 에이전트(OpenCode/ACP)의 주 대화에서 사용자 메시지·에이전트 최종 응답·도구 호출 요약(출력 원문은 길이 제한 및 토큰·키 마스킹 적용)을 로컬 OpenViking 세션에 자동으로 수집합니다. 세션 전환·종료 시와 긴 대화의 일정 턴마다(기본 6턴) 백그라운드에서 사내 VLM으로 개인 기억(프로필·선호·작업 경험)을 추출하며, 매 사용자 요청마다 관련 기억을 찾아 참고 컨텍스트로 자동 주입합니다.
+OpenViking이 활성화되어 있으면(`openViking.enabled: true`) Ned 에이전트(OpenCode/ACP)의 주 대화에서 사용자 메시지·에이전트 최종 응답·도구 호출 요약(출력 원문은 길이 제한 및 시크릿 마스킹 적용)을 로컬 OpenViking 세션에 자동으로 수집합니다. 세션 전환·종료 시와 긴 대화의 일정 턴마다(기본 `6`턴) 백그라운드에서 사내 VLM으로 개인 기억(프로필·선호·작업 경험)을 추출하며, 매 사용자 요청마다 관련 기억을 찾아 참고 컨텍스트로 자동 주입합니다.
 
+### 기본값과 해제 방법
+
+| 설정 키 | 기본값 | 설명 |
+| --- | --- | --- |
+| `openViking.memory.enabled` | `true` | Ned ACP 대화 자동 수집·추출 활성화 여부 |
+| `openViking.memory.autoRecall` | `true` | 사용자 질문 시 개인 기억 자동 검색·참고 주입 여부 |
+| `openViking.memory.commitEveryTurns` | `6` | 긴 대화에서 백그라운드 VLM 기억 추출 주기(허용 범위 `1`~`50`, 잘못된 값은 `6`으로 보정) |
+
+자동 대화 기억을 끄거나 회상만 비활성화하려면 설정 JSON의 `openViking.memory` 항목을 수정한 뒤 **Ned → 설정 JSON 가져와 적용 (자동 재시작)**으로 반영합니다.
+
+```json
+{
+  "openViking": {
+    "enabled": true,
+    "memory": {
+      "enabled": false,
+      "autoRecall": false,
+      "commitEveryTurns": 6
+    }
+  }
+}
+```
+
+현재 자동 대화 기억의 활성 상태와 추출 주기는 Windows 알림 영역(트레이)의 **Ned 메뉴**에서 `자동 대화 기억 · 켜짐 (6턴마다 추출 · 자동 회상)` 또는 `자동 대화 기억 · 꺼짐 (설정 JSON으로 변경)` 항목으로 바로 확인할 수 있습니다.
+
+### 턴·세션 단위 제외(opt-out)와 시크릿 보호
+
+- **턴 단위 제외**: 메시지에 “이건 기억하지 마”, “메모리 쓰지 마”, “기억에서 빼줘”, `don't remember` 같은 표현이 포함되면 해당 턴의 개인 기억 회상을 건너뛸 뿐 아니라, 그 턴의 사용자 메시지와 에이전트 응답 모두 자동 수집·커밋 대상에서 제외합니다.
+- **세션 단위 제외**: 메시지에 “이 세션은 기억하지 마”, “이번 대화는 저장하지 마”, “이번 세션 메모리 꺼줘” 같은 표현이 포함되면 해당 세션의 이후 모든 턴이 회상과 수집에서 제외됩니다(세션 재로드 후에도 유지).
+- **시크릿·개인정보 마스킹**: 대화 저장 페이로드뿐 아니라 회상 쿼리에도 마스킹을 적용합니다. Bearer/Basic 토큰, API 키(`sk-`, `ghp_` 등), JWT(`eyJ...`), PEM 개인키 블록(`-----BEGIN ... PRIVATE KEY-----`), AWS 액세스 키(`AKIA...`), DB·URL 자격증명(`://user:pass@`), 따옴표 포함 비밀번호(`password: "..."`)와 개인 경로가 로컬 OpenViking 및 임베딩 요청으로 전달되기 전에 치환됩니다.
 - Zed 기본 에이전트 대화와 하위 서브에이전트·EGM Goldfish 검토 세션은 수집하지 않습니다.
 - `knowledge_remember`와 `knowledge_index`도 즉시 벡터 색인을 마친 뒤 백그라운드에서 `semantic_and_vectors` 모드로 VLM 의미 요약을 생성합니다.
-- 설정 JSON의 `openViking.memory` (`enabled`, `autoRecall`, `commitEveryTurns`)로 자동 기억 수집·회상을 제어할 수 있으며(기본 켜짐), [OpenViking Studio](openviking-studio.md)에서 추출된 기억을 조회·삭제할 수 있습니다.
+- [OpenViking Studio](openviking-studio.md)에서 추출된 개인 기억을 직접 조회·삭제할 수 있습니다.
 - 기억은 참고 자료이며 현재 사용자 지시와 프로젝트 규칙이 항상 우선하고, 저장된 텍스트가 실행 권한이나 도구 승인을 부여하지 않습니다.
 - 동기화·회상 진단 상태(원문 제외)는 `%APPDATA%\Ned\openviking\memory-status.json`에서 확인할 수 있습니다.
 
@@ -20,4 +50,4 @@ OpenViking은 [모델·임베딩 설정](offline-setup.md)이 적용된 상태�
 
 ## 저장·검색 오류 진단
 
-지식 저장·검색에 실패하면 `OV_EMBEDDING`(임베딩 모델 연결·모델 ID 오류), `OV_EMBEDDING_DIMENSION`(벡터 차원 불일치), `OV_FORBIDDEN`(403 권한 거부), `OV_TIMEOUT`(응답 시간 초과), `OV_TLS`(인증서 오류), `OV_SERVER_ERROR`(5xx 서버 오류) 등 세부 오류 코드를 반환합니다. 실패한 요청의 HTTP 상태·경로와 토큰·개인 경로를 마스킹한 응답 요약은 `%APPDATA%\Ned\openviking\request-diagnostics.json`과 `model-status.json`에서 확인할 수 있습니다. 임베딩 모델 주소·키·ID·차원을 다시 확인한 뒤 **Ned → 설정 JSON 가져와 적용 (자동 재시작)**으로 반영하세요.
+지식 저장·검색에 실패하면 `OV_EMBEDDING`(임베딩 모델 연결·모델 ID 오류), `OV_EMBEDDING_DIMENSION`(벡터 차원 불일치), `OV_FORBIDDEN`(403 권한 거부), `OV_TIMEOUT`(응답 시간 초과), `OV_TLS`(인증서 오류), `OV_SERVER_ERROR`(5xx 서버 오류) 등 세부 오류 코드를 반환합니다. 백그라운드 VLM 의미 요약 중 `409` 잠금 충돌이 발생하면 1회 짧은 지연 후 자동 재시도하며(`OV_SEMANTIC_RETRY`), 최종 실패(`OV_SEMANTIC_REFRESH_FAILED`)나 종료 시 미완료 대기 건수(`OV_SEMANTIC_PENDING_SHUTDOWN`)도 `%APPDATA%\Ned\openviking\request-diagnostics.json`에 기록합니다. 실패한 요청의 HTTP 상태·경로와 토큰·개인 경로를 마스킹한 응답 요약은 `%APPDATA%\Ned\openviking\request-diagnostics.json`과 `model-status.json`에서 확인할 수 있습니다. 임베딩 모델 주소·키·ID·차원을 다시 확인한 뒤 **Ned → 설정 JSON 가져와 적용 (자동 재시작)**으로 반영하세요.

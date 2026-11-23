@@ -283,3 +283,240 @@ test('OpenVikingGateway allowlists OpenViking internal memory tools while blocki
   });
   assert.equal(badPart.status, 403);
 });
+
+test('turn and session opt-out skip both recall and capture/commit across reloads', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-optout-memory-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const appended: Array<{ sessionId: string; messages: Array<{ role: string; content: string }> }> = [];
+  const committed: string[] = [];
+  const recallQueries: string[] = [];
+
+  const fakeKnowledge: KnowledgeService = {
+    state: () => ({ status: 'ready', indexedFiles: 0 }),
+    isReady: () => true,
+    configure: async () => {},
+    search: async () => '{}',
+    read: async () => '{}',
+    index: async () => '',
+    close: async () => {},
+    ensureMemorySession: async () => {},
+    appendSessionMessages: async (sessionId, messages) => { appended.push({ sessionId, messages }); },
+    commitMemorySession: async sessionId => { committed.push(sessionId); return {}; },
+    recallMemories: async query => {
+      recallQueries.push(query);
+      return { items: [{ uri: 'viking://user/local-user/memories/a.md', abstract: 'saved note', score: 0.9 }] };
+    },
+  };
+
+  const turnSessionMsgs: OpenCodeSessionMessage[] = [
+    { id: 'u1', type: 'user', text: '이건 기억하지 마. 임시 테스트 계정 정보 확인해줘.' },
+    { id: 'a1', type: 'assistant', time: { created: 1, completed: 2 }, content: [{ type: 'text', text: '임시 확인 결과입니다.' }] },
+  ];
+  const sessionOptOutMsgs: OpenCodeSessionMessage[] = [
+    { id: 'su1', type: 'user', text: '이 세션은 기억하지 마. 비공개 보안 검토 시작하자.' },
+    { id: 'sa1', type: 'assistant', time: { created: 10, completed: 11 }, content: [{ type: 'text', text: '보안 검토를 진행합니다.' }] },
+  ];
+
+  const makeManager = () => new SessionMemoryManager({
+    root,
+    policy: { enabled: true, autoRecall: true, commitEveryTurns: 1 },
+    knowledge: () => fakeKnowledge,
+    fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async id => id === 'turn-s' ? turnSessionMsgs : sessionOptOutMsgs,
+  });
+
+  const manager = makeManager();
+  await manager.load();
+
+  // Turn opt-out skips BOTH recall AND capture/commit.
+  assert.equal(await manager.recallContext([{ role: 'user', content: '이건 기억하지 마. 임시 테스트 계정 확인해줘.' }], 512), undefined);
+  assert.equal(recallQueries.length, 0);
+  await manager.syncAndMaybeCommit('turn-s', true);
+  assert.equal(appended.length, 0);
+  assert.equal(committed.length, 0);
+
+  // Subsequent normal turn in the same session resumes both recall and capture/commit.
+  turnSessionMsgs.push(
+    { id: 'u2', type: 'user', text: '이제 일반 빌드 규칙 정리해줘' },
+    { id: 'a2', type: 'assistant', time: { created: 3, completed: 4 }, content: [{ type: 'text', text: '일반 빌드 규칙입니다.' }] },
+  );
+  assert.ok(await manager.recallContext([{ role: 'user', content: '이제 일반 빌드 규칙 정리해줘' }], 512));
+  assert.equal(recallQueries.length, 1);
+  await manager.syncAndMaybeCommit('turn-s');
+  assert.equal(appended.length, 1);
+  assert.equal(appended[0].messages.length, 2);
+  assert.ok(appended[0].messages.every(m => !m.content.includes('임시 테스트')));
+  assert.equal(committed.length, 1);
+
+  // Session-level opt-out skips recall AND capture for the initial turn and all later turns even after restart.
+  assert.equal(
+    await manager.recallContext([
+      { role: 'user', content: '이 세션은 기억하지 마. 비공개 보안 검토 시작하자.' },
+      { role: 'assistant', content: '보안 검토를 진행합니다.' },
+      { role: 'user', content: '다음 단계 체크리스트 보여줘' },
+    ], 512),
+    undefined,
+  );
+  assert.equal(recallQueries.length, 1);
+  await manager.syncAndMaybeCommit('sess-s', true);
+  await manager.close();
+  assert.equal(appended.length, 1);
+  assert.equal(committed.length, 1);
+
+  // Reload from memory-sync.json and add another normal-looking turn to opted-out session -> still excluded!
+  sessionOptOutMsgs.push(
+    { id: 'su2', type: 'user', text: '다음 보안 항목 확인해줘' },
+    { id: 'sa2', type: 'assistant', time: { created: 12, completed: 13 }, content: [{ type: 'text', text: '보안 항목 결과입니다.' }] },
+  );
+  const reloaded = makeManager();
+  await reloaded.load();
+  await reloaded.syncAndMaybeCommit('sess-s', true);
+  await reloaded.close();
+  assert.equal(appended.length, 1);
+  assert.equal(committed.length, 1);
+});
+
+test('scrubMemoryText masks JWT, PEM private keys, AWS keys, DB credentials, and spaced quoted passwords in both recall and storage', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-scrub-memory-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const redactor = new Redactor();
+  redactor.add('custom-vault-key-999');
+
+  const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+  const pem = '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA1234567890secretkeydata\n-----END RSA PRIVATE KEY-----';
+  const aws = 'AKIAIOSFODNN7EXAMPLE';
+  const dbUrl = 'postgres://dbadmin:Sup3rS3cret!@db.internal:5432/prod';
+  const spacedPwd1 = 'password: "my secret pass with spaces"';
+  const spacedPwd2 = "password='another spaced secret'";
+
+  const payload = `배포 설정 확인: jwt=${jwt} aws=${aws} db=${dbUrl} ${spacedPwd1} ${spacedPwd2} custom-vault-key-999\n${pem}`;
+  const scrubbed = scrubMemoryText(payload, redactor);
+  for (const leak of [jwt, 'MIIEpAIBAAKCAQEA1234567890secretkeydata', aws, 'Sup3rS3cret!', 'my secret pass with spaces', 'another spaced secret', 'custom-vault-key-999']) {
+    assert.ok(!scrubbed.includes(leak), `secret leaked: ${leak}`);
+  }
+  assert.ok(scrubbed.includes('[REDACTED_JWT]'));
+  assert.ok(scrubbed.includes('[REDACTED_PRIVATE_KEY]'));
+  assert.ok(scrubbed.includes('postgres://[REDACTED]:[REDACTED]@db.internal:5432/prod'));
+
+  // Verify recallContext ALSO scrubs secrets before calling recallMemories!
+  const seenRecallQueries: string[] = [];
+  const savedMessages: Array<{ role: string; content: string }> = [];
+  const fakeKnowledge: KnowledgeService = {
+    state: () => ({ status: 'ready', indexedFiles: 0 }),
+    isReady: () => true,
+    configure: async () => {},
+    search: async () => '{}',
+    read: async () => '{}',
+    index: async () => '',
+    close: async () => {},
+    ensureMemorySession: async () => {},
+    appendSessionMessages: async (_s, msgs) => { savedMessages.push(...msgs); },
+    commitMemorySession: async () => ({}),
+    recallMemories: async query => {
+      seenRecallQueries.push(query);
+      return { items: [{ uri: 'viking://user/local-user/memories/db.md', abstract: 'DB 가이드', score: 0.8 }] };
+    },
+  };
+
+  const manager = new SessionMemoryManager({
+    root,
+    policy: { enabled: true, autoRecall: true, commitEveryTurns: 2 },
+    redactor,
+    knowledge: () => fakeKnowledge,
+    fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async () => [
+      { id: 'u1', type: 'user', text: payload },
+      { id: 'a1', type: 'assistant', time: { created: 1, completed: 2 }, content: [{ type: 'text', text: '처리했습니다: ' + jwt }] },
+    ],
+  });
+  await manager.load();
+  await manager.recallContext([{ role: 'user', content: payload }], 1024);
+  await manager.syncAndMaybeCommit('sec-1');
+  await manager.close();
+
+  assert.equal(seenRecallQueries.length, 1);
+  assert.equal(savedMessages.length, 2);
+  for (const text of [seenRecallQueries[0], savedMessages[0].content, savedMessages[1].content]) {
+    assert.ok(!text.includes(jwt));
+    assert.ok(!text.includes(aws));
+    assert.ok(!text.includes('Sup3rS3cret!'));
+    assert.ok(!text.includes('my secret pass with spaces'));
+    assert.ok(!text.includes('MIIEpAIBAAKCAQEA1234567890secretkeydata'));
+    assert.ok(!text.includes('custom-vault-key-999'));
+  }
+});
+
+test('boundary guards clamp commitEveryTurns, prevent 400+ message re-sync via watermark, and avoid ovSessionId truncation collisions', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-boundary-memory-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const { clampCommitEveryTurns, buildOvSessionId, MAX_SYNCED_IDS_PER_SESSION } = await import('../src/main/session-memory');
+  assert.equal(clampCommitEveryTurns(NaN), 6);
+  assert.equal(clampCommitEveryTurns(0), 6);
+  assert.equal(clampCommitEveryTurns(-5), 6);
+  assert.equal(clampCommitEveryTurns(2.5), 6);
+  assert.equal(clampCommitEveryTurns(1), 1);
+  assert.equal(clampCommitEveryTurns(50), 50);
+  assert.equal(clampCommitEveryTurns(999), 50);
+  assert.equal(resolveMemoryPolicy({
+    model: { baseUrl: 'http://127.0.0.1:8000/v1', apiKey: 'k', id: 'm' },
+    openViking: { enabled: true, embedding: { baseUrl: 'http://127.0.0.1:8001/v1', apiKey: 'e', id: 'b', dimension: 4 }, memory: { enabled: true, autoRecall: true, commitEveryTurns: Number.NaN } },
+  } as any).commitEveryTurns, 6);
+
+  // Two 120-char session IDs sharing first 110 chars must NOT collide and must fit within 96 chars.
+  const prefix = 's'.repeat(110);
+  const ovA = buildOvSessionId(prefix + '-alpha-001');
+  const ovB = buildOvSessionId(prefix + '-beta-0002');
+  assert.notEqual(ovA, ovB);
+  assert.ok(ovA.length <= 96 && ovB.length <= 96);
+
+  // 420 messages (210 turns) exceed MAX_SYNCED_IDS_PER_SESSION (400): oldest messages must NOT re-sync on later turns!
+  const engineMessages: OpenCodeSessionMessage[] = [];
+  for (let i = 0; i < 210; i++) {
+    engineMessages.push(
+      { id: `u_${i}`, type: 'user', text: `질문 번호 ${i}`, time: { created: i * 2 + 1 } },
+      { id: `a_${i}`, type: 'assistant', time: { created: i * 2 + 2, completed: i * 2 + 2 }, content: [{ type: 'text', text: `답변 번호 ${i}` }] },
+    );
+  }
+  const appendedTexts: string[] = [];
+  const fakeKnowledge: KnowledgeService = {
+    state: () => ({ status: 'ready', indexedFiles: 0 }),
+    isReady: () => true,
+    configure: async () => {},
+    search: async () => '{}',
+    read: async () => '{}',
+    index: async () => '',
+    close: async () => {},
+    ensureMemorySession: async () => {},
+    appendSessionMessages: async (_s, msgs) => { appendedTexts.push(...msgs.map(m => m.content)); },
+    commitMemorySession: async () => ({}),
+  };
+
+  const manager = new SessionMemoryManager({
+    root,
+    policy: { enabled: true, autoRecall: false, commitEveryTurns: 50 },
+    knowledge: () => fakeKnowledge,
+    fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async () => engineMessages,
+  });
+  await manager.load();
+  await manager.syncAndMaybeCommit('long-session');
+  assert.equal(appendedTexts.length, 420);
+
+  // Add 1 more turn (messages 420 & 421) and sync again -> ONLY the 2 new messages should append (never u_0!).
+  engineMessages.push(
+    { id: 'u_210', type: 'user', text: '질문 번호 210', time: { created: 999 } },
+    { id: 'a_210', type: 'assistant', time: { created: 1000, completed: 1000 }, content: [{ type: 'text', text: '답변 번호 210' }] },
+  );
+  await manager.syncAndMaybeCommit('long-session');
+  assert.equal(appendedTexts.length, 422);
+  assert.equal(appendedTexts.filter(x => x === '질문 번호 0').length, 1);
+  assert.equal(appendedTexts.at(-2), '질문 번호 210');
+
+  await manager.close();
+  const syncFile = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8'));
+  assert.equal(syncFile.sessions['long-session'].syncedIds.length, MAX_SYNCED_IDS_PER_SESSION);
+  assert.ok(syncFile.sessions['long-session'].watermarkCount >= 22);
+});

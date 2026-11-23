@@ -15,9 +15,9 @@ async function commit(files,message){run('git',['add','--',...files]);if(capture
 const {version}=await json('package.json');
 const requested=process.env.NED_VERSION??'';
 const revision=requested===version?'':requested.startsWith(version+'-')?requested.slice(version.length+1):'';
-if(!/^0\.3\.[1-9]\d+$/.test(version)||(requested!==version&&!(['0.3.12','0.3.13'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision))))throw Error('Unexpected release version');
+if(!/^0\.3\.[1-9]\d+$/.test(version)||(requested!==version&&!(['0.3.12','0.3.13','0.3.14'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision))))throw Error('Unexpected release version');
 const artifactVersion=version+(revision?'-'+revision:'');
-const editorArtifactVersion=['0.3.12','0.3.13'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision)?version:artifactVersion;
+const editorArtifactVersion=['0.3.12','0.3.13','0.3.14'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision)?version:artifactVersion;
 const prefix=`Ned-${artifactVersion}`,tag=`v${artifactVersion}`,groups=['upgrade'];
 const validationRun=process.env.NED_VALIDATION_RUN,candidateRun=process.env.NED_CANDIDATE_RUN,source=process.env.NED_CANDIDATE_SOURCE;
 if((branch!==`codex/ned-${version}`&&branch!=='AG-work')||!/^\d+$/.test(validationRun??'')||!/^\d+$/.test(candidateRun??'')||!/^[a-f0-9]{40}$/.test(source??''))throw Error('Invalid immutable release inputs');
@@ -29,12 +29,12 @@ run('gh',['run','download',validationRun,'--name','windows-offline-smoke-'+artif
 const proof=await json('.cache/ned/windows-validation/windows-offline-smoke.json');
 const candidatePath=`downloads/candidates/${source}`;
 const audit=await json(`${candidatePath}/${prefix}-installer-audit.json`);
-const previousVersion=version==='0.3.13'?(revision?'0.3.13':'0.3.12-rebuild2'):artifactVersion==='0.3.12-rebuild2'?'0.3.12-rebuild1':artifactVersion==='0.3.12-rebuild1'?'0.3.12':version==='0.3.12'?'0.3.11':version==='0.3.11'?'0.3.10':'0.3.9';
-const actionsTransport=['0.3.11','0.3.12','0.3.13'].includes(version);
+const previousVersion=version==='0.3.14'?(revision?'0.3.14':'0.3.13'):version==='0.3.13'?(revision?'0.3.13':'0.3.12-rebuild2'):artifactVersion==='0.3.12-rebuild2'?'0.3.12-rebuild1':artifactVersion==='0.3.12-rebuild1'?'0.3.12':version==='0.3.12'?'0.3.11':version==='0.3.11'?'0.3.10':'0.3.9';
+const actionsTransport=['0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
 const optionalName=`${prefix}-optional-packages.json`;
 const optional=version==='0.3.11'?await json(`${candidatePath}/${optionalName}`):undefined;
 if(optional&&(optional.sourceCommit!==source||optional.assets.length!==2||proof.coreAndReversingPackVerified!==true||proof.userDataPreserved!==true))throw Error('Optional packages or user data preservation lack installed validation');
-if(['0.3.12','0.3.13'].includes(version)&&proof.userDataPreserved!==true)throw Error('User data preservation lacks installed validation');
+if(['0.3.12','0.3.13','0.3.14'].includes(version)&&proof.userDataPreserved!==true)throw Error('User data preservation lacks installed validation');
 if(proof.version!==artifactVersion||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){

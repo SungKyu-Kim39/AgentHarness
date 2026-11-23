@@ -151,3 +151,134 @@ test('ReaGhidra ignores leftover 0.3.11 reversing pack folder and requires bundl
   // Missing bundled runtime must fail without falling back to external pack folder
   await assert.rejects(rea.verifiedRuntime(), (error: NodeJS.ErrnoException) => error.code === 'ENOENT' || /REA\/Ghidra/.test(error.message));
 });
+
+function resolveTestPython() {
+  const installedPython = process.env.NED_TEST_NODE
+    ? path.join(path.dirname(process.env.NED_TEST_NODE), 'resources/runtime/windows-x64/openviking/python/python.exe')
+    : undefined;
+  return process.env.NED_TEST_CURRENT_PYTHON ?? installedPython ?? execFileSync(process.platform === 'win32' ? 'python' : 'python3', ['-c', 'import sys; print(sys.executable)'], { encoding: 'utf8' }).trim();
+}
+
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+test('OpenVikingService logs background semantic refresh failures, retries 409 once, preserves timer on saveNote error, coalesces parent/child, and logs pending tasks on close', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-ov-semantic-'));
+  const data = path.join(root, 'data'); await mkdir(data);
+  const logFile = path.join(root, 'requests.jsonl');
+  const launcher = path.join(root, 'fake-ov-semantic.py');
+  await writeFile(launcher, [
+    'import argparse, json',
+    'from http.server import BaseHTTPRequestHandler, HTTPServer',
+    'p = argparse.ArgumentParser()',
+    'p.add_argument("--config")',
+    'p.add_argument("--port", type=int)',
+    'args = p.parse_args()',
+    `LOG_PATH = ${JSON.stringify(logFile)}`,
+    'state = {"conflict_hits": 0, "fail_next_vectors": False}',
+    'def record(item):',
+    '  with open(LOG_PATH, "a", encoding="utf-8") as f:',
+    '    f.write(json.dumps(item) + "\\n")',
+    'class H(BaseHTTPRequestHandler):',
+    '  def log_message(self, *a): pass',
+    '  def do_GET(self):',
+    '    if self.path == "/health":',
+    '      self.send_response(200); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '      self.wfile.write(b\'{"status":"ok"}\'); return',
+    '    if self.path.startswith("/api/v1/fs/stat"):',
+    '      self.send_response(404); self.end_headers(); self.wfile.write(b\'{"error":"not found"}\'); return',
+    '    self.send_response(200); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '    self.wfile.write(b\'{"status":"ok"}\')',
+    '  def do_POST(self):',
+    '    n = int(self.headers.get("Content-Length", "0"))',
+    '    raw = self.rfile.read(n).decode("utf-8", "replace") if n else ""',
+    '    body = {}',
+    '    try: body = json.loads(raw) if raw else {}',
+    '    except Exception: body = {}',
+    '    if self.path == "/api/v1/fs/mkdir":',
+    '      self.send_response(200); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '      self.wfile.write(b\'{"status":"ok"}\'); return',
+    '    if self.path == "/api/v1/content/write":',
+    '      pm = body.get("processing_mode")',
+    '      uri = body.get("uri", "")',
+    '      content = body.get("content", "")',
+    '      record({"path": self.path, "processing_mode": pm, "uri": uri, "content": content})',
+    '      if pm == "vectors_only" and "FAIL_VECTORS" in content:',
+    '        self.send_response(500); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '        self.wfile.write(b\'{"error":"simulated vectors write failure"}\'); return',
+    '      if pm == "semantic_and_vectors" and "FAIL_SEMANTIC" in content:',
+    '        self.send_response(500); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '        self.wfile.write(b\'{"error":"simulated vlm failure"}\'); return',
+    '      if pm == "semantic_and_vectors" and "CONFLICT_ONCE" in content:',
+    '        state["conflict_hits"] += 1',
+    '        if state["conflict_hits"] == 1:',
+    '          self.send_response(409); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '          self.wfile.write(b\'{"error":"pathlock busy"}\'); return',
+    '      self.send_response(200); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '      self.wfile.write(b\'{"status":"ok"}\'); return',
+    '    if self.path == "/api/v1/content/reindex":',
+    '      record({"path": self.path, "uri": body.get("uri", ""), "mode": body.get("mode", "")})',
+    '      self.send_response(200); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '      self.wfile.write(b\'{"status":"ok"}\'); return',
+    '    self.send_response(200); self.send_header("Content-Type","application/json"); self.end_headers()',
+    '    self.wfile.write(b\'{"status":"ok"}\')',
+    'HTTPServer(("127.0.0.1", args.port), H).serve_forever()',
+  ].join('\n'));
+  const config = configSchema.parse({
+    model: { baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'secret-llm', id: 'llm' },
+    openViking: { enabled: true, embedding: { baseUrl: 'http://127.0.0.1:9/v1', apiKey: 'secret-embed', id: 'embed', dimension: 4 } },
+  });
+  const service = new OpenVikingService(path.join(root, 'runtime'), data, () => {}, {
+    executable: resolveTestPython(),
+    launcher,
+    cwd: root,
+    semanticDebounceMs: 40,
+    semanticRetryDelayMs: 60,
+  });
+  t.after(async () => { await service.close(); await rm(root, { recursive: true, force: true }); });
+  await service.configure(config);
+  assert.equal(service.state().status, 'ready');
+
+  // 1) Background semantic refresh 500 failure is logged (not swallowed)
+  await service.saveNote('project', 'proj1', 'FailNote', 'FAIL_SEMANTIC body', savedKnowledgeId('FailNote'));
+  // 2) Background semantic refresh 409 conflict retries once and succeeds
+  await service.saveNote('project', 'proj1', 'ConflictNote', 'CONFLICT_ONCE body', savedKnowledgeId('ConflictNote'));
+  // 3) First save schedules semantic refresh; second saveNote fails vectors_only -> first timer must remain preserved
+  const preserveId = savedKnowledgeId('PreserveNote');
+  await service.saveNote('project', 'proj1', 'PreserveNote', 'GOOD_INITIAL body', preserveId);
+  await assert.rejects(service.saveNote('project', 'proj1', 'PreserveNote', 'FAIL_VECTORS body', preserveId));
+
+  // Wait for debounce (40ms) + 409 retry backoff (60ms) + margin
+  await wait(350);
+
+  // 4) Parent recursive index refresh coalesces/cancels child note timer
+  const childId = savedKnowledgeId('CoalesceChild');
+  await service.saveNote('project', 'proj2', 'CoalesceChild', 'CHILD_BODY', childId);
+  (service as unknown as { scheduleIndexSemanticRefresh: (target: string) => void }).scheduleIndexSemanticRefresh('viking://resources/ned/proj2');
+  await wait(200);
+
+  // 5) Pending timer at close() logs OV_SEMANTIC_PENDING_SHUTDOWN
+  await service.saveNote('project', 'proj3', 'PendingNote', 'PENDING_BODY', savedKnowledgeId('PendingNote'));
+  await service.close();
+
+  const requests = (await readFile(logFile, 'utf8'))
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map(line => JSON.parse(line) as { path: string; processing_mode?: string; uri: string; content?: string; mode?: string });
+
+  const semanticWrites = requests.filter(r => r.path === '/api/v1/content/write' && r.processing_mode === 'semantic_and_vectors');
+  // ConflictNote attempted semantic write twice (409 -> retry 200)
+  assert.equal(semanticWrites.filter(r => r.content?.includes('CONFLICT_ONCE')).length, 2);
+  // PreserveNote kept its first scheduled semantic write despite second saveNote vectors_only failure
+  assert.equal(semanticWrites.filter(r => r.content?.includes('GOOD_INITIAL')).length, 1);
+  // CoalesceChild semantic write was cancelled by parent index refresh on viking://resources/ned/proj2
+  assert.equal(semanticWrites.filter(r => r.content?.includes('CHILD_BODY')).length, 0);
+  assert.ok(requests.some(r => r.path === '/api/v1/content/reindex' && r.uri === 'viking://resources/ned/proj2' && r.mode === 'semantic_and_vectors'));
+
+  const diag = JSON.parse(await readFile(path.join(data, 'openviking', 'request-diagnostics.json'), 'utf8')) as {
+    events: Array<{ code: string; detail?: string; httpStatus?: number }>;
+  };
+  assert.ok(diag.events.some(e => e.code === 'OV_SEMANTIC_REFRESH_FAILED' && e.detail?.includes(savedKnowledgeId('FailNote'))));
+  assert.ok(diag.events.some(e => e.code === 'OV_SEMANTIC_RETRY' && e.httpStatus === 409 && e.detail?.includes(savedKnowledgeId('ConflictNote'))));
+  assert.ok(diag.events.some(e => e.code === 'OV_SEMANTIC_PENDING_SHUTDOWN' && e.detail?.includes('1 pending semantic refresh')));
+});

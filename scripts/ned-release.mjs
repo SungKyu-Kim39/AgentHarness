@@ -11,9 +11,9 @@ import { updateReleaseLauncher, updateReleaseSupervisor } from './release-superv
 const json=async file=>JSON.parse(await readFile(file,'utf8'));
 const exists=file=>access(file).then(()=>true,()=>false);
 async function ghidraInputs(root){return Object.fromEntries(await Promise.all(['ghidra-runtime-lock.json','scripts/bundle-ghidra.py','scripts/CompileGhidraGuard.java','distribution/NedOfflineNetworkGuard.java'].map(async file=>[file,await fileHash(path.join(root,file))])));}
-const releaseVersions = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13'];
-const ghidraVersions = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13'];
-const modernVersions = ['0.3.9','0.3.10','0.3.11','0.3.12','0.3.13'];
+const releaseVersions = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'];
+const ghidraVersions = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'];
+const modernVersions = ['0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'];
 export async function prepareRelease(root,cache,staged,version,seven,record=false) {
  if(!releaseVersions.includes(version))throw Error('Review a new runtime baseline before the next release');
  const {url: _download, components, ...base}=await json(path.join(root,'scripts/ned-bootstrap-lock.json'));

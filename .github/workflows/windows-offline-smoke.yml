@@ -4,9 +4,9 @@ on:
     inputs:
       artifact_version:
         description: Exact immutable installer build
-        default: 0.3.13
+        default: 0.3.14
         type: choice
-        options: ['0.3.13', '0.3.12-rebuild2', '0.3.12-rebuild1', '0.3.12', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', 'editor-source-build']
+        options: ['0.3.14', '0.3.13', '0.3.12-rebuild2', '0.3.12-rebuild1', '0.3.12', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', 'editor-source-build']
       build_revision:
         description: Optional same-version repair revision (e.g. rebuild1)
         type: string
@@ -28,11 +28,11 @@ permissions:
   actions: read
 jobs:
   offline-install:
-    if: startsWith(inputs.artifact_version, '0.3.12') || startsWith(inputs.artifact_version, '0.3.13')
+    if: startsWith(inputs.artifact_version, '0.3.12') || startsWith(inputs.artifact_version, '0.3.13') || startsWith(inputs.artifact_version, '0.3.14')
     runs-on: windows-2022
     timeout-minutes: 30
     env:
-      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.13' }}
+      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.14' }}
       NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -157,7 +157,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
           if ((Split-Path $env:NED_TEST_NODE) -ne $install) { throw 'Unexpected disposable installer path' }
-          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.13') { '0.3.12-rebuild2' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild2') { '0.3.12-rebuild1' } else { '0.3.12' }
+          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.14') { '0.3.13' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.13') { '0.3.12-rebuild2' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.12-rebuild2') { '0.3.12-rebuild1' } else { '0.3.12' }
           $previous = Join-Path $env:RUNNER_TEMP "Ned-$baseline-previous.exe"
           $audit = Get-Content "downloads/Ned-$baseline-installer-audit.json" -Raw | ConvertFrom-Json
           $url = "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v$baseline/Ned-$baseline-win-x64.exe"
@@ -325,7 +325,7 @@ jobs:
           const folder=process.env.NED_EDITOR_OUTPUT,version=JSON.parse(fs.readFileSync('package.json')).version,revision=process.env.NED_BUILD_REVISION||'',artifact=process.env.NED_EDITOR_ARTIFACT;
           const binary=`Ned-editor-${artifact}.exe`,archive=`zed-ned-editor-source-v1.28.1-${artifact}.tar.gz`,about=`Ned ${version}`+(revision?' · rebuild '+revision.slice(7):'');
           const exe=fs.readFileSync(p.join(folder,binary));
-          const labels=['About Ned','Quit Ned',about,...(['0.3.10','0.3.11','0.3.12','0.3.13'].includes(version)?['NED_MANAGED_TERMINAL','PowerShell','CMD']:[])];
+          const labels=['About Ned','Quit Ned',about,...(['0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version)?['NED_MANAGED_TERMINAL','PowerShell','CMD']:[])];
           for(const s of labels)if(!exe.includes(Buffer.from(s)))throw Error('Missing compiled UI: '+s);
           for(const s of ['About Zed','Quit Zed'])if(exe.includes(Buffer.from(s)))throw Error('Old compiled menu: '+s);
           const files=[binary,archive].map(name=>{const bytes=fs.readFileSync(p.join(folder,name));return {name,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex')}});
@@ -374,7 +374,7 @@ jobs:
         id: candidate
         run: node scripts/release-candidate.mjs candidate
       - name: Store candidate binaries outside Git LFS
-        if: startsWith(steps.candidate.outputs.version, '0.3.12') || startsWith(steps.candidate.outputs.version, '0.3.13')
+        if: startsWith(steps.candidate.outputs.version, '0.3.12') || startsWith(steps.candidate.outputs.version, '0.3.13') || startsWith(steps.candidate.outputs.version, '0.3.14')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ned-${{ steps.candidate.outputs.version }}-installer-assets-${{ steps.candidate.outputs.source_sha }}
