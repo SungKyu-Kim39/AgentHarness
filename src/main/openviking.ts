@@ -93,6 +93,7 @@ export class OpenVikingService implements KnowledgeService {
   private diagnosticSecrets: string[] = [];
   private personal?: PersonalKnowledge;
   private writingNotes = new Set<string>();
+  private semanticTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private namespaceAbort?: AbortController;
   private startupStage: StartupStage = 'bundle';
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch) {}
@@ -288,13 +289,37 @@ export class OpenVikingService implements KnowledgeService {
       throw error;
     });
   }
-  private scheduleSemanticRefresh(uri: string, recursive: boolean) {
+  private cancelSemanticRefresh(uri: string) {
+    const existing = this.semanticTimers.get(uri);
+    if (existing) { clearTimeout(existing); this.semanticTimers.delete(uri); }
+  }
+  private scheduleNoteSemanticRefresh(uri: string, body: string) {
+    this.cancelSemanticRefresh(uri);
     if (!this.isReady()) return;
-    // Run VLM semantic summarization asynchronously so tool calls return
-    // immediately even when the intranet LLM queue is busy.
-    void this.request('/api/v1/content/reindex', {
-      uri, mode: 'semantic_and_vectors', force: true, wait: false, recursive,
-    }, 15000, 'POST', undefined, 'local-user', { admin: true }).catch(() => {});
+    // Debounce slightly so rapid consecutive updates/deletes to the same note
+    // do not collide with OpenViking's AGFS path lock while VLM runs.
+    const timer = setTimeout(() => {
+      this.semanticTimers.delete(uri);
+      if (!this.isReady() || this.writingNotes.has(uri)) return;
+      void this.request('/api/v1/content/write', {
+        uri, content: body, mode: 'replace', wait: false, processing_mode: 'semantic_and_vectors', edit_source: 'manual',
+      }, 15000, 'POST').catch(() => {});
+    }, 1500);
+    timer.unref();
+    this.semanticTimers.set(uri, timer);
+  }
+  private scheduleIndexSemanticRefresh(target: string) {
+    this.cancelSemanticRefresh(target);
+    if (!this.isReady()) return;
+    const timer = setTimeout(() => {
+      this.semanticTimers.delete(target);
+      if (!this.isReady()) return;
+      void this.request('/api/v1/content/reindex', {
+        uri: target, mode: 'semantic_and_vectors', force: true, wait: false, recursive: true,
+      }, 15000, 'POST', undefined, 'local-user', { admin: true }).catch(() => {});
+    }, 1500);
+    timer.unref();
+    this.semanticTimers.set(target, timer);
   }
   async personalSearch(query: string, limit: number) {
     this.ready();
@@ -334,6 +359,7 @@ export class OpenVikingService implements KnowledgeService {
     const root = knowledgeNoteRoot(scope, project);
     const uri = knowledgeNoteUri(scope, project, id);
     if (this.writingNotes.has(uri)) throw new Error('해당 지식을 변경하는 다른 작업이 있습니다.');
+    this.cancelSemanticRefresh(uri);
     this.writingNotes.add(uri);
     try {
       for (const folder of scope === 'personal' ? ['viking://user/local-user/resources', root] : ['viking://resources/ned', knowledgeRoot(project), root]) {
@@ -343,10 +369,11 @@ export class OpenVikingService implements KnowledgeService {
         }
       }
       const mode = await this.noteExists(uri, signal) ? 'replace' : 'create';
+      const body = '# ' + title + '\n\n' + content;
       await this.request('/api/v1/content/write', {
-        uri, content: '# ' + title + '\n\n' + content, mode, wait: true, processing_mode: 'vectors_only', edit_source: 'manual'
+        uri, content: body, mode, wait: true, processing_mode: 'vectors_only', edit_source: 'manual'
       }, false, 'POST', signal);
-      this.scheduleSemanticRefresh(uri, false);
+      this.scheduleNoteSemanticRefresh(uri, body);
       return JSON.stringify({ status: 'saved', scope, id, uri, title, semanticRefresh: 'queued' });
     } finally { this.writingNotes.delete(uri); }
   }
@@ -354,6 +381,7 @@ export class OpenVikingService implements KnowledgeService {
     this.ready();
     const uri = knowledgeNoteUri(scope, project, id);
     if (this.writingNotes.has(uri)) throw new Error('해당 지식을 변경하는 다른 작업이 있습니다.');
+    this.cancelSemanticRefresh(uri);
     this.writingNotes.add(uri);
     try {
       if (await this.noteExists(uri, signal)) await this.request('/api/v1/fs?uri=' + encodeURIComponent(uri) + '&wait=true', undefined, false, 'DELETE', signal);
@@ -391,8 +419,9 @@ export class OpenVikingService implements KnowledgeService {
     const upload = await response.json(); const id = upload.result?.temp_file_id ?? upload.temp_file_id;
     if (typeof id !== 'string') throw new Error('OpenViking 업로드 확인 실패');
     const target = knowledgeRoot(project) + '/' + createHash('sha256').update(filename).digest('hex').slice(0, 20);
+    this.cancelSemanticRefresh(target);
     await this.request('/api/v1/resources', { temp_file_id: id, to: target, wait: true, reason: '사용자가 선택한 프로젝트 텍스트 파일', processing_mode: 'vectors_only' });
-    this.scheduleSemanticRefresh(target, true);
+    this.scheduleIndexSemanticRefresh(target);
     this.value.indexedFiles++; this.changed(); return `OpenViking 색인 완료: ${filename} (VLM 의미 요약 백그라운드 진행)`;
   }
   async ensureMemorySession(sessionId: string, signal?: AbortSignal) {
@@ -455,6 +484,8 @@ export class OpenVikingService implements KnowledgeService {
   }
   private async stop() {
     this.expectedExit = true;
+    for (const timer of this.semanticTimers.values()) clearTimeout(timer);
+    this.semanticTimers.clear();
     await this.personal?.close(); this.personal = undefined;
     await this.diagnosticWrites.catch(() => {});
     const child = this.process;
