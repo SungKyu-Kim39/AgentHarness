@@ -72,13 +72,3 @@ API 성공 후에도 임베딩 큐가 남아 있을 수 있습니다. Ned는 모
 `EXPORT_PACK HTTP_500`은 기존 서버 내부 오류입니다. 벡터 스냅샷 단계에서 실패한 경우 `EXPORT_PERSONAL_NO_VECTORS.cmd` 또는 `EXPORT_PERSONAL.cmd --without-vectors`를 명시적으로 선택할 수 있습니다. 문서·기억을 보존하고 벡터만 제외해 Ned에서 다시 계산합니다. 자동 전환하지 않으며, 이 방법도 실패하면 기존 서버 traceback을 로컬에서 확인해야 합니다.
 
 내보내기 전체에는 고정 5분 제한을 두지 않고 사용자가 취소할 수 있습니다. 인증·경로 선확인의 로컬 메타데이터 요청에만 30초를 적용합니다.
-
-## `EXPORT_PREFLIGHT HTTP_500`과 수정 도구 2
-
-기존 0.3.3 내보내기는 `fs/stat` 오류에서 OVPack 요청 전 중단했습니다. 이 단계에는 `--without-vectors`가 영향을 주지 않습니다. `/health`가 healthy여도 선택 루트와 저장소 읽기는 실패할 수 있습니다.
-
-[독립 수정 도구 2](https://github.com/SungKyu-Kim39/AgentHarness/raw/refs/heads/work/downloads/Ned-openviking-export-fix-2.tgz)를 새 폴더에 풀어 `EXPORT_PERSONAL.cmd`를 실행합니다. 재설치나 DB·인증 변경은 필요 없습니다. 같은 인증·사용자 범위의 `fs/ls`를 `simple`, `node_limit=1`로 비재귀 확인한 뒤 원래 export API를 호출합니다. 목록 조회의 401·403·500이나 잘못된 응답은 계속 거절합니다.
-
-실패가 이어지면 **CHECK_EXPORT.cmd**를 사용합니다. health·ready·stat·list의 HTTP 상태, 고정 오류 코드, 버전·인증 방식·요청 범위만 출력합니다. 키·자료 이름·내용·오류 원문은 버리고 GET만 요청합니다. 공유할 때는 이 JSON만 사용하세요.
-
-확인한 배포 PC의 기존 서버는 0.5.0, trusted 모드, `healthy=True`였습니다. stat 500의 내부 원인은 미확정입니다. Linux에서는 stat에 500을 주입해도 같은 인증의 내보내기·현재 SDK 가져오기·개인 검색이 성공하는지 검사했습니다. 실제 사용자 자료 성공은 새 도구에서 별도 확인해야 합니다. 과거 v0.3.3 파일과 태그는 유지합니다.

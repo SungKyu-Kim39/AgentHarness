@@ -79,6 +79,6 @@ Ned의 승인 설정에 따라 실행하며, 출력과 종료 코드를 반환�
 개인 설정과 이전 모델·sandbox 승인은 복제하지 않습니다. [형식과 백업 안내](zed-history-import.md)를 읽습니다.
 
 EGM 설계·검토는 Ned Agent에 `egm-draft`, `egm-review` 등 필요한 워크플로를 요청합니다.
-[EGM 안내](egm.md), [전체 74종 안내](skills-0.3.9.md), [버전 변경 사항](changes-0.3.12.md)을 제공합니다.
+[EGM 안내](egm.md), [전체 74종 안내](bundled-skills.md), [버전 변경 사항](changes-0.3.12.md)을 제공합니다.
 
 [프로젝트·개인 공통 지식](knowledge-notes.md) · [권한 설정](approval-modes.md)

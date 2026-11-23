@@ -23,9 +23,8 @@ def fetch(url, target, expected, size=None):
     print('Verified input:', target.name, target.stat().st_size)
 
 if __name__ == '__main__':
-    baseline = json.loads((ROOT / 'release-runtime-lock.json').read_text())['baseline']
-    fetch('https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/1392b93209ac9c9ba764eab52f099da1129bcbcc/downloads/' + baseline['name'],
-          ROOT / 'downloads' / baseline['name'], baseline['sha256'], baseline['bytes'])
+    baseline = json.loads((ROOT / 'scripts/ned-bootstrap-lock.json').read_text())
+    fetch(baseline['url'], ROOT / '.cache/ned/bootstrap/installer.exe', baseline['sha256'], baseline['bytes'])
     lock = json.loads((ROOT / 'openviking-upgrade-lock.json').read_text())
     for item in [*lock['packages'], lock['source']]:
         fetch(item['url'], ROOT / '.cache/openviking/upgrade-0.5.5' / item['filename'], item['sha256'])

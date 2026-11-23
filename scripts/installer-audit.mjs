@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
-import { readFile, writeFile, mkdir, mkdtemp, rm, stat, open } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, mkdtemp, rm, stat, open, readdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { pathToFileURL } from 'node:url';
 import path from 'node:path';
@@ -131,4 +131,17 @@ async function auditInstaller(installer) {
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
   const version = (await json(path.join(project, 'package.json'))).version;
   await auditInstaller(path.resolve(process.argv[2] ?? path.join(project, 'release/desktop', `L-Vibe-${version}-win-x64.exe`)));
+}
+
+export async function payloadInventory(root){
+ const result={};
+ async function visit(relative=''){
+  for(const item of await readdir(path.join(root,relative),{withFileTypes:true})){
+   const name=relative?relative+'/'+item.name:item.name;
+   if(item.isDirectory())await visit(name);
+   else if(item.isFile())result[name]=await fileHash(path.join(root,name));
+   else throw Error('Unsupported payload link: '+name);
+  }
+ }
+ await visit();return result;
 }

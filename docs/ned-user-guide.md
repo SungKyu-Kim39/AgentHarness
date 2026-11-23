@@ -5,7 +5,7 @@
 처음부터 모든 도구 이름을 외울 필요는 없습니다. 먼저 익숙한 코드나 문서 하나를 골라 읽고 설명하는 일을 맡겨 보세요. 결과를 확인할 수 있게 되면 파일 수정, 여러 단계의 작업, 지식 검색으로 범위를 넓히면 됩니다.
 
 0.3.10은 기본 스킬을 로컬에서 읽고, 지식 서비스는 백그라운드에서 시작합니다.
-[0.3.10 변경 사항](archive/releases/changes-0.3.10.md),
+[0.3.12 변경 사항](changes-0.3.12.md),
 [기존 개인 Zed 대화 가져오기](zed-history-import.md), [PowerShell/CMD 선택](offline-setup.md),
 [EGM 설계·검토](egm.md)를 함께 제공합니다.
 
@@ -1292,7 +1292,7 @@ LLM 연결, OpenViking 실행, 임베딩 설정과 해당 문서 색인은 각�
 
 ## 관련 안내와 설명의 기준
 
-이 문서의 74종 목록은 [기본 스킬 manifest](../vendor/skills/manifest.json)와 개별 지침을 기준으로 작성했습니다. 실제 분석·조회·실행 범위는 [호스트 도구 정의](../distribution/host-tools.ts), [개발 MCP 연결](../src/main/mcp-extensions.ts), [데스크톱 안내](agent-desktop.md), [스킬 자동 적용 안내](skills-0.3.7.md)를 대조했습니다. 원본 프로젝트의 기능 전체와 Ned에서 검토해 노출한 기능은 다를 수 있습니다.
+이 문서의 74종 목록은 [기본 스킬 manifest](../vendor/skills/manifest.json)와 개별 지침을 기준으로 작성했습니다. 실제 분석·조회·실행 범위는 [호스트 도구 정의](../distribution/host-tools.ts), [개발 MCP 연결](../src/main/mcp-extensions.ts), [데스크톱 안내](agent-desktop.md), [스킬 자동 적용 안내](bundled-skills.md)를 대조했습니다. 원본 프로젝트의 기능 전체와 Ned에서 검토해 노출한 기능은 다를 수 있습니다.
 
 이어 읽을 문서는 다음과 같습니다.
 
@@ -1300,7 +1300,7 @@ LLM 연결, OpenViking 실행, 임베딩 설정과 해당 문서 색인은 각�
 - [Zed 비교 요약](ned-vs-zed.md): 구성과 운영 차이를 표로 정리했습니다.
 - [설치와 첫 실행](offline-setup.md), [설정 변경·복구](configuration-recovery.md), [모델·thinking 설정](model-controls.md)
 - [권한 모드](approval-modes.md), [기존 OpenViking 지식 가져오기](openviking-personal-migration.md), [Windows 진단](windows-diagnostics.md)
-- [0.3.7 검증 기록](archive/validations/validation-0.3.7.md), [라이선스 정책](license-policy.md)
+- [0.3.12 검증 기록](validation-0.3.12.md), [라이선스 정책](license-policy.md)
 
 현재 배포본에서 Windows Server 설치·로딩과 직원 PC의 실제 GUI·사내 모델·SDK·외부 통신 차단 검증은 구분해 관리합니다. 특정 기능의 일반적인 사용 방법을 이 문서에서 설명했다고 모든 직원 환경의 검증이 끝난 것은 아닙니다. 배포·지원 담당자는 버전별 검증 기록을 함께 확인해 주세요.
 

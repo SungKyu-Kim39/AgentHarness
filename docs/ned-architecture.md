@@ -93,7 +93,7 @@ Windows ACP 실행은 Zed → 번들 Python 콘솔 감독 프로세스 → Elect
 
 Zed는 주로 GPL-3.0-or-later이며 Apache-2.0 구성 요소도 있습니다. 대응 소스와 제3자 고지를 함께 제공하며, Ned 호스트의 라이선스와 구분합니다. 최소 OS는 Windows 10 1903 이상·Windows 11 22H2 이상 x64입니다.
 
-0.3.7에서는 Windows Server 설치와 OpenViking·토크나이저·Node 로딩을 확인했습니다. 실제 사내 Windows GUI·모델 서버·네트워크·실행과 종료 검증은 [검증 기록](archive/validations/validation-0.3.7.md)의 범위에 따라 이어갑니다. 원본 0.3.1의 AppData와 빈 시작 화면 수정 이력은 [시작 수정 안내](archive/fixes/ned-startup-fix-1.md)에 남겼습니다.
+Windows Server 설치와 실제 사내 Windows GUI·모델·네트워크 검증의 범위는 버전별 기록에서 확인합니다. [검증 기록](validation-0.3.12.md)
 
 ## 편집기 표시와 Astryx
 
