@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "version": "0.3.12-rebuild2",
+  "releaseUrl": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12-rebuild2",
+  "recordedAt": "2026-11-23T06:38:28.942Z",
+  "authenticated": false,
+  "verifiedFullDownloads": true,
+  "assets": [
+    {
+      "name": "Ned-0.3.12-rebuild2-bundle-manifest.json",
+      "bytes": 685,
+      "sha256": "861438a1a17eebe6cb531c9954cfba6a3ad5d4e502ca3c0b14545e57d64bdd48",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-bundle-manifest.json"
+    },
+    {
+      "name": "Ned-0.3.12-rebuild2-installer-audit.json",
+      "bytes": 16360,
+      "sha256": "a061b42a8b1665afcbc4615b01920f44e5ea4315380118f4acae395e42667e8e",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-installer-audit.json"
+    },
+    {
+      "name": "Ned-0.3.12-rebuild2-payload-manifest.json",
+      "bytes": 10030936,
+      "sha256": "61bf395dd3a4743104dcceca802636ad76a966eb98d12c1b1f20fdcf64f9e653",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-payload-manifest.json"
+    },
+    {
+      "name": "Ned-0.3.12-rebuild2-win-x64.exe",
+      "bytes": 1535032629,
+      "sha256": "56499c5d91c117ccaaa696653296bd763d68b62acc04e2e5960b5720017463e1",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-win-x64.exe"
+    },
+    {
+      "name": "Ned-0.3.12-rebuild2-win-x64.exe.sha256",
+      "bytes": 98,
+      "sha256": "11580454c34018611967e7e384e63e10a71ae583b88f080854ab0b36ea26c963",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-win-x64.exe.sha256"
+    },
+    {
+      "name": "Ned-0.3.12-rebuild2-windows-x64.tgz",
+      "bytes": 1914909413,
+      "sha256": "bdb557ffc9e5c2b4b02b1fd799b3d831e8656e6405e263509d0dd27bbb7d2cdc",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-windows-x64.tgz"
+    },
+    {
+      "name": "Ned-0.3.12-rebuild2-windows-x64.tgz.sha256",
+      "bytes": 102,
+      "sha256": "b1ab85d02016da8aede039e50dbef66ae74bfcc08abcc1fbd8e1c154598d5361",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.12-rebuild2/Ned-0.3.12-rebuild2-windows-x64.tgz.sha256"
+    }
+  ]
+}
