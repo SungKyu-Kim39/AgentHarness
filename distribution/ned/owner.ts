@@ -62,11 +62,18 @@ export class AgentOwner {
           const previous = this.sessions.get(params.session);
           if (previous && previous !== peer) throw new Error('다른 편집기에서 사용 중인 세션입니다.');
           await this.runtime.activateEditScope(params.session);
-          this.sessions.set(params.session, peer); attached.add(params.session); return {};
+          this.sessions.set(params.session, peer); attached.add(params.session);
+          this.runtime.onSessionActivated(params.session);
+          return {};
         }
         if (method === 'turn/text') {
           if (!attached.has(params?.session) || typeof params?.text !== 'string') throw new Error('Session not attached');
           this.runtime.setTurnText(params.session, params.text);
+          return {};
+        }
+        if (method === 'turn/complete') {
+          if (!attached.has(params?.session)) throw new Error('Session not attached');
+          this.runtime.onTurnComplete(params.session);
           return {};
         }
         if (method === 'skills/list' || method === 'skills/read') {
@@ -85,6 +92,7 @@ export class AgentOwner {
         clearTimeout(authenticationTimer); this.peers.delete(peer);
         for (const session of attached) if (this.sessions.get(session) === peer) {
           this.sessions.delete(session);
+          this.runtime.onSessionDisconnected(session);
           const work = this.runtime.interruptSession(session).catch(() => {});
           this.cancelled.add(work); void work.finally(() => this.cancelled.delete(work));
         }
@@ -98,6 +106,7 @@ export class AgentOwner {
     await atomicJSON(this.descriptor, { schemaVersion: 1, socket: this.endpoint, token: this.token });
     return this.descriptor;
   }
+  private bufferMismatchEvents: Array<{ recordedAt: string; attempts?: number; editorLength?: number; diskLength?: number; diskHasBom?: boolean; diskHasStandaloneCr?: boolean }> = [];
   async checkBuffer(session: string, project: string, proposal: Proposal, signal?: AbortSignal) {
     const peer = this.sessions.get(session);
     if (!peer) throw new Error('편집기 연결이 없어 파일 수정을 보류합니다.');
@@ -105,7 +114,19 @@ export class AgentOwner {
       session, path: path.join(project, proposal.path), before: proposal.before,
       missing: proposal.baseHash.startsWith('missing:'),
     }, signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000));
-    if (response?.matches !== true) throw new Error('저장하지 않은 편집기 변경이 있습니다. Ctrl+S로 저장한 뒤 다시 요청하세요.');
+    if (response?.matches !== true) {
+      this.bufferMismatchEvents.push({
+        recordedAt: new Date().toISOString(),
+        ...(typeof response?.attempts === 'number' ? { attempts: response.attempts } : {}),
+        ...(typeof response?.editorLength === 'number' ? { editorLength: response.editorLength } : {}),
+        ...(typeof response?.diskLength === 'number' ? { diskLength: response.diskLength } : {}),
+        ...(typeof response?.diskHasBom === 'boolean' ? { diskHasBom: response.diskHasBom } : {}),
+        ...(typeof response?.diskHasStandaloneCr === 'boolean' ? { diskHasStandaloneCr: response.diskHasStandaloneCr } : {}),
+      });
+      this.bufferMismatchEvents = this.bufferMismatchEvents.slice(-10);
+      void atomicJSON(path.join(this.root, 'buffer-check-diagnostics.json'), { schemaVersion: 1, events: structuredClone(this.bufferMismatchEvents) }).catch(() => {});
+      throw new Error('저장하지 않은 편집기 변경이 있습니다. 열려 있는 탭에서 Ctrl+S로 저장하거나, Zed 기본 Agent 패널에 보류 중인 변경(Keep/Reject)이 남아 있으면 처리한 뒤 다시 요청하세요.');
+    }
   }
   async close() {
     this.unwatchPermissions?.();

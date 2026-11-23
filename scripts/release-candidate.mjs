@@ -22,12 +22,12 @@ const {version}=await json('package.json');
 const revision=process.env.NED_BUILD_REVISION??'';
 if(!/^0\.3\.[1-9]\d+$/.test(version)||(revision&&!/^rebuild[1-9][0-9]*$/.test(revision))||(branch!==`codex/ned-${version}`&&branch!=='AG-work'))throw Error('Unexpected release version or branch');
 const artifactVersion=version+(revision?'-'+revision:'');
-const editorArtifactVersion=version==='0.3.12'&&/^rebuild[1-9][0-9]*$/.test(revision)?version:artifactVersion;
+const editorArtifactVersion=['0.3.12','0.3.13'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision)?version:artifactVersion;
 const prefix=`Ned-${artifactVersion}`;
 const mode=process.argv[2];
 if(mode==='candidate'){
  const editorRun=checkedID('NED_EDITOR_RUN');
- if(['0.3.11','0.3.12'].includes(version))run(process.execPath,['scripts/verify-current-docs.mjs']);
+ if(['0.3.11','0.3.12','0.3.13'].includes(version))run(process.execPath,['scripts/verify-current-docs.mjs']);
  run('python3',['scripts/release-inputs.py']);
  run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include=downloads/astryx/*.zip']);
  run(process.execPath,['scripts/ned-package.mjs','release-prepare']);
@@ -44,7 +44,7 @@ if(mode==='candidate'){
  if(editorInputs.build.sourceCommit!==editor.head_sha)throw Error('Editor artifact source mismatch');
  run(process.execPath,['scripts/windows-test-bundle.mjs']);
  const fixtureGroups=['upgrade'];
- const artifactTransport=['0.3.11','0.3.12'].includes(version);
+ const artifactTransport=['0.3.11','0.3.12','0.3.13'].includes(version);
  await commit(['release-runtime-lock.json',...(artifactTransport?[]:Object.keys(editorInputs.files).map(name=>`downloads/editor/${name}`)),
   `downloads/editor/${editorInputs.identity.metadata}`,
   ...fixtureGroups.flatMap(name=>[`downloads/${prefix}-windows-${name}-test.cjs`,`downloads/${prefix}-windows-${name}-test.cjs.sha256`])],

@@ -1,6 +1,6 @@
 # Ned
 
-[0.3.12 변경 사항](docs/changes-0.3.12.md) · [0.3.12 검증](docs/validation-0.3.12.md)
+[0.3.13 변경 사항](docs/changes-0.3.13.md) · [0.3.13 검증](docs/validation-0.3.13.md)
 
 최신 사전 릴리스는 [Ned 0.3.12 rebuild2](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.12-rebuild2)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.3.12-rebuild2.md).
 
@@ -12,7 +12,7 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
 
-0.3.12에서는 [권한 정책(터미널 최소 고위험 가드·외부 읽기·지식 저장 자동 승인)](docs/approval-modes.md)과 승인 팝업 최상단 표시, OpenViking·Studio 상시 진단을 보완하고 설치본을 전체 설치본 단일 배포로 단순화했습니다.
+0.3.13에서는 [OpenViking 개인화 대화 기억 자동 추출·회상 및 VLM 의미 요약](docs/knowledge-notes.md)을 활성화하고, UTF-8 BOM·단독 CR·버퍼 리로드 지연·비-UTF-8 파일로 발생하던 "저장하지 않은 편집기 변경" 버퍼 가드 오탐을 수정했습니다.
 
 Ned는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 제공합니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 
@@ -37,7 +37,7 @@ Ned는 선택한 프로젝트의 코드를 읽고 검색한 뒤 수정안을 만
 
 기본 구성에는 Aegis·Conductor 지침, 스킬 74개, Serena·clangd, Graphify, REA와 개발 MCP 6종이 들어 있습니다. VS2017/2019가 설치된 PC에서는 MSBuild와 솔루션 구성을 찾아 지원하는 빌드 작업을 실행할 수 있습니다. 필요한 SDK와 프로젝트 의존성은 미리 준비해야 합니다. 0.3.8에는 [프로젝트별 Conda 환경 선택과 Python 실행·빌드](docs/python-conda.md)를 추가했습니다. 환경은 사용자가 선택하고 이후 같은 프로젝트에서 재사용합니다.
 
-OpenViking은 Ned 실행 중 백그라운드에서 시작하고 Ned와 함께 종료합니다. Ned는 기본·사용자 스킬을 로컬 파일에서 읽습니다. 지식 서비스는 사용자가 선택해 색인한 문서와 가져온 개인 지식을 검색합니다. 새 대화나 프로젝트 전체를 자동으로 업로드하지 않습니다. [글로벌 스킬 등록](docs/extension-guide.md#사용자-글로벌-스킬-등록), [스킬 안내](docs/bundled-skills.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
+OpenViking은 Ned 실행 중 백그라운드에서 시작하고 Ned와 함께 종료합니다. Ned는 기본·사용자 스킬을 로컬 파일에서 읽습니다. 0.3.13부터 지식 서비스는 사용자가 선택해 색인한 문서·가져온 개인 지식뿐 아니라 Ned 에이전트(OpenCode/ACP) 주 대화에서 백그라운드 VLM으로 추출한 개인 기억도 함께 검색·자동 회상합니다(`openViking.memory` 설정으로 제어, Studio에서 조회·삭제 가능). 프로젝트 전체 파일을 임의로 업로드하지는 않습니다. [글로벌 스킬 등록](docs/extension-guide.md#사용자-글로벌-스킬-등록), [스킬 안내](docs/bundled-skills.md), [데스크톱 도구](docs/agent-desktop.md)에서 세부 사용법을 볼 수 있습니다.
 
 ## 개발과 배포
 

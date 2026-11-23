@@ -5,10 +5,16 @@ const endpoint = z.string().trim().url().superRefine((value, ctx) => {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: '인증 정보 없이 API 기준 경로(/v1 등)를 지정하세요.' });
   }
 });
+export const openVikingMemorySchema = z.object({
+  enabled: z.boolean().default(true),
+  autoRecall: z.boolean().default(true),
+  commitEveryTurns: z.number().int().min(1).max(100).default(6),
+}).strict();
 export const openVikingSchema = z.object({
   enabled: z.boolean().default(true),
   embedding: z.object({ baseUrl: endpoint, apiKey: z.string().trim().min(1).max(8192), id: z.string().trim().min(1).max(256), dimension: z.number().int().min(1).max(65536) }).strict(),
   vlm: z.object({ baseUrl: endpoint, apiKey: z.string().trim().min(1).max(8192), id: z.string().trim().min(1).max(256) }).strict().optional(),
+  memory: openVikingMemorySchema.optional(),
 }).strict();
 const modelSchema = z.object({ baseUrl: endpoint, apiKey: z.string().trim().min(1).max(8192), id: z.string().trim().min(1).max(256) }).strict();
 const namedModelSchema = modelSchema.extend({ name: z.string().trim().min(1).max(128), providerID: z.string().optional(), modelKey: z.string().optional() }).strict();

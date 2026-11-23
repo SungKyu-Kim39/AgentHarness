@@ -3,6 +3,20 @@ import { requestJSON } from './http-request';
 import { randomBytes } from 'node:crypto';
 import type { AgentConfig } from '../shared/contracts';
 import { classifyModelHttpError, modelRequestShape, modelHttpExplanation } from './model-http-error';
+const allowedMemoryTools = new Set([
+  'read',
+  'search',
+  'ls',
+  'create_working_memory',
+  'update_working_memory',
+]);
+
+function hasDisallowedTools(tools: unknown): boolean {
+  if (tools === undefined || tools === null) return false;
+  if (!Array.isArray(tools)) return true;
+  return tools.some((tool: any) => tool?.type !== 'function' || typeof tool?.function?.name !== 'string' || !allowedMemoryTools.has(tool.function.name));
+}
+
 /** Keeps real embedding/VLM keys out of OpenViking's config, environment and diagnostics. */
 export class OpenVikingGateway {
   readonly token = randomBytes(32).toString('hex');
@@ -28,8 +42,9 @@ export class OpenVikingGateway {
         const body = JSON.parse(Buffer.concat(chunks).toString());
         shape = modelRequestShape(body);
         if (body.model !== target.id) { res.writeHead(403).end(); return; }
-        // This service only performs text indexing. No fetch, image URLs or tool execution.
-        if (completion && (body.tools?.length || body.messages?.some((m: any) => typeof m.content !== 'string' && m.content?.some((p: any) => p.type !== 'text')))) { res.writeHead(403).end(); return; }
+        // Only text summarization and OpenViking's internal virtual-memory tools are permitted.
+        // No image URLs, external fetch or host execution tools may pass through this gateway.
+        if (completion && (hasDisallowedTools(body.tools) || body.messages?.some((m: any) => typeof m.content !== 'string' && Array.isArray(m.content) && m.content.some((p: any) => p.type !== 'text')))) { res.writeHead(403).end(); return; }
         // Fixed-size local embedding APIs commonly reject OpenAI-only dimension reduction
         // and base64 encoding. Ask for float vectors and validate the configured size.
         if (embedding) { delete body.dimensions; body.encoding_format = 'float'; }

@@ -98,6 +98,19 @@ export class ProjectFiles {
     await visit("", 0);
     return files.sort();
   }
+  async readStrictUtf8(relative: string) {
+    const file = await this.resolve(relative);
+    const stat = await lstat(file);
+    if (!stat.isFile() || stat.size > MAX_FILE)
+      throw new Error("2 MiB 이하의 일반 텍스트 파일만 읽을 수 있습니다.");
+    const bytes = await readFile(file);
+    if (bytes.includes(0))
+      throw new Error("바이너리 파일은 지원하지 않습니다.");
+    const text = bytes.toString("utf8");
+    if (!bytes.equals(Buffer.from(text, "utf8")))
+      throw new Error("UTF-8 텍스트 파일만 수정할 수 있습니다. 파일 인코딩(예: CP949/EUC-KR)을 UTF-8로 변환·저장한 뒤 다시 요청하세요.");
+    return text;
+  }
   async propose(
     callId: string,
     relative: string,
@@ -106,7 +119,7 @@ export class ProjectFiles {
     if (Buffer.byteLength(after) > MAX_FILE || after.includes("\0"))
       throw new Error("텍스트 변경 크기 제한을 초과했습니다.");
     await this.resolve(relative, true);
-    const before = await this.read(relative).catch(
+    const before = await this.readStrictUtf8(relative).catch(
       (e: NodeJS.ErrnoException) => {
         if (e.code === "ENOENT") return "";
         throw e;
@@ -224,7 +237,7 @@ export class ProjectFiles {
     edits: TextPatchEdit[],
   ): Promise<{ proposal: Proposal; replacements: number }> {
     await this.resolve(relative, true);
-    const before = await this.read(relative);
+    const before = await this.readStrictUtf8(relative);
     const { after, replacements } = applyTextEdits(before, edits);
     if (Buffer.byteLength(after) > MAX_FILE || after.includes("\0"))
       throw new Error("텍스트 변경 크기 제한을 초과했습니다.");

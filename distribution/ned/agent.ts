@@ -11,6 +11,7 @@ import { Peer } from './rpc';
 import { MessageDelivery } from './message-delivery';
 import { localStreamFetch } from '../../src/main/local-stream-fetch';
 import { permissionMode, permissionOption, permissionConfigId, type PermissionMode } from './permission-policy';
+import { verifyEditorBuffer } from './buffer-check';
 
 async function main() {
   const descriptor = JSON.parse(await readFile(process.argv[2], 'utf8'));
@@ -45,15 +46,11 @@ async function main() {
       return {};
     }
     if (method !== 'checkBuffer' || !sessions.has(params?.session) || !acp || !canRead) throw new Error('Editor buffer check unavailable');
-    try {
-      const result = await acp.client.request(methods.client.fs.readTextFile, { sessionId: params.session, path: params.path },
-        { cancellationSignal: AbortSignal.timeout(12000) });
-      return { matches: typeof result?.content === 'string' && result.content.replaceAll('\r\n', '\n') === params.before.replaceAll('\r\n', '\n') };
-    } catch (error: any) {
-      // ACP resource_not_found is acceptable only for a proposed new file.
-      if (params.missing && error?.code === -32002) return { matches: true };
-      throw new Error('편집기 버퍼 확인 실패. 파일을 저장한 뒤 다시 요청하세요.');
-    }
+    return verifyEditorBuffer(
+      () => acp.client.request(methods.client.fs.readTextFile, { sessionId: params.session, path: params.path },
+        { cancellationSignal: AbortSignal.timeout(12000) }),
+      { before: params.before, missing: params.missing },
+    );
   });
   peer.onClose(() => { process.exitCode = 1; process.stdin.destroy(); });
   const endpoint = await peer.call('hello', { token: descriptor.token });
@@ -72,6 +69,7 @@ async function main() {
   const output = new WritableStream<any>({
     async write(message) {
       let attachedSession: string | undefined;
+      let completedPromptSession: string | undefined;
       if (!message.method && pending.has(message.id)) {
         const request = pending.get(message.id)!; pending.delete(message.id);
         if(['session/load','session/resume'].includes(request.method)&&request.session)replaying.delete(request.session);
@@ -79,6 +77,9 @@ async function main() {
           const session = message.result.sessionId ?? request.session;
           try { await peer.call('bind', { session }); sessions.add(session); attachedSession = session; }
           catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: 'Ned session scope could not be verified' } }; }
+        }
+        if (request.method === 'session/prompt' && !message.error && request.session && sessions.has(request.session)) {
+          completedPromptSession = request.session;
         }
         if (request.method === 'initialize' && message.result) message.result.agentInfo = { name: 'Ned', version: NED_VERSION, title: 'Ned' };
         const session = message.result?.sessionId ?? request.session;
@@ -102,6 +103,7 @@ async function main() {
         message.params.update.configOptions = options(message.params.sessionId, message.params.update.configOptions);
       await writer.write(message);
       if (attachedSession) await publishCommands(attachedSession);
+      if (completedPromptSession) void peer.call('turn/complete', { session: completedPromptSession }).catch(() => {});
     },
     close: () => writer.close(), abort: reason => writer.abort(reason),
   });

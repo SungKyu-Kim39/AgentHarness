@@ -67,6 +67,11 @@
       "apiKey": "REPLACE_AT_DISTRIBUTION",
       "id": "EXACT_EMBEDDING_MODEL_ID",
       "dimension": 1024
+    },
+    "memory": {
+      "enabled": true,
+      "autoRecall": true,
+      "commitEveryTurns": 6
     }
   },
   "compaction": {

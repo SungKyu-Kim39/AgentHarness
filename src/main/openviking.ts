@@ -13,7 +13,10 @@ import { PersonalKnowledge } from './personal-knowledge';
 import { migrateVikingNamespace, backupVikingAccount, vikingAccount } from './openviking-namespace';
 import type { AgentConfig, AppState } from '../shared/contracts';
 const personalNotes = 'viking://user/local-user/resources/ned-personal';
+const personalMemories = 'viking://user/local-user/memories';
 export type KnowledgeScope = 'project' | 'personal';
+export interface MemoryRecallItem { uri: string; abstract?: string; score?: number }
+export interface MemoryRecallResult { profile?: string; items: MemoryRecallItem[] }
 export function savedKnowledgeId(title: string) {
   return createHash('sha256').update(title.trim().normalize('NFC')).digest('hex').slice(0, 24);
 }
@@ -24,8 +27,12 @@ function knowledgeNoteUri(scope: KnowledgeScope, project: string, id: string) {
   if (!/^[a-f0-9]{24}$/.test(id)) throw new Error('저장된 지식 ID가 올바르지 않습니다.');
   return knowledgeNoteRoot(scope, project) + '/' + id + '.md';
 }
+function isSafePersonalMemoryUri(uri: string) {
+  return uri.startsWith(personalMemories + '/') && !/(?:^|\/)\.{1,2}(?:\/|$)|[%\\\x00-\x1f?#]/.test(uri);
+}
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
+  isReady?(): boolean;
   configure(config?: AgentConfig): Promise<void>;
   search(project: string, query: string, limit: number): Promise<string>;
   read(project: string, uri: string): Promise<string>;
@@ -36,6 +43,10 @@ export interface KnowledgeService {
   saveNote?(scope: KnowledgeScope, project: string, title: string, content: string, id: string, signal?: AbortSignal): Promise<string>;
   deleteNote?(scope: KnowledgeScope, project: string, id: string, signal?: AbortSignal): Promise<string>;
   listNotes?(scope: KnowledgeScope, project: string, signal?: AbortSignal): Promise<string>;
+  ensureMemorySession?(sessionId: string, signal?: AbortSignal): Promise<void>;
+  appendSessionMessages?(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal): Promise<void>;
+  commitMemorySession?(sessionId: string, timeoutMs?: number): Promise<{ taskId?: string }>;
+  recallMemories?(query: string, limit?: number, timeoutMs?: number): Promise<MemoryRecallResult>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void }
 type StartupStage = 'bundle' | 'configuration' | 'process' | 'health' | 'namespace';
@@ -86,6 +97,7 @@ export class OpenVikingService implements KnowledgeService {
   private startupStage: StartupStage = 'bundle';
   constructor(private runtime: string, private data: string, private changed: () => void, private testLaunch?: VikingLaunch) {}
   state() { return structuredClone(this.value); }
+  isReady() { return this.value.status === 'ready' && !this.exited && !this.maintenance; }
   localPorts() { return [this.baseUrl, this.gateway?.baseUrl].filter((u): u is string => !!u).map(u => Number(new URL(u).port)); }
   modelActivity() { return this.gateway?.activity() ?? { completion: 0, embedding: 0 }; }
   async studioConnection(): Promise<{ baseUrl: string; headers: Record<string, string> }> {
@@ -182,7 +194,7 @@ export class OpenVikingService implements KnowledgeService {
       storage: { workspace, agfs: { backend: 'local' }, vectordb: { backend: 'local', name: 'context' } },
       server: { host: '127.0.0.1', port, workers: 1, auth_mode: 'trusted', root_api_key: this.token },
       embedding: { dense: { provider: 'openai', api_base: gateway.baseUrl, api_key: gateway.token, model: embedding.id, dimension: embedding.dimension } },
-      vlm: { provider: 'openai', api_base: gateway.baseUrl, api_key: gateway.token, model: vlm.id },
+      vlm: { provider: 'openai', api_base: gateway.baseUrl, api_key: gateway.token, model: vlm.id, timeout: 86400, file_processing_timeout: 86400 },
       telemetry: { tracer: { enabled: false } },
     });
     this.expectedExit = false; this.exited = false;
@@ -221,11 +233,11 @@ export class OpenVikingService implements KnowledgeService {
     }
     throw new StartupFailure('OV_HEALTH_TIMEOUT', { healthStatus: lastHealthStatus, hint: startupHint(stderr) });
   }
-  private credentials(user: string): Record<string, string> {
+  private credentials(user: string, admin = false): Record<string, string> {
     // Migration asserts account maintenance before tools are ready. Studio adds
     // its own human-only role separately; normal model sessions retain USER scope.
     return { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': this.account,
-      'X-OpenViking-User': user, ...(this.maintenance ? { 'X-OpenViking-Role': 'admin' } : {}) };
+      'X-OpenViking-User': user, ...(this.maintenance || admin ? { 'X-OpenViking-Role': 'admin' } : {}) };
   }
   private recordRequestDiagnostic(method: string, route: string, status: number | undefined, code: string, detail: string) {
     if (route === '/health') return;
@@ -239,10 +251,10 @@ export class OpenVikingService implements KnowledgeService {
     const file = path.join(this.data, 'openviking', 'request-diagnostics.json');
     this.diagnosticWrites = this.diagnosticWrites.catch(() => {}).then(() => atomicJSON(file, { schemaVersion: 1, events }));
   }
-  private async request(route: string, body?: unknown, timeout: number | false = false, method?: 'GET' | 'POST' | 'PUT' | 'DELETE', signal?: AbortSignal, user = 'local-user'): Promise<any> {
+  private async request(route: string, body?: unknown, timeout: number | false = false, method?: 'GET' | 'POST' | 'PUT' | 'DELETE', signal?: AbortSignal, user = 'local-user', options: { admin?: boolean; quiet404?: boolean } = {}): Promise<any> {
     const form = body instanceof FormData;
     const verb = method ?? (body === undefined ? 'GET' : 'POST');
-    const headers = { ...this.credentials(user), ...(form ? {} : { 'Content-Type': 'application/json' }) };
+    const headers = { ...this.credentials(user, options.admin), ...(form ? {} : { 'Content-Type': 'application/json' }) };
     let response: Awaited<ReturnType<typeof requestJSON>> | Response;
     try {
       response = timeout === false && !form
@@ -257,7 +269,7 @@ export class OpenVikingService implements KnowledgeService {
     if (!response.ok) {
       const detail = await response.text();
       const code = vikingErrorCode(detail, response.status);
-      this.recordRequestDiagnostic(verb, route, response.status, code, detail);
+      if (!(options.quiet404 && response.status === 404)) this.recordRequestDiagnostic(verb, route, response.status, code, detail);
       throw Object.assign(new Error(code), { status: response.status });
     }
     const text = await response.text(); if (text.length > 8 * 1024 * 1024) throw new Error('지식 응답 크기 초과');
@@ -270,25 +282,50 @@ export class OpenVikingService implements KnowledgeService {
     return json;
   }
   private ready() { if (this.value.status !== 'ready' || this.exited) throw new Error('OpenViking이 준비되지 않았습니다. 모델·번들 설정을 확인하세요.'); }
-  private async noteExists(uri: string, signal?: AbortSignal) {
-    return this.request('/api/v1/fs/stat?uri=' + encodeURIComponent(uri), undefined, false, 'GET', signal).then(() => true, error => {
+  private async noteExists(uri: string, signal?: AbortSignal, timeout: number | false = false) {
+    return this.request('/api/v1/fs/stat?uri=' + encodeURIComponent(uri), undefined, timeout, 'GET', signal, 'local-user', { quiet404: true }).then(() => true, error => {
       if (error?.status === 404) return false;
       throw error;
     });
   }
+  private scheduleSemanticRefresh(uri: string, recursive: boolean) {
+    if (!this.isReady()) return;
+    // Run VLM semantic summarization asynchronously so tool calls return
+    // immediately even when the intranet LLM queue is busy.
+    void this.request('/api/v1/content/reindex', {
+      uri, mode: 'semantic_and_vectors', force: true, wait: false, recursive,
+    }, 15000, 'POST', undefined, 'local-user', { admin: true }).catch(() => {});
+  }
   async personalSearch(query: string, limit: number) {
     this.ready();
     const imported = JSON.parse(await this.personal!.search(query, limit));
-    if (!await this.noteExists(personalNotes)) return JSON.stringify({ ...imported, personalNotesAvailable: false });
-    const response = await this.request('/api/v1/search/find', { query, target_uri: personalNotes, limit, read_content: false });
-    const matches = (response.result?.resources ?? []).filter((item: {uri?: string}) => typeof item.uri === 'string' && item.uri.startsWith(personalNotes + '/'));
-    const results = [...imported.results, ...matches.map(({uri, abstract, score}: {uri: string; abstract?: string; score?: number}) => ({uri, abstract, score}))]
-      .sort((a,b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, limit);
-    return JSON.stringify({ ...imported, personalNotesAvailable: true, results });
+    const merged: Array<{ uri: string; abstract?: string; score?: number }> = [...(imported.results ?? [])];
+    const personalNotesAvailable = await this.noteExists(personalNotes);
+    if (personalNotesAvailable) {
+      const response = await this.request('/api/v1/search/find', { query, target_uri: personalNotes, limit, read_content: false });
+      const matches = (response.result?.resources ?? []).filter((item: {uri?: string}) => typeof item.uri === 'string' && item.uri.startsWith(personalNotes + '/'));
+      merged.push(...matches.map(({uri, abstract, score}: {uri: string; abstract?: string; score?: number}) => ({uri, abstract, score})));
+    }
+    const personalMemoriesAvailable = await this.noteExists(personalMemories);
+    if (personalMemoriesAvailable) {
+      const response = await this.request('/api/v1/search/find', { query, target_uri: personalMemories, limit, read_content: false }).catch(() => undefined);
+      const raw = [...(response?.result?.memories ?? []), ...(response?.result?.resources ?? [])];
+      const matches = raw.filter((item: {uri?: string}) => typeof item.uri === 'string' && isSafePersonalMemoryUri(item.uri));
+      merged.push(...matches.map(({uri, abstract, score}: {uri: string; abstract?: string; score?: number}) => ({uri, abstract, score})));
+    }
+    const deduped = new Map<string, { uri: string; abstract?: string; score?: number }>();
+    for (const item of merged) {
+      const existing = deduped.get(item.uri);
+      if (!existing || (item.score ?? 0) > (existing.score ?? 0)) deduped.set(item.uri, item);
+    }
+    const results = [...deduped.values()].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, limit);
+    return JSON.stringify({ ...imported, personalNotesAvailable, personalMemoriesAvailable, results });
   }
   async personalRead(uri: string) {
     this.ready();
     if (uri.startsWith(personalNotes + '/') && /^[a-f0-9]{24}\.md$/.test(uri.slice(personalNotes.length + 1)))
+      return JSON.stringify(await this.request('/api/v1/content/read?uri=' + encodeURIComponent(uri) + '&limit=300'));
+    if (isSafePersonalMemoryUri(uri))
       return JSON.stringify(await this.request('/api/v1/content/read?uri=' + encodeURIComponent(uri) + '&limit=300'));
     return this.personal!.read(uri);
   }
@@ -309,7 +346,8 @@ export class OpenVikingService implements KnowledgeService {
       await this.request('/api/v1/content/write', {
         uri, content: '# ' + title + '\n\n' + content, mode, wait: true, processing_mode: 'vectors_only', edit_source: 'manual'
       }, false, 'POST', signal);
-      return JSON.stringify({ status: 'saved', scope, id, uri, title });
+      this.scheduleSemanticRefresh(uri, false);
+      return JSON.stringify({ status: 'saved', scope, id, uri, title, semanticRefresh: 'queued' });
     } finally { this.writingNotes.delete(uri); }
   }
   async deleteNote(scope: KnowledgeScope, project: string, id: string, signal?: AbortSignal) {
@@ -354,7 +392,66 @@ export class OpenVikingService implements KnowledgeService {
     if (typeof id !== 'string') throw new Error('OpenViking 업로드 확인 실패');
     const target = knowledgeRoot(project) + '/' + createHash('sha256').update(filename).digest('hex').slice(0, 20);
     await this.request('/api/v1/resources', { temp_file_id: id, to: target, wait: true, reason: '사용자가 선택한 프로젝트 텍스트 파일', processing_mode: 'vectors_only' });
-    this.value.indexedFiles++; this.changed(); return `OpenViking 색인 완료: ${filename}`;
+    this.scheduleSemanticRefresh(target, true);
+    this.value.indexedFiles++; this.changed(); return `OpenViking 색인 완료: ${filename} (VLM 의미 요약 백그라운드 진행)`;
+  }
+  async ensureMemorySession(sessionId: string, signal?: AbortSignal) {
+    this.ready();
+    try {
+      await this.request('/api/v1/sessions', {
+        session_id: sessionId,
+        auto_commit_policy: {
+          pending_token_threshold: 80000,
+          message_count_threshold: 24,
+          idle_timeout_seconds: 1800,
+          min_commit_interval_seconds: 60,
+        },
+      }, 15000, 'POST', signal);
+    } catch (error) {
+      if ((error as { status?: number })?.status !== 409) throw error;
+    }
+  }
+  async appendSessionMessages(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal) {
+    this.ready();
+    if (!messages.length) return;
+    await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/messages/batch`, { messages }, 15000, 'POST', signal);
+  }
+  async commitMemorySession(sessionId: string, timeoutMs = 15000): Promise<{ taskId?: string }> {
+    this.ready();
+    const response = await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commit`, {}, timeoutMs, 'POST');
+    const taskId = response?.result?.task_id;
+    return typeof taskId === 'string' ? { taskId } : {};
+  }
+  async recallMemories(query: string, limit = 5, timeoutMs = 4000): Promise<MemoryRecallResult> {
+    if (!this.isReady()) return { items: [] };
+    const exists = await this.noteExists(personalMemories, undefined, Math.min(timeoutMs, 1500)).catch(() => false);
+    if (!exists) return { items: [] };
+    const [searchRes, profileRes] = await Promise.all([
+      this.request('/api/v1/search/find', { query, target_uri: personalMemories, limit, read_content: false }, timeoutMs, 'POST').catch(() => undefined),
+      this.request('/api/v1/content/read?uri=' + encodeURIComponent(personalMemories + '/profile.md') + '&limit=80', undefined, Math.min(timeoutMs, 2000), 'GET', undefined, 'local-user', { quiet404: true }).catch(() => undefined),
+    ]);
+    const raw = [...(searchRes?.result?.memories ?? []), ...(searchRes?.result?.resources ?? [])];
+    const seen = new Set<string>();
+    const items: MemoryRecallItem[] = [];
+    for (const entry of raw) {
+      if (typeof entry?.uri !== 'string' || !isSafePersonalMemoryUri(entry.uri) || seen.has(entry.uri)) continue;
+      if (entry.uri === personalMemories + '/profile.md') continue;
+      seen.add(entry.uri);
+      items.push({
+        uri: entry.uri,
+        abstract: typeof entry.abstract === 'string' ? entry.abstract : undefined,
+        score: typeof entry.score === 'number' ? entry.score : undefined,
+      });
+    }
+    const profileText = typeof profileRes?.result === 'string'
+      ? profileRes.result
+      : typeof profileRes?.result?.content === 'string'
+        ? profileRes.result.content
+        : undefined;
+    return {
+      ...(profileText && profileText.trim() ? { profile: profileText.trim() } : {}),
+      items: items.sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, limit),
+    };
   }
   private async stop() {
     this.expectedExit = true;
