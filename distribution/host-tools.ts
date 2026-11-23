@@ -22,25 +22,134 @@ import { savedKnowledgeId, type KnowledgeService } from '../src/main/openviking'
 export interface ToolSpec { name: string; description: string; inputSchema: Record<string, unknown> }
 const object = (properties: Record<string, unknown>, required: string[] = []) => ({ type: 'object', properties, required, additionalProperties: false });
 const string = { type: 'string' };
-/** Only known literal reads may bypass the native prompt in full-access mode. */
-export async function isProjectShellRead(files: ProjectFiles, shell: 'cmd' | 'powershell', command: string): Promise<boolean> {
-  if (!/^[A-Za-z0-9_. /\t-]+$/.test(command) || /[\r\n]/.test(command)) return false;
-  const [name, relative, ...rest] = command.trim().split(/[ \t]+/);
-  if (!name || rest.length) return false;
-  const operation = name.toLowerCase();
-  const listing = operation === (shell === 'cmd' ? 'dir' : 'get-childitem');
-  if (shell === 'powershell' && operation === 'get-location') return relative === undefined;
-  if (!listing && !(shell === 'cmd' ? operation === 'type' : ['get-content','get-item','get-filehash'].includes(operation))) return false;
-  if (listing && (!relative || relative === '.')) return true;
-  if (!relative || relative.startsWith('-') || /(?:^|\/)(?:[.]|\.ned|[.]git|[.]env[^/]*)(?:\/|$)/i.test(relative)) return false;
-  return files.resolve(relative).then(() => true, () => false);
+function splitShellSegments(command: string): string[] {
+  const segments: string[] = [];
+  let current = '', quote: '"' | "'" | undefined;
+  for (let i = 0; i < command.length; i++) {
+    const ch = command[i];
+    if (quote) {
+      current += ch;
+      if (ch === quote && command[i - 1] !== '`') quote = undefined;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; current += ch; continue; }
+    if (ch === '\r' || ch === '\n' || ch === ';' || ch === '|') {
+      if (current.trim()) segments.push(current.trim());
+      current = '';
+      if (ch === '|' && command[i + 1] === '|') i++;
+      continue;
+    }
+    if (ch === '&') {
+      if (command[i + 1] === '&') { if (current.trim()) segments.push(current.trim()); current = ''; i++; continue; }
+      if (current.trim()) { segments.push(current.trim()); current = ''; }
+      continue;
+    }
+    current += ch;
+  }
+  if (current.trim()) segments.push(current.trim());
+  for (const match of command.matchAll(/\$\(([^)]+)\)/g)) if (match[1]?.trim()) segments.push(...splitShellSegments(match[1]));
+  return segments;
+}
+
+function tokenizeSegment(segment: string): string[] {
+  const tokens: string[] = [];
+  let current = '', quote: '"' | "'" | undefined;
+  for (let i = 0; i < segment.length; i++) {
+    const ch = segment[i];
+    if (quote) {
+      if (ch === quote && segment[i - 1] !== '`') quote = undefined;
+      else current += ch;
+      continue;
+    }
+    if (ch === '"' || ch === "'") { quote = ch; continue; }
+    if (/\s/.test(ch)) { if (current) { tokens.push(current); current = ''; } continue; }
+    current += ch;
+  }
+  if (current) tokens.push(current);
+  return tokens;
+}
+
+const commandBasename = (token: string) => path.win32.basename(token).replace(/\.(?:exe|com|cmd|bat|ps1)$/i, '').toLowerCase();
+const systemPathPattern = /(?:[a-z]:[\\/]|\\\\[^\\/\s]+[\\/][^\\/\s]+[\\/])(?:windows|program files(?:\s*\(x86\))?|programdata)(?:[\\/]|$|["'\s])|%(?:systemroot|windir|programfiles(?:\(x86\))?|programdata)%|\$env:(?:systemroot|windir|programfiles(?:\(x86\))?|programdata)\b/i;
+const systemRedirectPattern = /(?:^|[\s0-9])>>?\s*["']?(?:(?:[a-z]:[\\/]|\\\\[^\\/\s]+[\\/][^\\/\s]+[\\/])(?:windows|program files(?:\s*\(x86\))?|programdata)|%(?:systemroot|windir|programfiles(?:\(x86\))?|programdata)%|\$env:(?:systemroot|windir|programfiles(?:\(x86\))?|programdata)\b)/i;
+const systemMutateCommands = new Set(['del', 'erase', 'rd', 'rmdir', 'rm', 'remove-item', 'ri', 'move', 'mv', 'move-item', 'mi', 'copy', 'cp', 'xcopy', 'robocopy', 'copy-item', 'ci', 'ren', 'rename', 'rename-item', 'rni', 'new-item', 'ni', 'set-content', 'add-content', 'out-file', 'clear-content', 'tee-object', 'tee', 'mkdir', 'md', 'mklink', 'attrib', 'takeown', 'icacls', 'set-item']);
+const diskCommands = new Set(['format', 'diskpart', 'bcdedit', 'format-volume', 'clear-disk', 'initialize-disk', 'remove-partition', 'resize-partition', 'set-disk']);
+const systemControlCommands = new Set(['reg', 'regedit', 'regedt32', 'sc', 'netsh', 'icacls', 'takeown', 'cacls', 'xcacls', 'set-acl', 'set-executionpolicy', 'new-netfirewallrule', 'remove-netfirewallrule', 'set-netfirewallrule', 'set-netfirewallprofile', 'disable-netfirewallrule', 'stop-service', 'set-service', 'remove-service', 'new-service']);
+const networkCommands = new Set(['invoke-webrequest', 'iwr', 'invoke-restmethod', 'irm', 'curl', 'wget', 'start-bitstransfer', 'bitsadmin', 'ssh', 'scp', 'sftp', 'ftp', 'tftp', 'telnet', 'nc', 'ncat']);
+const registryMutateCommands = new Set(['set-itemproperty', 'new-itemproperty', 'remove-itemproperty', 'clear-itemproperty', 'new-item', 'remove-item', 'set-item']);
+const netSubcommands = new Set(['user', 'localgroup', 'group', 'accounts', 'share', 'stop', 'start', 'pause', 'continue', 'config']);
+
+async function isOutsideProjectDeleteTarget(files: ProjectFiles, targets: string[]): Promise<boolean> {
+  if (!targets.length) return true;
+  for (const raw of targets) {
+    const cleaned = raw.trim();
+    if (!cleaned || cleaned === '.' || cleaned === './' || cleaned === '.\\' || /[*?$%~:]/.test(cleaned) || /^[\\/]/.test(cleaned)) return true;
+    const normalized = cleaned.replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/+$/, '');
+    if (!normalized || normalized.split('/').some(part => !part || part === '.' || part === '..')) return true;
+    const inside = await files.resolve(normalized, true).then(() => true, () => false);
+    if (!inside) return true;
+  }
+  return false;
+}
+
+/** Minimal high-risk shell guard. Only clearly catastrophic/external-egress commands require explicit prompts in full mode. */
+export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' | 'powershell', command: string): Promise<boolean> {
+  if (/(?:System\.Net\.WebClient|\[Net\.WebClient\]|System\.Net\.Http\.HttpClient|\[Net\.Http\.HttpClient\]|\.(?:DownloadFile|DownloadString|UploadFile|UploadString)\s*\()/i.test(command)) return true;
+  if (systemRedirectPattern.test(command)) return true;
+  for (const segment of splitShellSegments(command)) {
+    const tokens = tokenizeSegment(segment);
+    if (!tokens.length) continue;
+    const start = tokens[0] === '&' || tokens[0] === '.' ? 1 : 0;
+    const cmdToken = tokens[start];
+    if (!cmdToken) continue;
+    const cmd = commandBasename(cmdToken);
+    const args = tokens.slice(start + 1);
+    const lowerArgs = args.map(a => a.toLowerCase());
+    if (diskCommands.has(cmd)) return true;
+    if (cmd === 'cipher' && lowerArgs.some(a => a.startsWith('/w'))) return true;
+    if (systemControlCommands.has(cmd)) return true;
+    if (cmd === 'net' && lowerArgs[0] && netSubcommands.has(lowerArgs[0])) return true;
+    if (registryMutateCommands.has(cmd) && args.some(a => /^(?:hk(?:lm|cu|cr|u|cc):|registry::)/i.test(a))) return true;
+    if (networkCommands.has(cmd)) return true;
+    if (cmd === 'certutil' && lowerArgs.some(a => a === '-urlcache' || a === '/urlcache')) return true;
+    if (systemMutateCommands.has(cmd) && systemPathPattern.test(segment)) return true;
+    if (cmd === 'git') {
+      let pushIndex = -1;
+      for (let i = 0; i < lowerArgs.length; i++) {
+        const arg = lowerArgs[i];
+        if (arg === 'push') { pushIndex = i; break; }
+        if (['-c', '-C', '--git-dir', '--work-tree', '--namespace'].includes(args[i])) i++;
+      }
+      if (pushIndex >= 0) {
+        const pushArgs = lowerArgs.slice(pushIndex + 1);
+        if (pushArgs.some(a => a === '--force' || a === '-f' || a.startsWith('--force-with-lease') || a === '--force-if-includes' || a === '--mirror' || a === '--delete' || /^[:+]/.test(a))) return true;
+      }
+    }
+    const isPsRemove = ['remove-item', 'ri', 'rm', 'del', 'erase', 'rd', 'rmdir'].includes(cmd) && (
+      (lowerArgs.some(a => a === '-recurse' || a === '-r') && lowerArgs.some(a => a === '-force' || a === '-f')) ||
+      lowerArgs.some(a => /^-[rf]{2,}$/.test(a) && a.includes('r') && a.includes('f'))
+    );
+    const isCmdRecursiveDelete = (cmd === 'rd' || cmd === 'rmdir') && lowerArgs.some(a => a === '/s') ||
+      (cmd === 'del' || cmd === 'erase') && lowerArgs.some(a => a === '/s') && lowerArgs.some(a => a === '/f' || a === '/q');
+    if (isPsRemove || (shell === 'cmd' ? isCmdRecursiveDelete : isCmdRecursiveDelete)) {
+      const targets: string[] = [];
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i], lower = lowerArgs[i];
+        if (lower === '-path' || lower === '-literalpath') { if (args[i + 1]) targets.push(args[++i]); continue; }
+        if (arg.startsWith('-') || (arg.startsWith('/') && arg.length <= 3)) continue;
+        targets.push(arg);
+      }
+      if (await isOutsideProjectDeleteTarget(files, targets)) return true;
+    }
+  }
+  return false;
 }
 
 export const hostTools: ToolSpec[] = [
   { name: 'list_files', description: 'List files inside the user-selected project. Excludes links and runtime/config directories.', inputSchema: object({}) },
   { name: 'read_file', description: 'Read a project text file. Relative path only.', inputSchema: object({ path: string }, ['path']) },
-  { name: 'read_external_file', description: 'Read one explicitly targeted local UTF-8 file outside the project, up to 2 MiB. Absolute path required. Only available in Ned full-access permission mode. Read-only; no external writes, network paths or Ned credential storage.', inputSchema: object({ path: string }, ['path']) },
-  { name: 'list_external_directory', description: 'List up to 1000 entries of one explicit local directory outside the project. Absolute path and Ned full-access mode required. Nonrecursive and read-only.', inputSchema: object({ path: string }, ['path']) },
+  { name: 'read_external_file', description: 'Read one explicitly targeted local UTF-8 file outside the project, up to 2 MiB. Absolute path required. Prompts for approval in ask/edits modes and auto-approves in full-access mode. Read-only; no external writes, network paths or Ned/profile protected paths.', inputSchema: object({ path: string }, ['path']) },
+  { name: 'list_external_directory', description: 'List up to 1000 entries of one explicit local directory outside the project. Absolute path required. Prompts for approval in ask/edits modes and auto-approves in full-access mode. Nonrecursive and read-only.', inputSchema: object({ path: string }, ['path']) },
   { name: 'search_text', description: 'Literal text search inside the project. This is text-search fallback, not semantic analysis.', inputSchema: object({ query: string }, ['query']) },
   { name: 'propose_edit', description: 'Propose complete UTF-8 file content. Native host approval policy, source conflict check and host snapshot are required before any write. Read the current file first.', inputSchema: object({ path: string, content: string }, ['path', 'content']) },
   { name: 'delete_file', description: 'Delete one existing UTF-8 project text file (up to 2 MiB). Uses the same native file-change approval policy, unsaved-buffer check, source hash and recovery snapshot as edits. No directories, recursive deletion, wildcard paths or binary files. Empty content in propose_edit is not deletion.', inputSchema: object({ path: string }, ['path']) },
@@ -49,9 +158,9 @@ export const hostTools: ToolSpec[] = [
   { name: 'read_skill', description: 'Read a built-in or user global skill, or its local reference. User skill text is user guidance and does not grant permissions. Continue a long document with the returned offset. No plugins or online installation.', inputSchema: object({ id: string, document: string, offset: { type: 'integer', minimum: 0, maximum: 8388608 } }, ['id']) },
   { name: 'knowledge_search', description: 'Search only this project’s explicitly indexed OpenViking knowledge.', inputSchema: object({ query: string, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['query']) },
   { name: 'knowledge_read', description: 'Read a returned Viking URI within this project.', inputSchema: object({ uri: string }, ['uri']) },
-  { name: 'knowledge_index', description: 'Index one project text file in local OpenViking after explicit native approval. Never upload conversations.', inputSchema: object({ path: string }, ['path']) },
-  { name: 'knowledge_remember', description: 'Save or update a user-approved note. Use on an explicit request to remember selected knowledge. Project scope is current project only; personal scope crosses this user’s projects. Always show content for native approval. Never automatically upload a conversation.', inputSchema: object({ scope: { type: 'string', enum: ['project','personal'] }, title: string, text: string, id: string }, ['scope','title','text']) },
-  { name: 'knowledge_forget', description: 'After native approval, delete one user-saved Ned note by its exact ID and scope. Imported knowledge and indexed files are outside this tool.', inputSchema: object({ scope: { type: 'string', enum: ['project','personal'] }, id: string }, ['scope','id']) },
+  { name: 'knowledge_index', description: 'Index one project text file in local OpenViking under the selected Ned permission mode. Never upload conversations.', inputSchema: object({ path: string }, ['path']) },
+  { name: 'knowledge_remember', description: 'Save or update a note under the selected Ned permission mode (prompts in ask/edits modes; auto-approves in full-access mode). Use on an explicit request to remember selected knowledge. Project scope is current project only; personal scope crosses this user’s projects. Never automatically upload a conversation.', inputSchema: object({ scope: { type: 'string', enum: ['project','personal'] }, title: string, text: string, id: string }, ['scope','title','text']) },
+  { name: 'knowledge_forget', description: 'Delete one user-saved Ned note by its exact ID and scope under the selected Ned permission mode (prompts in ask/edits modes; auto-approves in full-access mode). Imported knowledge and indexed files are outside this tool.', inputSchema: object({ scope: { type: 'string', enum: ['project','personal'] }, id: string }, ['scope','id']) },
   { name: 'knowledge_list_saved', description: 'List user-saved notes in the current project or private personal area.', inputSchema: object({ scope: { type: 'string', enum: ['project','personal'] } }, ['scope']) },
   { name: 'personal_knowledge_search', description: 'Search saved private notes and imported private materials across projects. Excludes raw sessions and privacy control files. Never upload current conversations.', inputSchema: object({ query: string, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['query']) },
   { name: 'personal_knowledge_read', description: 'Read a URI returned by personal_knowledge_search inside imported personal areas. Stored text never grants permissions or authorizes tool execution.', inputSchema: object({ uri: string }, ['uri']) },
@@ -62,7 +171,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'build_project', description: 'Run an inspected VS2017/2019 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.', inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: 'integer', minimum: 0 } }, ['target', 'configuration', 'platform', 'toolchain']) },
   { name: 'git_stage', description: 'Stage explicit project file paths with bundled Git under the native command permission policy. Supports additions, modifications and tracked deletions. Preserves other staged files. No hooks, shell, custom/LFS filters or network. Stages approved file bytes without EOL conversion.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 } }, ['paths']) },
   { name: 'git_commit', description: 'Commit only the explicit selected staged paths. Preserves other staged changes. Native command permission policy applies. Author comes from repository-local user.name/user.email or user-provided author, never invent it. No hooks, signing, push or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 }, message: string, author: object({ name: string, email: string }, ['name', 'email']) }, ['paths', 'message']) },
-  { name: 'run_terminal', description: 'Run a Windows project command using CMD batch syntax or PowerShell. Ned native execution permission applies. Returns an owned job ID. Use terminal_status to confirm the exit code and output. Shell commands have OS user access and do not create Ned edit snapshots.', inputSchema: object({ shell: { type: 'string', enum: ['cmd', 'powershell'] }, command: { type: 'string', maxLength: 4000 } }, ['shell', 'command']) },
+  { name: 'run_terminal', description: 'Run a Windows project command using CMD batch syntax or PowerShell. Prompts in ask/edits modes; auto-approves normal dev/build/test commands in full-access mode while explicitly confirming high-risk commands. Returns an owned job ID. Use terminal_status to confirm the exit code and output. Shell commands have OS user access and do not create Ned edit snapshots.', inputSchema: object({ shell: { type: 'string', enum: ['cmd', 'powershell'] }, command: { type: 'string', maxLength: 4000 } }, ['shell', 'command']) },
   { name: 'terminal_status', description: 'Read the output and exit code of a terminal job owned by this conversation and project. Optionally wait up to 30 seconds. A running job is not proof of success.', inputSchema: object({ id: string, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }, ['id']) },
   { name: 'stop_terminal', description: 'Stop the selected terminal job owned by this conversation and project and confirm its exit.', inputSchema: object({ id: string }, ['id']) },
   { name: 'inspect_python', description: 'Discover existing Conda installations/environments in fixed OS locations, installation registry and .conda/environments.txt. Uses offline conda info only after native command permission. Does not install anything or use the bundled OpenViking Python for project execution.', inputSchema: object({}) },
@@ -188,9 +297,9 @@ export class HostTools {
       if (process.platform !== 'win32') throw new Error('CMD와 Windows PowerShell은 Windows에서 사용할 수 있습니다.');
       const input = z.object({ shell: z.enum(['cmd', 'powershell']), command: z.string().min(1).max(4000).refine(command => !!command.trim() && !command.includes('\0')) }).strict().parse(args);
       const request = await this.options.request?.(session);
-      const simpleRead = await isProjectShellRead(files, input.shell, input.command);
-      const approve = simpleRead ? this.options.approve : this.options.approveExplicit ?? this.options.approve;
-      if (!await approve('Ned 터미널 명령 실행 · ' + input.shell, project + '\n\n' + input.command + (simpleRead ? '' : '\n\nWindows 사용자 권한으로 실행하며 Ned 파일 스냅샷이 적용되지 않습니다.'), signal)) throw new Error('터미널 실행이 승인되지 않았습니다.');
+      const highRisk = await isHighRiskShellCommand(files, input.shell, input.command);
+      const approve = highRisk ? this.options.approveExplicit ?? this.options.approve : this.options.approve;
+      if (!await approve('Ned 터미널 명령 실행 · ' + input.shell, project + '\n\n' + input.command + '\n\nWindows 사용자 권한으로 실행하며 Ned 파일 스냅샷이 적용되지 않습니다.' + (highRisk ? '\n\n[주의] 고위험 명령 가드에 의해 전체 권한 모드에서도 명시적 승인이 필요합니다.' : ''), signal)) throw new Error('터미널 실행이 승인되지 않았습니다.');
       signal?.throwIfAborted();
       if (!this.accepting || this.cancelled.has(session) || this.runs.get(session) !== run ||
           await this.options.project(session) !== project || (this.options.request && await this.options.request(session) !== request))
@@ -238,7 +347,7 @@ export class HostTools {
         path.join(home, '.agents', 'skills'), path.join(home, '.opencode'), path.join(home, '.config', 'opencode'));
       for (const folder of [process.env.APPDATA, process.env.LOCALAPPDATA])
         if (folder && path.isAbsolute(folder)) privateRoots.push(path.join(folder, 'Zed'));
-      const external = new ExternalRead(() => this.options.fullAccess?.() === true, privateRoots);
+      const external = new ExternalRead(this.options.approve, privateRoots);
       return name === 'read_external_file' ? external.read(a.path, signal) : external.list(a.path, signal);
     }
     if (name === 'search_text') {
@@ -293,7 +402,7 @@ export class HostTools {
     if (name === 'knowledge_remember' || name === 'knowledge_forget' || name === 'knowledge_list_saved') {
       const scope = z.enum(['project','personal']);
       const id = z.string().regex(/^[a-f0-9]{24}$/);
-      const approve = this.options.approveExplicit ?? this.options.approve;
+      const approve = this.options.approve;
       const stillCurrent = () => this.accepting && !signal?.aborted && !this.cancelled.has(session) && this.runs.get(session) === run;
       if (name === 'knowledge_list_saved') {
         const input = z.object({ scope }).strict().parse(args);

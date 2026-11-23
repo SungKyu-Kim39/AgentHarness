@@ -3,9 +3,9 @@ import { lstat, readFile } from 'node:fs/promises';
 import { atomicJSON } from '../../src/main/config';
 
 export const permissionModes = [
-  { value: 'ask', name: '승인 요청', description: '파일 생성·수정·삭제와 빌드·지식 전달·데스크톱 도구를 실행하기 전에 확인합니다.' },
-  { value: 'edits', name: '프로젝트 파일 자동 승인', description: '선택한 프로젝트의 파일 생성·수정·삭제는 자동 승인합니다. 빌드·지식 전달·데스크톱은 확인합니다.' },
-  { value: 'full', name: '전체 권한', description: '프로젝트 파일 변경·Git 커밋·빌드·분석·지식·데스크톱 도구를 자동 승인하고 외부 로컬 파일 읽기를 허용합니다. 외부 파일 쓰기는 차단합니다. 재시작 후에도 유지됩니다.' },
+  { value: 'ask', name: '승인 요청', description: '파일 생성·수정·삭제, 프로젝트 외부 읽기, 셸 명령, 빌드·지식 저장·데스크톱 도구를 실행하기 전에 확인합니다.' },
+  { value: 'edits', name: '프로젝트 파일 자동 승인', description: '선택한 프로젝트의 파일 생성·수정·삭제는 자동 승인합니다. 외부 읽기, 셸 명령, 빌드·지식 저장·데스크톱은 확인합니다.' },
+  { value: 'full', name: '전체 권한', description: '프로젝트 파일 변경·외부 로컬 파일 읽기·일반 셸 명령·Git 커밋·빌드·분석·지식 저장/조회·데스크톱 도구를 자동 승인합니다. 치명적 셸 명령은 확인하며 외부 파일 쓰기는 차단합니다. 재시작 후에도 유지됩니다.' },
 ] as const;
 export type PermissionMode = typeof permissionModes[number]['value'];
 export function permissionMode(value: unknown): PermissionMode {

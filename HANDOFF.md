@@ -1,6 +1,16 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.11**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 게시 사전 릴리스는 **Ned 0.3.11**이며, `AG-work` 브랜치에서 **Ned 0.3.12** 1차 보완 작업을 반영했습니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+
+## 0.3.12 작업 기준 (`AG-work`)
+
+- 권한 정책을 확정 매트릭스에 맞춰 정비했습니다: `run_terminal`은 `isHighRiskShellCommand` 최소 고위험 가드만 전체 권한에서 명시적 승인(`approveExplicit`)을 요구하고 일반 개발·빌드·테스트 명령은 자동 승인합니다. 외부 파일 읽기(`ExternalRead`)는 `ask`·`edits`에서 승인창 후 허용, `full`에서 자동 승인하며 보호 경로·외부 쓰기는 차단합니다. `knowledge_remember`·`knowledge_forget`도 `this.options.approve`로 통일해 `full`에서 자동 승인합니다.
+- 승인 팝업·파일/폴더 선택창이 Zed 뒤로 숨지 않도록 [`distribution/ned/topmost-dialog.ts`](distribution/ned/topmost-dialog.ts)의 활성 모니터 중앙 `screen-saver` 최상단 소유자 창을 적용했고, Python 환경 선택창도 최상단 레벨로 올렸습니다.
+- OpenViking Studio는 차단 URL(`STUDIO_BLOCKED_REQUEST`), `did-fail-load`, 콘솔 경고·오류, `#app` DOM 요약을 `openviking/studio-status.json`에 상시 기록하며 초기 렌더 타임아웃을 30초로 늘리고 동일 origin `blob:` 및 `font-src` CSP를 보완했습니다.
+- OpenViking 저장/검색 실패 원인은 임베딩 모델 연결 오류로 확인됐으며, `vikingErrorCode`에 `OV_FORBIDDEN`·`OV_TIMEOUT`·`OV_EMBEDDING`·`OV_SERVER_ERROR`·`OV_TLS`를 추가하고 `OpenVikingGateway` 오류 코드 전달과 `openviking/request-diagnostics.json` 상시 기록(민감 정보 마스킹, 500자 제한)을 적용했습니다.
+- 설치본을 전체 설치본 단일 배포로 단순화했습니다(`install-reversing-pack.ps1`, `NED_CORE`, Core/리버싱 팩 빌드·CI 단계 제거, `ReaGhidra` 번들 경로 단일화, `docs/archive/offline-packs.md` 보관). 기본 대화 시 특수 도구 스키마 지연 로딩은 유지합니다. 트레이 메뉴의 변경 사항 링크도 `NED_VERSION` 기반으로 수정했습니다.
+
+[0.3.12 변경 사항](docs/changes-0.3.12.md) · [0.3.12 검증 기록](docs/validation-0.3.12.md)
 
 ## 0.3.11 배포 기준
 

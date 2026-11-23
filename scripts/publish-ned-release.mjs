@@ -25,11 +25,12 @@ run('gh',['run','download',validationRun,'--name','windows-offline-smoke-'+versi
 const proof=await json('.cache/ned/windows-validation/windows-offline-smoke.json');
 const candidatePath=`downloads/candidates/${source}`;
 const audit=await json(`${candidatePath}/${prefix}-installer-audit.json`);
-const previousVersion=version==='0.3.11'?'0.3.10':'0.3.9';
-const actionsTransport=version==='0.3.11';
+const previousVersion=version==='0.3.12'?'0.3.11':version==='0.3.11'?'0.3.10':'0.3.9';
+const actionsTransport=['0.3.11','0.3.12'].includes(version);
 const optionalName=`${prefix}-optional-packages.json`;
 const optional=version==='0.3.11'?await json(`${candidatePath}/${optionalName}`):undefined;
 if(optional&&(optional.sourceCommit!==source||optional.assets.length!==2||proof.coreAndReversingPackVerified!==true||proof.userDataPreserved!==true))throw Error('Optional packages or user data preservation lack installed validation');
+if(version==='0.3.12'&&proof.userDataPreserved!==true)throw Error('User data preservation lacks installed validation');
 if(proof.version!==version||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){

@@ -22,17 +22,9 @@ export class ReaGhidra {
   constructor(private root: string, private resources: string,
     private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>, private launch?: Launch) {}
   async verifiedRuntime(): Promise<string> {
-    const bundled = path.join(this.resources, 'runtime/windows-x64');
-    if (this.launch) return bundled;
+    const runtime = path.join(this.resources, 'runtime/windows-x64');
+    if (this.launch) return runtime;
     const current = this.verified ??= (async () => {
-      const bundledRea = await lstat(path.join(bundled, 'rea')).then(() => true, () => false);
-      const pack = path.join(this.root, 'packs', 'reversing', releaseLock.version);
-      const runtime = bundledRea ? bundled : pack;
-      for (const part of bundledRea ? [] : ['packs', 'packs/reversing', 'packs/reversing/' + releaseLock.version]) {
-        const folder = path.join(this.root, part);
-        const info = await lstat(folder).catch(() => undefined);
-        if (!info?.isDirectory() || info.isSymbolicLink()) throw new Error('선택형 리버싱 팩을 설치한 뒤 다시 실행하세요.');
-      }
       if (path.relative(runtime, await realpath(runtime))) throw new Error('REA/Ghidra 런타임 링크는 허용하지 않습니다.');
       for (const name of ['rea', 'ghidra']) {
         const base = path.join(runtime, name);

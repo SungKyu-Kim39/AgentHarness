@@ -26,6 +26,6 @@ export function selectPythonEnvironment(resources: string, project: string, envi
     win.webContents.on('will-redirect', event => event.preventDefault());
     win.once('closed', () => { finish(); void privateSession.clearStorageData().catch(() => {}); });
     signal?.addEventListener('abort', cancel, { once: true }); if (signal?.aborted) { cancel(); return; }
-    void win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).then(() => { if (!finished && !win.isDestroyed()) { win.show(); win.focus(); } }, error => { finish(); reject(error); });
+    void win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).then(() => { if (!finished && !win.isDestroyed()) { win.setAlwaysOnTop(true, 'screen-saver'); win.show(); win.moveTop(); win.focus(); } }, error => { finish(); reject(error); });
   });
 }

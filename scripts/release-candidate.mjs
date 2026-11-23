@@ -24,7 +24,7 @@ const prefix=`Ned-${version}`;
 const mode=process.argv[2];
 if(mode==='candidate'){
  const editorRun=checkedID('NED_EDITOR_RUN');
- if(version==='0.3.11')run(process.execPath,['scripts/verify-current-docs.mjs']);
+ if(['0.3.11','0.3.12'].includes(version))run(process.execPath,['scripts/verify-current-docs.mjs']);
  run('python3',['scripts/release-inputs.py']);
  run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include=downloads/astryx/*.zip']);
  run(process.execPath,['scripts/ned-package.mjs','release-prepare']);
@@ -41,7 +41,7 @@ if(mode==='candidate'){
  if(editorInputs.build.sourceCommit!==editor.head_sha)throw Error('Editor artifact source mismatch');
  run(process.execPath,['scripts/windows-test-bundle.mjs']);
  const fixtureGroups=['upgrade'];
- const artifactTransport=version==='0.3.11';
+ const artifactTransport=['0.3.11','0.3.12'].includes(version);
  await commit(['release-runtime-lock.json',...(artifactTransport?[]:Object.keys(editorInputs.files).map(name=>`downloads/editor/${name}`)),
   `downloads/editor/${editorInputs.identity.metadata}`,
   ...fixtureGroups.flatMap(name=>[`downloads/${prefix}-windows-${name}-test.cjs`,`downloads/${prefix}-windows-${name}-test.cjs.sha256`])],
@@ -51,16 +51,6 @@ if(mode==='candidate'){
  const audit=await json('release/ned/installer-audit.json');if(audit.sourceCommit!==source||audit.payloadComparison?.allStagedBytesVerified!==true)throw Error('Incomplete installer audit');
  const directory=`downloads/candidates/${source}`;await mkdir(path.join(root,directory),{recursive:true});
  for(const [from,to]of [...(artifactTransport?[]:[[`${prefix}-win-x64.exe`,`${prefix}-win-x64.exe`]]),['installer-audit.json',`${prefix}-installer-audit.json`],['payload-manifest.json',`${prefix}-payload-manifest.json`]])await cp(path.join(root,'release/ned',from),path.join(root,directory,to));
- if(version==='0.3.11'){
-  const manifest=`${prefix}-optional-packages.json`, optional=await json('release/ned/'+manifest);
-  if(optional.sourceCommit!==source||optional.assets.length!==2)throw Error('Optional packages are missing or stale');
-  await cp(path.join(root,'release/ned',manifest),path.join(root,directory,manifest));
-  for(const item of optional.assets){
-   const file=path.join(root,'release/ned',item.name);
-   if(await fileHash(file)!==item.sha256)throw Error('Optional package hash mismatch');
-   if(!artifactTransport)await cp(file,path.join(root,directory,item.name));
-  }
- }
  await commit([directory],`build: record immutable Ned ${version} installer candidate`);
  const state='.cache/ned/release-state';await mkdir(path.join(root,state),{recursive:true});
  await cp(path.join(root,'.cache/ned/handover-sources'),path.join(root,state,'handover-sources'),{recursive:true});

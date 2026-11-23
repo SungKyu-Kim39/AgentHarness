@@ -164,11 +164,7 @@ Section "Ned"
   RMDir /r "$INSTDIR\locales"
   SetOutPath "$INSTDIR"
   ClearErrors
-  !ifdef NED_CORE
-    File /r /x rea /x ghidra "${NED_APP_DIR}\*"
-  !else
-    File /r "${NED_APP_DIR}\*"
-  !endif
+  File /r "${NED_APP_DIR}\*"
   IfErrors install_failed
   IfFileExists "$INSTDIR\resources\zed\Zed.exe" 0 install_failed
   IfFileExists "$INSTDIR\resources\zed\bin\zed.exe" 0 install_failed

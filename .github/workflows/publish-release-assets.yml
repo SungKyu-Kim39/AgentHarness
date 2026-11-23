@@ -43,29 +43,27 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        if: inputs.version == '0.3.10' || inputs.version == '0.3.11'
+        if: inputs.version == '0.3.10' || inputs.version == '0.3.11' || inputs.version == '0.3.12'
         with:
           node-version: '24.22.1'
       - name: Install pinned release tools
-        if: inputs.version == '0.3.10' || inputs.version == '0.3.11'
+        if: inputs.version == '0.3.10' || inputs.version == '0.3.11' || inputs.version == '0.3.12'
         run: npm ci --no-audit --no-fund
       - name: Finalize and publish the installed release bytes
-        if: inputs.version == '0.3.10' || inputs.version == '0.3.11'
+        if: inputs.version == '0.3.10' || inputs.version == '0.3.11' || inputs.version == '0.3.12'
         run: node scripts/publish-ned-release.mjs
       - name: Preserve exact staged binaries for recovery
-        if: failure() && inputs.version == '0.3.11'
+        if: failure() && (inputs.version == '0.3.11' || inputs.version == '0.3.12')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ned-${{ inputs.version }}-publish-recovery-${{ inputs.candidate_source }}
           path: |
-            downloads/Ned-0.3.11-win-x64.exe
-            downloads/Ned-0.3.11-windows-x64.tgz
-            downloads/Ned-0.3.11-core-win-x64.exe
-            downloads/Ned-0.3.11-pack-reversing-windows-x64.tgz
+            downloads/Ned-${{ inputs.version }}-win-x64.exe
+            downloads/Ned-${{ inputs.version }}-windows-x64.tgz
           compression-level: 0
           if-no-files-found: ignore
       - name: Verify published files and Windows validation
-        if: inputs.version != '0.3.10' && inputs.version != '0.3.11'
+        if: inputs.version != '0.3.10' && inputs.version != '0.3.11' && inputs.version != '0.3.12'
         shell: bash
         run: |
           node --input-type=module <<'JS'
@@ -116,7 +114,7 @@ jobs:
           await writeFile('release-assets/list.json',JSON.stringify(files));
           JS
       - name: Upload without replacing existing assets
-        if: inputs.version != '0.3.10' && inputs.version != '0.3.11'
+        if: inputs.version != '0.3.10' && inputs.version != '0.3.11' && inputs.version != '0.3.12'
         shell: bash
         run: |
           node --input-type=module <<'JS'

@@ -30,7 +30,10 @@ const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
 const signing = nedSigning();
-const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11'].includes(version);
+const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12'].includes(version);
+const ghidraRelease = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12'].includes(version);
+const modernRelease = ['0.3.9','0.3.10','0.3.11','0.3.12'].includes(version);
+const sourceEditorRelease = (version==='0.3.8'&&revision==='rebuild1') || modernRelease;
 if(['0.3.7','0.3.8'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
@@ -111,7 +114,7 @@ async function packageApp(compileInstaller=true) {
   await mkdir(output,{recursive:true});
   const config={
     appId:'com.lig.ned',productName:'Ned',electronVersion:(await json(path.join(root,'upstream-lock.json'))).electronVersion,
-    directories:{app:path.join(cache,'app'),output},files:['main.cjs','package.json'],asar:true,npmRebuild:false,publish:null,
+    directories:{app:path.join(cache,'app'),output},files:['main.cjs','studio-preload.cjs','package.json'],asar:true,npmRebuild:false,publish:null,
     win:{target:'dir',signAndEditExecutable:false,icon:path.join(root,'assets/ned-icon.ico')},
     extraResources:[
       {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*','windows-x64/agent-desktop/**/*','windows-x64/ghidra/**/*']},
@@ -188,12 +191,12 @@ async function audit() {
     if(editorBranding.modifiedSha256!==await fileHash(path.join(resources,'zed/Zed.exe')))throw new Error('Managed editor branding hash mismatch');
     if (!editorBranding.vendorOriginal) verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
     if (signing) { signing.verify(installer); signing.verify(path.join(extracted,'Ned.exe')); signing.verify(path.join(extracted,'Uninstall Ned.exe')); if (!editorBranding.vendorOriginal) signing.verify(path.join(resources,'zed/Zed.exe')); }
-    const sourceEditor=!editorBranding.vendorOriginal && (version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version))?await verifySourceEditor(root,resources):undefined;
-    if(['0.3.9','0.3.10','0.3.11'].includes(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
-    if(['0.3.10','0.3.11'].includes(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
+    const sourceEditor=!editorBranding.vendorOriginal && sourceEditorRelease?await verifySourceEditor(root,resources):undefined;
+    if(modernRelease)for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
+    if(['0.3.10','0.3.11','0.3.12'].includes(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
       if(await exists(path.join(resources,'ned',file)))throw Error('Removed OpenViking resource still in installer: '+file);
     let astryx;
-    if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version))){
+    if(sourceEditorRelease){
       const lock=await json(path.join(root,'astryx-offline-lock.json'));
       if(await fileHash(path.join(resources,'ned/astryx',lock.archive.name))!==lock.archive.sha256||await fileHash(path.join(resources,'ned/astryx/astryx-offline-lock.json'))!==await fileHash(path.join(root,'astryx-offline-lock.json')))throw Error('Installed Astryx assets differ from the reviewed lock');
       astryx={version:lock.version,archive:lock.archive,referenceCount:lock.referenceCount,upstreamCliExecuted:false};
@@ -201,7 +204,7 @@ async function audit() {
     const baseline=revision&&!fullRelease?await rebuildBaseline(root,version,revision):undefined;
     const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
-    for(const name of ['openviking','mcp','rea','agent-desktop',...(['0.3.8','0.3.9','0.3.10','0.3.11'].includes(version)?['ghidra']:[]),'skills']) {
+    for(const name of ['openviking','mcp','rea','agent-desktop',...(ghidraRelease?['ghidra']:[]),'skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:baseline?baseline.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
@@ -247,9 +250,9 @@ async function bundle() {
   await cp(installer,path.join(stage,path.basename(installer)));
   for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[await releaseDoc(`validation-${artifactVersion}.md`),'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
-  if(fullRelease)await cp(path.join(root,['0.3.9','0.3.10','0.3.11'].includes(version)?'docs/skills-0.3.9.md':'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
+  if(fullRelease)await cp(path.join(root,modernRelease?'docs/skills-0.3.9.md':'docs/skills-0.3.7.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
-  if(['0.3.8','0.3.9','0.3.10','0.3.11'].includes(version))for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
+  if(ghidraRelease)for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));
@@ -265,13 +268,13 @@ async function bundle() {
     if(await fileHash(sourceFile)!==item.sha256)throw Error('Offline corresponding-source handover is incomplete');
     await cp(sourceFile,path.join(stage,'source',item.handoverFile));
   }
-  if(['0.3.8','0.3.9','0.3.10','0.3.11'].includes(version))for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
+  if(ghidraRelease)for(const item of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(a=>a.kind.endsWith('-source'))){
     const file=path.join(root,'.cache/ghidra',item.file);if(await fileHash(file)!==item.sha256)throw Error('Ghidra/JDK corresponding source hash mismatch');await cp(file,path.join(stage,'source',item.file));
   }
-  if((version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version))){
+  if(sourceEditorRelease){
     await cp(path.join(root,'docs/zed-native-agent.md'),path.join(stage,'ZED_NATIVE_AGENT.md'));
     await cp(path.join(root,'docs/subagents.md'),path.join(stage,'SUBAGENTS.md'));
-    if(['0.3.9','0.3.10','0.3.11'].includes(version))for(const file of ['egm.md','zed-history-import.md','changes-'+version+'.md','upgrade-from-0.3.7.md'])await cp(await releaseDoc(file),path.join(stage,file));
+    if(modernRelease)for(const file of ['egm.md','zed-history-import.md','changes-'+version+'.md','upgrade-from-0.3.7.md'])await cp(await releaseDoc(file),path.join(stage,file));
     await cp(path.join(root,'docs/astryx.md'),path.join(stage,'ASTRYX.md'));
     await mkdir(path.join(stage,'astryx'),{recursive:true});
     const astryx=await json(path.join(root,'astryx-offline-lock.json'));
@@ -288,7 +291,7 @@ async function bundle() {
       await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
     }
   }
-  if(version==='0.3.11') for(const file of ['knowledge-notes.md','offline-packs.md','changes-0.3.11.md']) await cp(await releaseDoc(file),path.join(stage,file));
+  if(['0.3.11','0.3.12'].includes(version)) for(const file of ['knowledge-notes.md','changes-'+version+'.md']) await cp(await releaseDoc(file),path.join(stage,file));
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);
   run('git',['archive','--format=tar.gz','--output='+source,commit,':(exclude)downloads']);
@@ -318,7 +321,7 @@ else if(mode==='release') {
     const payload = await prepareZed(), destination = path.join(staged,'resources/zed');
     await rm(destination,{recursive:true,force:true}); await cp(payload,destination,{recursive:true});
     await cp(path.join(cache,'editor-branding.json'),editorRecord);
-  } else if (version==='0.3.8'&&revision==='rebuild1'||['0.3.9','0.3.10','0.3.11'].includes(version)) {
+  } else if (sourceEditorRelease) {
     await installSourceEditor(root,staged);
   }
   await stamp();
@@ -341,36 +344,6 @@ else if(mode==='release') {
     signing?.sign(filename);
   };
   buildInstaller(installer);
-  if (version === '0.3.11') {
-    const core = path.join(output,`Ned-${version}-core-win-x64.exe`);
-    const pack = path.join(output,`Ned-${version}-pack-reversing-windows-x64.tgz`);
-    const runtime = path.join(staged,'resources/runtime/windows-x64');
-    const content = path.join(cache,'reversing-pack');
-    await rm(content,{recursive:true,force:true}); await mkdir(content,{recursive:true});
-    const sources = path.join(content,'source'); await mkdir(sources);
-    const components = {};
-    for (const name of ['rea','ghidra']) {
-      const folder = path.join(runtime,name);
-      components[name] = await fileHash(path.join(folder,'manifest.json'));
-      await cp(folder,path.join(content,name),{recursive:true});
-    }
-    for (const source of (await json(path.join(root,'ghidra-runtime-lock.json'))).artifacts.filter(item=>item.kind.endsWith('-source'))) {
-      const filename = path.join(root,'.cache/ghidra',source.file);
-      if (await fileHash(filename) !== source.sha256) throw Error('Reversing corresponding source hash mismatch');
-      await cp(filename,path.join(sources,source.file));
-    }
-    await cp(path.join(root,'distribution/ned/install-reversing-pack.ps1'),path.join(content,'INSTALL.ps1'));
-    await cp(path.join(root,'docs/offline-packs.md'),path.join(content,'README.md'));
-    await writeFile(path.join(content,'pack.json'),JSON.stringify({schemaVersion:1,id:'reversing',version,sourceCommit:buildCommit,components},null,2)+'\n');
-    await verifyAsciiTree(content);
-    run('tar',['-czf',pack,'-C',content,'.']);
-    await rm(content,{recursive:true,force:true});
-    buildInstaller(core,['-DNED_CORE=1']);
-    run(seven,['t',core],{stdio:'ignore'});
-    const assets = [];
-    for (const file of [core, pack]) assets.push({ name:path.basename(file), bytes:(await stat(file)).size, sha256:await fileHash(file) });
-    await writeFile(path.join(output,`Ned-${version}-optional-packages.json`),JSON.stringify({schemaVersion:1,version,sourceCommit:buildCommit,assets},null,2)+'\n');
-  }
   await audit();
 }
 else if(mode==='rebuild') {

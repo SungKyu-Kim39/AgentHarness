@@ -37,7 +37,12 @@ export class OpenVikingGateway {
           method: 'POST', signal: controller.signal,
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${target.apiKey}` }, body: JSON.stringify(body),
         });
-        if (!upstream.ok) { httpError = classifyModelHttpError(await upstream.text()); report('OV_MODEL_HTTP', upstream.status); res.writeHead(502).end(JSON.stringify({ error: { message: `사내 ${embedding ? '임베딩' : '모델'} HTTP ${upstream.status}: ${modelHttpExplanation(httpError.reason)}` } })); return; }
+        if (!upstream.ok) {
+          httpError = classifyModelHttpError(await upstream.text());
+          report('OV_MODEL_HTTP', upstream.status);
+          const tag = upstream.status === 401 ? 'OV_AUTH' : upstream.status === 403 ? 'OV_FORBIDDEN' : upstream.status === 504 ? 'OV_TIMEOUT' : embedding ? 'OV_EMBEDDING' : 'OV_SERVER_ERROR';
+          res.writeHead(502).end(JSON.stringify({ error: { message: `사내 ${embedding ? '임베딩' : '모델'} HTTP ${upstream.status}: ${modelHttpExplanation(httpError.reason)} [${tag}]` } })); return;
+        }
         if (embedding) {
           const result = await upstream.json() as any;
           const expected = this.config.openViking!.embedding.dimension;
@@ -51,7 +56,15 @@ export class OpenVikingGateway {
         res.writeHead(200, { 'Content-Type': upstream.headers.get('content-type') ?? 'application/json' });
         if (upstream.body) { const reader = upstream.body.getReader(); while (true) { const next = await reader.read(); if (next.done) break; res.write(next.value); } }
         res.end();
-      } catch { if (!controller.signal.aborted) report('OV_MODEL_CONNECTION'); if (!res.headersSent) res.writeHead(502).end('{"error":{"message":"지식 모델 연결 오류"}}'); else res.destroy(); }
+      } catch (error) {
+        const info = [error instanceof Error ? error.message : '', (error as NodeJS.ErrnoException)?.code ?? '', (error as { cause?: { code?: string; message?: string } })?.cause?.code ?? '', (error as { cause?: { message?: string } })?.cause?.message ?? ''].join(' ');
+        const isTls = /CERT_|UNABLE_TO_VERIFY|SELF_SIGNED|ERR_TLS|certificate|ssl|tls/i.test(info);
+        const isTimeout = /ETIMEDOUT|ESOCKETTIMEDOUT|TimeoutError|timed?\s*out/i.test(info);
+        const code = isTls ? 'OV_TLS' : isTimeout ? 'OV_TIMEOUT' : embedding ? 'OV_EMBEDDING' : 'OV_CONNECTION';
+        if (!controller.signal.aborted) report(isTls ? 'OV_TLS' : isTimeout ? 'OV_TIMEOUT' : 'OV_MODEL_CONNECTION');
+        if (!res.headersSent) res.writeHead(isTimeout ? 504 : 502).end(JSON.stringify({ error: { message: `사내 ${embedding ? '임베딩' : '지식'} 모델 연결 오류 [${code}]` } }));
+        else res.destroy();
+      }
       finally { this.counts[kind]--; this.pending.delete(controller); }
     });
     await new Promise<void>((resolve, reject) => { this.server!.once('error', reject); this.server!.listen(0, '127.0.0.1', resolve); });

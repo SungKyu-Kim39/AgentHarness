@@ -1,8 +1,8 @@
 # Ned
 
-[0.3.11 변경 사항](docs/changes-0.3.11.md) · [검증](docs/validation-0.3.11.md)
+[0.3.12 변경 사항](docs/changes-0.3.12.md) · [0.3.12 검증](docs/validation-0.3.12.md) · [0.3.11 변경 사항](docs/changes-0.3.11.md)
 
-최신 사전 릴리스는 [Ned 0.3.11](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.11)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.3.11.md).
+최신 게시 사전 릴리스는 [Ned 0.3.11](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.11)이며, 현재 `AG-work` 브랜치에서 **Ned 0.3.12** 보완 버전을 준비 중입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [0.3.11 검증 기록](docs/validation-0.3.11.md).
 
 Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이기 위해 만들었습니다.
 
@@ -12,7 +12,7 @@ Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드,
 
 AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
 
-0.3.11에는 [지식 저장·검색](docs/knowledge-notes.md)과 [Core·리버싱 팩](docs/offline-packs.md)을 추가했습니다. Studio, Git 조회, 슬래시 스킬과 터미널 정책을 보완했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
+0.3.12에서는 [권한 정책(터미널 최소 고위험 가드·외부 읽기·지식 저장 자동 승인)](docs/approval-modes.md)과 승인 팝업 최상단 표시, OpenViking·Studio 상시 진단을 보완하고 설치본을 전체 설치본 단일 배포로 단순화했습니다. 사내 0.3.7 사용자는 [누적 변경 사항](docs/upgrade-from-0.3.7.md)을 확인하세요.
 
 0.3.8 rebuild1에서는 [기본 Zed Agent 선택](docs/zed-native-agent.md)과 [Astryx UI 제작](docs/astryx.md), [조사·구현 서브에이전트](docs/subagents.md)를 추가했습니다. 기본 Zed Agent는 Ned의 스킬·MCP·지식 기능을 연결하지 않고 Zed 자체 도구를 사용합니다.
 

@@ -18,6 +18,7 @@ import { AgentOwner } from './owner';
 import { EditorNetwork, prepareEditor } from './profile';
 import { migrateLegacy, migrationNeedsBootstrap } from './migration';
 import { PermissionPolicy, permissionModes, type PermissionMode } from './permission-policy';
+import { withTopmostDialogOwner } from './topmost-dialog';
 declare const NED_VERSION: string;
 app.setName('Ned');
 app.setAppUserModelId('com.lig.ned');
@@ -48,8 +49,8 @@ const configurationRestart = new ConfigurationRestart(replaceConfiguration, () =
 });
 const startup = new StartupWindow();
 const studio = new OpenVikingStudio(event => { void atomicJSON(path.join(root,'openviking/studio-status.json'),{schemaVersion:1,recordedAt:new Date().toISOString(),...event}).catch(()=>{}); });
-const messageBox = (options: Electron.MessageBoxOptions) => startup.duringDialog(() => dialog.showMessageBox(options));
-const openDialog = (options: Electron.OpenDialogOptions) => startup.duringDialog(() => dialog.showOpenDialog(options));
+const messageBox = (options: Electron.MessageBoxOptions) => startup.duringDialog(() => withTopmostDialogOwner(owner => dialog.showMessageBox(owner, options)));
+const openDialog = (options: Electron.OpenDialogOptions) => startup.duringDialog(() => withTopmostDialogOwner(owner => dialog.showOpenDialog(owner, options)));
 if (!app.requestSingleInstanceLock()) app.exit(0);
 app.on('window-all-closed', () => {});
 app.on('second-instance', () => { void messageBox({ title: 'Ned', message: 'Ned가 실행 중입니다. 열려 있는 편집기 또는 알림 영역의 Ned 메뉴를 사용하세요.' }); });
@@ -125,7 +126,7 @@ async function start() {
   runtime.setPythonSelector((project, environments, signal) => startup.duringDialog(() => selectPythonEnvironment(resources, project, environments, signal)),
     async (_project, signal) => {
       signal?.throwIfAborted();
-      const result = await startup.duringDialog(() => dialog.showOpenDialog({ title: 'Conda 설치 루트 폴더 선택', buttonLabel: 'Conda 설치 폴더 선택', properties: ['openDirectory', 'dontAddToRecent'] }));
+      const result = await openDialog({ title: 'Conda 설치 루트 폴더 선택', buttonLabel: 'Conda 설치 폴더 선택', properties: ['openDirectory', 'dontAddToRecent'] });
       signal?.throwIfAborted(); return result.canceled ? undefined : result.filePaths[0];
     });
   runtime.onKnowledgeChange(() => { if (runtime.status().knowledge?.status !== 'ready') studio.close(); });
@@ -199,7 +200,8 @@ async function start() {
       { label: '설치와 첫 실행', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
       { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
       { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
-      { label: '0.3.10 변경 사항', click: () => { void shell.openPath(path.join(resources, 'ned/changes-0.3.10.md')); } },
+      { label: NED_VERSION.split(' ')[0] + ' 변경 사항', click: () => { void shell.openPath(path.join(resources, 'ned/changes-' + NED_VERSION.split(' ')[0] + '.md')); } },
+      { label: '지식 저장·검색 안내', click: () => { void shell.openPath(path.join(resources, 'ned/knowledge-notes.md')); } },
       { label: '기존 Zed 대화 가져오기 안내', click: () => { void shell.openPath(path.join(resources, 'ned/zed-history-import.md')); } },
       { label: 'EGM 설계·검토 사용', click: () => { void shell.openPath(path.join(resources, 'ned/egm.md')); } },
       { label: '새 스킬·MCP 추가 방법', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },

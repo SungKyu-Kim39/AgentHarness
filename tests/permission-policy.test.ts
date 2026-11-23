@@ -87,3 +87,57 @@ test('mode changes abort pending dialogs and delayed file writes; full mode reta
   const rejected = assert.rejects(pending);
   await policy.set('full');assert.equal(dialogSignal?.aborted,true);await rejected;
 });
+
+test('knowledge_remember and knowledge_forget prompt in ask/edits modes and auto-approve in full mode', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-knowledge-mode-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const project = path.join(root, 'project'); await mkdir(project);
+  const policy = new PermissionPolicy(path.join(root, 'data'));
+  let prompts = 0, explicitPrompts = 0, allow = false;
+  const saved: Array<{ scope: string; title: string; id: string }> = [];
+  const deleted: Array<{ scope: string; id: string }> = [];
+  const fakeKnowledge = {
+    state: () => ({ status: 'ready' as const, indexedFiles: 0 }),
+    configure: async () => {},
+    search: async () => '{}',
+    read: async () => '{}',
+    index: async () => 'ok',
+    close: async () => {},
+    saveNote: async (scope: 'project' | 'personal', _project: string, title: string, _text: string, id: string) => { saved.push({ scope, title, id }); return JSON.stringify({ status: 'saved', scope, id, title }); },
+    deleteNote: async (scope: 'project' | 'personal', _project: string, id: string) => { deleted.push({ scope, id }); return JSON.stringify({ status: 'deleted', scope, id }); },
+    listNotes: async (scope: 'project' | 'personal') => JSON.stringify({ scope, entries: saved }),
+  };
+  const host = new HostTools(path.join(root, 'data'), root, {
+    project: async () => project,
+    permissionSignal: () => policy.signal,
+    approve: (_m, _d, s) => policy.decide('effect', s, true, async () => { prompts++; return allow; }),
+    approveExplicit: async () => { explicitPrompts++; return false; },
+    knowledge: () => fakeKnowledge,
+    redactor: new Redactor(),
+  });
+  t.after(() => host.close());
+
+  // ask mode prompts
+  await assert.rejects(host.call('knowledge_remember', { scope: 'project', title: 'Build rule', text: 'Use x64' }, 's'), /취소/);
+  assert.equal(prompts, 1);
+  allow = true;
+  const created = JSON.parse(await host.call('knowledge_remember', { scope: 'project', title: 'Build rule', text: 'Use x64' }, 's'));
+  assert.equal(created.status, 'saved');
+  assert.equal(prompts, 2);
+
+  // edits mode still prompts
+  await policy.set('edits');
+  allow = false;
+  await assert.rejects(host.call('knowledge_remember', { scope: 'personal', title: 'Commit rule', text: 'Keep short' }, 's'), /취소/);
+  assert.equal(prompts, 3);
+
+  // full mode auto-approves save and delete without prompting
+  await policy.set('full');
+  const autoSaved = JSON.parse(await host.call('knowledge_remember', { scope: 'personal', title: 'Commit rule', text: 'Keep short' }, 's'));
+  assert.equal(autoSaved.status, 'saved');
+  const autoDeleted = JSON.parse(await host.call('knowledge_forget', { scope: 'personal', id: autoSaved.id }, 's'));
+  assert.equal(autoDeleted.status, 'deleted');
+  assert.equal(prompts, 3);
+  assert.equal(explicitPrompts, 0);
+  assert.equal(saved.length, 2);
+  assert.equal(deleted.length, 1);
+});

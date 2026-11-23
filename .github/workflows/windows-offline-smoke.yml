@@ -4,9 +4,9 @@ on:
     inputs:
       artifact_version:
         description: Exact immutable installer build
-        default: 0.3.8
+        default: 0.3.12
         type: choice
-        options: ['0.3.11', '0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
+        options: ['0.3.12', '0.3.11', '0.3.10', '0.3.9', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', '0.3.8-rebuild1', '0.3.8', '0.3.7-rebuild1', '0.3.7', 'python-source-probe', 'editor-source-build', 'native-agent-source-probe']
       candidate_source:
         description: Optional immutable candidate source SHA (leave empty for published downloads)
         type: string
@@ -38,7 +38,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     env:
-      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.8' }}
+      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.3.12' }}
       NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -46,7 +46,7 @@ jobs:
           lfs: false
           persist-credentials: false
       - name: Measure the previous installer on the same Windows runner
-        if: env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11'
+        if: env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -82,16 +82,16 @@ jobs:
           if ($env:NED_CANDIDATE_SOURCE -and $audit.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) { throw 'Candidate provenance mismatch' }
           "NED_ARTIFACT_SHA256=$($audit.installer.sha256)" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           $exe = Join-Path $env:RUNNER_TEMP "Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
-          if ($env:NED_ARTIFACT_VERSION -eq '0.3.11' -and $env:NED_CANDIDATE_SOURCE) {
+          if (($env:NED_ARTIFACT_VERSION -eq '0.3.11' -or $env:NED_ARTIFACT_VERSION -eq '0.3.12') -and $env:NED_CANDIDATE_SOURCE) {
             $candidateRun = '${{ inputs.candidate_run }}'
             if ($candidateRun -notmatch '^[0-9]+$') { throw 'Candidate Actions run ID required' }
             $files = Join-Path $env:RUNNER_TEMP 'ned-immutable-candidate'
-            gh run download $candidateRun --repo $env:GITHUB_REPOSITORY --name "ned-0.3.11-installer-assets-$env:NED_CANDIDATE_SOURCE" --dir $files
+            gh run download $candidateRun --repo $env:GITHUB_REPOSITORY --name "ned-$env:NED_ARTIFACT_VERSION-installer-assets-$env:NED_CANDIDATE_SOURCE" --dir $files
             if ($LASTEXITCODE -ne 0) { throw 'Candidate Actions download failed' }
             $exe = Join-Path $files (Split-Path $exe -Leaf)
             "NED_SMOKE_CANDIDATE_DIR=$files" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           } else {
-            $url = if ($env:NED_ARTIFACT_VERSION -eq '0.3.11') {
+            $url = if ($env:NED_ARTIFACT_VERSION -eq '0.3.11' -or $env:NED_ARTIFACT_VERSION -eq '0.3.12') {
               "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:NED_ARTIFACT_VERSION/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
             } else {
               "https://media.githubusercontent.com/media/SungKyu-Kim39/AgentHarness/$env:GITHUB_SHA/$directory/Ned-$env:NED_ARTIFACT_VERSION-win-x64.exe"
@@ -187,7 +187,7 @@ jobs:
           $proof | Add-Member -NotePropertyName newInstallerAcceptance -NotePropertyValue $false
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Verify 0.5.4 data migration using the installed Windows runtimes
-        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11'
+        if: env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -202,7 +202,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Windows namespace migration test failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify file deletion with the installed Windows Node runtime
-        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11'
+        if: always() && env.NED_ARTIFACT_VERSION != '0.3.7' && env.NED_TEST_NODE != '' && env.NED_ARTIFACT_VERSION != '0.3.10' && env.NED_ARTIFACT_VERSION != '0.3.11' && env.NED_ARTIFACT_VERSION != '0.3.12'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -291,7 +291,7 @@ jobs:
           if ($run.ExitCode -ne 0) { throw 'Installed Windows Python tools failed' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Verify skills, history, settings and terminal behavior after installation
-        if: always() && (env.NED_ARTIFACT_VERSION == '0.3.9' || env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11') && env.NED_TEST_NODE != ''
+        if: always() && (env.NED_ARTIFACT_VERSION == '0.3.9' || env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12') && env.NED_TEST_NODE != ''
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -310,13 +310,13 @@ jobs:
           }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
       - name: Update the previous installed release and verify user data
-        if: env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11'
+        if: env.NED_ARTIFACT_VERSION == '0.3.10' || env.NED_ARTIFACT_VERSION == '0.3.11' || env.NED_ARTIFACT_VERSION == '0.3.12'
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
           if ((Split-Path $env:NED_TEST_NODE) -ne $install) { throw 'Unexpected disposable installer path' }
-          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.11') { '0.3.10' } else { '0.3.9' }
+          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.12') { '0.3.11' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.3.11') { '0.3.10' } else { '0.3.9' }
           $previous = Join-Path $env:RUNNER_TEMP "Ned-$baseline-previous.exe"
           $audit = Get-Content "downloads/Ned-$baseline-installer-audit.json" -Raw | ConvertFrom-Json
           $url = "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v$baseline/Ned-$baseline-win-x64.exe"
@@ -362,47 +362,6 @@ jobs:
           $proof | Add-Member -NotePropertyName upgradedFrom -NotePropertyValue $baseline
           $proof | Add-Member -NotePropertyName userGlobalSkillsPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName userDataPreserved -NotePropertyValue $true
-          $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
-      - name: Install Core and its optional reversing pack offline
-        if: env.NED_ARTIFACT_VERSION == '0.3.11'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $install = Split-Path $env:NED_TEST_NODE
-          $directory = if ($env:NED_CANDIDATE_SOURCE) { 'downloads/candidates/' + $env:NED_CANDIDATE_SOURCE } else { 'downloads' }
-          $record = Get-Content "$directory/Ned-$env:NED_ARTIFACT_VERSION-optional-packages.json" -Raw | ConvertFrom-Json
-          if (($env:NED_CANDIDATE_SOURCE -and $record.sourceCommit -ne $env:NED_CANDIDATE_SOURCE) -or $record.assets.Count -ne 2) { throw 'Optional manifest mismatch' }
-          $items = @{}
-          foreach ($item in $record.assets) {
-            if ($item.name -notmatch '^Ned-0\.3\.11-(?:core-win-x64\.exe|pack-reversing-windows-x64\.tgz)$') { throw 'Unexpected optional asset' }
-            $file = Join-Path $env:RUNNER_TEMP $item.name
-            if ($env:NED_SMOKE_CANDIDATE_DIR) { $file = Join-Path $env:NED_SMOKE_CANDIDATE_DIR $item.name }
-            else {
-              & curl.exe --fail --location --retry 2 --output $file "https://github.com/$env:GITHUB_REPOSITORY/releases/download/v$env:NED_ARTIFACT_VERSION/$($item.name)"
-              if ($LASTEXITCODE -ne 0) { throw 'Optional release download failed' }
-            }
-            if ((Get-FileHash $file -Algorithm SHA256).Hash -ne $item.sha256) { throw 'Optional download hash mismatch' }
-            $items[$item.name] = $file
-          }
-          $core = $items['Ned-0.3.11-core-win-x64.exe']
-          $upgrade = Start-Process -FilePath $core -ArgumentList @('/S', "/D=$install") -Wait -PassThru
-          $upgrade.Refresh()
-          if ($upgrade.ExitCode -ne 0) { throw 'Core install failed' }
-          $runtime = Join-Path $install 'resources\runtime\windows-x64'
-          foreach ($component in @('rea','ghidra')) { if (Test-Path (Join-Path $runtime $component)) { throw 'Core unexpectedly bundles reversing files' } }
-          $source = Join-Path $env:RUNNER_TEMP 'reversing-pack'
-          New-Item -ItemType Directory -Path $source -Force | Out-Null
-          & tar.exe -xzf $items['Ned-0.3.11-pack-reversing-windows-x64.tgz'] -C $source
-          if ($LASTEXITCODE -ne 0) { throw 'Offline pack extraction failed' }
-          & (Join-Path $source 'INSTALL.ps1')
-          $pack = Join-Path $env:APPDATA 'Ned\packs\reversing\0.3.11'
-          $before = Get-FileHash (Join-Path $pack 'rea\manifest.json'),(Join-Path $pack 'ghidra\manifest.json')
-          $again = Start-Process -FilePath $core -ArgumentList @('/S', "/D=$install") -Wait -PassThru
-          $again.Refresh()
-          if ($again.ExitCode -ne 0) { throw 'Core reinstall failed' }
-          foreach ($file in $before) { if ((Get-FileHash -LiteralPath $file.Path).Hash -ne $file.Hash) { throw 'Pack changed after Core update' } }
-          $proof = Get-Content windows-offline-smoke.json -Raw | ConvertFrom-Json
-          $proof | Add-Member -NotePropertyName coreAndReversingPackVerified -NotePropertyValue $true
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Restore disposable runner firewall configuration
         if: always()
@@ -602,7 +561,7 @@ jobs:
           const folder=process.env.NED_EDITOR_OUTPUT,version=JSON.parse(fs.readFileSync('package.json')).version,revision=process.env.NED_BUILD_REVISION||'',artifact=process.env.NED_EDITOR_ARTIFACT;
           const binary=`Ned-editor-${artifact}.exe`,archive=`zed-ned-editor-source-v1.28.1-${artifact}.tar.gz`,about=`Ned ${version}`+(revision?' · rebuild '+revision.slice(7):'');
           const exe=fs.readFileSync(p.join(folder,binary));
-          const labels=['About Ned','Quit Ned',about,...(['0.3.10','0.3.11'].includes(version)?['NED_MANAGED_TERMINAL','PowerShell','CMD']:[])];
+          const labels=['About Ned','Quit Ned',about,...(['0.3.10','0.3.11','0.3.12'].includes(version)?['NED_MANAGED_TERMINAL','PowerShell','CMD']:[])];
           for(const s of labels)if(!exe.includes(Buffer.from(s)))throw Error('Missing compiled UI: '+s);
           for(const s of ['About Zed','Quit Zed'])if(exe.includes(Buffer.from(s)))throw Error('Old compiled menu: '+s);
           const files=[binary,archive].map(name=>{const bytes=fs.readFileSync(p.join(folder,name));return {name,bytes:bytes.length,sha256:crypto.createHash('sha256').update(bytes).digest('hex')}});
@@ -727,13 +686,12 @@ jobs:
         id: candidate
         run: node scripts/release-candidate.mjs candidate
       - name: Store candidate binaries outside Git LFS
-        if: steps.candidate.outputs.version == '0.3.11'
+        if: steps.candidate.outputs.version == '0.3.11' || steps.candidate.outputs.version == '0.3.12'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ned-${{ steps.candidate.outputs.version }}-installer-assets-${{ steps.candidate.outputs.source_sha }}
           path: |
-            release/ned/Ned-0.3.11*-win-x64.exe
-            release/ned/Ned-0.3.11-pack-reversing-windows-x64.tgz
+            release/ned/Ned-${{ steps.candidate.outputs.version }}-win-x64.exe
           compression-level: 0
           if-no-files-found: error
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

@@ -27,10 +27,8 @@ Studio는 별도 격리 창에서 열립니다. 같은 메뉴를 다시 누르�
 
 ## 화면 진단
 
-호스트에서 서비스 상태를 확인하고, Studio 작업 화면과 로컬 API가 준비되면 창을 표시합니다. 화면이 준비되지 않으면 별도의
-안내 페이지가 표시됩니다. **다시 불러오기**는 같은 로컬 서비스의 연결 준비부터 다시 시작합니다.
+호스트에서 서비스 상태를 확인하고, Studio 작업 화면과 로컬 API가 준비되면 창을 표시합니다. 초기 렌더 대기 시간은 30초이며, 화면이 준비되지 않으면 별도의 안내 페이지가 표시됩니다. **다시 불러오기**는 같은 로컬 서비스의 연결 준비부터 다시 시작합니다.
 
 `%APPDATA%\Ned\openviking\studio-status.json`에서 `STUDIO_NAVIGATION`,
 `STUDIO_CREDENTIAL_STORAGE`, `STUDIO_AUTH`, `STUDIO_RESOURCE`, `STUDIO_POLICY`,
-`STUDIO_RENDER_TIMEOUT`, `STUDIO_RENDERER_EXIT` 등의 코드와 필요한 HTTP 상태를
-확인할 수 있습니다. 진단 파일은 페이지 로그 전문이나 토큰을 수집하지 않습니다.
+`STUDIO_BLOCKED_REQUEST`, `STUDIO_RENDER_TIMEOUT`, `STUDIO_RENDERER_EXIT` 등의 코드와 HTTP 상태, 차단된 URL 목록, 로드 실패(`did-fail-load`), 콘솔 경고·오류 및 실패 시점의 `#app` DOM 요약을 확인할 수 있습니다. 진단 파일은 인증 토큰과 개인 경로를 마스킹하며 페이지 로그 전문을 수집하지 않습니다.

@@ -7,7 +7,7 @@ import { readFile, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { atomicJSON } from './config';
 import { OpenVikingGateway } from './openviking-gateway';
-import { vikingErrorCode } from './openviking-errors';
+import { vikingErrorCode, sanitizeVikingDiagnostic } from './openviking-errors';
 import { verifyFiles } from './parallel-files';
 import { PersonalKnowledge } from './personal-knowledge';
 import { migrateVikingNamespace, backupVikingAccount, vikingAccount } from './openviking-namespace';
@@ -78,6 +78,8 @@ export class OpenVikingService implements KnowledgeService {
   private operation = Promise.resolve(); private stopped?: Promise<void>;
   private diagnosticWrites = Promise.resolve();
   private modelEvents: unknown[] = [];
+  private requestEvents: unknown[] = [];
+  private diagnosticSecrets: string[] = [];
   private personal?: PersonalKnowledge;
   private writingNotes = new Set<string>();
   private namespaceAbort?: AbortController;
@@ -174,6 +176,7 @@ export class OpenVikingService implements KnowledgeService {
     const port = address.port; await new Promise<void>(resolve => reserve.close(() => resolve()));
     this.baseUrl = `http://127.0.0.1:${port}`; this.token = randomBytes(32).toString('hex');
     const gateway = this.gateway; const embedding = config.openViking!.embedding; const vlm = config.openViking!.vlm ?? config.model;
+    this.diagnosticSecrets = [this.token, gateway.token, embedding.apiKey, vlm.apiKey, config.model.apiKey].filter(Boolean);
     this.configFile = path.join(folder, `runtime-${randomBytes(8).toString('hex')}.json`);
     await atomicJSON(this.configFile, {
       storage: { workspace, agfs: { backend: 'local' }, vectordb: { backend: 'local', name: 'context' } },
@@ -224,19 +227,47 @@ export class OpenVikingService implements KnowledgeService {
     return { Authorization: `Bearer ${this.token}`, 'X-API-Key': this.token, 'X-OpenViking-Account': this.account,
       'X-OpenViking-User': user, ...(this.maintenance ? { 'X-OpenViking-Role': 'admin' } : {}) };
   }
+  private recordRequestDiagnostic(method: string, route: string, status: number | undefined, code: string, detail: string) {
+    if (route === '/health') return;
+    const safeRoute = sanitizeVikingDiagnostic(route, this.diagnosticSecrets, 200);
+    const safeDetail = sanitizeVikingDiagnostic(detail, this.diagnosticSecrets, 500);
+    const line = `HTTP ${status ?? 'ERR'} ${safeRoute}`;
+    if (this.testLaunch?.diagnostic) this.testLaunch.diagnostic(`${line}: ${safeDetail}`);
+    this.requestEvents.push({ recordedAt: new Date().toISOString(), method, route: safeRoute, ...(status === undefined ? {} : { httpStatus: status }), code, summary: line, detail: safeDetail });
+    this.requestEvents = this.requestEvents.slice(-30);
+    const events = structuredClone(this.requestEvents);
+    const file = path.join(this.data, 'openviking', 'request-diagnostics.json');
+    this.diagnosticWrites = this.diagnosticWrites.catch(() => {}).then(() => atomicJSON(file, { schemaVersion: 1, events }));
+  }
   private async request(route: string, body?: unknown, timeout: number | false = false, method?: 'GET' | 'POST' | 'PUT' | 'DELETE', signal?: AbortSignal, user = 'local-user'): Promise<any> {
     const form = body instanceof FormData;
+    const verb = method ?? (body === undefined ? 'GET' : 'POST');
     const headers = { ...this.credentials(user), ...(form ? {} : { 'Content-Type': 'application/json' }) };
-    const response = timeout === false && !form
-      ? await requestJSON(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), headers, body: body === undefined ? undefined : JSON.stringify(body), signal })
-      : await fetch(this.baseUrl + route, { method: method ?? (body === undefined ? 'GET' : 'POST'), redirect: 'error', headers, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: timeout === false ? signal : signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
+    let response: Awaited<ReturnType<typeof requestJSON>> | Response;
+    try {
+      response = timeout === false && !form
+        ? await requestJSON(this.baseUrl + route, { method: verb, headers, body: body === undefined ? undefined : JSON.stringify(body), signal })
+        : await fetch(this.baseUrl + route, { method: verb, redirect: 'error', headers, body: body === undefined ? undefined : form ? body : JSON.stringify(body), signal: timeout === false ? signal : signal ? AbortSignal.any([signal, AbortSignal.timeout(timeout)]) : AbortSignal.timeout(timeout) });
+    } catch (error) {
+      const raw = error instanceof Error ? `${error.name}: ${error.message} ${(error as NodeJS.ErrnoException).code ?? ''}` : String(error);
+      const code = vikingErrorCode(raw);
+      this.recordRequestDiagnostic(verb, route, undefined, code, raw);
+      throw new Error(code);
+    }
     if (!response.ok) {
       const detail = await response.text();
-      if (this.testLaunch?.diagnostic) this.testLaunch.diagnostic(`HTTP ${response.status} ${route}: ${detail}`);
-      throw Object.assign(new Error(vikingErrorCode(detail)), { status: response.status });
+      const code = vikingErrorCode(detail, response.status);
+      this.recordRequestDiagnostic(verb, route, response.status, code, detail);
+      throw Object.assign(new Error(code), { status: response.status });
     }
     const text = await response.text(); if (text.length > 8 * 1024 * 1024) throw new Error('지식 응답 크기 초과');
-    const json = JSON.parse(text); if (json.status === 'error') throw new Error(vikingErrorCode(text)); return json;
+    const json = JSON.parse(text);
+    if (json.status === 'error') {
+      const code = vikingErrorCode(text, response.status);
+      this.recordRequestDiagnostic(verb, route, response.status, code, text);
+      throw new Error(code);
+    }
+    return json;
   }
   private ready() { if (this.value.status !== 'ready' || this.exited) throw new Error('OpenViking이 준비되지 않았습니다. 모델·번들 설정을 확인하세요.'); }
   private async noteExists(uri: string, signal?: AbortSignal) {
@@ -313,7 +344,12 @@ export class OpenVikingService implements KnowledgeService {
     if (Buffer.byteLength(content) > 2 * 1024 * 1024) throw new Error('2 MiB 이하 텍스트만 색인할 수 있습니다.');
     const form = new FormData(); form.append('file', new Blob([content], { type: 'text/plain' }), path.basename(filename).replace(/[^a-zA-Z0-9_.-]/g, '_') + '.txt');
     const response = await fetch(this.baseUrl + '/api/v1/resources/temp_upload', { method: 'POST', redirect: 'error', headers: this.credentials('local-user'), body: form, signal: AbortSignal.timeout(30000) });
-    if (!response.ok) { this.testLaunch?.diagnostic?.(`Upload HTTP ${response.status}: ${await response.text()}`); throw new Error('OpenViking 파일 전달 실패'); }
+    if (!response.ok) {
+      const detail = await response.text();
+      const code = vikingErrorCode(detail, response.status);
+      this.recordRequestDiagnostic('POST', '/api/v1/resources/temp_upload', response.status, code, detail);
+      throw new Error(`OpenViking 파일 전달 실패 [${code}]`);
+    }
     const upload = await response.json(); const id = upload.result?.temp_file_id ?? upload.temp_file_id;
     if (typeof id !== 'string') throw new Error('OpenViking 업로드 확인 실패');
     const target = knowledgeRoot(project) + '/' + createHash('sha256').update(filename).digest('hex').slice(0, 20);
