@@ -21347,6 +21347,7 @@ var init_openviking = __esm({
       diagnosticSecrets = [];
       personal;
       writingNotes = /* @__PURE__ */ new Set();
+      semanticTimers = /* @__PURE__ */ new Map();
       namespaceAbort;
       startupStage = "bundle";
       state() {
@@ -21629,16 +21630,49 @@ var init_openviking = __esm({
           throw error;
         });
       }
-      scheduleSemanticRefresh(uri, recursive) {
+      cancelSemanticRefresh(uri) {
+        const existing = this.semanticTimers.get(uri);
+        if (existing) {
+          clearTimeout(existing);
+          this.semanticTimers.delete(uri);
+        }
+      }
+      scheduleNoteSemanticRefresh(uri, body) {
+        this.cancelSemanticRefresh(uri);
         if (!this.isReady()) return;
-        void this.request("/api/v1/content/reindex", {
-          uri,
-          mode: "semantic_and_vectors",
-          force: true,
-          wait: false,
-          recursive
-        }, 15e3, "POST", void 0, "local-user", { admin: true }).catch(() => {
-        });
+        const timer = setTimeout(() => {
+          this.semanticTimers.delete(uri);
+          if (!this.isReady() || this.writingNotes.has(uri)) return;
+          void this.request("/api/v1/content/write", {
+            uri,
+            content: body,
+            mode: "replace",
+            wait: false,
+            processing_mode: "semantic_and_vectors",
+            edit_source: "manual"
+          }, 15e3, "POST").catch(() => {
+          });
+        }, 1500);
+        timer.unref();
+        this.semanticTimers.set(uri, timer);
+      }
+      scheduleIndexSemanticRefresh(target) {
+        this.cancelSemanticRefresh(target);
+        if (!this.isReady()) return;
+        const timer = setTimeout(() => {
+          this.semanticTimers.delete(target);
+          if (!this.isReady()) return;
+          void this.request("/api/v1/content/reindex", {
+            uri: target,
+            mode: "semantic_and_vectors",
+            force: true,
+            wait: false,
+            recursive: true
+          }, 15e3, "POST", void 0, "local-user", { admin: true }).catch(() => {
+          });
+        }, 1500);
+        timer.unref();
+        this.semanticTimers.set(target, timer);
       }
       async personalSearch(query, limit) {
         this.ready();
@@ -21678,6 +21712,7 @@ var init_openviking = __esm({
         const root = knowledgeNoteRoot(scope, project);
         const uri = knowledgeNoteUri(scope, project, id);
         if (this.writingNotes.has(uri)) throw new Error("\uD574\uB2F9 \uC9C0\uC2DD\uC744 \uBCC0\uACBD\uD558\uB294 \uB2E4\uB978 \uC791\uC5C5\uC774 \uC788\uC2B5\uB2C8\uB2E4.");
+        this.cancelSemanticRefresh(uri);
         this.writingNotes.add(uri);
         try {
           for (const folder of scope === "personal" ? ["viking://user/local-user/resources", root] : ["viking://resources/ned", knowledgeRoot(project), root]) {
@@ -21690,15 +21725,16 @@ var init_openviking = __esm({
             }
           }
           const mode = await this.noteExists(uri, signal) ? "replace" : "create";
+          const body = "# " + title + "\n\n" + content2;
           await this.request("/api/v1/content/write", {
             uri,
-            content: "# " + title + "\n\n" + content2,
+            content: body,
             mode,
             wait: true,
             processing_mode: "vectors_only",
             edit_source: "manual"
           }, false, "POST", signal);
-          this.scheduleSemanticRefresh(uri, false);
+          this.scheduleNoteSemanticRefresh(uri, body);
           return JSON.stringify({ status: "saved", scope, id, uri, title, semanticRefresh: "queued" });
         } finally {
           this.writingNotes.delete(uri);
@@ -21708,6 +21744,7 @@ var init_openviking = __esm({
         this.ready();
         const uri = knowledgeNoteUri(scope, project, id);
         if (this.writingNotes.has(uri)) throw new Error("\uD574\uB2F9 \uC9C0\uC2DD\uC744 \uBCC0\uACBD\uD558\uB294 \uB2E4\uB978 \uC791\uC5C5\uC774 \uC788\uC2B5\uB2C8\uB2E4.");
+        this.cancelSemanticRefresh(uri);
         this.writingNotes.add(uri);
         try {
           if (await this.noteExists(uri, signal)) await this.request("/api/v1/fs?uri=" + encodeURIComponent(uri) + "&wait=true", void 0, false, "DELETE", signal);
@@ -21751,8 +21788,9 @@ var init_openviking = __esm({
         const id = upload.result?.temp_file_id ?? upload.temp_file_id;
         if (typeof id !== "string") throw new Error("OpenViking \uC5C5\uB85C\uB4DC \uD655\uC778 \uC2E4\uD328");
         const target = knowledgeRoot(project) + "/" + (0, import_node_crypto17.createHash)("sha256").update(filename).digest("hex").slice(0, 20);
+        this.cancelSemanticRefresh(target);
         await this.request("/api/v1/resources", { temp_file_id: id, to: target, wait: true, reason: "\uC0AC\uC6A9\uC790\uAC00 \uC120\uD0DD\uD55C \uD504\uB85C\uC81D\uD2B8 \uD14D\uC2A4\uD2B8 \uD30C\uC77C", processing_mode: "vectors_only" });
-        this.scheduleSemanticRefresh(target, true);
+        this.scheduleIndexSemanticRefresh(target);
         this.value.indexedFiles++;
         this.changed();
         return `OpenViking \uC0C9\uC778 \uC644\uB8CC: ${filename} (VLM \uC758\uBBF8 \uC694\uC57D \uBC31\uADF8\uB77C\uC6B4\uB4DC \uC9C4\uD589)`;
@@ -21813,6 +21851,8 @@ var init_openviking = __esm({
       }
       async stop() {
         this.expectedExit = true;
+        for (const timer of this.semanticTimers.values()) clearTimeout(timer);
+        this.semanticTimers.clear();
         await this.personal?.close();
         this.personal = void 0;
         await this.diagnosticWrites.catch(() => {
