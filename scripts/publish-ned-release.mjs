@@ -3,7 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {readFile,writeFile,mkdir,cp,access} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileHash} from './installer-audit.mjs';
-import {isActionsTransportVersion,isRebuiltEditorReusable,isUserDataPreservedVersion,previousReleaseVersion} from './release-policy.mjs';
+import {isActionsTransportVersion,isRebuiltEditorReusable,isSupportedReleaseVersion,isUserDataPreservedVersion,previousReleaseVersion} from './release-policy.mjs';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..'),repo=process.env.GH_REPO,branch=process.env.GITHUB_REF_NAME;
 const run=(cmd,args,options={})=>execFileSync(cmd,args,{cwd:root,stdio:'inherit',...options});
@@ -16,7 +16,7 @@ async function commit(files,message){run('git',['add','--',...files]);if(capture
 const {version}=await json('package.json');
 const requested=process.env.NED_VERSION??'';
 const revision=requested===version?'':requested.startsWith(version+'-')?requested.slice(version.length+1):'';
-if(!/^0\.3\.[1-9]\d+$/.test(version)||(requested!==version&&!isRebuiltEditorReusable(version,revision)))throw Error('Unexpected release version');
+if(!isSupportedReleaseVersion(version)||(requested!==version&&!isRebuiltEditorReusable(version,revision)))throw Error('Unexpected release version');
 const artifactVersion=version+(revision?'-'+revision:'');
 const editorArtifactVersion=isRebuiltEditorReusable(version,revision)?version:artifactVersion;
 const prefix=`Ned-${artifactVersion}`,tag=`v${artifactVersion}`,groups=['upgrade'];

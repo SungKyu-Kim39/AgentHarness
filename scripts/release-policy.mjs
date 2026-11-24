@@ -1,4 +1,9 @@
-// Centralized release version policy for Ned 0.3.x builds, audits, and publishing.
+// Centralized release version policy for Ned 0.3.x and 0.4.x builds, audits, and publishing.
+export function parseReleaseSemver(version) {
+  const match = /^0\.([34])\.(\d+)$/.exec(String(version ?? ''));
+  return match ? { minor: Number(match[1]), patch: Number(match[2]) } : undefined;
+}
+
 export function parsePatch03(version) {
   const match = /^0\.3\.(\d+)$/.exec(String(version ?? ''));
   return match ? Number(match[1]) : undefined;
@@ -8,34 +13,45 @@ export function isValidRevision(revision) {
   return /^rebuild[1-9][0-9]*$/.test(String(revision ?? ''));
 }
 
+export function isSupportedReleaseVersion(version) {
+  const parsed = parseReleaseSemver(version);
+  if (!parsed) return false;
+  return parsed.minor >= 4 || (parsed.minor === 3 && parsed.patch >= 10);
+}
+
 export function isReleaseVersion(version) {
-  const patch = parsePatch03(version);
-  return patch !== undefined && patch >= 7;
+  const parsed = parseReleaseSemver(version);
+  return parsed !== undefined && (parsed.minor >= 4 || parsed.patch >= 7);
 }
 
 export function isGhidraVersion(version) {
-  const patch = parsePatch03(version);
-  return patch !== undefined && patch >= 8;
+  const parsed = parseReleaseSemver(version);
+  return parsed !== undefined && (parsed.minor >= 4 || parsed.patch >= 8);
 }
 
 export function isModernVersion(version) {
-  const patch = parsePatch03(version);
-  return patch !== undefined && patch >= 9;
+  const parsed = parseReleaseSemver(version);
+  return parsed !== undefined && (parsed.minor >= 4 || parsed.patch >= 9);
 }
 
 export function isNoSeedVersion(version) {
-  const patch = parsePatch03(version);
-  return patch !== undefined && patch >= 10;
+  const parsed = parseReleaseSemver(version);
+  return parsed !== undefined && (parsed.minor >= 4 || parsed.patch >= 10);
 }
 
 export function isActionsTransportVersion(version) {
-  const patch = parsePatch03(version);
-  return patch !== undefined && patch >= 11;
+  const parsed = parseReleaseSemver(version);
+  return parsed !== undefined && (parsed.minor >= 4 || parsed.patch >= 11);
 }
 
 export function isUserDataPreservedVersion(version) {
-  const patch = parsePatch03(version);
-  return patch !== undefined && patch >= 12;
+  const parsed = parseReleaseSemver(version);
+  return parsed !== undefined && (parsed.minor >= 4 || parsed.patch >= 12);
+}
+
+export function isWorkspaceToolsVersion(version) {
+  const parsed = parseReleaseSemver(version);
+  return parsed !== undefined && parsed.minor >= 4;
 }
 
 export function isRebuiltEditorReusable(version, revision) {
@@ -47,11 +63,15 @@ export function previousReleaseVersion(version, revision = '') {
   if (artifact === '0.3.12-rebuild2') return '0.3.12-rebuild1';
   if (artifact === '0.3.12-rebuild1') return '0.3.12';
   if (version === '0.3.13') return revision ? '0.3.13' : '0.3.12-rebuild2';
-  const patch = parsePatch03(version);
-  if (patch === undefined || patch < 10) return '0.3.9';
+  const parsed = parseReleaseSemver(version);
+  if (!parsed) return '0.3.9';
   if (revision && isValidRevision(revision)) {
     const revNum = Number(revision.slice(7));
     return revNum > 1 ? `${version}-rebuild${revNum - 1}` : version;
   }
-  return `0.3.${patch - 1}`;
+  if (parsed.minor === 4) {
+    return parsed.patch === 0 ? '0.3.16-rebuild1' : `0.4.${parsed.patch - 1}`;
+  }
+  if (parsed.patch < 10) return '0.3.9';
+  return `0.3.${parsed.patch - 1}`;
 }

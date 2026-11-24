@@ -7,11 +7,13 @@ import {
   isNoSeedVersion,
   isActionsTransportVersion,
   isUserDataPreservedVersion,
+  isWorkspaceToolsVersion,
+  isSupportedReleaseVersion,
   isRebuiltEditorReusable,
   previousReleaseVersion,
 } from '../scripts/release-policy.mjs';
 
-test('release-policy covers historical 0.3.x versions and generalizes cleanly to 0.3.15+', () => {
+test('release-policy covers historical 0.3.x versions and generalizes cleanly to 0.4.x', () => {
   assert.equal(isReleaseVersion('0.3.6'), false);
   assert.equal(isReleaseVersion('0.3.7'), true);
   assert.equal(isGhidraVersion('0.3.7'), false);
@@ -27,10 +29,23 @@ test('release-policy covers historical 0.3.x versions and generalizes cleanly to
   assert.equal(isUserDataPreservedVersion('0.3.15'), true);
   assert.equal(isUserDataPreservedVersion('0.3.20'), true);
 
+  assert.equal(isWorkspaceToolsVersion('0.3.16'), false);
+  assert.equal(isWorkspaceToolsVersion('0.4.0'), true);
+  assert.equal(isSupportedReleaseVersion('0.3.9'), false);
+  assert.equal(isSupportedReleaseVersion('0.3.16'), true);
+  assert.equal(isSupportedReleaseVersion('0.4.0'), true);
+  assert.equal(isReleaseVersion('0.4.0'), true);
+  assert.equal(isGhidraVersion('0.4.0'), true);
+  assert.equal(isModernVersion('0.4.0'), true);
+  assert.equal(isNoSeedVersion('0.4.0'), true);
+  assert.equal(isActionsTransportVersion('0.4.0'), true);
+  assert.equal(isUserDataPreservedVersion('0.4.0'), true);
+
   assert.equal(isRebuiltEditorReusable('0.3.11', 'rebuild1'), false);
   assert.equal(isRebuiltEditorReusable('0.3.12', 'rebuild2'), true);
   assert.equal(isRebuiltEditorReusable('0.3.15', 'rebuild1'), true);
   assert.equal(isRebuiltEditorReusable('0.3.15', ''), false);
+  assert.equal(isRebuiltEditorReusable('0.4.0', 'rebuild1'), true);
 
   assert.equal(previousReleaseVersion('0.3.12', ''), '0.3.11');
   assert.equal(previousReleaseVersion('0.3.12', 'rebuild1'), '0.3.12');
@@ -40,4 +55,7 @@ test('release-policy covers historical 0.3.x versions and generalizes cleanly to
   assert.equal(previousReleaseVersion('0.3.15', ''), '0.3.14');
   assert.equal(previousReleaseVersion('0.3.15', 'rebuild1'), '0.3.15');
   assert.equal(previousReleaseVersion('0.3.15', 'rebuild2'), '0.3.15-rebuild1');
+  assert.equal(previousReleaseVersion('0.4.0', ''), '0.3.16-rebuild1');
+  assert.equal(previousReleaseVersion('0.4.0', 'rebuild1'), '0.4.0');
+  assert.equal(previousReleaseVersion('0.4.1', ''), '0.4.0');
 });
