@@ -3,6 +3,7 @@
   "version": "0.3.16",
   "supervisorSha256": "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7",
   "launcherSha256": "0994851131e4e02d8f6e3485ac16577666f1a0a338ba8f71e5c7fd15d21872d4",
+  "mcpNodeWorkerSha256": "44194a16a83fd6fb911c5c0cca2d68c5419ad0d623fe96db24e4d8fbf158b0fc",
   "baseline": {
     "name": "Ned-0.3.6-rebuild1-win-x64.exe",
     "bytes": 1176899012,
@@ -10,7 +11,7 @@
     "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d"
   },
   "optimizerSha256": "6b9a223237c968bb6669e35429a2f619b8d46716c1c830f497386e4ea7256de3",
-  "reportSha256": "feeaf886e11d2175ddb875cf76df51d795ec8951b1f3bbea035d6d4c249f79d7",
+  "reportSha256": "7d11b0acb755d42811fef90dd7bedad5b8797be2c78630e603494622bb050aba",
   "components": {
     "openviking": {
       "originalManifestSha256": "bd4d0e02913ce85d78d8b26b4cc016001043982ba280c2793b9bc0cf7a766d71",
@@ -19,7 +20,7 @@
     },
     "mcp": {
       "originalManifestSha256": "7a6d874cf3b0496b9cab29df216a8c3f55a71e0d4313a1907a79731349bcb27f",
-      "manifestSha256": "e9ca7b287740bf0de0cdef850209ba1082fdb0c5e79773e11458c0a1a72915f9",
+      "manifestSha256": "52dc98072b2d5b9be188de558e664b46126723a386ed4599ae827c039f1d2614",
       "files": 21028
     },
     "rea": {
