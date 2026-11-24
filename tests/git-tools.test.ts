@@ -81,4 +81,10 @@ test('inspection streams bounded status and previews without copying large packs
   assert.equal(diff.status,'ok'); assert.match(diff.preview ?? '', /changed/);
   const show = await tools.inspect(project,{operation:'show',revision:'HEAD'});
   assert.equal(show.status,'ok'); assert.match(show.preview ?? '', /original/);
+  await mkdir(path.join(project, '.vscode'), { recursive: true });
+  await writeFile(path.join(project, '.vscode', 'settings.json'), '{"editor.tabSize":2}\n');
+  const vscodeStatus = await tools.inspect(project, { operation: 'status', paths: ['.vscode/settings.json'] });
+  assert.equal(vscodeStatus.status, 'ok');
+  assert.deepEqual(vscodeStatus.records, ['?? .vscode/settings.json']);
+  await assert.rejects(tools.inspect(project, { operation: 'status', paths: ['.git/config'] }), /메타데이터/);
 });

@@ -73,3 +73,29 @@ test('origin-form HTTP proxy requests with the owned model Host header are accep
  const status=await new Promise<number>((resolve,reject)=>{const r=request(f.proxy,{method:'POST',path:'/v1/chat/completions',headers:{Host:new URL(f.connection.baseUrl).host,Authorization:'Bearer '+f.connection.token,'Content-Type':'application/json'}},res=>{res.resume();res.once('end',()=>resolve(res.statusCode!));});r.once('error',reject);r.end(data);});
  assert.equal(status,200);assert.equal(f.calls.length,1);
 });
+
+test('providers defaultModel matches display name or provider/key, validates defaultVariant, and ZedModels lets request options override defaults',async t=>{
+ const f=await fixture(t);
+ // Request-level temperature and nested chat_template_kwargs override model defaults while preserving unselected keys.
+ const res=await f.post({model:f.connection.models[0].name,messages:[{role:'user',content:'hi'}],parallel_tool_calls:false,chat_template_kwargs:{custom_flag:true}});
+ assert.equal(res.status,200);
+ assert.equal(f.calls[0].body.parallel_tool_calls,false);
+ assert.equal(f.calls[0].body.chat_template_kwargs.enable_thinking,false);
+ assert.equal(f.calls[0].body.chat_template_kwargs.custom_flag,true);
+
+ const parsedByBase=configSchema.parse({schemaVersion:2,defaultModel:'Second · Second Qwen',providers:{
+  first:{name:'First',settings:{baseURL:'http://127.0.0.1:8001/v1',apiKey:'k1'},models:{m1:{name:'First Qwen',modelID:'q1'}}},
+  second:{name:'Second',settings:{baseURL:'http://127.0.0.1:8002/v1',apiKey:'k2'},models:{m2:{name:'Second Qwen',modelID:'q2',variants:{fast:{reasoningEffort:'low'}}}}},
+ },defaultVariant:'fast'});
+ assert.equal(parsedByBase.model.id,'q2');
+ assert.equal(parsedByBase.defaultVariant,'fast');
+
+ const parsedBySlash=configSchema.parse({schemaVersion:2,defaultModel:'second/m2',providers:{
+  first:{name:'First',settings:{baseURL:'http://127.0.0.1:8001/v1',apiKey:'k1'},models:{m1:{name:'First Qwen',modelID:'q1'}}},
+  second:{name:'Second',settings:{baseURL:'http://127.0.0.1:8002/v1',apiKey:'k2'},models:{m2:{name:'Second Qwen',modelID:'q2'}}},
+ }});
+ assert.equal(parsedBySlash.model.id,'q2');
+
+ assert.throws(()=>configSchema.parse({schemaVersion:2,defaultModel:'Nonexistent Model',providers:{first:{settings:{baseURL:'http://127.0.0.1:8001/v1',apiKey:'k1'},models:{m1:{modelID:'q1'}}}}}));
+ assert.throws(()=>configSchema.parse({schemaVersion:2,defaultVariant:'missing-variant',providers:{first:{settings:{baseURL:'http://127.0.0.1:8001/v1',apiKey:'k1'},models:{m1:{modelID:'q1',variants:{fast:{}}}}}}}));
+});

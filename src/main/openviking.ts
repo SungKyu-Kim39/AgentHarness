@@ -3,7 +3,7 @@ import pythonRuntime from '../../python-runtime-lock.json';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
 import { randomBytes, createHash } from 'node:crypto';
-import { readFile, mkdir, unlink } from 'node:fs/promises';
+import { readFile, readdir, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { atomicJSON } from './config';
 import { OpenVikingGateway } from './openviking-gateway';
@@ -191,6 +191,9 @@ export class OpenVikingService implements KnowledgeService {
     this.baseUrl = `http://127.0.0.1:${port}`; this.token = randomBytes(32).toString('hex');
     const gateway = this.gateway; const embedding = config.openViking!.embedding; const vlm = config.openViking!.vlm ?? config.model;
     this.diagnosticSecrets = [this.token, gateway.token, embedding.apiKey, vlm.apiKey, config.model.apiKey].filter(Boolean);
+    for (const stale of await readdir(folder).catch(() => [])) {
+      if (/^runtime-[a-f0-9]{16}\.json$/.test(stale)) await unlink(path.join(folder, stale)).catch(() => {});
+    }
     this.configFile = path.join(folder, `runtime-${randomBytes(8).toString('hex')}.json`);
     await atomicJSON(this.configFile, {
       storage: { workspace, agfs: { backend: 'local' }, vectordb: { backend: 'local', name: 'context' } },

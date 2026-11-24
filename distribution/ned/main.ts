@@ -150,7 +150,10 @@ async function start() {
   const connection = await runtime.connection([path.join(resources, process.platform === 'win32' ? 'opencode-cli.exe' : 'opencode-cli')]);
   const confirmed = new Set<string>();
   owner = new AgentOwner(root, runtime, connection, async directory => {
-    if (confirmed.has(directory)) return true;
+    if (confirmed.has(directory) || runtime.isProjectAuthorized(directory)) {
+      confirmed.add(directory);
+      return true;
+    }
     if (!await runtime.approveOperation('Ned 프로젝트 접근 승인', directory + '\n이 폴더 안의 읽기·검색을 허용합니다. 이후 동작은 선택한 Ned 권한 모드를 따릅니다.')) return false;
     confirmed.add(directory); return true;
   });
@@ -189,7 +192,12 @@ async function start() {
           return result.canceled ? undefined : result.filePaths[0];
         },
         canonical: directory => runtime.canonicalProject(directory),
-        dispatch: directory => dispatchProject(projectOpenCommand(resources, profile.data, directory), profile.env),
+        dispatch: async directory => {
+          const existed = confirmed.has(directory);
+          confirmed.add(directory);
+          try { await dispatchProject(projectOpenCommand(resources, profile.data, directory), profile.env); }
+          catch (error) { if (!existed) confirmed.delete(directory); throw error; }
+        },
         selected: directory => { confirmed.add(directory); },
       });
     } catch (error) { await messageBox({ type: 'error', title: 'Ned 프로젝트 열기', message: errorMessage(error) }); }
@@ -225,7 +233,12 @@ async function start() {
       { label: 'Python·Conda 실행과 환경 기억', click: () => { void shell.openPath(path.join(resources, 'ned/python-conda.md')); } },
       { label: 'Git 커밋·Ghidra·외부 자료 읽기', click: () => { void shell.openPath(path.join(resources, 'ned/git-and-binary-analysis.md')); } },
     ] },
-    { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: () => setPermission('ask') },
+    { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: async () => {
+      confirmed.clear();
+      owner?.clearAuthorized();
+      await runtime.revokeProjectApprovals().catch(() => {});
+      await setPermission('ask');
+    } },
     {
       id: 'memory-status',
       label: formatMemoryMenuLabel(),

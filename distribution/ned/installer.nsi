@@ -148,9 +148,45 @@ Function VerifyInstallDirectory
   previous_missing:
 FunctionEnd
 
+!macro NedCheckUnlocked FILEPATH
+  ${If} ${FileExists} "${FILEPATH}"
+    StrCpy $1 "${FILEPATH}"
+    System::Call 'kernel32::CreateFileW(w "$1", i 0x40000000, i 0, p 0, i 3, i 0x80, p 0) p .r2'
+    ${If} $2 == -1
+    ${OrIf} $2 == 0
+      StrCpy $5 "locked"
+    ${Else}
+      System::Call 'kernel32::CloseHandle(p r2)'
+    ${EndIf}
+  ${EndIf}
+!macroend
+
+Function CheckInstallNotRunning
+  StrCpy $5 "ok"
+  !insertmacro NedCheckUnlocked "$INSTDIR\Ned.exe"
+  ${If} $5 == "ok"
+    !insertmacro NedCheckUnlocked "$INSTDIR\resources\zed\Zed.exe"
+  ${EndIf}
+  ${If} $5 == "ok"
+    !insertmacro NedCheckUnlocked "$INSTDIR\resources\opencode-cli.exe"
+  ${EndIf}
+  ${If} $5 == "ok"
+    !insertmacro NedCheckUnlocked "$INSTDIR\resources\runtime\windows-x64\openviking\python\python.exe"
+  ${EndIf}
+  ${If} $5 == "ok"
+    !insertmacro NedCheckUnlocked "$INSTDIR\resources\runtime\windows-x64\mcp\python\python.exe"
+  ${EndIf}
+  ${If} $5 == "locked"
+    MessageBox MB_OK|MB_ICONSTOP "Ned 또는 편집기가 실행 중입니다. Zed 편집기와 시스템 트레이의 Ned를 모두 종료한 뒤 설치를 다시 실행하세요. 기존 파일과 사용자 데이터는 보존했습니다." /SD IDOK
+    SetErrorLevel 1
+    Abort
+  ${EndIf}
+FunctionEnd
+
 Section "Ned"
   SetShellVarContext current
   Call VerifyInstallDirectory
+  Call CheckInstallNotRunning
   ClearErrors
   CreateDirectory "$INSTDIR"
   ${If} ${Errors}
@@ -174,7 +210,7 @@ Section "Ned"
   IfFileExists "$INSTDIR\resources\runtime\windows-x64\agent-desktop\agent-desktop.exe" 0 install_failed
   Goto install_verified
   install_failed:
-    MessageBox MB_OK|MB_ICONSTOP "Ned install is incomplete. Check free disk space and the installation folder. The bundled editor or host is missing. User settings were retained." /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "Ned 설치가 완료되지 않았습니다. 디스크 여유 공간, 설치 폴더 권한 및 실행 중인 프로그램 여부를 확인하고 다시 시도하세요. 사용자 설정과 데이터는 보존했습니다." /SD IDOK
     SetErrorLevel 1
     Abort
   install_verified:
@@ -211,7 +247,7 @@ Section "Ned"
     Exec '"$SYSDIR\notepad.exe" "$APPDATA\Ned\config-import.json"'
     Goto import_done
   config_failed:
-    MessageBox MB_OK|MB_ICONSTOP "Ned could not prepare agent-config.json from the installer folder. Check folder permissions and retry. Existing user data was retained." /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "설치 폴더의 agent-config.json을 준비하지 못했습니다. 폴더 권한과 파일 형식을 확인하고 다시 시도하세요. 기존 사용자 데이터는 보존했습니다." /SD IDOK
     SetErrorLevel 1
     Abort
   import_done:

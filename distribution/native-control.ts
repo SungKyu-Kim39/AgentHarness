@@ -134,7 +134,10 @@ export class NativeRuntime {
       progress('skills');
       await this.tools.start((done,total)=>{if(done%100===0||done===total)progress('skills',`${done}/${total}개 문서`);});
       this.engineConfig = JSON.stringify(engineConfiguration(config, this.models, [], undefined, this.tools));
-      this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => { for (const listener of this.knowledgeListeners) listener(); });
+      this.knowledge = new OpenVikingService(path.join(this.resources, 'runtime'), this.root, () => {
+        if (this.knowledge?.isReady()) void this.memory?.flushPendingCommits().catch(() => {});
+        for (const listener of this.knowledgeListeners) listener();
+      });
       this.memory = new SessionMemoryManager({
         root: this.root,
         policy: resolveMemoryPolicy(config),
@@ -189,9 +192,14 @@ export class NativeRuntime {
     if (selected === path.parse(selected).root || selected === this.root || selected.startsWith(this.root + path.sep) || selected.startsWith(this.resources + path.sep)) throw new Error('프로젝트로 사용할 수 없는 앱 관리 경로입니다.');
     return selected;
   }
+  isProjectAuthorized(directory: string) { return this.projects.has(directory); }
   async authorizeProject(directory: string) {
     const selected = await this.canonicalProject(directory);
     this.projects.add(selected); this.activeProject = selected; await atomicJSON(path.join(this.root, 'approved-projects.json'), [...this.projects]);
+  }
+  async revokeProjectApprovals() {
+    this.projects.clear();
+    await atomicJSON(path.join(this.root, 'approved-projects.json'), []);
   }
   private turnHistory = new Map<string, string[]>();
   setTurnText(session: string, text: string) {

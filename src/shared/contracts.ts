@@ -68,25 +68,71 @@ const rawConfigSchema = z.object({
 type RawConfig = z.infer<typeof rawConfigSchema>;
 type ConfiguredModel = z.infer<typeof namedModelSchema>;
 export type AgentConfig = Omit<RawConfig, 'model' | 'models'> & { model: z.infer<typeof modelSchema>; models?: ConfiguredModel[] };
+function buildProviderModels(providers: NonNullable<RawConfig['providers']>) {
+  const raw = Object.entries(providers).flatMap(([providerID, provider]) =>
+    Object.entries(provider.models).map(([modelKey, definition]) => {
+      const baseName = `${provider.name ?? providerID} · ${definition.name ?? modelKey}`.slice(0, 128);
+      return {
+        baseName,
+        rawModelName: definition.name,
+        name: baseName,
+        providerID,
+        modelKey,
+        baseUrl: provider.settings.baseURL,
+        apiKey: (provider.settings.apiKey ?? provider.settings.APIKey)!,
+        id: definition.modelID ?? modelKey,
+      };
+    }),
+  );
+  return raw.map((m, index) => ({ ...m, name: `${m.baseName.slice(0, 119)} [${index + 1}]` }));
+}
+function matchProviderModel<T extends { name: string; baseName: string; rawModelName?: string; providerID: string; modelKey: string }>(entries: readonly T[], target: string): T | undefined {
+  const exact = entries.find(m => m.name === target || `${m.providerID}/${m.modelKey}` === target);
+  if (exact) return exact;
+  const byBase = entries.filter(m => m.baseName === target);
+  if (byBase.length === 1) return byBase[0];
+  const byKey = entries.filter(m => m.modelKey === target || m.rawModelName === target);
+  if (byKey.length === 1) return byKey[0];
+  return undefined;
+}
 export const configSchema = rawConfigSchema.superRefine((data, ctx) => {
   if (!data.model && !data.models?.length && !Object.keys(data.providers ?? {}).length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['providers'], message: 'LLM 모델을 한 개 이상 등록하세요.' });
   if (data.models && new Set(data.models.map(m => m.name)).size !== data.models.length) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['models'], message: 'LLM 표시 이름은 고유해야 합니다.' });
-  if (data.defaultModel && !data.providers && !data.models?.some(m => m.name === data.defaultModel)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultModel'], message: '등록된 모델 이름을 선택하세요.' });
+  const providerEntries = data.providers ? buildProviderModels(data.providers) : [];
+  if (data.defaultModel) {
+    const matched = providerEntries.length
+      ? !!matchProviderModel(providerEntries, data.defaultModel)
+      : !!data.models?.some(m => m.name === data.defaultModel);
+    if (!matched) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultModel'], message: '등록된 모델 이름을 선택하세요.' });
+  }
+  let selectedDefinition: z.infer<typeof providerModel> | undefined;
   if (data.model && (typeof data.model === 'string' || 'providerID' in data.model)) {
     const selection = typeof data.model === 'string' ? { providerID: data.model.split('/')[0], model: data.model.slice(data.model.indexOf('/') + 1) } : data.model;
     const definition = data.providers?.[selection.providerID]?.models[selection.model];
+    selectedDefinition = definition;
     if ('variant' in selection && selection.variant && definition?.variants && !definition.variants.some(v => v.id === selection.variant)) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['model', 'variant'], message: '등록된 variant ID를 지정하세요.' });
     if (!definition) ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['model'], message: '등록된 providers와 models의 별칭을 지정하세요.' });
+  } else if (providerEntries.length) {
+    const picked = (data.defaultModel ? matchProviderModel(providerEntries, data.defaultModel) : undefined) ?? providerEntries[0];
+    selectedDefinition = picked ? data.providers?.[picked.providerID]?.models[picked.modelKey] : undefined;
+  }
+  if (data.defaultVariant && selectedDefinition?.variants && !selectedDefinition.variants.some(v => v.id === data.defaultVariant)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['defaultVariant'], message: '등록된 variant ID를 지정하세요.' });
   }
 }).transform((data): AgentConfig => {
-  const fromProviders = Object.entries(data.providers ?? {}).flatMap(([providerID, provider]) => Object.entries(provider.models).map(([modelKey, definition]) => ({
-    name: `${provider.name ?? providerID} · ${definition.name ?? modelKey}`.slice(0, 128), providerID, modelKey,
-    baseUrl: provider.settings.baseURL, apiKey: (provider.settings.apiKey ?? provider.settings.APIKey)!, id: definition.modelID ?? modelKey,
-  })));
-  const models = fromProviders.length ? fromProviders.map((m, index) => ({ ...m, name: `${m.name.slice(0, 119)} [${index + 1}]` })) : data.models;
+  const providerEntries = data.providers ? buildProviderModels(data.providers) : [];
+  const models: ConfiguredModel[] | undefined = providerEntries.length
+    ? providerEntries.map(({ name, providerID, modelKey, baseUrl, apiKey, id }) => ({ name, providerID, modelKey, baseUrl, apiKey, id }))
+    : data.models;
   const selection = typeof data.model === 'string' ? { providerID: data.model.split('/')[0], model: data.model.slice(data.model.indexOf('/') + 1) } : data.model && 'providerID' in data.model ? data.model : undefined;
-  const model = models?.find(m => selection ? m.providerID === selection.providerID && m.modelKey === selection.model : m.name === data.defaultModel) ?? models?.[0] ?? (data.model as z.infer<typeof modelSchema>);
-  return { ...data, ...(selection && 'variant' in selection && selection.variant ? { defaultVariant: selection.variant } : {}), ...(models ? { models, defaultModel: models.find(m => m === model)?.name ?? data.defaultModel } : {}), model: { baseUrl: model.baseUrl, apiKey: model.apiKey, id: model.id } };
+  const matchedProviderEntry = !selection && data.defaultModel && providerEntries.length ? matchProviderModel(providerEntries, data.defaultModel) : undefined;
+  const model = selection
+    ? models?.find(m => m.providerID === selection.providerID && m.modelKey === selection.model)
+    : matchedProviderEntry
+      ? models?.find(m => m.name === matchedProviderEntry.name)
+      : models?.find(m => m.name === data.defaultModel) ?? models?.[0] ?? (data.model as z.infer<typeof modelSchema>);
+  const resolved = model ?? models?.[0] ?? (data.model as z.infer<typeof modelSchema>);
+  return { ...data, ...(selection && 'variant' in selection && selection.variant ? { defaultVariant: selection.variant } : {}), ...(models ? { models, defaultModel: models.find(m => m === resolved)?.name ?? data.defaultModel } : {}), model: { baseUrl: resolved.baseUrl, apiKey: resolved.apiKey, id: resolved.id } };
 });
 export type Phase =
   | "idle"

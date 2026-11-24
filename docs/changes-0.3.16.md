@@ -35,3 +35,26 @@ Ned 0.3.16은 실사용 중 확인된 `ned_host_browser_check` 워커 즉시 종
 - **Visual Studio 2022(`17.x`) MSBuild 지원 및 리소스 정리**:
   - [`distribution/vs-build.ts`](../distribution/vs-build.ts)의 `vswhere` 탐색 범위를 `[15.0,18.0)`으로 넓혀 기존 VS2017/2019에 더해 **Visual Studio 2022** MSBuild까지 지원합니다.
   - [`distribution/python-projects.ts`](../distribution/python-projects.ts)의 완료된 작업 메모리 상한(64건), [`distribution/ned/zed-history.ts`](../distribution/ned/zed-history.ts)의 임시 `zed-source.db` 정리, [`scripts/ned-package.mjs`](../scripts/ned-package.mjs)의 로컬·릴리스 문서 패키징 구성을 정비했습니다.
+
+## 추가 전면 재검토 보완 반영 (0.3.16 rebuild1)
+
+동일 0.3.16 버전(검증된 소스 빌드 편집기 `Ned-editor-0.3.16.exe` 유지)에서 코드베이스 전체를 2회 추가 재검토해 확인한 결함과 경계 보완 사항을 모두 반영했습니다.
+
+- **로컬 브라우저 검증(`browser_check`) IPv6 루프백 지원 및 DevTools 오류 진단 보강**:
+  - [`src/main/browser-proxy.ts`](../src/main/browser-proxy.ts)에서 `http://[::1]:포트` 대상을 허용(내부 예약 포트 차단 유지)하고, Vite·Next.js 등이 IPv6 루프백(`::1`)에만 바인딩된 환경에서 `http://localhost:포트` 요청이 `127.0.0.1` 연결 거부(`ECONNREFUSED`)를 만나면 외부 DNS 조회 없이 `::1` IP 리터럴로 자동 폴백합니다.
+  - [`scripts/mcp-node-worker.cjs`](../scripts/mcp-node-worker.cjs)(릴리스 런타임 manifest 반영 포함)의 호스트 해석 예외 목록에 `::1`을 추가하고, DevTools 워커 동적 `import()` 실패 시 민감 경로를 제외한 `error.code`/`error.name`을 표준 오류 마커로 기록합니다.
+- **모델 설정 선택·옵션 병합 정확도 보강**:
+  - [`src/shared/contracts.ts`](../src/shared/contracts.ts)에서 `providers` 스키마와 `defaultModel`을 함께 사용할 때 내부 인덱스 접미사(`[1]`, `[2]`) 없이 표시명·`providerID/modelKey`·고유 모델명으로 정확히 매칭하고, 없는 모델명이나 선택 모델에 없는 최상위 `defaultVariant`를 검증 단계에서 거부합니다.
+  - [`distribution/ned/zed-models.ts`](../distribution/ned/zed-models.ts)에서 기본 Zed Agent 요청 전달 시 모델 기본 옵션을 먼저 펼치고 요청 본문 파라미터(`temperature`, `max_tokens`, 중첩 `chat_template_kwargs` 등)가 우선 적용되도록 순서를 바로잡았습니다.
+- **개인화 대화 기억 종료 보존·Compaction opt-out 유지·회상 마스킹**:
+  - [`src/main/session-memory.ts`](../src/main/session-memory.ts)와 [`distribution/native-control.ts`](../distribution/native-control.ts)에서 5턴 이하 짧은 세션으로 앱을 닫을 때 OpenViking 종료 직전에 비동기 `/commit`을 던지고 `uncommittedTurns`를 지워버리지 않고 디스크에 보존한 뒤, 다음 실행에서 OpenViking이 `ready` 상태가 되면 `flushPendingCommits()`로 안전하게 커밋합니다.
+  - 대화가 길어져 Compaction으로 초기 메시지가 치환된 이후에도 `memory-sync.json`에 기록된 활성 세션의 `sessionOptedOut` 상태를 확인해 회상을 계속 차단하며, `formatRecalledMemories`가 OpenViking에서 불러온 프로필·초록 본문에도 `scrubMemoryText`를 적용해 잔존 시크릿이 프롬프트에 유입되지 않도록 막습니다.
+- **고위험 셸 가드·읽기 전용 Git 필터·승인 일관성 및 한글 MSBuild 보강**:
+  - [`distribution/host-tools.ts`](../distribution/host-tools.ts)의 `isHighRiskShellCommand`가 PowerShell 스크립트 블록(`& { ... }`, `{ ... }`), 중첩 `$(...)`, 공백 없는 `cmd /c"..."`, `:`/`=` 결합 PowerShell 옵션(`-ec:...`)과 전원·예약 작업 제어 명령(`shutdown`, `Restart-Computer`, `Stop-Computer`, `logoff`, `schtasks`, `*-ScheduledTask`)까지 전체 권한 모드에서 명시적 승인 대상으로 잡도록 강화했습니다.
+  - [`src/main/files.ts`](../src/main/files.ts)와 [`distribution/git-tools.ts`](../distribution/git-tools.ts)에서 `ProjectFiles.resolve`의 `ENOENT` 허용(`allowMissing`)과 쓰기 보호를 분리해, 읽기 전용 `git_inspect`가 `.vscode/settings.json`·`.ned/skills/...` 같은 프로젝트 설정·스킬 파일 경로 필터를 정상 조회할 수 있게 수정했습니다(`.git` 메타데이터 필터는 차단 유지).
+  - [`distribution/ned/main.ts`](../distribution/ned/main.ts)·[`distribution/ned/owner.ts`](../distribution/ned/owner.ts)·[`distribution/native-control.ts`](../distribution/native-control.ts)에서 `approved-projects.json`에 저장된 프로젝트는 재시작 후 중복 승인창을 띄우지 않고, 트레이 `"프로젝트 폴더 열기"`는 편집기 전달 전 선승인(실패 시 원복)으로 경합을 없애며, `"모든 자동 승인 해제 · 승인 요청으로 전환"` 선택 시에는 프로젝트 승인 캐시까지 함께 초기화합니다.
+  - [`distribution/vs-build.ts`](../distribution/vs-build.ts)에서 `MSBuild.exe`에 `/utf8output`과 `StringDecoder('utf8')`을 적용해 한글 Windows 빌드 로그 깨짐을 방지했습니다.
+- **설치기 잠금 사전 검사·통합 터미널 작업 등록·자원 수명 및 진단 정리**:
+  - [`distribution/ned/installer.nsi`](../distribution/ned/installer.nsi)가 업데이트 시 기존 `resources`를 지우기 전에 실행 중인 `Ned.exe`·`Zed.exe`·`opencode-cli.exe`·번들 `python.exe` 파일 잠금을 `CreateFileW`로 먼저 확인해 실행 중이면 기존 설치를 훼손하지 않고 한국어 안내창과 함께 중단하며, 남은 영문 오류 안내도 한국어로 통일했습니다.
+  - [`distribution/ned/profile.ts`](../distribution/ned/profile.ts)의 `prepareEditor()`에서 누락되어 있던 `ensureTerminalTasks(data)` 호출을 연결해 Windows Zed 작업 목록에 `Ned: PowerShell`과 `Ned: CMD`가 정상 등록되도록 수정했습니다.
+  - [`distribution/desktop-tools.ts`](../distribution/desktop-tools.ts)(프로젝트 전환 시 비참조 관찰 세션 자동 재시작 및 `discard` 단일 소유권), [`distribution/rea-ghidra.ts`](../distribution/rea-ghidra.ts)(취소·오류 이중 `dispose` 방지), [`src/main/openviking-errors.ts`](../src/main/openviking-errors.ts)(짧은/플레이스홀더 키 진단 오마스킹 방지), [`src/main/openviking.ts`](../src/main/openviking.ts)(비정상 종료 잔여 `runtime-*.json` 정리), [`src/main/skills.ts`](../src/main/skills.ts)(무프로젝트 `read()` 실시간 글로벌 폴백 및 서로게이트 쌍 경계 보정), [`distribution/ned/agent.ts`](../distribution/ned/agent.ts)(세션 추적 상한 64건), [`distribution/ned/zed-history.ts`](../distribution/ned/zed-history.ts)(임시 SQLite `-wal`/`-shm` 정리)를 일괄 정비했습니다.

@@ -54,7 +54,10 @@ export class ZedModels {
           const body=JSON.parse(Buffer.concat(chunks).toString('utf8'));
           const selected=entries.get(body.model);if(!selected){res.writeHead(403).end();return;}
           if(this.stopped||res.destroyed)return;
-          const data=Buffer.from(JSON.stringify({...body,...selected.options,model:selected.id}));
+          const mergedKwargs = selected.options.chat_template_kwargs && typeof selected.options.chat_template_kwargs === 'object' && !Array.isArray(selected.options.chat_template_kwargs) && body.chat_template_kwargs && typeof body.chat_template_kwargs === 'object' && !Array.isArray(body.chat_template_kwargs)
+            ? { chat_template_kwargs: { ...(selected.options.chat_template_kwargs as Record<string, unknown>), ...(body.chat_template_kwargs as Record<string, unknown>) } }
+            : {};
+          const data=Buffer.from(JSON.stringify({...selected.options,...body,...mergedKwargs,model:selected.id}));
           upstream=request(selected.gateway.baseUrl+'/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+selected.gateway.token,'Content-Type':'application/json','Content-Length':data.length}},response=>{
             res.writeHead(response.statusCode??502,{'Content-Type':response.headers['content-type']??'application/json','Cache-Control':'no-store'});
             response.on('error',()=>res.destroy());response.pipe(res);

@@ -82,7 +82,11 @@ export class DesktopTools {
       }
       let context = this.sessions.get(session);
       if (context && context.client.available === false) { await this.discard(session,context); context=undefined; }
-      if (context && context.project !== project) throw new Error('Desktop 세션의 프로젝트가 변경되었습니다.');
+      if (context && context.project !== project) {
+        if (args.ref_id) throw new Error('Desktop 세션의 프로젝트가 변경되었습니다.');
+        await this.discard(session, context);
+        context = undefined;
+      }
       if (!context) {
         try { context = await this.create(project); this.sessions.set(session, context); }
         catch(error) { await this.diagnostic(name,'start-failed',!this.uncertain); throw error; }
@@ -173,8 +177,13 @@ export class DesktopTools {
     await atomicJSON(path.join(this.root,'diagnostics','desktop-status.json'),{schemaVersion:1,component:'agent-desktop',recordedAt:new Date().toISOString(),tool,code,stopConfirmed}).catch(()=>{});
   }
   private async discard(session: string, ctx: DesktopSession) {
-    try { await ctx.client.close(); ctx.refs.clear(); await rm(ctx.home,{recursive:true,force:true}); if(this.sessions.get(session)===ctx)this.sessions.delete(session); }
-    catch(error) { this.uncertain=true; throw error; }
+    if (this.sessions.get(session) !== ctx) return;
+    this.sessions.delete(session);
+    try {
+      await ctx.client.close();
+      ctx.refs.clear();
+      await rm(ctx.home, { recursive: true, force: true, maxRetries: 4, retryDelay: 50 });
+    } catch (error) { this.uncertain = true; throw error; }
   }
   async cancel(session: string) {
     this.blocked.add(session); this.launchAborts.get(session)?.abort(); const ctx = this.sessions.get(session); if (!ctx) return;

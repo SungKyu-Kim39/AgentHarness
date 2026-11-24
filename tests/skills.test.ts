@@ -144,4 +144,16 @@ test('managed project skills are isolated and take precedence over user globals'
   assert.match(await tools.skills.read('mine','SKILL.md',0,second), /\nglobal$/);
   assert.equal((await tools.skills.userCatalog(first))[0].scope,'project');
   assert.equal((await tools.skills.userCatalog(second))[0].scope,'user');
+
+  // Newly added global skill is readable even when read() is called without project, and surrogate pairs are not split at 32000.
+  const liveDir = path.join(root, 'data/skills/live-global-surrogate');
+  await mkdir(liveDir, { recursive: true });
+  const body = 'a'.repeat(31999) + '🚀' + 'tail';
+  await writeFile(path.join(liveDir, 'SKILL.md'), '---\nname: live-global-surrogate\ndescription: live global test\n---\n' + body);
+  const page1 = await tools.skills.read('live-global-surrogate', 'SKILL.md', 0);
+  assert.ok(!page1.includes('\uFFFD'));
+  const nextMatch = /offset=(\d+)/.exec(page1);
+  assert.ok(nextMatch);
+  const page2 = await tools.skills.read('live-global-surrogate', 'SKILL.md', Number(nextMatch![1]));
+  assert.ok(page2.includes('🚀tail'));
 });

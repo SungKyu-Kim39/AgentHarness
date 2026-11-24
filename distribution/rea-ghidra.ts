@@ -105,15 +105,20 @@ export class ReaGhidra {
       return JSON.stringify({ source: 'morluto/rea', provider: 'ghidra', targetSha256: hash, tool, targetExecuted: false, result });
     } catch (error) {
       const current = this.sessions.get(session);
-      if (current && (signal?.aborted || !current.client.available)) { await this.dispose(current); this.sessions.delete(session); }
+      if (current && (signal?.aborted || !current.client.available)) { this.sessions.delete(session); await this.dispose(current); }
       throw error;
     } finally { this.busy = false; }
   }
   private async dispose(current: Session) {
     try { await current.client.close(); }
     catch (error) { this.uncertain = true; throw error; }
-    await rm(current.work, { recursive: true, force: true });
+    await rm(current.work, { recursive: true, force: true, maxRetries: 4, retryDelay: 50 });
   }
-  async cancel(session: string) { const current = this.sessions.get(session); if (current) { await this.dispose(current); this.sessions.delete(session); } }
-  async close() { this.stopped = true; this.abort.abort(); for (const [id] of this.sessions) await this.cancel(id); }
+  async cancel(session: string) {
+    const current = this.sessions.get(session);
+    if (!current) return;
+    this.sessions.delete(session);
+    await this.dispose(current);
+  }
+  async close() { this.stopped = true; this.abort.abort(); for (const id of [...this.sessions.keys()]) await this.cancel(id); }
 }

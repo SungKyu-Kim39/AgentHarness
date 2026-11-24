@@ -18,7 +18,7 @@ const hash = (value: string) =>
 const protectedParts = new Set([".git", ".opencode", ".zed", ".ned", ".vscode", "node_modules"]);
 export class ProjectFiles {
   constructor(readonly root: string) {}
-  async resolve(relative: string, writing = false): Promise<string> {
+  async resolve(relative: string, writing = false, options?: { allowMissing?: boolean }): Promise<string> {
     if (
       !relative ||
       path.isAbsolute(relative) ||
@@ -46,12 +46,13 @@ export class ProjectFiles {
         /^(opencode\.jsonc?|\.mcp\.json)$/i.test(parts.at(-1)!))
     )
       throw new Error("실행 설정과 내부 관리 파일의 수정은 차단됩니다.");
+    const allowMissing = writing || options?.allowMissing === true;
     const root = await realpath(this.root);
     let cursor = root;
     for (let i = 0; i < parts.length; i++) {
       cursor = path.join(cursor, parts[i]);
       const stat = await lstat(cursor).catch((e: NodeJS.ErrnoException) => {
-        if (writing && e.code === "ENOENT") return undefined;
+        if (allowMissing && e.code === "ENOENT") return undefined;
         throw e;
       });
       if (stat?.isSymbolicLink())

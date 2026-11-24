@@ -206,18 +206,31 @@ test('SessionMemoryManager deduplicates messages, commits on N turns / session s
   await manager.recallContext(queryMessages, 1024);
   assert.equal(recallCalls, 2);
 
-  // Sync 1 turn in s2, then close -> close flushes uncommitted session s2!
+  // Sync 1 turn in s2, then close -> close preserves uncommittedTurns on disk without racing OpenViking shutdown.
   await manager.syncAndMaybeCommit('s2');
   await manager.close();
-  assert.deepEqual(committed, ['ned-s1', 'ned-s2']);
+  assert.deepEqual(committed, ['ned-s1']);
 
-  // Persisted sync/status files must contain NO raw conversation text.
+  // Persisted sync/status files must contain NO raw conversation text and retain uncommitted s2.
   const syncRaw = await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8');
   assert.ok(!syncRaw.includes('빌드 스크립트'));
+  assert.equal(JSON.parse(syncRaw).sessions.s2.uncommittedTurns, 1);
+
+  // On next launch once OpenViking is ready, flushPendingCommits() safely commits deferred s2.
+  const restarted = new SessionMemoryManager({
+    root,
+    policy: { enabled: true, autoRecall: true, commitEveryTurns: 2 },
+    knowledge: () => fakeKnowledge,
+    fetchSessionInfo: async id => sessionInfo[id],
+    fetchSessionMessages: async id => sessionMsgs[id] ?? [],
+  });
+  await restarted.flushPendingCommits();
+  assert.deepEqual(committed, ['ned-s1', 'ned-s2']);
+  await restarted.close();
+
   const status = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-status.json'), 'utf8'));
-  assert.equal(status.commitsScheduled, 2);
-  assert.equal(status.syncedTurns, 3);
-  assert.equal(status.recallsInjected, 2);
+  assert.equal(status.commitsScheduled, 1);
+  assert.equal(status.recallsInjected, 0);
 
   // Degrades silently when OpenViking is not ready.
   ready = false;
@@ -371,10 +384,33 @@ test('turn and session opt-out skip both recall and capture/commit across reload
   );
   const reloaded = makeManager();
   await reloaded.load();
+  reloaded.onSessionActivated('sess-s');
+  // Even after compaction replaces the original opt-out message from chatMessages, recall remains disabled for sess-s.
+  assert.equal(
+    await reloaded.recallContext([{ role: 'user', content: '다음 보안 항목 확인해줘' }], 512),
+    undefined,
+  );
+  assert.equal(recallQueries.length, 1);
   await reloaded.syncAndMaybeCommit('sess-s', true);
   await reloaded.close();
   assert.equal(appended.length, 1);
   assert.equal(committed.length, 1);
+
+  // formatRecalledMemories must scrub secrets stored in legacy/manual profile or abstracts.
+  const redactor = new Redactor();
+  redactor.add('stored-intranet-secret-777');
+  const scrubbedRecall = formatRecalledMemories(
+    {
+      profile: '키 stored-intranet-secret-777 사용',
+      items: [{ uri: 'viking://user/local-user/memories/a.md', abstract: 'jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U', score: 0.9 }],
+    },
+    3500,
+    redactor,
+  );
+  assert.ok(scrubbedRecall);
+  assert.ok(!scrubbedRecall.includes('stored-intranet-secret-777'));
+  assert.ok(!scrubbedRecall.includes('eyJhbGciOi'));
+  assert.ok(scrubbedRecall.includes('[REDACTED_JWT]'));
 });
 
 test('scrubMemoryText masks JWT, PEM private keys, AWS keys, DB credentials, and spaced quoted passwords in both recall and storage', async t => {

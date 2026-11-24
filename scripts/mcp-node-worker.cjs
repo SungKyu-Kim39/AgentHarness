@@ -13,7 +13,7 @@ Object.assign(process.env, {
 });
 const flags = [
   '--proxy-server=' + config.proxy, '--proxy-bypass-list=<-loopback>',
-  '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1, EXCLUDE localhost', '--disable-quic',
+  '--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE 127.0.0.1, EXCLUDE localhost, EXCLUDE ::1', '--disable-quic',
   '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
   '--disable-background-networking', '--disable-component-update', '--disable-sync',
   '--disable-default-apps', '--no-first-run', '--no-default-browser-check',
@@ -35,5 +35,10 @@ if (config.service === 'playwright') {
 } else if (config.service === 'devtools') {
   const entry = path.join(config.node, 'chrome-devtools-mcp/build/src/bin/chrome-devtools-mcp.js');
   process.argv = [process.execPath, entry, '--headless', '--isolated', '--no-page-id-routing', '--no-usage-statistics', '--no-performance-crux', '--no-javascript-evaluation', '--no-file-navigations', '--no-category-webmcp', '--no-category-third-party', '--no-category-extensions', '--executable-path=' + config.browser, ...flags.map(flag => '--chrome-arg=' + flag)];
-  import(pathToFileURL(entry).href).catch(() => { console.error('Pinned DevTools worker failed'); process.exitCode = 1; });
+  import(pathToFileURL(entry).href).catch(error => {
+    const code = typeof error?.code === 'string' && /^[A-Z0-9_]{1,40}$/.test(error.code) ? error.code : '';
+    const name = typeof error?.name === 'string' && /^[A-Za-z0-9_]{1,40}$/.test(error.name) ? error.name : '';
+    console.error(['Pinned DevTools worker failed', code, name].filter(Boolean).join(' '));
+    process.exitCode = 1;
+  });
 } else throw new Error('Unknown pinned browser service');

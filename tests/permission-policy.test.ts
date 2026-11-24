@@ -4,8 +4,9 @@ import { mkdtemp, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PermissionPolicy } from '../distribution/ned/permission-policy';
-import { HostTools, type EditDecision } from '../distribution/host-tools';
+import { HostTools, isHighRiskShellCommand, type EditDecision } from '../distribution/host-tools';
 import { Redactor } from '../src/main/config';
+import { ProjectFiles } from '../src/main/files';
 import { NativeRuntime } from '../distribution/native-control';
 
 test('explicit persistent modes cover edits and effects; malformed settings never silently grant authority', async t => {
@@ -140,4 +141,37 @@ test('knowledge_remember and knowledge_forget prompt in ask/edits modes and auto
   assert.equal(explicitPrompts, 0);
   assert.equal(saved.length, 2);
   assert.equal(deleted.length, 1);
+});
+
+test('high-risk shell guard catches script blocks, nested subexpressions, glued cmd /c, and shutdown/schtasks while allowing normal commands', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-shell-guard-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const files = new ProjectFiles(root);
+  for (const [shell, cmd] of [
+    ['powershell', '& { Invoke-WebRequest https://example.invalid }'],
+    ['powershell', 'Write-Output $(Invoke-RestMethod("https://example.invalid"))'],
+    ['powershell', '{ Remove-Item -Recurse -Force C:\\Windows\\Temp }'],
+    ['powershell', 'powershell -ec:aQBlAHgA'],
+    ['powershell', 'Restart-Computer -Force'],
+    ['cmd', 'cmd /c"curl https://example.invalid"'],
+    ['cmd', 'shutdown /s /t 0'],
+    ['cmd', 'schtasks /create /tn evil /tr calc.exe /sc onlogon'],
+  ] as const) {
+    assert.equal(await isHighRiskShellCommand(files, shell, cmd), true, `expected high-risk: ${cmd}`);
+  }
+  for (const [shell, cmd] of [
+    ['powershell', 'Get-ChildItem | Select-Object -First 10'],
+    ['cmd', 'dir /b && npm test'],
+  ] as const) {
+    assert.equal(await isHighRiskShellCommand(files, shell, cmd), false, `expected safe: ${cmd}`);
+  }
+
+  const data = path.join(root, 'data'); await mkdir(data);
+  const resDir = path.join(root, 'resources'); await mkdir(resDir);
+  const project = path.join(root, 'proj'); await mkdir(project);
+  const runtime = new NativeRuntime(data, resDir, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
+  assert.equal(runtime.isProjectAuthorized(project), false);
+  await runtime.authorizeProject(project);
+  assert.equal(runtime.isProjectAuthorized(await runtime.canonicalProject(project)), true);
+  await runtime.revokeProjectApprovals();
+  assert.equal(runtime.isProjectAuthorized(await runtime.canonicalProject(project)), false);
 });

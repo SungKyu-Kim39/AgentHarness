@@ -24,8 +24,42 @@ test('browser proxy forwards only the approved origin and refuses writes and alt
   assert.equal(await send(`http://127.0.0.1:${port + 1}/`), 403);
   assert.equal(await send('http://example.invalid/'), 403);
   assert.deepEqual(calls, ['GET']);
-  for (const url of ['file:///etc/passwd', 'http://127.0.0.2:1234/', 'http://user:pass@localhost:1234/', `http://localhost:${port}/`])
+  for (const url of ['file:///etc/passwd', 'http://127.0.0.2:1234/', 'http://user:pass@localhost:1234/', `http://localhost:${port}/`, `http://[::1]:${port}/`])
     assert.throws(() => BrowserProxy.target(url, [port]));
+
+  // IPv6 loopback target and localhost -> ::1 fallback when dev server binds only on ::1
+  const ipv6Server = createServer((_req, res) => res.end('ipv6-local-fixture'));
+  const ipv6Bound = await new Promise<boolean>(resolve => {
+    ipv6Server.once('error', () => resolve(false));
+    ipv6Server.listen(0, '::1', () => resolve(true));
+  });
+  if (ipv6Bound) {
+    t.after(() => { ipv6Server.closeAllConnections(); ipv6Server.close(); });
+    const v6Port = (ipv6Server.address() as { port: number }).port;
+    const directV6 = new BrowserProxy(BrowserProxy.target(`http://[::1]:${v6Port}/`));
+    await directV6.start();
+    t.after(() => directV6.close());
+    const v6Body = await new Promise<{ status: number; text: string }>((resolve, reject) => {
+      const req = request(directV6.url, { method: 'GET', path: `http://[::1]:${v6Port}/` }, res => {
+        let text = ''; res.on('data', chunk => { text += chunk; }); res.once('end', () => resolve({ status: res.statusCode!, text }));
+      });
+      req.once('error', reject); req.end();
+    });
+    assert.equal(v6Body.status, 200);
+    assert.equal(v6Body.text, 'ipv6-local-fixture');
+
+    const localhostV6 = new BrowserProxy(BrowserProxy.target(`http://localhost:${v6Port}/`));
+    await localhostV6.start();
+    t.after(() => localhostV6.close());
+    const fallbackBody = await new Promise<{ status: number; text: string }>((resolve, reject) => {
+      const req = request(localhostV6.url, { method: 'GET', path: `http://localhost:${v6Port}/` }, res => {
+        let text = ''; res.on('data', chunk => { text += chunk; }); res.once('end', () => resolve({ status: res.statusCode!, text }));
+      });
+      req.once('error', reject); req.end();
+    });
+    assert.equal(fallbackBody.status, 200);
+    assert.equal(fallbackBody.text, 'ipv6-local-fixture');
+  }
 });
 
 test('project snapshots exclude executable configuration directories regardless of Windows casing', async t => {

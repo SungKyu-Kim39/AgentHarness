@@ -281,4 +281,13 @@ test('OpenVikingService logs background semantic refresh failures, retries 409 o
   assert.ok(diag.events.some(e => e.code === 'OV_SEMANTIC_REFRESH_FAILED' && e.detail?.includes(savedKnowledgeId('FailNote'))));
   assert.ok(diag.events.some(e => e.code === 'OV_SEMANTIC_RETRY' && e.httpStatus === 409 && e.detail?.includes(savedKnowledgeId('ConflictNote'))));
   assert.ok(diag.events.some(e => e.code === 'OV_SEMANTIC_PENDING_SHUTDOWN' && e.detail?.includes('1 pending semantic refresh')));
+  // Short or placeholder API keys must not corrupt diagnostic routes/messages, while real secrets remain redacted.
+  assert.equal(
+    sanitizeVikingDiagnostic('HTTP 500 /api/v1/content/write user=local-user', ['1', 'local', 'none', 'real-secret-key-999']),
+    'HTTP 500 /api/v1/content/write user=local-user',
+  );
+  assert.equal(
+    sanitizeVikingDiagnostic('failed with real-secret-key-999', ['real-secret-key-999']),
+    'failed with [REDACTED]',
+  );
 });

@@ -70,6 +70,8 @@ async function importHistorySnapshot(source:string, editorData:string) {
   }finally{
     input?.close();snapshot?.close();output?.close();
     await rm(path.join(store,'zed-source.db'),{force:true}).catch(()=>{});
+    await rm(path.join(store,'zed-source.db-wal'),{force:true}).catch(()=>{});
+    await rm(path.join(store,'zed-source.db-shm'),{force:true}).catch(()=>{});
     if(!existing)await rm(store,{recursive:true,force:true}).catch(()=>{});
     if(!existing&&!committed)await rm(target,{force:true});
   }

@@ -118,3 +118,16 @@ test('cancelling during GUI preparation prevents dispatch without closing user a
  const work=tools.call('desktop_launch',{app:'calculator'},'s','/p');await entered;await tools.cancel('s');release();
  await assert.rejects(work,/abort/i);assert.equal(launches,0);await tools.close();
 });
+test('non-ref desktop observation recycles stale project session and concurrent discard runs only once',async t=>{
+ const root=await mkdtemp(path.join(tmpdir(),'ned-desktop-switch-'));t.after(()=>rm(root,{recursive:true,force:true}));
+ const tools=new DesktopTools(root,root,async()=>true);t.after(()=>tools.close());
+ let closed=0,created=0;
+ const oldHome=path.join(root,'old');await mkdir(oldHome);
+ const oldSession={client:{available:true,call:async()=>reply({}),close:async()=>{closed++;}},home:oldHome,project:'/proj-a',refs:new Map()};
+ (tools as any).sessions.set('s',oldSession);
+ (tools as any).create=async(project:string)=>{created++;const h=path.join(root,'new-'+created);await mkdir(h,{recursive:true});return{client:{available:true,call:async()=>reply({ok:true}),close:async()=>{}},home:h,project,refs:new Map()};};
+ await tools.call('desktop_status',{},'s','/proj-b');
+ assert.equal(closed,1);assert.equal(created,1);assert.equal((tools as any).sessions.get('s').project,'/proj-b');
+ await Promise.all([tools.cancel('s'),tools.cancel('s')]);
+ assert.equal((tools as any).sessions.has('s'),false);
+});

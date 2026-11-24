@@ -13,7 +13,7 @@ test('VS build inspection discovers exact configurations; approval freezes input
   const binary = path.join(root, 'MSBuild.exe'); await writeFile(binary, 'synthetic-msbuild');
   const tools = async () => [{ name: 'VS2019 fixture', version: '16.11', installation: root, msbuild: binary }];
   let approvals = 0;
-  const refused = new VisualStudioBuild(root, async (_message, detail) => { approvals++; assert.ok(detail.includes('/nr:false')); assert.ok(!detail.includes('cmd.exe')); return false; }, tools);
+  const refused = new VisualStudioBuild(root, async (_message, detail) => { approvals++; assert.ok(detail.includes('/nr:false')); assert.ok(detail.includes('/utf8output')); assert.ok(!detail.includes('cmd.exe')); return false; }, tools);
   const inspected = await refused.inspect(project);
   assert.equal(inspected.targets.length, 2);
   const target = inspected.targets.find(t => t.path === 'app.vcxproj')!;

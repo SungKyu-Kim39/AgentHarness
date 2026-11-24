@@ -11,8 +11,8 @@ export class BrowserProxy {
   url = '';
   static target(value: string, reserved: readonly number[] = []) {
     const url = new URL(value);
-    if (url.protocol !== 'http:' || !['localhost', '127.0.0.1'].includes(url.hostname) || !url.port || url.username || url.password || url.hash || reserved.includes(Number(url.port)))
-      throw new Error('브라우저 검증은 앱 내부 포트를 제외한 http://localhost:포트 또는 http://127.0.0.1:포트 개발 페이지에 한정됩니다.');
+    if (url.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname) || !url.port || url.username || url.password || url.hash || reserved.includes(Number(url.port)))
+      throw new Error('브라우저 검증은 앱 내부 포트를 제외한 http://localhost:포트, http://127.0.0.1:포트 또는 http://[::1]:포트 개발 페이지에 한정됩니다.');
     return url;
   }
   constructor(readonly target: URL) {}
@@ -23,16 +23,35 @@ export class BrowserProxy {
       if (url.origin !== this.target.origin || url.username || url.password || !['GET', 'HEAD'].includes(req.method ?? '')) { this.blocked++; res.writeHead(403).end(); return; }
       const headers: Record<string, string | string[] | undefined> = { ...req.headers, host: url.host };
       for (const key of ['authorization', 'proxy-authorization', 'cookie', 'connection', 'upgrade', 'proxy-connection']) delete headers[key];
-      const upstream = request({ hostname: '127.0.0.1', port: Number(this.target.port), method: req.method, path: url.pathname + url.search, headers, timeout: 15000 }, response => {
-        const output = { ...response.headers }; delete output['set-cookie'];
-        res.writeHead(response.statusCode ?? 502, output);
-        let bytes = 0;
-        response.on('data', chunk => { bytes += chunk.length; if (bytes > 20 * 1024 * 1024) { response.destroy(); res.destroy(); } });
-        response.pipe(res);
-      });
-      upstream.on('timeout', () => upstream.destroy());
-      upstream.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
-      req.on('aborted', () => upstream.destroy()); res.on('close', () => upstream.destroy()); req.pipe(upstream);
+      const hosts = this.target.hostname === '[::1]' ? ['::1'] : this.target.hostname === 'localhost' ? ['127.0.0.1', '::1'] : ['127.0.0.1'];
+      let activeUpstream: ReturnType<typeof request> | undefined;
+      let closed = false;
+      const cleanup = () => { closed = true; activeUpstream?.destroy(); };
+      req.on('aborted', cleanup);
+      res.on('close', cleanup);
+      const forward = (index: number) => {
+        if (closed) return;
+        const upstream = request({ hostname: hosts[index], port: Number(this.target.port), method: req.method, path: url.pathname + url.search, headers, timeout: 15000 }, response => {
+          const output = { ...response.headers }; delete output['set-cookie'];
+          res.writeHead(response.statusCode ?? 502, output);
+          let bytes = 0;
+          response.on('data', chunk => { bytes += chunk.length; if (bytes > 20 * 1024 * 1024) { response.destroy(); res.destroy(); } });
+          response.pipe(res);
+        });
+        activeUpstream = upstream;
+        upstream.on('timeout', () => upstream.destroy());
+        upstream.on('error', (error: NodeJS.ErrnoException) => {
+          if (!closed && !res.headersSent && error?.code === 'ECONNREFUSED' && index + 1 < hosts.length) {
+            forward(index + 1);
+            return;
+          }
+          if (!res.headersSent) res.writeHead(502);
+          if (!res.writableEnded) res.end();
+        });
+        upstream.end();
+      };
+      req.resume();
+      forward(0);
     });
     this.server.on('connect', (_req, socket) => { this.blocked++; socket.end('HTTP/1.1 403 Forbidden\r\n\r\n'); });
     this.server.on('upgrade', (_req, socket) => { this.blocked++; socket.end('HTTP/1.1 403 Forbidden\r\n\r\n'); });

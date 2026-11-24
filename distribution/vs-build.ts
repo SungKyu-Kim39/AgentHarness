@@ -3,6 +3,7 @@ import { access, readFile, readdir } from 'node:fs/promises';
 import { execFile, spawn, type ChildProcess } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
+import { StringDecoder } from 'node:string_decoder';
 import { ProjectFiles } from '../src/main/files';
 const execute = promisify(execFile);
 type Toolchain = { name: string; version: string; installation: string; msbuild: string };
@@ -74,7 +75,7 @@ export class VisualStudioBuild {
       signal?.throwIfAborted();
       const report = await this.inspect(project), tool = report.toolchains[input.toolchain], target = report.targets.find(t => t.path === input.target);
       if (!tool || !target || !target.configurations.some(c => c.configuration === input.configuration && c.platform === input.platform)) throw new Error('먼저 inspect_build로 확인한 도구와 구성만 빌드할 수 있습니다.');
-      const executable = tool.msbuild, args = [path.join(project, target.path), '/t:Build', '/p:Configuration=' + input.configuration, '/p:Platform=' + input.platform, '/m', '/nr:false', '/p:UseSharedCompilation=false', '/nologo', '/verbosity:minimal'];
+      const executable = tool.msbuild, args = [path.join(project, target.path), '/t:Build', '/p:Configuration=' + input.configuration, '/p:Platform=' + input.platform, '/m', '/nr:false', '/p:UseSharedCompilation=false', '/nologo', '/verbosity:minimal', '/utf8output'];
       const env: NodeJS.ProcessEnv = {};
       for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432', 'COMSPEC'])
         if (process.env[key]) env[key] = process.env[key];
@@ -90,8 +91,11 @@ export class VisualStudioBuild {
       const supervisor = path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py');
       const child = spawn(python, ['-I', '-B', supervisor, executable, ...args], { cwd: project, env, windowsHide: true, stdio: 'pipe' }); this.children.add(child);
       let output = '', overflow = false;
-      const append = (bytes: Buffer) => { output += bytes.toString(); if (output.length > 120000) { overflow = true; output = output.slice(-120000); } };
-      child.stdout.on('data', append); child.stderr.on('data', append);
+      const stdoutDecoder = new StringDecoder('utf8');
+      const stderrDecoder = new StringDecoder('utf8');
+      const appendText = (text: string) => { if (!text) return; output += text; if (output.length > 120000) { overflow = true; output = output.slice(-120000); } };
+      child.stdout.on('data', (bytes: Buffer) => appendText(stdoutDecoder.write(bytes)));
+      child.stderr.on('data', (bytes: Buffer) => appendText(stderrDecoder.write(bytes)));
       let force: NodeJS.Timeout | undefined, confirm: NodeJS.Timeout | undefined;
       const stop = () => { child.stdin.end(); force = setTimeout(() => child.kill('SIGKILL'), 7000); };
       signal?.addEventListener('abort', stop, { once: true });
@@ -104,6 +108,8 @@ export class VisualStudioBuild {
           if (signal?.aborted) onAbort();
           child.once('close', () => signal?.removeEventListener('abort', onAbort));
         });
+        appendText(stdoutDecoder.end());
+        appendText(stderrDecoder.end());
         signal?.throwIfAborted();
         return { status: code === 0 ? 'succeeded' : 'failed', exitCode: code, invocation: frozen, output, outputTruncated: overflow };
       } finally {

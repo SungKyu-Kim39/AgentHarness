@@ -23,6 +23,18 @@ async function main() {
   const delivered = new MessageDelivery();
   const replaying = new Set<string>();
   const sessionOptions = new Map<string, any[]>();
+  const MAX_TRACKED_SESSIONS = 64;
+  const trackSession = (sessionId: string) => {
+    sessions.delete(sessionId);
+    sessions.add(sessionId);
+    while (sessions.size > MAX_TRACKED_SESSIONS) {
+      const oldest = sessions.values().next().value;
+      if (oldest === undefined) break;
+      sessions.delete(oldest);
+      sessionOptions.delete(oldest);
+      replaying.delete(oldest);
+    }
+  };
   let mode: PermissionMode = 'ask';
   let revision = 0;
   const state = (value: any) => {
@@ -75,7 +87,7 @@ async function main() {
         if(['session/load','session/resume'].includes(request.method)&&request.session)replaying.delete(request.session);
         if (message.result && ['session/new', 'session/load', 'session/resume', 'session/fork'].includes(request.method)) {
           const session = message.result.sessionId ?? request.session;
-          try { await peer.call('bind', { session }); sessions.add(session); attachedSession = session; }
+          try { await peer.call('bind', { session }); trackSession(session); attachedSession = session; }
           catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: 'Ned session scope could not be verified' } }; }
         }
         if (request.method === 'session/prompt' && !message.error && request.session && sessions.has(request.session)) {

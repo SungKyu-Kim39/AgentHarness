@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 import { createPackage } from '@electron/asar';
 import { fileHash,verifyManifest } from './installer-audit.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
-import { updateReleaseLauncher, updateReleaseSupervisor } from './release-supervisor.mjs';
+import { updateReleaseLauncher, updateReleaseMcpNodeWorker, updateReleaseSupervisor } from './release-supervisor.mjs';
 import { isReleaseVersion, isGhidraVersion, isModernVersion } from './release-policy.mjs';
 
 const json=async file=>JSON.parse(await readFile(file,'utf8'));
@@ -21,6 +21,7 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
   if(lock.version!==version||lock.baseline.sha256!==base.sha256||lock.optimizerSha256!==await fileHash(path.join(root,'scripts/optimize-runtime.py'))||lock.reportSha256!==await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')))throw Error('Stale prepared runtime; run release-prepare and review its lock first');
   if(isGhidraVersion(version)&&lock.supervisorSha256!==await fileHash(path.join(root,'scripts/sidecar-supervisor.py')))throw Error('Stale process supervisor; rebuild and review its runtime manifest');
   if(isGhidraVersion(version)&&lock.launcherSha256&&lock.launcherSha256!==await fileHash(path.join(root,'scripts/openviking-launch.py')))throw Error('Stale OpenViking launcher; rebuild and review its runtime manifest');
+  if(isGhidraVersion(version)&&lock.mcpNodeWorkerSha256&&lock.mcpNodeWorkerSha256!==await fileHash(path.join(root,'scripts/mcp-node-worker.cjs')))throw Error('Stale MCP node worker; rebuild and review its runtime manifest');
   if(isGhidraVersion(version)&&JSON.stringify(lock.ghidraInputs)!==JSON.stringify(await ghidraInputs(root)))throw Error('Stale Ghidra inputs; rebuild and review its runtime manifest');
   for(const [name,item]of Object.entries(lock.components))await verifyManifest(path.join(staged,'resources/runtime/windows-x64',name),item.manifestSha256,name==='mcp');
   return {lock,proof};
@@ -42,7 +43,8 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
  }
  const supervisorSha256=isGhidraVersion(version)?await updateReleaseSupervisor(root,staged,proof):undefined;
  const launcherSha256=isGhidraVersion(version)?await updateReleaseLauncher(root,staged,proof):undefined;
- const lock={schemaVersion:1,version,supervisorSha256,launcherSha256,baseline:base,optimizerSha256:await fileHash(path.join(root,'scripts/optimize-runtime.py')),reportSha256:await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')),components:proof.components,ghidraInputs:await ghidraInputs(root)};
+ const mcpNodeWorkerSha256=isGhidraVersion(version)?await updateReleaseMcpNodeWorker(root,staged,proof):undefined;
+ const lock={schemaVersion:1,version,supervisorSha256,launcherSha256,mcpNodeWorkerSha256,baseline:base,optimizerSha256:await fileHash(path.join(root,'scripts/optimize-runtime.py')),reportSha256:await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')),components:proof.components,ghidraInputs:await ghidraInputs(root)};
  await writeFile(lockFile,JSON.stringify(lock,null,2)+'\n');
  console.log(`Runtime prepared: ${proof.payloadFilesAvoided} file writes and ${proof.installedBytesAvoided} installed bytes avoided.`);
  return {lock,proof};

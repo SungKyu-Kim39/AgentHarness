@@ -24,9 +24,13 @@ export function vikingErrorCode(text: string, status?: number): string {
   return 'OV_REQUEST';
 }
 
+const PLACEHOLDER_DIAGNOSTIC_SECRET_RE = /^(?:empty|none|local|null|dummy|test|no-key|not-needed|na|n\/a)$/i;
+
 export function sanitizeVikingDiagnostic(text: string, secrets: readonly string[] = [], maxChars = 500): string {
   let output = text;
   for (const secret of [...secrets].filter(Boolean).sort((a, b) => b.length - a.length)) {
+    const trimmed = secret.trim();
+    if (trimmed.length < 6 || PLACEHOLDER_DIAGNOSTIC_SECRET_RE.test(trimmed)) continue;
     output = output.split(secret).join('[REDACTED]');
   }
   return output

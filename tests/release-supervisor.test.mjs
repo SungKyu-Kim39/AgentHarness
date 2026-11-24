@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp,mkdir,readFile,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
-import {updateReleaseSupervisor} from '../scripts/release-supervisor.mjs';
+import {updateReleaseMcpNodeWorker,updateReleaseSupervisor} from '../scripts/release-supervisor.mjs';
 import {fileHash} from '../scripts/installer-audit.mjs';
 test('reviewed supervisor transformation preserves other runtime bytes and is idempotent; tampering is rejected',async t=>{
  const root=await mkdtemp(path.join(tmpdir(),'ned-supervisor-release-')),stage=path.join(root,'stage'),runtime=path.join(stage,'resources/runtime/windows-x64/openviking');
@@ -16,4 +16,17 @@ test('reviewed supervisor transformation preserves other runtime bytes and is id
  const next=await updateReleaseSupervisor(root,stage,proof);assert.equal(next,await fileHash(source));assert.equal(proof.supervisorUpdate.previousSha256,original);assert.equal(proof.components.openviking.originalManifestSha256,'upstream-pinned');assert.equal(await readFile(path.join(runtime,'unchanged'),'utf8'),'third party bytes');
  const record=await readFile(path.join(stage,'resources/ned/runtime-optimization.json'),'utf8');await updateReleaseSupervisor(root,stage,proof);assert.equal(await readFile(path.join(stage,'resources/ned/runtime-optimization.json'),'utf8'),record);
  await writeFile(target,'unexpected replacement');await assert.rejects(updateReleaseSupervisor(root,stage,proof),/pinned runtime manifest/);assert.equal(await readFile(target,'utf8'),'unexpected replacement');
+
+ const mcpRuntime=path.join(stage,'resources/runtime/windows-x64/mcp');
+ await mkdir(mcpRuntime,{recursive:true});
+ const mcpTarget=path.join(mcpRuntime,'mcp-node-worker.cjs'),mcpSource=path.join(root,'scripts/mcp-node-worker.cjs');
+ await writeFile(mcpTarget,'old worker');await writeFile(mcpSource,'new reviewed worker');
+ const mcpOriginal=await fileHash(mcpTarget);
+ proof.components.mcp={originalManifestSha256:'mcp-pinned',manifestSha256:'mcp-before',files:1};
+ await writeFile(path.join(mcpRuntime,'manifest.json'),JSON.stringify({complete:true,files:[{path:'mcp-node-worker.cjs',sha256:mcpOriginal}]}));
+ const mcpNext=await updateReleaseMcpNodeWorker(root,stage,proof);
+ assert.equal(mcpNext,await fileHash(mcpSource));
+ assert.equal(proof.mcpNodeWorkerUpdate.previousSha256,mcpOriginal);
+ assert.equal(proof.components.mcp.originalManifestSha256,'mcp-pinned');
+ assert.equal(proof.components.mcp.manifestSha256,await fileHash(path.join(mcpRuntime,'manifest.json')));
 });

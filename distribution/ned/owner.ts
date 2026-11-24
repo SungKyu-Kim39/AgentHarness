@@ -11,6 +11,7 @@ export class AgentOwner {
   private token = randomBytes(32).toString('hex');
   private server?: Server;
   private peers = new Set<Peer>();
+  private peerAuthorized = new Map<Peer, Set<string>>();
   private sessions = new Map<string, Peer>();
   readonly descriptor: string;
   private endpoint = '';
@@ -20,6 +21,9 @@ export class AgentOwner {
   constructor(private root: string, private runtime: NativeRuntime, private connection: Credentials,
     private selectProject: (directory: string) => Promise<boolean>) {
     this.descriptor = path.join(root, 'runtime', 'ned-agent.json');
+  }
+  clearAuthorized() {
+    for (const set of this.peerAuthorized.values()) set.clear();
   }
   async start() {
     await mkdir(path.dirname(this.descriptor), { recursive: true, mode: 0o700 });
@@ -87,9 +91,10 @@ export class AgentOwner {
         throw new Error('Unsupported owner request');
       });
       this.peers.add(peer);
+      this.peerAuthorized.set(peer, authorized);
       const authenticationTimer = setTimeout(() => { if (!authenticated) peer.close(); }, 10000);
       peer.onClose(() => {
-        clearTimeout(authenticationTimer); this.peers.delete(peer);
+        clearTimeout(authenticationTimer); this.peers.delete(peer); this.peerAuthorized.delete(peer);
         for (const session of attached) if (this.sessions.get(session) === peer) {
           this.sessions.delete(session);
           this.runtime.onSessionDisconnected(session);

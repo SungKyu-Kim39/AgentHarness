@@ -153,7 +153,21 @@ export class OfflineSkills {
   async read(id: string, document = 'SKILL.md', offset = 0, project?: string) {
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > 8 * 1024 * 1024) throw new Error('스킬 문서 위치 오류');
     const entry = this.entries.find(e => e.id === id);
-    const user = entry ? undefined : project ? (await this.userCatalog(project)).find(entry => entry.id === id) : this.globalEntries.get(id);
+    let user: CatalogEntry | undefined;
+    if (!entry) {
+      if (project) {
+        user = (await this.userCatalog(project)).find(item => item.id === id);
+      } else {
+        user = this.globalEntries.get(id);
+        if (!user && this.globalRoot) {
+          const builtIn = new Set(this.entries.map(e => e.id));
+          const refreshed = await this.discover(this.globalRoot, 'user', builtIn).catch(() => []);
+          this.globalEntries.clear();
+          for (const item of refreshed) this.globalEntries.set(item.id, item);
+          user = this.globalEntries.get(id);
+        }
+      }
+    }
     if (user) {
       let text: string;
       const folder = user.scope === 'project' && project ? await new ProjectFiles(project).resolve('.ned/skills') : this.globalRoot;
@@ -171,7 +185,11 @@ export class OfflineSkills {
       id, document, bytes.toString('utf8'), offset);
   }
   private page(header: string, id: string, document: string, text: string, offset: number) {
-    const next = offset + 32000;
+    let next = Math.min(text.length, offset + 32000);
+    if (next > offset && next < text.length) {
+      const code = text.charCodeAt(next - 1);
+      if (code >= 0xd800 && code <= 0xdbff) next--;
+    }
     return `${header}\n--- ${document} ---\n${text.slice(offset, next)}${next < text.length ? `\n[문서 일부입니다. read_skill id=${id}, document=${document}, offset=${next}로 이어서 읽으세요.]` : ''}`;
   }
 }

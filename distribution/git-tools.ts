@@ -79,7 +79,8 @@ export class GitTools {
     signal?.throwIfAborted();
     const files = new ProjectFiles(project);
     for (const name of input.paths ?? []) {
-      const found = await files.resolve(name, true);
+      if (name.split('/').some(part => part.toLowerCase() === '.git')) throw new Error('Git 메타데이터 경로는 필터로 지정할 수 없습니다.');
+      const found = await files.resolve(name, false, { allowMissing: true });
       if (!found) throw new Error('Git 경로 필터는 프로젝트 안의 상대 경로만 지원합니다.');
     }
     const git = await files.resolve('.git');

@@ -79,6 +79,7 @@ export async function prepareEditor(root: string, executable: string, resources:
   validateManagedZedSettings(settings);
   await writeEditorPreferences(path.join(data,'config/settings.json'),settings);
   await ensureEditorKeymap(path.join(data,'config/keymap.json'));
+  await ensureTerminalTasks(data);
   const env: NodeJS.ProcessEnv = {};
   for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'SystemDrive', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432', 'ProgramData', 'PATHEXT', 'LANG', 'LC_ALL', 'DISPLAY', 'WAYLAND_DISPLAY', 'XAUTHORITY', 'DBUS_SESSION_BUS_ADDRESS', 'XDG_RUNTIME_DIR'])
     if (process.env[key]) env[key] = process.env[key];

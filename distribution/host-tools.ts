@@ -33,7 +33,13 @@ function splitShellSegments(command: string): string[] {
       continue;
     }
     if (ch === '"' || ch === "'") { quote = ch; current += ch; continue; }
-    if (ch === '\r' || ch === '\n' || ch === ';' || ch === '|') {
+    if (ch === '$' && command[i + 1] === '(') {
+      if (current.trim()) segments.push(current.trim());
+      current = '';
+      i++;
+      continue;
+    }
+    if (ch === '\r' || ch === '\n' || ch === ';' || ch === '|' || ch === '{' || ch === '}' || ch === '(' || ch === ')') {
       if (current.trim()) segments.push(current.trim());
       current = '';
       if (ch === '|' && command[i + 1] === '|') i++;
@@ -47,7 +53,6 @@ function splitShellSegments(command: string): string[] {
     current += ch;
   }
   if (current.trim()) segments.push(current.trim());
-  for (const match of command.matchAll(/\$\(([^)]+)\)/g)) if (match[1]?.trim()) segments.push(...splitShellSegments(match[1]));
   return segments;
 }
 
@@ -74,13 +79,16 @@ const systemPathPattern = /(?:[a-z]:[\\/]|\\\\[^\\/\s]+[\\/][^\\/\s]+[\\/])(?:wi
 const systemRedirectPattern = /(?:^|[\s0-9])>>?\s*["']?(?:(?:[a-z]:[\\/]|\\\\[^\\/\s]+[\\/][^\\/\s]+[\\/])(?:windows|program files(?:\s*\(x86\))?|programdata)|%(?:systemroot|windir|programfiles(?:\(x86\))?|programdata)%|\$env:(?:systemroot|windir|programfiles(?:\(x86\))?|programdata)\b)/i;
 const systemMutateCommands = new Set(['del', 'erase', 'rd', 'rmdir', 'rm', 'remove-item', 'ri', 'move', 'mv', 'move-item', 'mi', 'copy', 'cp', 'xcopy', 'robocopy', 'copy-item', 'ci', 'ren', 'rename', 'rename-item', 'rni', 'new-item', 'ni', 'set-content', 'add-content', 'out-file', 'clear-content', 'tee-object', 'tee', 'mkdir', 'md', 'mklink', 'attrib', 'takeown', 'icacls', 'set-item']);
 const diskCommands = new Set(['format', 'diskpart', 'bcdedit', 'format-volume', 'clear-disk', 'initialize-disk', 'remove-partition', 'resize-partition', 'set-disk']);
-const systemControlCommands = new Set(['reg', 'regedit', 'regedt32', 'sc', 'netsh', 'icacls', 'takeown', 'cacls', 'xcacls', 'set-acl', 'set-executionpolicy', 'new-netfirewallrule', 'remove-netfirewallrule', 'set-netfirewallrule', 'set-netfirewallprofile', 'disable-netfirewallrule', 'stop-service', 'set-service', 'remove-service', 'new-service']);
+const systemControlCommands = new Set(['reg', 'regedit', 'regedt32', 'sc', 'netsh', 'icacls', 'takeown', 'cacls', 'xcacls', 'set-acl', 'set-executionpolicy', 'new-netfirewallrule', 'remove-netfirewallrule', 'set-netfirewallrule', 'set-netfirewallprofile', 'disable-netfirewallrule', 'stop-service', 'set-service', 'remove-service', 'new-service', 'shutdown', 'restart-computer', 'stop-computer', 'logoff', 'schtasks', 'register-scheduledtask', 'unregister-scheduledtask', 'set-scheduledtask']);
 const networkCommands = new Set(['invoke-webrequest', 'iwr', 'invoke-restmethod', 'irm', 'curl', 'wget', 'start-bitstransfer', 'bitsadmin', 'ssh', 'scp', 'sftp', 'ftp', 'tftp', 'telnet', 'nc', 'ncat']);
 const registryMutateCommands = new Set(['set-itemproperty', 'new-itemproperty', 'remove-itemproperty', 'clear-itemproperty', 'new-item', 'remove-item', 'set-item']);
 const netSubcommands = new Set(['user', 'localgroup', 'group', 'accounts', 'share', 'stop', 'start', 'pause', 'continue', 'config']);
 const dynamicEvalCommands = new Set(['invoke-expression', 'iex']);
 const nestedShellLaunchers = new Set(['cmd', 'powershell', 'pwsh', 'wscript', 'cscript', 'mshta', 'rundll32', 'regsvr32']);
-const isPsOptionPrefix = (arg: string, full: string, minLen: number) => arg.startsWith('-') && arg.length >= minLen + 1 && full.startsWith(arg);
+const isPsOptionPrefix = (arg: string, full: string, minLen: number) => {
+  const flag = arg.split(/[:=]/, 1)[0];
+  return flag.startsWith('-') && flag.length >= minLen + 1 && full.startsWith(flag);
+};
 
 async function isOutsideProjectDeleteTarget(files: ProjectFiles, targets: string[]): Promise<boolean> {
   if (!targets.length) return true;
@@ -119,18 +127,21 @@ export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' |
     if (cmd === 'certutil' && lowerArgs.some(a => a === '-urlcache' || a === '/urlcache')) return true;
     if (systemMutateCommands.has(cmd) && systemPathPattern.test(segment)) return true;
     if (cmd === 'cmd') {
-      const execIndex = lowerArgs.findIndex(a => a === '/c' || a === '/k');
+      const execIndex = lowerArgs.findIndex(a => /^\/[ck](?:$|.+)/.test(a));
       if (execIndex >= 0) {
-        const inner = args.slice(execIndex + 1).join(' ').trim();
+        const inlineRest = args[execIndex].slice(2).trim();
+        const inner = [inlineRest, ...args.slice(execIndex + 1)].filter(Boolean).join(' ').trim();
         if (!inner || /[%!]/.test(inner)) return true;
         if (await isHighRiskShellCommand(files, 'cmd', inner, depth + 1)) return true;
       }
     }
     if (cmd === 'powershell' || cmd === 'pwsh') {
-      if (lowerArgs.some(a => isPsOptionPrefix(a, '-encodedcommand', 1) || isPsOptionPrefix(a, '-file', 1))) return true;
+      if (lowerArgs.some(a => isPsOptionPrefix(a, '-encodedcommand', 1) || a.split(/[:=]/, 1)[0] === '-ec' || isPsOptionPrefix(a, '-file', 1))) return true;
       const cmdIndex = lowerArgs.findIndex(a => isPsOptionPrefix(a, '-command', 1));
       if (cmdIndex >= 0) {
-        const inner = args.slice(cmdIndex + 1).join(' ').trim();
+        const sep = args[cmdIndex].search(/[:=]/);
+        const inlineRest = sep >= 0 ? args[cmdIndex].slice(sep + 1).trim() : '';
+        const inner = [inlineRest, ...args.slice(cmdIndex + 1)].filter(Boolean).join(' ').trim();
         if (!inner) return true;
         if (await isHighRiskShellCommand(files, 'powershell', inner, depth + 1)) return true;
       }
