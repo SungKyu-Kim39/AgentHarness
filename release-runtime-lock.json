@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "0.3.15",
+  "version": "0.3.16",
   "supervisorSha256": "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7",
   "launcherSha256": "0994851131e4e02d8f6e3485ac16577666f1a0a338ba8f71e5c7fd15d21872d4",
   "baseline": {

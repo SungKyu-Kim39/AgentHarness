@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned editor",
+  "version": "0.3.16",
+  "sourceCommit": "b089f4fe2d14b4a36c9258de8bfd04cc9ffe4421",
+  "upstreamVersion": "1.28.1",
+  "upstreamCommit": "e8bc16acee5ae1937600d571d441c4b5d7b0d288",
+  "os": "Windows Server 2022",
+  "rust": "1.98.1",
+  "profile": "release; upstream bundle config; debug symbols disabled; 2 build jobs",
+  "files": [
+    {
+      "name": "Ned-editor-0.3.16.exe",
+      "bytes": 264062464,
+      "sha256": "d000e08c2a4857337eaab78da68f59e3232c82493f36583d1acc4c0db2184344"
+    },
+    {
+      "name": "zed-ned-editor-source-v1.28.1-0.3.16.tar.gz",
+      "bytes": 25973181,
+      "sha256": "c73f44cc8cfef004c6232040fe54511e27fcb6c9decbcff3d0c0f8be9b21f625"
+    }
+  ],
+  "windowsGuiAcceptance": false
+}
