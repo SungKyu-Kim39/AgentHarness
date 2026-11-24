@@ -7,23 +7,21 @@ import { createPackage } from '@electron/asar';
 import { fileHash,verifyManifest } from './installer-audit.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
 import { updateReleaseLauncher, updateReleaseSupervisor } from './release-supervisor.mjs';
+import { isReleaseVersion, isGhidraVersion, isModernVersion } from './release-policy.mjs';
 
 const json=async file=>JSON.parse(await readFile(file,'utf8'));
 const exists=file=>access(file).then(()=>true,()=>false);
 async function ghidraInputs(root){return Object.fromEntries(await Promise.all(['ghidra-runtime-lock.json','scripts/bundle-ghidra.py','scripts/CompileGhidraGuard.java','distribution/NedOfflineNetworkGuard.java'].map(async file=>[file,await fileHash(path.join(root,file))])));}
-const releaseVersions = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'];
-const ghidraVersions = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'];
-const modernVersions = ['0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'];
 export async function prepareRelease(root,cache,staged,version,seven,record=false) {
- if(!releaseVersions.includes(version))throw Error('Review a new runtime baseline before the next release');
+ if(!isReleaseVersion(version))throw Error('Review a new runtime baseline before the next release');
  const {url: _download, components, ...base}=await json(path.join(root,'scripts/ned-bootstrap-lock.json'));
  const lockFile=path.join(root,'release-runtime-lock.json');
  if(!record){
   const lock=await json(lockFile),proof=await json(path.join(staged,'resources/ned/runtime-optimization.json'));
   if(lock.version!==version||lock.baseline.sha256!==base.sha256||lock.optimizerSha256!==await fileHash(path.join(root,'scripts/optimize-runtime.py'))||lock.reportSha256!==await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')))throw Error('Stale prepared runtime; run release-prepare and review its lock first');
-  if(ghidraVersions.includes(version)&&lock.supervisorSha256!==await fileHash(path.join(root,'scripts/sidecar-supervisor.py')))throw Error('Stale process supervisor; rebuild and review its runtime manifest');
-  if(ghidraVersions.includes(version)&&lock.launcherSha256&&lock.launcherSha256!==await fileHash(path.join(root,'scripts/openviking-launch.py')))throw Error('Stale OpenViking launcher; rebuild and review its runtime manifest');
-  if(ghidraVersions.includes(version)&&JSON.stringify(lock.ghidraInputs)!==JSON.stringify(await ghidraInputs(root)))throw Error('Stale Ghidra inputs; rebuild and review its runtime manifest');
+  if(isGhidraVersion(version)&&lock.supervisorSha256!==await fileHash(path.join(root,'scripts/sidecar-supervisor.py')))throw Error('Stale process supervisor; rebuild and review its runtime manifest');
+  if(isGhidraVersion(version)&&lock.launcherSha256&&lock.launcherSha256!==await fileHash(path.join(root,'scripts/openviking-launch.py')))throw Error('Stale OpenViking launcher; rebuild and review its runtime manifest');
+  if(isGhidraVersion(version)&&JSON.stringify(lock.ghidraInputs)!==JSON.stringify(await ghidraInputs(root)))throw Error('Stale Ghidra inputs; rebuild and review its runtime manifest');
   for(const [name,item]of Object.entries(lock.components))await verifyManifest(path.join(staged,'resources/runtime/windows-x64',name),item.manifestSha256,name==='mcp');
   return {lock,proof};
  }
@@ -37,13 +35,13 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
  const sources=path.join(cache,'handover-sources');await rm(sources,{recursive:true,force:true});await mkdir(sources,{recursive:true});
  const report=execFileSync('python3',[path.join(root,'scripts/optimize-runtime.py'),path.join(staged,'resources'),sources],{cwd:root,encoding:'utf8',maxBuffer:4*1024*1024});
  const proof=JSON.parse(report);
- if(ghidraVersions.includes(version)){
+ if(isGhidraVersion(version)){
   execFileSync('python3',[path.join(root,'scripts/bundle-ghidra.py'),path.join(staged,'resources/runtime/windows-x64/ghidra')],{cwd:root,stdio:'inherit'});
   const ghidraManifest=path.join(staged,'resources/runtime/windows-x64/ghidra/manifest.json');
   proof.components.ghidra={originalManifestSha256:await fileHash(ghidraManifest),manifestSha256:await fileHash(ghidraManifest),files:(await json(ghidraManifest)).files.length};
  }
- const supervisorSha256=ghidraVersions.includes(version)?await updateReleaseSupervisor(root,staged,proof):undefined;
- const launcherSha256=ghidraVersions.includes(version)?await updateReleaseLauncher(root,staged,proof):undefined;
+ const supervisorSha256=isGhidraVersion(version)?await updateReleaseSupervisor(root,staged,proof):undefined;
+ const launcherSha256=isGhidraVersion(version)?await updateReleaseLauncher(root,staged,proof):undefined;
  const lock={schemaVersion:1,version,supervisorSha256,launcherSha256,baseline:base,optimizerSha256:await fileHash(path.join(root,'scripts/optimize-runtime.py')),reportSha256:await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')),components:proof.components,ghidraInputs:await ghidraInputs(root)};
  await writeFile(lockFile,JSON.stringify(lock,null,2)+'\n');
  console.log(`Runtime prepared: ${proof.payloadFilesAvoided} file writes and ${proof.installedBytesAvoided} installed bytes avoided.`);
@@ -75,11 +73,11 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
   await mkdir(path.join(resources,'astryx'),{recursive:true});
   await cp(archive,path.join(resources,'astryx',astryx.archive.name));
   await cp(astryxFile,path.join(resources,'astryx/astryx-offline-lock.json'));
-  for(const file of ['astryx.md','zed-native-agent.md','subagents.md',...(modernVersions.includes(version)?['egm.md','zed-history-import.md','changes-'+version+'.md','validation-'+version+'.md']:[])])await cp(path.join(root,'docs',file),path.join(resources,file));
+  for(const file of ['astryx.md','zed-native-agent.md','subagents.md',...(isModernVersion(version)?['egm.md','zed-history-import.md','changes-'+version+'.md','validation-'+version+'.md']:[])])await cp(path.join(root,'docs',file),path.join(resources,file));
  }
- if(modernVersions.includes(version))for(const file of await readdir(path.join(root,'docs')))if(file.endsWith('.md'))await cp(path.join(root,'docs',file),path.join(resources,file));
- if(modernVersions.includes(version))await cp(path.join(root,'node_modules/yaml/LICENSE'),path.join(resources,'licenses/yaml-ISC.txt'));
- if(modernVersions.includes(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])await cp(path.join(root,file),path.join(resources,'locks',file));
+ if(isModernVersion(version))for(const file of await readdir(path.join(root,'docs')))if(file.endsWith('.md'))await cp(path.join(root,'docs',file),path.join(resources,file));
+ if(isModernVersion(version))await cp(path.join(root,'node_modules/yaml/LICENSE'),path.join(resources,'licenses/yaml-ISC.txt'));
+ if(isModernVersion(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])await cp(path.join(root,file),path.join(resources,'locks',file));
  await cp(path.join(root,'release-runtime-lock.json'),path.join(resources,'locks/release-runtime.json'));
  const info={schemaVersion:1,product:'Ned',version,buildRevision:process.env.NED_BUILD_REVISION||undefined,sourceCommit,baselineRuntime:(await json(path.join(root,'release-runtime-lock.json'))).baseline,hostBuiltFromSource:true,acpBuiltFromPinnedSource:true,upstreamAcpSourceLockSha256:await fileHash(path.join(root,'ned-acp-lock.json')),buildDependencyLockSha256:await fileHash(path.join(root,'scripts/acp-build/package-lock.json')),hostModuleSmoke:smoke,windowsAcceptance:false};
  await writeFile(path.join(resources,'build-info.json'),JSON.stringify(info,null,2)+'\n');

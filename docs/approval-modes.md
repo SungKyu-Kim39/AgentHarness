@@ -58,9 +58,10 @@ CMD와 PowerShell 명령은 실행 작업으로 처리합니다. **승인 요청
 - 디스크·파티션 조작: `format`, `diskpart`, `Format-Volume`, `Clear-Disk`, `bcdedit` 등
 - 레지스트리·서비스·방화벽·시스템 권한 변경: `reg`, `sc`, `netsh`, `icacls`, `takeown`, `Set-Acl`, `Set-ExecutionPolicy`, 레지스트리 하이브 변경 등
 - 시스템 경로 변경: `C:\Windows`, `Program Files`, `%SystemRoot%` 등 시스템 경로를 대상으로 하는 쓰기·삭제·리다이렉션
-- 프로젝트 외부 강제 재귀 삭제: 프로젝트 밖 경로·와일드카드·루트(`.`)를 대상으로 하는 `Remove-Item -Recurse -Force`, `rm -rf`, `rd /s` 등
+- 프로젝트 외부 강제 재귀 삭제: 프로젝트 밖 경로·와일드카드·루트(`.`)를 대상으로 하는 `Remove-Item -Recurse -Force`(축약 옵션 `-Rec -Fo` 포함), `rm -rf`, `rd /s` 등
 - 파괴적 원격 Git 명령: `git push --force`, `git push -f`, `git push --force-with-lease`, `git push --mirror`, `git push --delete` 등
-- 외부 네트워크 전송: `Invoke-WebRequest`, `iwr`, `Invoke-RestMethod`, `curl`, `wget`, `Start-BitsTransfer`, `bitsadmin`, `ssh`, `scp`, .NET `WebClient`/`HttpClient` 등
+- 외부 네트워크 전송: `Invoke-WebRequest`, `iwr`, `Invoke-RestMethod`, `curl`, `wget`, `Start-BitsTransfer`, `bitsadmin`, `ssh`, `scp`, .NET `WebClient`/`WebRequest`/`HttpClient` 등
+- 중첩 셸·동적 평가·우회 실행: 고위험 명령을 감싼 `cmd /c`·`powershell -Command`, 인코딩/스크립트 실행(`-EncodedCommand`/`-enc`, `-File`), 동적 평가(`Invoke-Expression`/`iex`), 셸·시스템 도구를 띄우는 `Start-Process`/`saps`/`start` 등
 
 명령은 Windows 사용자 권한으로 실행되며, 셸에서 바꾼 파일에는 Ned 파일 편집 도구의 스냅샷이 적용되지 않습니다. 대화에서 중지를 누르면 실행 중인 해당 대화의 셸 프로세스도 중지합니다.
 

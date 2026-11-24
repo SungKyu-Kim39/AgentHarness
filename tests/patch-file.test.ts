@@ -109,3 +109,57 @@ test('HostTools patch_file enforces permission modes, validateEdit, snapshots, p
   await assert.rejects(host.call('patch_file', { path: '../outside.txt', edits: [{ oldText: 'a', newText: 'b' }] }, 's1'), /허용되지 않는 경로/);
   await assert.rejects(host.call('patch_file', { path: '.zed/settings.json', edits: [{ oldText: 'a', newText: 'b' }] }, 's1'), /차단/);
 });
+
+test('large propose_edit and knowledge_index bound approval detail below 60,000 chars so dialogs are not silently rejected', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-large-detail-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const project = path.join(root, 'project');
+  const data = path.join(root, 'data');
+  const resources = path.join(root, 'resources');
+  await mkdir(project, { recursive: true });
+  await mkdir(data, { recursive: true });
+  await mkdir(resources, { recursive: true });
+
+  const largeBefore = 'A'.repeat(75000);
+  const largeAfter = 'B'.repeat(75000);
+  await writeFile(path.join(project, 'large.txt'), largeBefore);
+
+  const observedDetails: string[] = [];
+  let indexedContent = '';
+  const fakeKnowledge = {
+    state: () => ({ status: 'ready' as const, indexedFiles: 0 }),
+    configure: async () => {},
+    search: async () => '{}',
+    read: async () => '{}',
+    index: async (_p: string, _f: string, content: string) => { indexedContent = content; return 'ok'; },
+    close: async () => {},
+  };
+
+  const host = new HostTools(data, resources, {
+    project: async () => project,
+    approve: async (_m, detail) => {
+      observedDetails.push(detail);
+      return detail.length <= 60000;
+    },
+    approveEdit: async (_m, detail) => {
+      observedDetails.push(detail);
+      return { approved: detail.length <= 60000, autoApproveRequest: false };
+    },
+    knowledge: () => fakeKnowledge,
+    redactor: new Redactor(),
+  });
+  t.after(() => host.close());
+
+  const editRes = JSON.parse(await host.call('propose_edit', { path: 'large.txt', content: largeAfter }, 's-large'));
+  assert.equal(editRes.status, 'applied');
+  assert.equal(await readFile(path.join(project, 'large.txt'), 'utf8'), largeAfter);
+  assert.ok(observedDetails[0].length < 30000, `propose_edit detail too large: ${observedDetails[0].length}`);
+  assert.match(observedDetails[0], /이하 생략/);
+  assert.match(observedDetails[0], /변경 후 SHA-256:/);
+
+  const indexRes = await host.call('knowledge_index', { path: 'large.txt' }, 's-large');
+  assert.equal(indexRes, 'ok');
+  assert.equal(indexedContent, largeAfter);
+  assert.ok(observedDetails[1].length < 25000, `knowledge_index detail too large: ${observedDetails[1].length}`);
+  assert.match(observedDetails[1], /이하 생략/);
+});

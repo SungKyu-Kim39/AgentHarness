@@ -38,8 +38,10 @@ export function specializedToolRequested(name: string, request: string) {
 
 export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: Array<{ function?: { name?: string } }>}) {
   if (!Array.isArray(body.tools) || !Array.isArray(body.messages)) return;
-  const user = body.messages.filter(message => message.role === 'user').at(-1);
-  const request = user ? text(user.content).split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0] : '';
+  const recentUsers = body.messages.filter(message => message.role === 'user').slice(-2);
+  const request = recentUsers
+    .map(message => text(message.content).split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0])
+    .join('\n');
   body.tools = body.tools.filter(tool => specializedToolRequested(tool.function?.name ?? '', request));
 }
 

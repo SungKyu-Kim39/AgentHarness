@@ -129,7 +129,23 @@ async function start() {
       const result = await openDialog({ title: 'Conda 설치 루트 폴더 선택', buttonLabel: 'Conda 설치 폴더 선택', properties: ['openDirectory', 'dontAddToRecent'] });
       signal?.throwIfAborted(); return result.canceled ? undefined : result.filePaths[0];
     });
-  runtime.onKnowledgeChange(() => { if (runtime.status().knowledge?.status !== 'ready') studio.close(); });
+  const formatMemoryMenuLabel = () => {
+    const { memory: mem, knowledge } = runtime.status();
+    if (!mem?.enabled) return '자동 대화 기억 · 꺼짐 (설정 JSON으로 변경)';
+    if (knowledge?.status === 'error') return '자동 대화 기억 · 오류 (OpenViking 상태 확인)';
+    if (knowledge?.status === 'starting') return `자동 대화 기억 · 준비 중 (${mem.commitEveryTurns}턴마다 추출)`;
+    if (knowledge?.status === 'disabled' || knowledge?.status === 'unconfigured') return '자동 대화 기억 · 꺼짐 (OpenViking 비활성)';
+    return `자동 대화 기억 · 켜짐 (${mem.commitEveryTurns}턴마다 추출${mem.autoRecall ? ' · 자동 회상' : ' · 수동 검색'})`;
+  };
+  const updateMemoryMenu = () => {
+    const item = trayMenu?.getMenuItemById('memory-status');
+    if (item) item.label = formatMemoryMenuLabel();
+    if (tray && !tray.isDestroyed() && trayMenu) tray.setContextMenu(trayMenu);
+  };
+  runtime.onKnowledgeChange(() => {
+    if (runtime.status().knowledge?.status !== 'ready') studio.close();
+    updateMemoryMenu();
+  });
   startup.setPhase('engine');
   const connection = await runtime.connection([path.join(resources, process.platform === 'win32' ? 'opencode-cli.exe' : 'opencode-cli')]);
   const confirmed = new Set<string>();
@@ -198,6 +214,7 @@ async function start() {
     } },
     { label: '사용 안내', submenu: [
       { label: '설치와 첫 실행', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
+      { label: '자연어 자동 도구 연결 소개·안내', click: () => { void shell.openPath(path.join(resources, 'ned/ned-auto-routing-guide.md')); } },
       { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
       { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
       { label: NED_VERSION.split(' ')[0] + ' 변경 사항', click: () => { void shell.openPath(path.join(resources, 'ned/changes-' + NED_VERSION.split(' ')[0] + '.md')); } },
@@ -210,11 +227,8 @@ async function start() {
     ] },
     { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: () => setPermission('ask') },
     {
-      label: (() => {
-        const mem = runtime.status().memory;
-        if (!mem?.enabled) return '자동 대화 기억 · 꺼짐 (설정 JSON으로 변경)';
-        return `자동 대화 기억 · 켜짐 (${mem.commitEveryTurns}턴마다 추출${mem.autoRecall ? ' · 자동 회상' : ' · 수동 검색'})`;
-      })(),
+      id: 'memory-status',
+      label: formatMemoryMenuLabel(),
       enabled: false,
     },
     { label: 'OpenViking Studio 열기', click: async () => {
@@ -238,6 +252,7 @@ async function start() {
   ]);
   tray.setContextMenu(trayMenu);
   updatePermissionMenu();
+  updateMemoryMenu();
   startup.setPhase('editor');
   const launch = editorLaunch(profile.data);
   editor = spawn(binary, launch.args, { cwd: launch.cwd, env: profile.env, windowsHide: false, stdio: ['ignore', 'pipe', 'pipe'] });

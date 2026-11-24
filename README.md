@@ -1,16 +1,18 @@
 # Ned
 
-[0.3.13 변경 사항](docs/changes-0.3.13.md) · [0.3.13 검증](docs/validation-0.3.13.md)
+[0.3.15 변경 사항](docs/changes-0.3.15.md) · [0.3.15 검증](docs/validation-0.3.15.md) · [자연어 자동 도구 연결 소개·안내(무링크)](docs/ned-auto-routing-guide.md)
 
 최신 사전 릴리스는 [Ned 0.3.14](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.14)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.3.14.md).
 
-Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이기 위해 만들었습니다.
+Ned는 사내 Qwen 모델과 Zed 편집기, OpenCode 에이전트, 개발 도구와 지식 저장소를 한 번에 설치하는 Windows용 바이브 코딩 환경입니다. 직원이 도구마다 설치법을 익히고 설정 파일을 연결하는 수고를 줄이고, 평소처럼 자연어로 요청하면 상황에 맞는 스킬과 도구를 자동으로 연결해 실행하도록 만들었습니다.
 
 Zed에서 코드를 직접 편집하면서 Ned에 코드 조사, 수정, 빌드, 문서 작성을 요청할 수 있습니다. 필요한 런타임과 스킬은 폐쇄망 반입 전에 묶어 두고, 모델 연결 정보는 중앙 JSON에서 관리합니다.
 
-[소개와 활용](docs/ned-introduction.md) · [Zed와의 차이](docs/ned-vs-zed.md) · [설치 안내](docs/offline-setup.md) · [모델 설정](docs/model-controls.md) · [권한 설정](docs/approval-modes.md) · [라이선스](docs/license-policy.md)
+[자연어 자동 도구 연결 가이드](docs/ned-auto-routing-guide.md) · [소개와 활용](docs/ned-introduction.md) · [Zed와의 차이](docs/ned-vs-zed.md) · [설치 안내](docs/offline-setup.md) · [모델 설정](docs/model-controls.md) · [권한 설정](docs/approval-modes.md) · [라이선스](docs/license-policy.md)
 
-AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
+AI Agent가 처음이라면 [상세 사용 안내서](docs/ned-user-guide.md) 또는 사내 공유용 링크 없는 단일 문서인 [자연어 자동 도구 연결 소개·안내·상세 가이드](docs/ned-auto-routing-guide.md)를 먼저 읽어 보세요. 기본 Zed와의 차이, 자연어 의도 분석과 자동 도구·스킬 연결 구조, 주요 구성 요소 7종, 스킬 74개의 용도·요청 예시와 첫 작업 순서를 설명합니다.
+
+0.3.15에서는 대용량 `propose_edit`·`knowledge_index` 승인 미리보기 절단, 전체 권한 모드 고위험 셸 가드(중첩 셸·동적 평가·PowerShell 약어) 보강, 세션별 분석 자식 프로세스 격리, 슬래시 스킬·후속 턴의 전문 도구 판정 일치, 장시간 세션(5,000메시지)·누적 상태 파일 회전, 트레이 자동 대화 기억 실시간 상태 표시 및 전체 안내 문서 최신화를 반영했습니다.
 
 0.3.14에서는 [개인화 대화 기억 opt-out·회상 쿼리 시크릿 마스킹·트레이 상태 표시](docs/knowledge-notes.md), OpenViking 백그라운드 VLM 요약 실패 진단 로깅·409 재시도·URI 병합, 장시간 세션 워터마크·세션 ID 충돌 방지, 버퍼 가드 일시적 RPC 오류 재시도를 보강했습니다.
 

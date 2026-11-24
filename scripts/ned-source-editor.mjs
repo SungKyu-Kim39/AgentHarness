@@ -4,10 +4,11 @@ import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
 import {brandEditor,verifyEditorIcon} from './ned-editor-branding.mjs';
 import {editorVersion} from './ned-editor-version.mjs';
+import {isRebuiltEditorReusable} from './release-policy.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 async function resolvedEditorVersion(root){
  const saved=process.env.NED_BUILD_REVISION;
- if(/^rebuild[1-9][0-9]*$/.test(saved??'')&&['0.3.12','0.3.13','0.3.14'].includes(JSON.parse(await readFile(path.join(root,'package.json'),'utf8')).version)){
+ if(isRebuiltEditorReusable(JSON.parse(await readFile(path.join(root,'package.json'),'utf8')).version,saved??'')){
   delete process.env.NED_BUILD_REVISION;
   try{return await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}
  }

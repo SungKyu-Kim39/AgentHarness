@@ -78,6 +78,9 @@ const systemControlCommands = new Set(['reg', 'regedit', 'regedt32', 'sc', 'nets
 const networkCommands = new Set(['invoke-webrequest', 'iwr', 'invoke-restmethod', 'irm', 'curl', 'wget', 'start-bitstransfer', 'bitsadmin', 'ssh', 'scp', 'sftp', 'ftp', 'tftp', 'telnet', 'nc', 'ncat']);
 const registryMutateCommands = new Set(['set-itemproperty', 'new-itemproperty', 'remove-itemproperty', 'clear-itemproperty', 'new-item', 'remove-item', 'set-item']);
 const netSubcommands = new Set(['user', 'localgroup', 'group', 'accounts', 'share', 'stop', 'start', 'pause', 'continue', 'config']);
+const dynamicEvalCommands = new Set(['invoke-expression', 'iex']);
+const nestedShellLaunchers = new Set(['cmd', 'powershell', 'pwsh', 'wscript', 'cscript', 'mshta', 'rundll32', 'regsvr32']);
+const isPsOptionPrefix = (arg: string, full: string, minLen: number) => arg.startsWith('-') && arg.length >= minLen + 1 && full.startsWith(arg);
 
 async function isOutsideProjectDeleteTarget(files: ProjectFiles, targets: string[]): Promise<boolean> {
   if (!targets.length) return true;
@@ -93,8 +96,9 @@ async function isOutsideProjectDeleteTarget(files: ProjectFiles, targets: string
 }
 
 /** Minimal high-risk shell guard. Only clearly catastrophic/external-egress commands require explicit prompts in full mode. */
-export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' | 'powershell', command: string): Promise<boolean> {
-  if (/(?:System\.Net\.WebClient|\[Net\.WebClient\]|System\.Net\.Http\.HttpClient|\[Net\.Http\.HttpClient\]|\.(?:DownloadFile|DownloadString|UploadFile|UploadString)\s*\()/i.test(command)) return true;
+export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' | 'powershell', command: string, depth = 0): Promise<boolean> {
+  if (depth > 3) return true;
+  if (/(?:(?:System\.)?Net\.(?:WebClient|WebRequest|Http\.HttpClient)|\[(?:System\.)?Net\.(?:WebClient|WebRequest|Http\.HttpClient)\]|\.(?:DownloadFile|DownloadString|UploadFile|UploadString)\s*\()/i.test(command)) return true;
   if (systemRedirectPattern.test(command)) return true;
   for (const segment of splitShellSegments(command)) {
     const tokens = tokenizeSegment(segment);
@@ -106,6 +110,7 @@ export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' |
     const args = tokens.slice(start + 1);
     const lowerArgs = args.map(a => a.toLowerCase());
     if (diskCommands.has(cmd)) return true;
+    if (dynamicEvalCommands.has(cmd)) return true;
     if (cmd === 'cipher' && lowerArgs.some(a => a.startsWith('/w'))) return true;
     if (systemControlCommands.has(cmd)) return true;
     if (cmd === 'net' && lowerArgs[0] && netSubcommands.has(lowerArgs[0])) return true;
@@ -113,6 +118,40 @@ export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' |
     if (networkCommands.has(cmd)) return true;
     if (cmd === 'certutil' && lowerArgs.some(a => a === '-urlcache' || a === '/urlcache')) return true;
     if (systemMutateCommands.has(cmd) && systemPathPattern.test(segment)) return true;
+    if (cmd === 'cmd') {
+      const execIndex = lowerArgs.findIndex(a => a === '/c' || a === '/k');
+      if (execIndex >= 0) {
+        const inner = args.slice(execIndex + 1).join(' ').trim();
+        if (!inner || /[%!]/.test(inner)) return true;
+        if (await isHighRiskShellCommand(files, 'cmd', inner, depth + 1)) return true;
+      }
+    }
+    if (cmd === 'powershell' || cmd === 'pwsh') {
+      if (lowerArgs.some(a => isPsOptionPrefix(a, '-encodedcommand', 1) || isPsOptionPrefix(a, '-file', 1))) return true;
+      const cmdIndex = lowerArgs.findIndex(a => isPsOptionPrefix(a, '-command', 1));
+      if (cmdIndex >= 0) {
+        const inner = args.slice(cmdIndex + 1).join(' ').trim();
+        if (!inner) return true;
+        if (await isHighRiskShellCommand(files, 'powershell', inner, depth + 1)) return true;
+      }
+    }
+    if (cmd === 'start-process' || cmd === 'saps' || cmd === 'start') {
+      let target: string | undefined;
+      const passthrough: string[] = [];
+      for (let i = 0; i < args.length; i++) {
+        const arg = args[i], lower = lowerArgs[i];
+        if (isPsOptionPrefix(lower, '-filepath', 2)) { if (args[i + 1]) target = args[++i]; continue; }
+        if (isPsOptionPrefix(lower, '-argumentlist', 3)) { if (args[i + 1]) passthrough.push(args[++i]); continue; }
+        if (lower === '-verb' && lowerArgs[i + 1] === 'runas') return true;
+        if (arg.startsWith('-') || (cmd === 'start' && arg.startsWith('/'))) continue;
+        if (!target) target = arg;
+        else passthrough.push(arg);
+      }
+      if (!target) return true;
+      const targetBase = commandBasename(target);
+      if (nestedShellLaunchers.has(targetBase) || diskCommands.has(targetBase) || systemControlCommands.has(targetBase) || networkCommands.has(targetBase)) return true;
+      if (passthrough.length && await isHighRiskShellCommand(files, shell, [target, ...passthrough].join(' '), depth + 1)) return true;
+    }
     if (cmd === 'git') {
       let pushIndex = -1;
       for (let i = 0; i < lowerArgs.length; i++) {
@@ -125,17 +164,19 @@ export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' |
         if (pushArgs.some(a => a === '--force' || a === '-f' || a.startsWith('--force-with-lease') || a === '--force-if-includes' || a === '--mirror' || a === '--delete' || /^[:+]/.test(a))) return true;
       }
     }
+    const hasPsRecurse = lowerArgs.some(a => isPsOptionPrefix(a, '-recurse', 1));
+    const hasPsForce = lowerArgs.some(a => isPsOptionPrefix(a, '-force', 1));
     const isPsRemove = ['remove-item', 'ri', 'rm', 'del', 'erase', 'rd', 'rmdir'].includes(cmd) && (
-      (lowerArgs.some(a => a === '-recurse' || a === '-r') && lowerArgs.some(a => a === '-force' || a === '-f')) ||
+      (hasPsRecurse && hasPsForce) ||
       lowerArgs.some(a => /^-[rf]{2,}$/.test(a) && a.includes('r') && a.includes('f'))
     );
     const isCmdRecursiveDelete = (cmd === 'rd' || cmd === 'rmdir') && lowerArgs.some(a => a === '/s') ||
       (cmd === 'del' || cmd === 'erase') && lowerArgs.some(a => a === '/s') && lowerArgs.some(a => a === '/f' || a === '/q');
-    if (isPsRemove || (shell === 'cmd' ? isCmdRecursiveDelete : isCmdRecursiveDelete)) {
+    if (isPsRemove || isCmdRecursiveDelete) {
       const targets: string[] = [];
       for (let i = 0; i < args.length; i++) {
         const arg = args[i], lower = lowerArgs[i];
-        if (lower === '-path' || lower === '-literalpath') { if (args[i + 1]) targets.push(args[++i]); continue; }
+        if (isPsOptionPrefix(lower, '-path', 2) || isPsOptionPrefix(lower, '-literalpath', 3)) { if (args[i + 1]) targets.push(args[++i]); continue; }
         if (arg.startsWith('-') || (arg.startsWith('/') && arg.length <= 3)) continue;
         targets.push(arg);
       }
@@ -191,7 +232,7 @@ const pathArg = z.string().min(1).max(4096);
 export class HostTools {
   readonly token = randomBytes(32).toString('hex');
   url = ''; private server?: Server; private accepting = true; private active = new Set<Promise<string>>();
-  private children = new Set<ChildProcess>();
+  private children = new Map<string, Set<ChildProcess>>();
   private operations = new Map<string, Set<AbortController>>();
   private cancelled = new Set<string>();
   private runs = new Map<string, symbol>();
@@ -406,8 +447,15 @@ export class HostTools {
           const bounded = summary.length > 20000 ? summary.slice(0, 20000) + '\n(이하 생략 · 원본 전체는 스냅샷에 보관)' : summary;
           detail = `대화: ${session}\n프로젝트: ${project}\n대상: ${parsed.path}\n작업: ${label} (${replacements}곳 적용)\n\n${bounded}`;
         } else {
-          const preview = deleting && proposal.before.length > 20000 ? proposal.before.slice(0, 20000) + '\n(이하 생략 · 원본 전체는 스냅샷에 보관)' : proposal.before;
-          detail = `대화: ${session}\n프로젝트: ${project}\n대상: ${parsed.path}\n작업: ${label}${deleting ? '\n원본 bytes: ' + Buffer.byteLength(proposal.before) + '\n원본 SHA-256: ' + proposal.baseHash.slice(5) : ''}\n\n변경 전\n${preview}\n\n변경 후\n${deleting ? '(파일이 삭제됩니다. 원본은 호스트 스냅샷에 보관합니다.)' : proposal.after}`;
+          const maxPreview = deleting ? 20000 : 12000;
+          const beforePreview = proposal.before.length > maxPreview ? proposal.before.slice(0, maxPreview) + '\n(이하 생략 · 원본 전체는 스냅샷에 보관)' : proposal.before;
+          const afterPreview = !deleting && proposal.after.length > maxPreview ? proposal.after.slice(0, maxPreview) + '\n(이하 생략 · 전체 내용은 적용 대상에 포함)' : proposal.after;
+          const meta = deleting
+            ? `\n원본 bytes: ${Buffer.byteLength(proposal.before)}\n원본 SHA-256: ${proposal.baseHash.slice(5)}`
+            : (proposal.before.length > maxPreview || proposal.after.length > maxPreview)
+              ? `\n원본 bytes: ${Buffer.byteLength(proposal.before)} · 변경 후 bytes: ${Buffer.byteLength(proposal.after)}\n변경 후 SHA-256: ${createHash('sha256').update(proposal.after).digest('hex')}`
+              : '';
+          detail = `대화: ${session}\n프로젝트: ${project}\n대상: ${parsed.path}\n작업: ${label}${meta}\n\n변경 전\n${beforePreview}\n\n변경 후\n${deleting ? '(파일이 삭제됩니다. 원본은 호스트 스냅샷에 보관합니다.)' : afterPreview}`;
         }
         const granted = this.editGrant?.session === session && this.editGrant.project === project && this.editGrant.run === run && this.editGrant.request === request;
         const sessionGranted = this.sessionEditGrant?.session === session && this.sessionEditGrant.project === project;
@@ -482,7 +530,10 @@ export class HostTools {
     if (name === 'knowledge_index') {
       const a = z.object({ path: pathArg }).strict().parse(args); if (!knowledge) throw new Error('OpenViking 설정이 필요합니다.');
       const text = await files.read(a.path);
-      if (!await this.options.approve('프로젝트 지식 색인 승인', `${a.path}\n선택한 텍스트를 로컬 OpenViking과 설정한 사내 임베딩 API로 전달합니다.\n\n${text}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(session)) throw new Error('색인을 취소했습니다.');
+      const preview = text.length > 20000
+        ? text.slice(0, 20000) + `\n(이하 생략 · 전체 ${Buffer.byteLength(text)} bytes · SHA-256 ${createHash('sha256').update(text).digest('hex')})`
+        : text;
+      if (!await this.options.approve('프로젝트 지식 색인 승인', `${a.path}\n선택한 텍스트를 로컬 OpenViking과 설정한 사내 임베딩 API로 전달합니다.\n\n${preview}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(session)) throw new Error('색인을 취소했습니다.');
       return knowledge.index(projectID, a.path, text);
     }
     const tempRoot = path.join(this.root, 'analysis'); await mkdir(tempRoot, { recursive: true, mode: 0o700 });
@@ -494,33 +545,40 @@ export class HostTools {
           const text = await files.read(relative); size += Buffer.byteLength(text); if (size > 20 * 1024 * 1024) throw new Error('분석 입력은 총 20 MiB 이하로 제한됩니다.');
           const target = path.join(temp, 'source', relative); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, text);
         }
-        return await this.graphify(temp);
+        return await this.graphify(session, temp);
       }
       if (name === 'rea_inspect') {
         const a = z.object({ path: pathArg, kind: z.enum(['go', 'rust', 'python-pyc', 'electron-fuses', 'model']) }).strict().parse(args);
         const source = await files.resolve(a.path); const stat = await lstat(source);
         if (!stat.isFile() || stat.size > 64 * 1024 * 1024) throw new Error('정적 분석 대상은 64 MiB 이하 일반 파일만 허용합니다.');
         const target = path.join(temp, path.basename(source)); await copyFile(source, target);
-        return await this.rea(target, a.kind);
+        return await this.rea(session, target, a.kind);
       }
       throw new Error('등록되지 않은 도구입니다.');
     } finally { await rm(temp, { recursive: true, force: true }); }
   }
-  private graphify(folder: string) {
+  private trackChild(session: string, child: ChildProcess) {
+    let owned = this.children.get(session);
+    if (!owned) { owned = new Set<ChildProcess>(); this.children.set(session, owned); }
+    owned.add(child);
+    const untrack = () => { owned!.delete(child); if (!owned!.size && this.children.get(session) === owned) this.children.delete(session); };
+    child.once('exit', untrack); child.once('error', untrack);
+  }
+  private graphify(session: string, folder: string) {
     const executable = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
     const script = path.join(this.resources, 'runtime/windows-x64/openviking/analysis-worker.py');
     return new Promise<string>((resolve, reject) => {
       const supervisor = path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py');
       const args = process.platform === 'win32' ? ['-I', '-B', supervisor, executable, '-I', '-B', script, folder] : ['-I', '-B', script, folder];
       const child = spawn(executable, args, { windowsHide: true, cwd: folder, env: { SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HF_HUB_OFFLINE: '1', DO_NOT_TRACK: '1' }, stdio: ['pipe', 'pipe', 'pipe'] });
-      this.children.add(child); child.once('exit', () => this.children.delete(child)); child.once('error', () => this.children.delete(child));
+      this.trackChild(session, child);
       let output = ''; const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('Graphify 분석 시간 초과')); }, 60000);
       child.stdout.on('data', data => { output += data; if (output.length > 2 * 1024 * 1024) child.kill('SIGKILL'); }); child.stderr.on('data', () => {});
       child.once('error', () => { clearTimeout(timer); reject(new Error('Graphify 런타임 실행 실패')); });
       child.once('exit', code => { clearTimeout(timer); if (code === 0) resolve(output); else reject(new Error('Graphify 정적 분석 실패. 의미 분석 성공으로 기록하지 마세요.')); });
     });
   }
-  private async rea(file: string, kind: string) {
+  private async rea(session: string, file: string, kind: string) {
     const tool = { go: 'inspect_go_binary', rust: 'inspect_rust_binary', 'python-pyc': 'inspect_python_pyc', 'electron-fuses': 'inspect_electron_fuses', model: 'inspect_model_artifact' }[kind];
     const script = path.join(await this.ghidra.verifiedRuntime(), 'rea/scripts/rea.mjs');
     const python = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
@@ -528,7 +586,7 @@ export class HostTools {
     const binary = process.platform === 'win32' ? python : process.execPath;
     const argv = process.platform === 'win32' ? ['-I', '-B', supervisor, process.execPath, script, '--mcp'] : [script, '--mcp'];
     const child = spawn(binary, argv, { cwd: path.dirname(file), windowsHide: true, stdio: 'pipe', env: { ELECTRON_RUN_AS_NODE: '1', SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HOME: path.dirname(file), USERPROFILE: path.dirname(file), APPDATA: path.dirname(file), LOCALAPPDATA: path.dirname(file), PATH: '', DO_NOT_TRACK: '1' } });
-    this.children.add(child); child.once('exit', () => this.children.delete(child)); child.once('error', () => this.children.delete(child));
+    this.trackChild(session, child);
     let buffer = ''; let sequence = 0; const pending = new Map<number, { resolve(value: any): void; reject(error: Error): void }>();
     const rpc = (method: string, params: unknown) => new Promise<any>((resolve, reject) => { const id = ++sequence; pending.set(id, { resolve, reject }); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'); });
     child.stdout.on('data', data => {
@@ -557,7 +615,7 @@ export class HostTools {
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
     try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close(), this.python.close(), this.terminal.close()]); }
     finally {
-      for (const child of this.children) child.kill('SIGKILL');
+      for (const owned of this.children.values()) for (const child of owned) child.kill('SIGKILL');
       await Promise.allSettled(this.active);
       this.server?.closeAllConnections();
       await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); });
@@ -571,7 +629,7 @@ export class HostTools {
     this.terminal.cancel(session);
     this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
-    for (const child of this.children) child.kill('SIGKILL');
+    for (const child of this.children.get(session) ?? []) child.kill('SIGKILL');
   }
   resumeSession(session: string) { if(this.sessionEditGrant && this.sessionEditGrant.session!==session)this.revokeEditApproval(); this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
   async waitSessionStop(session:string){const deadline=Date.now()+15000;while(this.operations.get(session)?.size){if(Date.now()>deadline)throw Error('호스트 도구 중지를 확인하지 못했습니다.');await new Promise(r=>setTimeout(r,20));}await Promise.all([this.python.stopped(session), this.terminal.stopped(session)]);}

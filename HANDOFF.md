@@ -2,6 +2,12 @@
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.14**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
+## 0.3.15 작업 기준 (`AG-work`)
+
+- 대용량 `propose_edit`·`knowledge_index` 승인 미리보기 절단(`distribution/host-tools.ts`), 전체 권한 모드 고위험 셸 가드(`isHighRiskShellCommand`) 우회 차단(중첩 `cmd /c`·`powershell -Command`, `-EncodedCommand`/`-File`, `iex`/`Invoke-Expression`, 위험한 `Start-Process`, PowerShell 약어 옵션, `Net.WebClient`), 세션별 `graphify`/`rea_inspect` 자식 프로세스 격리를 적용했습니다.
+- 슬래시 스킬(`/skill-...`) 및 2턴 후속 대화의 전문 도구 노출·호스트 판정 일치(`distribution/ned/agent.ts`, `src/main/skill-routing.ts`, `distribution/native-control.ts`), 장시간 세션 메시지 조회 확장(50페이지·`order=asc`), `subagents.json`(2,000건 회전)·`memory-sync.json`(500세션 정리)·`watermarkCreatedAt <` 경계 보정, 트레이 자동 대화 기억 상태 실시간 갱신(`distribution/ned/main.ts`)을 반영했습니다.
+- 버전 정책 단일화(`scripts/release-policy.mjs`), 링크 없는 자연어 자동 도구 연결 소개·안내·상세 문서(`docs/ned-auto-routing-guide.md`, TGZ `AUTO_ROUTING_GUIDE.md` 및 트레이 메뉴 포함), 기존 사용자 안내 문서 0.3.15 전면 최신화를 완료했습니다.
+
 ## 0.3.14 배포 기준
 
 소스 `05ef6c8747c49e478df484f9270fd105030d2074`를 사용했습니다. Windows 새 설치·0.3.13 업데이트와 42개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.14.md)

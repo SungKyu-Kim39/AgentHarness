@@ -137,8 +137,11 @@ async function main() {
             } else if (first?.type === 'text' && /^\s*\/(?:init|review|goal)(?:\s|$)/i.test(first.text)) {
               throw new Error('이 명령은 Ned에서 지원하지 않습니다. 사용할 명령은 / 목록에서 확인하세요.');
             }
-            const text = skill ? first.text.slice(skill[0].length).trim() : (Array.isArray(prompt) ? prompt.filter(block => block?.type === 'text').map(block => block.text).join('\n') : '');
-            await peer.call('turn/text', { session: sessionId, text: text.slice(0, 16000) });
+            const rawBlocks = Array.isArray(prompt) ? prompt.filter(block => block?.type === 'text').map(block => block.text) : [];
+            const turnSummary = skill
+              ? ['/skill-' + skill[1], first.text.slice(skill[0].length).trim(), ...rawBlocks.slice(1)].filter(Boolean).join('\n')
+              : rawBlocks.join('\n');
+            await peer.call('turn/text', { session: sessionId, text: turnSummary.slice(0, 16000) });
             await publishCommands(sessionId);
           }
           if (message.method === 'session/cancel') await peer.call('cancel', { session: message.params.sessionId });

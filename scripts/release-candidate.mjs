@@ -4,6 +4,7 @@ import {readFile,writeFile,mkdir,cp,stat,appendFile,access} from 'node:fs/promis
 import path from 'node:path';
 import {fileHash} from './installer-audit.mjs';
 import {sourceEditorInputs} from './ned-source-editor.mjs';
+import {isActionsTransportVersion,isRebuiltEditorReusable,isValidRevision} from './release-policy.mjs';
 const root=path.resolve(import.meta.dirname,'..');
 const branch=process.env.GITHUB_REF_NAME;
 const run=(cmd,args,options={})=>execFileSync(cmd,args,{cwd:root,stdio:'inherit',...options});
@@ -20,14 +21,14 @@ async function output(key,value){if(process.env.GITHUB_OUTPUT)await appendFile(p
 function checkedID(name){const value=process.env[name];if(!/^\d+$/.test(value??''))throw Error('Missing immutable workflow run: '+name);return value;}
 const {version}=await json('package.json');
 const revision=process.env.NED_BUILD_REVISION??'';
-if(!/^0\.3\.[1-9]\d+$/.test(version)||(revision&&!/^rebuild[1-9][0-9]*$/.test(revision))||(branch!==`codex/ned-${version}`&&branch!=='AG-work'))throw Error('Unexpected release version or branch');
+if(!/^0\.3\.[1-9]\d+$/.test(version)||(revision&&!isValidRevision(revision))||(branch!==`codex/ned-${version}`&&branch!=='AG-work'))throw Error('Unexpected release version or branch');
 const artifactVersion=version+(revision?'-'+revision:'');
-const editorArtifactVersion=['0.3.12','0.3.13','0.3.14'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision)?version:artifactVersion;
+const editorArtifactVersion=isRebuiltEditorReusable(version,revision)?version:artifactVersion;
 const prefix=`Ned-${artifactVersion}`;
 const mode=process.argv[2];
 if(mode==='candidate'){
  const editorRun=checkedID('NED_EDITOR_RUN');
- if(['0.3.11','0.3.12','0.3.13','0.3.14'].includes(version))run(process.execPath,['scripts/verify-current-docs.mjs']);
+ if(isActionsTransportVersion(version))run(process.execPath,['scripts/verify-current-docs.mjs']);
  run('python3',['scripts/release-inputs.py']);
  run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include=downloads/astryx/*.zip']);
  run(process.execPath,['scripts/ned-package.mjs','release-prepare']);
@@ -35,7 +36,7 @@ if(mode==='candidate'){
  run('gh',['run','watch',editorRun,'--exit-status','--interval','30']);
  const editor=gh(['api',`repos/${process.env.GH_REPO}/actions/runs/${editorRun}`]);
  if(editor.conclusion!=='success'||editor.path!=='.github/workflows/windows-offline-smoke.yml'||editor.head_branch!==branch)throw Error('Unverified editor build');
- run('git',['diff','--exit-code',editor.head_sha,'HEAD','--','scripts/patch-ned-editor.mjs','scripts/ned-editor-version.mjs','ned-editor-source-lock.json','assets/ned-icon.png','package.json']);
+ run('git',['diff','--exit-code',editor.head_sha,'HEAD','--','scripts/patch-ned-editor.mjs','scripts/ned-editor-version.mjs','scripts/release-policy.mjs','ned-editor-source-lock.json','assets/ned-icon.png','package.json']);
  run('gh',['run','download',editorRun,'--pattern',`ned-editor-${editorArtifactVersion}-*`,'--dir','.cache/ned/editor-download']);
  const {readdir}=await import('node:fs/promises');const records=(await readdir(path.join(root,'.cache/ned/editor-download'),{recursive:true})).filter(name=>path.basename(name)===`build-${editorArtifactVersion}.json`);
  if(records.length!==1)throw Error('Ambiguous editor artifact');const editorFolder=path.dirname(records[0]);
@@ -44,7 +45,7 @@ if(mode==='candidate'){
  if(editorInputs.build.sourceCommit!==editor.head_sha)throw Error('Editor artifact source mismatch');
  run(process.execPath,['scripts/windows-test-bundle.mjs']);
  const fixtureGroups=['upgrade'];
- const artifactTransport=['0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
+ const artifactTransport=isActionsTransportVersion(version);
  await commit(['release-runtime-lock.json',...(artifactTransport?[]:Object.keys(editorInputs.files).map(name=>`downloads/editor/${name}`)),
   `downloads/editor/${editorInputs.identity.metadata}`,
   ...fixtureGroups.flatMap(name=>[`downloads/${prefix}-windows-${name}-test.cjs`,`downloads/${prefix}-windows-${name}-test.cjs.sha256`])],

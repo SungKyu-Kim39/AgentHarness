@@ -125,7 +125,7 @@ export class NativeRuntime {
       for (const model of configured) redactor.add(model.apiKey);
       if (config.openViking) { redactor.add(config.openViking.embedding.apiKey); if (config.openViking.vlm) redactor.add(config.openViking.vlm.apiKey); }
       this.subagents=new Subagents(this.root,(route,body,signal)=>this.subagentAPI(route,body,signal),id=>this.sessionProject(id),id=>this.sessionRequest(id));await this.subagents.load();
-      this.tools = new HostTools(this.root, this.resources, { sessionScope:(session,tool,args)=>this.subagents!.scope(session,tool,args),subagents:this.subagents,project: id => this.sessionProject(id), request: id => this.sessionRequest(id), permissionSignal: () => this.permissions?.signal, fullAccess: () => this.permissions?.mode === 'full', toolRequested: (session, name) => specializedToolRequested(name, this.turnText.get(session) ?? ''), approve: (message, detail, signal) => this.approveOperation(redactor.text(message), redactor.text(detail), signal), approveExplicit: (message, detail, signal) => this.approveExplicitOperation(redactor.text(message), redactor.text(detail), signal), approveEdit: (message, detail, signal) => this.approveFile(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor, validateEdit: (session, project, proposal, signal) => this.editorCheck?.(session, project, proposal, signal) ?? Promise.resolve(),
+      this.tools = new HostTools(this.root, this.resources, { sessionScope:(session,tool,args)=>this.subagents!.scope(session,tool,args),subagents:this.subagents,project: id => this.sessionProject(id), request: id => this.sessionRequest(id), permissionSignal: () => this.permissions?.signal, fullAccess: () => this.permissions?.mode === 'full', toolRequested: (session, name) => specializedToolRequested(name, (this.turnHistory.get(session) ?? []).join('\n')), approve: (message, detail, signal) => this.approveOperation(redactor.text(message), redactor.text(detail), signal), approveExplicit: (message, detail, signal) => this.approveExplicitOperation(redactor.text(message), redactor.text(detail), signal), approveEdit: (message, detail, signal) => this.approveFile(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor, validateEdit: (session, project, proposal, signal) => this.editorCheck?.(session, project, proposal, signal) ?? Promise.resolve(),
         choosePython: (project, environments, signal) => this.pythonSelector ? this.pythonSelector(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창을 사용할 수 없습니다.')),
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
         reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...(this.zedModels?.ports() ?? []), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
@@ -192,11 +192,14 @@ export class NativeRuntime {
     const selected = await this.canonicalProject(directory);
     this.projects.add(selected); await atomicJSON(path.join(this.root, 'approved-projects.json'), [...this.projects]);
   }
-  private turnText = new Map<string, string>();
-  setTurnText(session: string, text: string) { this.turnText.set(session, text.slice(0, 16000)); }
+  private turnHistory = new Map<string, string[]>();
+  setTurnText(session: string, text: string) {
+    const history = [...(this.turnHistory.get(session) ?? []), text.slice(0, 16000)].slice(-2);
+    this.turnHistory.set(session, history);
+  }
   onSessionActivated(session: string) { this.memory?.onSessionActivated(session); }
   onTurnComplete(session: string) { this.memory?.onTurnComplete(session); }
-  onSessionDisconnected(session: string) { this.memory?.onSessionDisconnected(session); }
+  onSessionDisconnected(session: string) { this.turnHistory.delete(session); this.memory?.onSessionDisconnected(session); }
   async skillCommands(session: string) {
     if (!this.tools) throw new Error('Ned 스킬이 준비되지 않았습니다.');
     const project = await this.sessionProject(session);
@@ -214,15 +217,23 @@ export class NativeRuntime {
   private async fetchAllSessionMessages(id: string): Promise<OpenCodeSessionMessage[]> {
     if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) return [];
     const collected: OpenCodeSessionMessage[] = [];
+    const seen = new Set<string>();
     let cursor: string | undefined;
-    for (let page = 0; page < 6; page++) {
+    for (let page = 0; page < 50; page++) {
       const route = cursor
-        ? `/api/session/${encodeURIComponent(id)}/message?limit=100&cursor=${encodeURIComponent(cursor)}`
+        ? `/api/session/${encodeURIComponent(id)}/message?limit=100&order=asc&cursor=${encodeURIComponent(cursor)}`
         : `/api/session/${encodeURIComponent(id)}/message?limit=100&order=asc`;
       const result = await this.subagentAPI(route) as { data?: OpenCodeSessionMessage[]; cursor?: { next?: string } } | undefined;
-      if (Array.isArray(result?.data)) collected.push(...result.data);
-      cursor = result?.cursor?.next;
-      if (!cursor) break;
+      if (Array.isArray(result?.data)) {
+        for (const msg of result.data) {
+          if (msg?.id && seen.has(msg.id)) continue;
+          if (msg?.id) seen.add(msg.id);
+          collected.push(msg);
+        }
+      }
+      const next = result?.cursor?.next;
+      if (!next || next === cursor) break;
+      cursor = next;
     }
     return collected;
   }
@@ -234,7 +245,7 @@ export class NativeRuntime {
   private async cancelChildren(id:string){this.tools?.cancelSession(id);await this.subagents?.stopParent(id);await this.tools?.waitSessionStop(id);}
   async interruptSession(id: string) {
     if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('Invalid session');
-    this.turnText.delete(id);
+    this.turnHistory.delete(id);
     await this.cancelChildren(id);
     const pythonStopped = this.tools?.waitPythonStop(id) ?? Promise.resolve();
     if (!this.backend) { await pythonStopped; return; }

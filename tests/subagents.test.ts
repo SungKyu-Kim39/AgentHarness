@@ -371,3 +371,44 @@ test('Goldfish gets a fresh reviewer request and host refuses memory, edits, sec
  for(const file of ['.env','sub/AGENTS.md','CLAUDE.md'])await assert.rejects(f.agents.scope(job.id,'read_file',{path:file}),/Goldfish/);
  f.complete(job.id,'Required reads completed; no structural findings.');await f.wait(()=>f.notifications.length===1);
 });
+
+test('Subagents rotates oldest terminal records when history reaches 2000 entries', async t => {
+  const f = await fixture(t);
+  await f.agents.close();
+  const oldJobs = Array.from({ length: 2000 }, (_, i) => ({
+    id: `ses_ned_old_${i}`,
+    parent: 'root',
+    request: 'msg_old',
+    project: f.project,
+    role: 'research',
+    title: `old ${i}`,
+    writes: [],
+    state: 'completed',
+    createdAt: 1000 + i,
+    endedAt: 2000 + i,
+    notified: true,
+  }));
+  await writeFile(path.join(f.root, 'subagents.json'), JSON.stringify({ schemaVersion: 1, jobs: oldJobs }));
+  const reloaded = new Subagents(
+    f.root,
+    f.api,
+    async () => f.project,
+    async () => 'msg_request',
+  );
+  await reloaded.load();
+  await reloaded.recover();
+  t.after(() => reloaded.close().catch(() => {}));
+  const spawned = await reloaded.spawn('root', {
+    role: 'research',
+    title: '새 조사 작업',
+    prompt: 'Inspect repo',
+    writePaths: [],
+  });
+  await f.wait(() => f.sessions.get(spawned.id)?.running);
+  f.complete(spawned.id, 'done');
+  await f.wait(() => f.notifications.length === 1);
+  const persisted = JSON.parse(await readFile(path.join(f.root, 'subagents.json'), 'utf8'));
+  assert.ok(persisted.jobs.length <= 1001, `expected pruned history <= 1001, got ${persisted.jobs.length}`);
+  assert.ok(persisted.jobs.some((j: any) => j.id === spawned.id));
+  assert.ok(!persisted.jobs.some((j: any) => j.id === 'ses_ned_old_0'));
+});

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { configSchema } from '../src/shared/contracts';
@@ -519,4 +519,47 @@ test('boundary guards clamp commitEveryTurns, prevent 400+ message re-sync via w
   const syncFile = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8'));
   assert.equal(syncFile.sessions['long-session'].syncedIds.length, MAX_SYNCED_IDS_PER_SESSION);
   assert.ok(syncFile.sessions['long-session'].watermarkCount >= 22);
+
+  // Same-millisecond timestamp at watermark boundary must NOT skip a new message.
+  const boundaryBatch = extractMemoryMessages(
+    [
+      { id: 'u_same', type: 'user', text: '같은 밀리초 경계 질문', time: { created: 1000 } },
+      { id: 'a_same', type: 'assistant', time: { created: 1000, completed: 1000 }, content: [{ type: 'text', text: '같은 밀리초 경계 답변' }] },
+    ],
+    { syncedIds: new Set<string>(), watermarkCreatedAt: 1000 },
+  );
+  assert.equal(boundaryBatch.messages.length, 2);
+  assert.equal(boundaryBatch.completedTurns, 1);
+
+  // Over 500 committed sessions in memory-sync.json are pruned to 500 on persist.
+  const pruneRoot = await mkdtemp(path.join(os.tmpdir(), 'ned-prune-memory-'));
+  t.after(() => rm(pruneRoot, { recursive: true, force: true }));
+  const seededSessions: Record<string, any> = {};
+  for (let i = 0; i < 510; i++) {
+    seededSessions[`old_${i}`] = {
+      ovSessionId: `ned-old_${i}`,
+      syncedIds: [`m_${i}`],
+      uncommittedTurns: 0,
+      lastCommittedAt: new Date(1700000000000 + i * 1000).toISOString(),
+    };
+  }
+  await mkdir(path.join(pruneRoot, 'openviking'), { recursive: true });
+  await writeFile(path.join(pruneRoot, 'openviking', 'memory-sync.json'), JSON.stringify({ schemaVersion: 1, sessions: seededSessions }));
+  const pruneManager = new SessionMemoryManager({
+    root: pruneRoot,
+    policy: { enabled: true, autoRecall: false, commitEveryTurns: 1 },
+    knowledge: () => fakeKnowledge,
+    fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async () => [
+      { id: 'nu1', type: 'user', text: '새 세션 질문', time: { created: 5000 } },
+      { id: 'na1', type: 'assistant', time: { created: 5001, completed: 5002 }, content: [{ type: 'text', text: '새 세션 답변' }] },
+    ],
+  });
+  await pruneManager.load();
+  await pruneManager.syncAndMaybeCommit('fresh-session', true);
+  await pruneManager.close();
+  const prunedFile = JSON.parse(await readFile(path.join(pruneRoot, 'openviking', 'memory-sync.json'), 'utf8'));
+  assert.equal(Object.keys(prunedFile.sessions).length, 500);
+  assert.ok(prunedFile.sessions['fresh-session']);
+  assert.equal(prunedFile.sessions['old_0'], undefined);
 });

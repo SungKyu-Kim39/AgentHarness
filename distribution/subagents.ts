@@ -295,6 +295,15 @@ export class Subagents {
       )
     )
       throw Error("다른 하위 작업과 수정 파일이 겹칩니다.");
+    if (this.jobs.size >= 2000) {
+      const terminal = [...this.jobs.values()]
+        .filter((j) => !active(j) && !j.work)
+        .sort((a, b) => (a.endedAt ?? a.createdAt) - (b.endedAt ?? b.createdAt));
+      for (const old of terminal) {
+        if (this.jobs.size <= 1000) break;
+        this.jobs.delete(old.id);
+      }
+    }
     if (this.jobs.size >= 2000)
       throw Error(
         "하위 작업 기록 한도에 도달했습니다. 기존 기록을 보존했습니다.",

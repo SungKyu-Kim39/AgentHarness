@@ -15,11 +15,12 @@ import { verifyBundledHost } from './ned-host-smoke.mjs';
 import { prepareRelease, refreshReleaseHost } from './ned-release.mjs';
 import {nedSigning} from './ned-signing.mjs';
 import {installSourceEditor,verifySourceEditor} from './ned-source-editor.mjs';
+import {isReleaseVersion,isGhidraVersion,isModernVersion,isNoSeedVersion,isActionsTransportVersion,isRebuiltEditorReusable,isValidRevision} from './release-policy.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
 const revision=process.env.NED_BUILD_REVISION ?? '';
-if(revision && !/^rebuild[1-9][0-9]*$/.test(revision))throw new Error('Unsupported build revision');
+if(revision && !isValidRevision(revision))throw new Error('Unsupported build revision');
 const artifactVersion=version+(revision?'-'+revision:'');
 const vendorEditor = process.env.NED_VENDOR_EDITOR === '1';
 const output = path.join(root,vendorEditor ? 'release/ned-vendor' : 'release/ned');
@@ -29,11 +30,11 @@ const staged = path.join(output,'win-unpacked');
 const installer = path.join(output,`Ned-${artifactVersion}-win-x64.exe`);
 const mode = process.argv[2];
 const signing = nedSigning();
-const fullRelease = ['0.3.7','0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
-const ghidraRelease = ['0.3.8','0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
-const modernRelease = ['0.3.9','0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version);
+const fullRelease = isReleaseVersion(version);
+const ghidraRelease = isGhidraVersion(version);
+const modernRelease = isModernVersion(version);
 const sourceEditorRelease = (version==='0.3.8'&&revision==='rebuild1') || modernRelease;
-if(['0.3.7','0.3.8','0.3.12'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
+if(['0.3.7','0.3.8','0.3.12','0.3.13','0.3.14'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
@@ -189,7 +190,7 @@ async function audit() {
     if (signing) { signing.verify(installer); signing.verify(path.join(extracted,'Ned.exe')); signing.verify(path.join(extracted,'Uninstall Ned.exe')); if (!editorBranding.vendorOriginal) signing.verify(path.join(resources,'zed/Zed.exe')); }
     const sourceEditor=!editorBranding.vendorOriginal && sourceEditorRelease?await verifySourceEditor(root,resources):undefined;
     if(modernRelease)for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
-    if(['0.3.10','0.3.11','0.3.12','0.3.13','0.3.14'].includes(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
+    if(isNoSeedVersion(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
       if(await exists(path.join(resources,'ned',file)))throw Error('Removed OpenViking resource still in installer: '+file);
     let astryx;
     if(sourceEditorRelease){
@@ -230,7 +231,7 @@ async function bundle() {
   const name=`Ned-${artifactVersion}-windows-x64`, stage=path.join(output,name);
   await rm(stage,{recursive:true,force:true});await mkdir(stage,{recursive:true});
   await cp(installer,path.join(stage,path.basename(installer)));
-  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],[await releaseDoc(`validation-${artifactVersion}.md`),'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
+  for(const [from,to] of [['agent-config.example.json','agent-config.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/ned-introduction.md','INTRODUCTION.md'],['docs/ned-auto-routing-guide.md','AUTO_ROUTING_GUIDE.md'],[await releaseDoc(`validation-${artifactVersion}.md`),'VALIDATION_REPORT.md'],['distribution/readiness.json','READINESS.json'],['docs/license-policy.md','LICENSE_POLICY.md'],['LICENSE','LICENSE-Ned.txt']]) await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
   if(fullRelease)await cp(path.join(root,'docs/bundled-skills.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
@@ -271,12 +272,12 @@ async function bundle() {
     } else {
       const saved=process.env.NED_BUILD_REVISION;
       let editor;
-      if(['0.3.12','0.3.13','0.3.14'].includes(version)&&/^rebuild[1-9][0-9]*$/.test(revision)){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
+      if(isRebuiltEditorReusable(version,revision)){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
       else editor=await editorVersion(root);
       await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
     }
   }
-  if(['0.3.11','0.3.12','0.3.13','0.3.14'].includes(version)) for(const file of ['knowledge-notes.md','changes-'+version+'.md']) await cp(await releaseDoc(file),path.join(stage,file));
+  if(isActionsTransportVersion(version)) for(const file of ['knowledge-notes.md','changes-'+version+'.md']) await cp(await releaseDoc(file),path.join(stage,file));
   const commit=report.sourceCommit;
   const source=path.join(stage,'source',`Ned-${commit.slice(0,12)}-source.tgz`);
   run('git',['archive','--format=tar.gz','--output='+source,commit,':(exclude)downloads']);

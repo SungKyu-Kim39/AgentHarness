@@ -223,7 +223,7 @@ export function extractMemoryMessages(
     const idx = relevantIndex++;
     const alreadySynced = state.syncedIds.has(msg.id)
       || (state.watermarkCount !== undefined && idx < state.watermarkCount)
-      || (state.watermarkCreatedAt !== undefined && typeof msg.time?.created === 'number' && msg.time.created <= state.watermarkCreatedAt);
+      || (state.watermarkCreatedAt !== undefined && typeof msg.time?.created === 'number' && msg.time.created < state.watermarkCreatedAt);
 
     if (msg.type === 'user') {
       const cleaned = cleanUserMessageText(typeof msg.text === 'string' ? msg.text : '');
@@ -389,7 +389,22 @@ export class SessionMemoryManager {
     this.persistStatus();
   }
 
+  private pruneSyncState() {
+    const keys = Object.keys(this.syncState);
+    if (keys.length <= 500) return;
+    const prunable = keys
+      .filter(id => id !== this.activeSessionId && (this.syncState[id]?.uncommittedTurns ?? 0) === 0)
+      .sort((a, b) => (this.syncState[a]?.lastCommittedAt ?? '').localeCompare(this.syncState[b]?.lastCommittedAt ?? ''));
+    let remaining = keys.length;
+    for (const id of prunable) {
+      if (remaining <= 500) break;
+      delete this.syncState[id];
+      remaining--;
+    }
+  }
+
   private persistSync() {
+    this.pruneSyncState();
     const snapshot: MemorySyncFile = { schemaVersion: 1, sessions: structuredClone(this.syncState) };
     this.statusWrites = this.statusWrites.catch(() => {}).then(async () => {
       await mkdir(path.dirname(this.syncFile()), { recursive: true, mode: 0o700 });
