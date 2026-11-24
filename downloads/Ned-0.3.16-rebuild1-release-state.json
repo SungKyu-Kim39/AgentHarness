@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.3.16-rebuild1",
+  "sourceCommit": "0f93d8a8baca28fe1de825da48ba8c2296d7c0fc",
+  "artifactCommit": "899f0174deae81d20576453da54e048f312de465",
+  "releaseUrl": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.3.16-rebuild1",
+  "filesPublished": true,
+  "releaseAssetsPublished": true,
+  "publicDownloadsFullyVerified": true,
+  "windowsRunId": 45492101483,
+  "installer": {
+    "name": "Ned-0.3.16-rebuild1-win-x64.exe",
+    "bytes": 1535067285,
+    "sha256": "b26b2f5c2cf6481b26d3f70a32358f62d7f741407b711ed5c6de7357b45e48e8"
+  },
+  "bundle": {
+    "name": "Ned-0.3.16-rebuild1-windows-x64.tgz",
+    "bytes": 1914981236,
+    "sha256": "fa9fd80602cb262afaf3061b1494f40023df95b60f948e3069f66f1d476e0993"
+  },
+  "releaseReady": false,
+  "isPrerelease": true,
+  "releaseAssetCount": 7,
+  "assets": [
+    {
+      "name": "Ned-0.3.16-rebuild1-bundle-manifest.json",
+      "bytes": 685,
+      "sha256": "56995a75fa785fec7df2c1335b98a4694fa404c6e18edd7b3e6b5c931d48c6fe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.16-rebuild1/Ned-0.3.16-rebuild1-bundle-manifest.json"
+    },
+    {
+      "name": "Ned-0.3.16-rebuild1-installer-audit.json",
+      "bytes": 16772,
+      "sha256": "75e69c1c35c1cb7a8dee4fe618b2b18f9fa2302bc93f1d67a1077f527a48b87d",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.16-rebuild1/Ned-0.3.16-rebuild1-installer-audit.json"
+    },
+    {
+      "name": "Ned-0.3.16-rebuild1-payload-manifest.json",
+      "bytes": 10031263,
+      "sha256": "998f0218e87d72949958644f5bd996a74a62a1b6bd8092c3ffb850b1d08e4ab9",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.16-rebuild1/Ned-0.3.16-rebuild1-payload-manifest.json"
+    },
+    {
+      "name": "Ned-0.3.16-rebuild1-win-x64.exe",
+      "bytes": 1535067285,
+      "sha256": "b26b2f5c2cf6481b26d3f70a32358f62d7f741407b711ed5c6de7357b45e48e8",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.16-rebuild1/Ned-0.3.16-rebuild1-win-x64.exe"
+    },
+    {
+      "name": "Ned-0.3.16-rebuild1-win-x64.exe.sha256",
+      "bytes": 98,
+      "sha256": "5fb148856fb6a3cad843626b7832d10f74620e8dd4ff83fc81b3a698297e064d",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.16-rebuild1/Ned-0.3.16-rebuild1-win-x64.exe.sha256"
+    },
+    {
+      "name": "Ned-0.3.16-rebuild1-windows-x64.tgz",
+      "bytes": 1914981236,
+      "sha256": "fa9fd80602cb262afaf3061b1494f40023df95b60f948e3069f66f1d476e0993",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.16-rebuild1/Ned-0.3.16-rebuild1-windows-x64.tgz"
+    },
+    {
+      "name": "Ned-0.3.16-rebuild1-windows-x64.tgz.sha256",
+      "bytes": 102,
+      "sha256": "acc1953639920c03a7a78bd379ade018c3cae39bc8cee731a453a2cb32930ab7",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.3.16-rebuild1/Ned-0.3.16-rebuild1-windows-x64.tgz.sha256"
+    }
+  ]
+}
