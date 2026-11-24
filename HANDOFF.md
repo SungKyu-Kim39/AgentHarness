@@ -2,7 +2,10 @@
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.16**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-## 0.3.16 작업 기준 (`AG-work`)
+## 0.3.16 배포 기준
+
+소스 `b8d6e307f01a2bca07fb3c69392732a4a1bfd2a0`를 사용했습니다. Windows 새 설치·0.3.15 업데이트와 47개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.16.md)
+
 
 - `ned_host_browser_check` 워커 즉시 종료(`MODULE_NOT_FOUND` 및 Windows `System32`·`ComSpec` 실행 환경 누락) 근본 수정과 종료 진단 마커 기록(`src/main/mcp-extensions.ts`, `scripts/test-mcp-live.ts`, `tests/mcp-boundary.test.ts`, `scripts/windows-test-bundle.mjs`)을 반영했습니다.
 - UTF-8 BOM 설정 JSON 허용·가져오기 실패 사유 안내(`src/main/config.ts`, `distribution/native-control.ts`), 짧은/플레이스홀더 API 키 평문 오탐 마스킹 방지, `atomicJSON` 경로별 직렬화 및 Windows `rename` 재시도, Python/OpenViking/Graphify/REA 파이프 UTF-8 강제 및 `AbortSignal` 즉시 취소를 적용했습니다.

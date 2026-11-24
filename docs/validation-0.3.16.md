@@ -22,3 +22,11 @@ Ned 0.3.16의 Linux 단위·라이브 브라우저 테스트, 문서 일관성 �
 - Visual Studio 2022가 설치된 PC에서 `inspect_build`·`build_project` 탐색 및 빌드 실행 확인
 - 사내 VLM·임베딩 서버 연결 상태에서 자연어 자동 스킬(`.ned/skills` 포함)·도구 연결 및 6턴 자동 대화 기억 추출·회상 확인
 - Windows 10/11 GUI 환경에서 외부망 차단 및 전체 권한 모드 고위험 명령 승인창 표시 확인
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `b8d6e307f01a2bca07fb3c69392732a4a1bfd2a0`입니다. Windows Server에 최종 EXE를 새로 설치해 47건 중 47건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.15에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535056901 bytes, SHA-256 `f66d97d3c7da382c270eea76a2428e8bc60906bd498b46224161fbe01292f694`입니다. 준비본과 추출본의 60125개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.16-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.16-installer-audit.json) · [반입 TGZ](../downloads/README.md)
