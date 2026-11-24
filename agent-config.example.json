@@ -78,5 +78,9 @@
     "maxOutputTokens": 8192,
     "retryOnLength": true,
     "disableQwenThinking": true
+  },
+  "python": {
+    "respectSystemPipConfig": true,
+    "allowPackageInstall": true
   }
 }

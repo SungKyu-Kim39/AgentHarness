@@ -1,10 +1,10 @@
-# Ned 기본 스킬 74종
+# Ned 기본 스킬 79종
 
 기본 스킬은 폐쇄망에 반입한 로컬 지침입니다. Ned Agent가 작업과 문맥에 맞춰 읽으며, 문서 자체가 실행 권한이나 외부 설치 권한을 부여하지 않습니다. EGM 설계·검토 워크플로는 사용자가 필요할 때 명시적으로 요청합니다.
 
 빌드 때 OpenViking 0.5.5용 준비 자료를 만들고 실행 시 변경분만 확인합니다. 이전 등록 개수와 이번 확인·재사용·신규·갱신은 별개입니다. 사용자 수정본과 추가 파일은 보존합니다. 지식 서비스는 대화 시작을 막지 않습니다. 로컬 준비와 검색 벡터 완료를 같은 상태로 표시하지 않습니다.
 
-전체 요청 예시는 [상세 사용 안내서](ned-user-guide.md#skill-catalog), 설계·검토 절차는 [EGM](egm.md), 버전 동작은 [변경 사항](changes-0.3.12.md)에서 확인합니다.
+전체 요청 예시는 [상세 사용 안내서](ned-user-guide.md#skill-catalog), 설계·검토 절차는 [EGM](egm.md), 버전 동작은 [변경 사항](changes-0.4.0.md)에서 확인합니다.
 
 | ID | 용도 |
 | --- | --- |
@@ -82,5 +82,10 @@
 | egm-review | 설계안을 독립된 읽기 전용 Goldfish Agent로 단계별 검토합니다. |
 | egm-review-loop | 지정한 검토 기준과 검토자로 독립 리뷰를 실행합니다. EGM 공용 원본 자료도 제공합니다. |
 | egm-drift-report | 승인한 설계 문서와 현재 코드 사이의 차이를 근거와 함께 보고합니다. |
+| python-intranet-venv | 프로젝트별 `.venv`와 사내 PyPI 미러 패키지 설치, 오프라인 패키지 API 역추적을 안내합니다. |
+| data-app-builder | `marimo`·`Streamlit`·`FastAPI` 로컬 루프백 데이터 앱 작성과 `browser_check` 시각 검증을 안내합니다. |
+| spec-driven-dev | `specs/<feature>/{spec.md,plan.md,tasks.md}` 기반 명세 우선 개발과 체크포인트·worktree 연계를 안내합니다. |
+| korean-office-docs | 한글(HWP/HWPX)·Excel·Word·PowerPoint 양방향 문서 생성·읽기와 PDF 표 추출을 안내합니다. |
+| architecture-diagramming | `.drawio` mxGraph XML 및 오프라인 Mermaid SVG/PNG 다이어그램 작성을 안내합니다. |
 
 정확한 원본 커밋·라이선스·파일 해시는 설치된 skills/manifest.json과 고정 lock에 있습니다. 스킬 추가·교체는 [확장 안내](extension-guide.md)를 따릅니다.

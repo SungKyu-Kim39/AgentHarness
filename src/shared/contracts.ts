@@ -59,11 +59,20 @@ const providerSchema = z.object({
   models: z.record(z.string().min(1).max(256).refine(value => !value.includes('#')), providerModel).refine(value => Object.keys(value).length > 0 && Object.keys(value).length <= 32),
 }).strict();
 const selectionSchema = z.union([z.string().min(3), z.object({ providerID: z.string().min(1), model: z.string().min(1), variant: z.string().optional() }).strict()]);
+export const pythonConfigSchema = z.object({
+  respectSystemPipConfig: z.boolean().default(true),
+  indexUrl: endpoint.optional(),
+  extraIndexUrls: z.array(endpoint).max(8).optional(),
+  trustedHosts: z.array(z.string().trim().regex(/^[a-zA-Z0-9.-]+(?::\d{1,5})?$/)).max(16).optional(),
+  allowPackageInstall: z.boolean().default(true),
+}).strict();
+export type PythonConfig = z.infer<typeof pythonConfigSchema>;
 const rawConfigSchema = z.object({
   schemaVersion: z.union([z.literal(1), z.literal(2)]).default(2), model: z.union([modelSchema, selectionSchema]).optional(),
   providers: z.record(z.string().min(1).max(128).refine(value => !/[\/#]/.test(value)), providerSchema).optional(),
   models: z.array(namedModelSchema).min(1).max(32).optional(), defaultModel: z.string().max(128).optional(), defaultVariant: variantID.optional(), openViking: openVikingSchema.optional(),
   compaction: z.object({ maxOutputTokens: z.number().int().min(256).max(65536).default(8192), retryOnLength: z.boolean().default(true), disableQwenThinking: z.boolean().default(true) }).strict().optional(),
+  python: pythonConfigSchema.optional(),
 }).strict();
 type RawConfig = z.infer<typeof rawConfigSchema>;
 type ConfiguredModel = z.infer<typeof namedModelSchema>;

@@ -66,3 +66,11 @@ commit `72d06f52a2482885d9a64bd24b291c6e8628942c`의 7개 워크플로와
 YAML 2.8.1 (Eemeli Aro, ISC)을 기본 스킬의 YAML 메타데이터 비교에 사용합니다.
 SDK가 직렬화 형식만 바꾼 경우와 사용자가 실제 메타데이터를 수정한 경우를 구별합니다.
 버전·무결성은 package-lock.json에 고정하고 라이선스 원문을 설치 자료의 yaml-ISC.txt에 보존합니다.
+
+## 0.4.0 Workspace Tools 번들 (허용적 라이선스 고정)
+
+- `kordoc` 4.25.12 (MIT): 한컴오피스 미설치 환경에서의 오프라인 `.hwp`/`.hwpx` 읽기 및 `.hwpx` 생성·양식 채우기.
+- `mermaid` 12.3.0 (MIT): 네트워크가 차단된 로컬 격리 브라우저 기반 오프라인 Mermaid SVG/PNG 렌더링.
+- `openpyxl` 3.1.5 (MIT), `python-docx` 1.2.0 (MIT), `python-pptx` 1.0.2 (MIT), `pdfplumber` 0.11.11 (MIT): 오피스 미설치 환경에서의 XLSX/DOCX/PPTX 생성 및 PDF 표 정밀 추출.
+- `ast-grep-py` 0.51.3 (MIT), `bandit` 1.9.4 (Apache-2.0): 다국어 AST 구조 검색·치환 및 로컬 Python 보안 정적 감사.
+- 모든 전이 의존성 wheel과 npm 패키지의 정확한 버전·SHA-256 해시·라이선스 원문은 `workspace-tools-lock.json`, `workspace-tools-node-lock.json` 및 `resources/runtime/windows-x64/workspace-tools` 내부 `dist-info`/패키지 라이선스 파일에 보존합니다.

@@ -33,7 +33,7 @@ test('the native broker reads every new offline skill and reference without invo
   const catalog = JSON.parse(await tools.call('skill_catalog', {}, 'test-session'));
   const lock = JSON.parse(await readFile('skills-lock.json','utf8'));
   assert.equal(catalog.length, lock.count);
-  assert.equal(lock.count,74);
+  assert.equal(lock.count,79);
   const reviewed = JSON.parse(await readFile('reviewed-skills-lock.json','utf8')).skills.map((skill: { id: string })=>skill.id);
   for (const id of [...additions,...reviewed]) {
     assert.ok(catalog.some((skill: { id: string }) => skill.id === id));

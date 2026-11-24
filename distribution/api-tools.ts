@@ -1,0 +1,407 @@
+import { randomUUID } from 'node:crypto';
+import http, { type Server } from 'node:http';
+import https from 'node:https';
+import path from 'node:path';
+import YAML from 'yaml';
+import { ProjectFiles } from '../src/main/files';
+import { OwnedCommand } from './owned-command';
+
+export interface ApiMockInput {
+  operation: 'start' | 'status' | 'stop';
+  id?: string;
+  specPath?: string;
+}
+
+export interface ApiContractTestInput {
+  specPath: string;
+  baseUrl: string;
+  methods?: Array<'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'>;
+  maxRequests?: number;
+  headers?: Record<string, string>;
+  useSchemathesis?: boolean;
+}
+
+interface ParsedRoute {
+  method: string;
+  template: string;
+  regex: RegExp;
+  operation: Record<string, any>;
+}
+
+interface MockServerEntry {
+  id: string;
+  session: string;
+  project: string;
+  specPath: string;
+  port: number;
+  url: string;
+  server: Server;
+  routes: ParsedRoute[];
+  requests: Array<{ at: string; method: string; path: string; status: number }>;
+}
+
+function parseOpenApi(text: string, specPath: string): Record<string, any> {
+  const doc = /\.json$/i.test(specPath) ? JSON.parse(text) : YAML.parse(text);
+  if (!doc || typeof doc !== 'object' || (!doc.openapi && !doc.swagger) || !doc.paths || typeof doc.paths !== 'object') {
+    throw new Error('유효한 OpenAPI 3.x 또는 Swagger 2.0 명세(paths 포함)가 아닙니다.');
+  }
+  return doc;
+}
+
+function resolveRef(doc: Record<string, any>, schema: any, depth = 0): any {
+  if (!schema || typeof schema !== 'object' || depth > 8) return schema;
+  if (typeof schema.$ref === 'string' && schema.$ref.startsWith('#/')) {
+    const parts = schema.$ref.slice(2).split('/').map((p: string) => p.replace(/~1/g, '/').replace(/~0/g, '~'));
+    let cur: any = doc;
+    for (const part of parts) cur = cur?.[part];
+    return resolveRef(doc, cur, depth + 1);
+  }
+  return schema;
+}
+
+function synthesizeFromSchema(doc: Record<string, any>, rawSchema: any, depth = 0): any {
+  if (depth > 6) return null;
+  const schema = resolveRef(doc, rawSchema, depth);
+  if (!schema || typeof schema !== 'object') return {};
+  if (schema.example !== undefined) return schema.example;
+  if (Array.isArray(schema.enum) && schema.enum.length) return schema.enum[0];
+  if (schema.default !== undefined) return schema.default;
+  if (schema.type === 'object' || schema.properties) {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(schema.properties ?? {})) {
+      out[k] = synthesizeFromSchema(doc, v, depth + 1);
+    }
+    return out;
+  }
+  if (schema.type === 'array') {
+    return [synthesizeFromSchema(doc, schema.items, depth + 1)];
+  }
+  if (schema.type === 'integer') return 1;
+  if (schema.type === 'number') return 1.5;
+  if (schema.type === 'boolean') return true;
+  if (schema.format === 'date-time') return '2026-01-01T00:00:00Z';
+  if (schema.format === 'date') return '2026-01-01';
+  if (schema.format === 'email') return 'user@example.local';
+  if (schema.format === 'uuid') return '00000000-0000-4000-8000-000000000001';
+  return 'sample';
+}
+
+function pickSuccessResponse(doc: Record<string, any>, operation: Record<string, any>): { status: number; body: any } {
+  const responses = operation.responses ?? {};
+  const statusKey = Object.keys(responses).find(k => /^2\d\d$/.test(k)) ?? Object.keys(responses)[0] ?? '200';
+  const status = /^\d{3}$/.test(statusKey) ? Number(statusKey) : 200;
+  const resp = resolveRef(doc, responses[statusKey]);
+  if (!resp) return { status, body: { ok: true } };
+  // OpenAPI 3
+  const jsonContent = resp.content?.['application/json'];
+  if (jsonContent) {
+    if (jsonContent.example !== undefined) return { status, body: jsonContent.example };
+    if (jsonContent.examples && typeof jsonContent.examples === 'object') {
+      const first = Object.values(jsonContent.examples)[0] as any;
+      if (first?.value !== undefined) return { status, body: first.value };
+    }
+    if (jsonContent.schema) return { status, body: synthesizeFromSchema(doc, jsonContent.schema) };
+  }
+  // Swagger 2
+  if (resp.schema) return { status, body: synthesizeFromSchema(doc, resp.schema) };
+  return { status, body: { ok: true } };
+}
+
+function validateJsonAgainstSchema(doc: Record<string, any>, rawSchema: any, value: any, pointer = '$', depth = 0): string[] {
+  if (depth > 6) return [];
+  const schema = resolveRef(doc, rawSchema, depth);
+  if (!schema || typeof schema !== 'object') return [];
+  const errors: string[] = [];
+  if (schema.type) {
+    const actual = Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
+    const ok =
+      (schema.type === 'integer' && typeof value === 'number' && Number.isInteger(value)) ||
+      (schema.type === 'number' && typeof value === 'number') ||
+      (schema.type === actual) ||
+      (schema.nullable === true && value === null);
+    if (!ok) {
+      errors.push(`${pointer}: expected ${schema.type}, got ${actual}`);
+      return errors;
+    }
+  }
+  if (schema.type === 'object' && value && typeof value === 'object' && !Array.isArray(value)) {
+    for (const reqKey of schema.required ?? []) {
+      if (!(reqKey in value)) errors.push(`${pointer}.${reqKey}: missing required property`);
+    }
+    for (const [k, propSchema] of Object.entries(schema.properties ?? {})) {
+      if (k in value) errors.push(...validateJsonAgainstSchema(doc, propSchema, value[k], `${pointer}.${k}`, depth + 1));
+    }
+  } else if (schema.type === 'array' && Array.isArray(value) && schema.items) {
+    for (let i = 0; i < Math.min(value.length, 5); i++) {
+      errors.push(...validateJsonAgainstSchema(doc, schema.items, value[i], `${pointer}[${i}]`, depth + 1));
+    }
+  }
+  return errors;
+}
+
+function buildRoutes(doc: Record<string, any>): ParsedRoute[] {
+  const routes: ParsedRoute[] = [];
+  const methods = new Set(['get', 'head', 'post', 'put', 'patch', 'delete']);
+  for (const [template, pathItem] of Object.entries(doc.paths ?? {})) {
+    if (!pathItem || typeof pathItem !== 'object') continue;
+    const escaped = template
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\\\{[^/]+\\\}/g, '[^/]+');
+    const regex = new RegExp(`^${escaped}$`);
+    for (const [method, operation] of Object.entries(pathItem as Record<string, any>)) {
+      if (!methods.has(method.toLowerCase()) || !operation || typeof operation !== 'object') continue;
+      routes.push({ method: method.toUpperCase(), template, regex, operation });
+    }
+  }
+  return routes;
+}
+
+function isLoopbackHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  return h === '127.0.0.1' || h === 'localhost' || h === '::1' || h === '[::1]';
+}
+
+function httpRequest(targetUrl: URL, method: string, headers: Record<string, string>, body?: string): Promise<{ status: number; contentType: string; body: string }> {
+  return new Promise((resolve, reject) => {
+    const client = targetUrl.protocol === 'https:' ? https : http;
+    const req = client.request(
+      targetUrl,
+      { method, headers: { Accept: 'application/json', ...headers, ...(body ? { 'Content-Type': 'application/json', 'Content-Length': String(Buffer.byteLength(body)) } : {}) }, timeout: 10000 },
+      res => {
+        const chunks: Buffer[] = [];
+        let size = 0;
+        res.on('data', (c: Buffer) => {
+          if (size < 512 * 1024) { chunks.push(c); size += c.length; }
+        });
+        res.on('end', () => {
+          resolve({
+            status: res.statusCode ?? 0,
+            contentType: String(res.headers['content-type'] ?? ''),
+            body: Buffer.concat(chunks).toString('utf8'),
+          });
+        });
+      },
+    );
+    req.once('error', reject);
+    req.once('timeout', () => { req.destroy(new Error('Request timed out')); });
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+/** Local OpenAPI/Swagger mock server and contract verification tools. */
+export class ApiTools {
+  private mocks = new Map<string, MockServerEntry>();
+  private commands: OwnedCommand;
+  private abort = new AbortController();
+
+  constructor(
+    private resources: string,
+    private options: {
+      approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
+      approveExplicit?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
+      resolveVenvPython?: (project: string) => Promise<{ kind: 'venv' | 'conda'; prefix: string; python: string } | undefined>;
+    },
+  ) {
+    this.commands = new OwnedCommand(resources);
+  }
+
+  ports(): number[] {
+    return [...this.mocks.values()].map(m => m.port);
+  }
+
+  async mock(session: string, project: string, input: ApiMockInput, signal?: AbortSignal) {
+    const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
+    combined.throwIfAborted();
+
+    if (input.operation === 'status') {
+      if (input.id) {
+        const m = this.mocks.get(input.id);
+        if (!m || m.session !== session || m.project !== project) throw new Error('현재 대화·프로젝트가 시작한 Mock 서버만 조회할 수 있습니다.');
+        return { id: m.id, url: m.url, specPath: m.specPath, routeCount: m.routes.length, recentRequests: m.requests.slice(-30) };
+      }
+      return {
+        servers: [...this.mocks.values()]
+          .filter(m => m.session === session && m.project === project)
+          .map(m => ({ id: m.id, url: m.url, specPath: m.specPath, routeCount: m.routes.length, requestCount: m.requests.length })),
+      };
+    }
+
+    if (input.operation === 'stop') {
+      if (!input.id) throw new Error('중지할 Mock 서버 ID를 지정하세요.');
+      const m = this.mocks.get(input.id);
+      if (!m || m.session !== session || m.project !== project) throw new Error('현재 대화·프로젝트가 시작한 Mock 서버만 중지할 수 있습니다.');
+      await this.closeMock(m.id);
+      return { status: 'stopped', id: m.id };
+    }
+
+    // start
+    if (this.mocks.size >= 2) throw new Error('동시에 실행할 수 있는 로컬 Mock API 서버는 최대 2개입니다.');
+    if (!input.specPath) throw new Error('OpenAPI/Swagger 명세 파일 경로(specPath)를 지정하세요.');
+    const files = new ProjectFiles(project);
+    const rawText = await files.read(input.specPath);
+    const doc = parseOpenApi(rawText, input.specPath);
+    const routes = buildRoutes(doc);
+    if (!routes.length) throw new Error('명세에 등록된 HTTP 엔드포인트가 없습니다.');
+
+    const ok = await this.options.approve(
+      '로컬 OpenAPI Mock 서버 시작',
+      `프로젝트: ${project}\n명세 파일: ${input.specPath}\n엔드포인트 수: ${routes.length}개\n바인딩: 127.0.0.1 (로컬 루프백 전용)`,
+      combined,
+    );
+    if (!ok) throw new Error('로컬 Mock 서버 시작을 취소했습니다.');
+    combined.throwIfAborted();
+
+    const id = randomUUID();
+    const requests: MockServerEntry['requests'] = [];
+    const server = http.createServer((req, res) => {
+      const reqUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+      const method = (req.method ?? 'GET').toUpperCase();
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+      if (method === 'OPTIONS') { res.writeHead(204).end(); return; }
+      const matched = routes.find(r => r.method === method && r.regex.test(reqUrl.pathname));
+      if (!matched) {
+        requests.push({ at: new Date().toISOString(), method, path: reqUrl.pathname, status: 404 });
+        if (requests.length > 200) requests.shift();
+        res.writeHead(404, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'Not Found in OpenAPI spec', method, path: reqUrl.pathname }));
+        return;
+      }
+      const { status, body } = pickSuccessResponse(doc, matched.operation);
+      requests.push({ at: new Date().toISOString(), method, path: reqUrl.pathname, status });
+      if (requests.length > 200) requests.shift();
+      res.writeHead(status, { 'Content-Type': 'application/json' });
+      res.end(method === 'HEAD' ? undefined : JSON.stringify(body));
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, '127.0.0.1', resolve);
+    });
+    const addr = server.address();
+    if (!addr || typeof addr === 'string') {
+      server.close();
+      throw new Error('Mock 서버 포트 할당 실패');
+    }
+    const url = `http://127.0.0.1:${addr.port}`;
+    this.mocks.set(id, { id, session, project, specPath: input.specPath, port: addr.port, url, server, routes, requests });
+    return { status: 'running', id, url, specPath: input.specPath, routes: routes.map(r => `${r.method} ${r.template}`).slice(0, 60) };
+  }
+
+  async contractTest(project: string, input: ApiContractTestInput, signal?: AbortSignal) {
+    const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
+    combined.throwIfAborted();
+    let parsedUrl: URL;
+    try { parsedUrl = new URL(input.baseUrl); } catch { throw new Error('유효한 baseUrl을 지정하세요.'); }
+    if (!['http:', 'https:'].includes(parsedUrl.protocol) || parsedUrl.username || parsedUrl.password) {
+      throw new Error('baseUrl은 인증 정보 없는 http/https 주소여야 합니다.');
+    }
+
+    const files = new ProjectFiles(project);
+    const rawText = await files.read(input.specPath);
+    const doc = parseOpenApi(rawText, input.specPath);
+    const allowedMethods = new Set((input.methods?.length ? input.methods : ['GET', 'HEAD']).map(m => m.toUpperCase()));
+    const hasMutating = [...allowedMethods].some(m => !['GET', 'HEAD'].includes(m));
+    const loopback = isLoopbackHost(parsedUrl.hostname);
+    const maxRequests = Math.min(50, Math.max(1, input.maxRequests ?? 20));
+    const routes = buildRoutes(doc).filter(r => allowedMethods.has(r.method)).slice(0, maxRequests);
+    if (!routes.length) throw new Error('지정한 메서드 조건에 해당하는 명세 엔드포인트가 없습니다.');
+
+    const approveFn = (!loopback || hasMutating) && this.options.approveExplicit ? this.options.approveExplicit : this.options.approve;
+    const ok = await approveFn(
+      `API 계약 검증 실행 (${parsedUrl.host})`,
+      `프로젝트: ${project}\n명세 파일: ${input.specPath}\n대상 서버: ${parsedUrl.origin}\n허용 메서드: ${[...allowedMethods].join(', ')}\n최대 요청 수: ${routes.length}건\n${!loopback ? '[주의] 비-루프백 사내 서버에 실제 HTTP 요청을 전송합니다.\n' : ''}${hasMutating ? '[주의] 상태 변경 메서드가 포함되어 있습니다.' : ''}`,
+      combined,
+    );
+    if (!ok) throw new Error('API 계약 검증을 취소했습니다.');
+    combined.throwIfAborted();
+
+    const results: Array<{ method: string; template: string; url: string; status: number; passed: boolean; errors: string[] }> = [];
+    for (const route of routes) {
+      combined.throwIfAborted();
+      const filledPath = route.template.replace(/\{([^}]+)\}/g, (_m, name) => {
+        const param = (route.operation.parameters ?? []).find((p: any) => p.name === name && p.in === 'path');
+        const val = param?.example ?? param?.schema?.example ?? (param?.schema?.type === 'integer' ? '1' : 'sample');
+        return encodeURIComponent(String(val));
+      });
+      const reqUrl = new URL(filledPath.replace(/^\//, ''), parsedUrl.href.endsWith('/') ? parsedUrl.href : parsedUrl.href + '/');
+      let reqBody: string | undefined;
+      if (!['GET', 'HEAD'].includes(route.method)) {
+        const bodySchema = route.operation.requestBody?.content?.['application/json']?.schema;
+        if (bodySchema) reqBody = JSON.stringify(synthesizeFromSchema(doc, bodySchema));
+      }
+      const errors: string[] = [];
+      let status = 0;
+      try {
+        const resp = await httpRequest(reqUrl, route.method, input.headers ?? {}, reqBody);
+        status = resp.status;
+        const responses = route.operation.responses ?? {};
+        const respDef = resolveRef(doc, responses[String(status)] ?? responses[`${Math.floor(status / 100)}XX`] ?? responses.default);
+        if (!respDef) {
+          errors.push(`Undocumented HTTP status ${status}`);
+        } else if (route.method !== 'HEAD') {
+          const schema = respDef.content?.['application/json']?.schema ?? respDef.schema;
+          if (schema) {
+            if (!resp.contentType.toLowerCase().includes('json')) {
+              errors.push(`Expected JSON response Content-Type, got "${resp.contentType}"`);
+            } else {
+              try {
+                const parsedBody = JSON.parse(resp.body);
+                errors.push(...validateJsonAgainstSchema(doc, schema, parsedBody));
+              } catch {
+                errors.push('Response body is not valid JSON');
+              }
+            }
+          }
+        }
+      } catch (err) {
+        errors.push(`HTTP error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+      results.push({ method: route.method, template: route.template, url: reqUrl.href, status, passed: errors.length === 0, errors });
+    }
+
+    let schemathesisOutput: string | undefined;
+    if (input.useSchemathesis && this.options.resolveVenvPython) {
+      const pyEnv = await this.options.resolveVenvPython(project).catch(() => undefined);
+      if (pyEnv) {
+        const resolvedSpec = await files.resolve(input.specPath);
+        const args = ['-B', '-m', 'schemathesis', 'run', resolvedSpec, '--url', parsedUrl.origin, '--max-examples', '5'];
+        for (const m of allowedMethods) args.push('--include-method', m);
+        const sRes = await this.commands.run({ executable: pyEnv.python, args, cwd: project, env: { ...process.env, DO_NOT_TRACK: '1' } }, combined, 90000).catch(() => undefined);
+        if (sRes) schemathesisOutput = sRes.output.slice(-4000);
+      }
+    }
+
+    const passed = results.filter(r => r.passed).length;
+    return {
+      status: passed === results.length ? 'passed' : 'failed',
+      baseUrl: parsedUrl.origin,
+      total: results.length,
+      passed,
+      failed: results.length - passed,
+      results,
+      ...(schemathesisOutput ? { schemathesisOutput } : {}),
+    };
+  }
+
+  private async closeMock(id: string) {
+    const entry = this.mocks.get(id);
+    if (!entry) return;
+    this.mocks.delete(id);
+    entry.server.closeAllConnections?.();
+    await new Promise<void>(resolve => entry.server.close(() => resolve()));
+  }
+
+  cancel(session: string) {
+    for (const m of [...this.mocks.values()]) {
+      if (m.session === session) void this.closeMock(m.id);
+    }
+  }
+
+  async close() {
+    this.abort.abort();
+    await Promise.all([...this.mocks.keys()].map(id => this.closeMock(id)));
+    await this.commands.close();
+  }
+}

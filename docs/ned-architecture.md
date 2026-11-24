@@ -1,8 +1,8 @@
 # Ned의 구성과 데이터 흐름
 
-Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.3.16 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
+Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.4.0 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
 
-Zed는 코드 편집과 탐색, 대화 화면을 제공합니다. Ned Agent를 선택하면 OpenCode가 세션을 진행하고 필요한 호스트 도구를 호출합니다. 기본 Zed Agent를 선택하면 Zed 자체 하네스가 도구를 선택·실행하며 OpenCode나 Ned ACP를 사용하지 않습니다. Ned 호스트는 설정과 키, 승인, 프로젝트 접근, 프로세스 실행·종료와 사내 모델 연결을 관리합니다. Aegis·Conductor, 스킬 74개, OpenViking, Serena, Graphify, REA와 MCP도 이 호스트를 통해 연결합니다.
+Zed는 코드 편집과 탐색, 대화 화면을 제공합니다. Ned Agent를 선택하면 OpenCode가 세션을 진행하고 필요한 호스트 도구를 호출합니다. 기본 Zed Agent를 선택하면 Zed 자체 하네스가 도구를 선택·실행하며 OpenCode나 Ned ACP를 사용하지 않습니다. Ned 호스트는 설정과 키, 승인, 프로젝트 접근, 프로세스 실행·종료와 사내 모델 연결을 관리합니다. Aegis·Conductor, 스킬 79개, OpenViking, Serena, Graphify, REA, Workspace Tools(0.4.0)와 MCP도 이 호스트를 통해 연결합니다.
 
 ```mermaid
 flowchart LR
@@ -93,7 +93,7 @@ Windows ACP 실행은 Zed → 번들 Python 콘솔 감독 프로세스 → Elect
 
 Zed는 주로 GPL-3.0-or-later이며 Apache-2.0 구성 요소도 있습니다. 대응 소스와 제3자 고지를 함께 제공하며, Ned 호스트의 라이선스와 구분합니다. 최소 OS는 Windows 10 1903 이상·Windows 11 22H2 이상 x64입니다.
 
-Windows Server 설치와 실제 사내 Windows GUI·모델·네트워크 검증의 범위는 버전별 기록에서 확인합니다. [0.3.16 검증 기록](validation-0.3.16.md)
+Windows Server 설치와 실제 사내 Windows GUI·모델·네트워크 검증의 범위는 버전별 기록에서 확인합니다. [0.4.0 검증 기록](validation-0.4.0.md)
 
 ## 편집기 표시와 Astryx
 
@@ -103,7 +103,7 @@ Astryx는 Ned 편집기를 다시 디자인하는 런타임이 아니라 사용�
 
 ## 준비·대화 이관 및 자동 라우팅 경계
 
-HostTools는 검증한 로컬 카탈로그(스킬 74개)를 먼저 준비하고 OpenViking 0.5.5 지식 서비스는 백그라운드로 시작합니다. 기본 스킬은 설치 리소스에서 직접 읽으며, 사용자 글로벌·프로젝트(`.ned/skills`) 스킬은 별도 경로에서 실시간으로 탐색해 자연어 자동 라우팅에 반영합니다.
+HostTools는 검증한 로컬 카탈로그(스킬 79개)를 먼저 준비하고 OpenViking 0.5.5 지식 서비스는 백그라운드로 시작합니다. 기본 스킬은 설치 리소스에서 직접 읽으며, 사용자 글로벌·프로젝트(`.ned/skills`) 스킬은 별도 경로에서 실시간으로 탐색해 자연어 자동 라우팅에 반영합니다.
 
 기본 Zed Agent는 자체 프로필 name·모델 capability를 검증하고 앱 소유 모델 프록시를 사용합니다.
 개인 Zed 대화는 사용자가 지정한 DB의 readOnly SQLite snapshot만 가져오고(완료 후 임시 스냅샷 삭제), Ned DB 백업 후
@@ -111,6 +111,6 @@ HostTools는 검증한 로컬 카탈로그(스킬 74개)를 먼저 준비하고 
 EGM의 Goldfish는 새 읽기 전용 하위 세션과 별도 시스템 지침을 사용하고 부모 대화·개인 기억과
 자동 스킬 주입을 전달하지 않습니다. 기존 하위 Agent 동시 두 개 한도는 공유하며, 완료된 과거 하위 작업 기록이 2,000건에 도달하면 오래된 종료 기록을 자동 회전합니다.
 
-## 사용자 지식·개인화 기억과 안전 경계 (0.3.16)
+## 0.4.0 통합 확장 계층과 안전 경계
 
-권한 정책에 따라 프로젝트 지식과 개인 공통 지식을 OpenViking에 저장하며, 주 대화는 `openViking.memory` 정책과 시크릿 마스킹·opt-out에 따라 백그라운드 VLM 요약으로 개인 기억을 자동 추출·회상합니다. [지식 사용법](knowledge-notes.md)과 [자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md)를 참고하세요. 0.3.12부터는 Core와 별도 리버싱 팩 이원화를 제거하고 REA/Ghidra를 포함한 전체 설치본 단일 배포로 제공합니다. 0.3.16에서는 `browser_check` Node MCP 번들의 `NODE_PATH`·Windows `System32` 실행 경계 보완 및 종료 진단 기록, UTF-8 BOM 설정 JSON 허용·짧은 키 오탐 마스킹 방지·`atomicJSON` 직렬화 및 `rename` 재시도, Python 파이프 UTF-8 강제, 하위 에이전트 전문 도구 문맥 전달, `.ssh`·`.aws` 등 외부 읽기 민감 경로 및 `.ned`/`.vscode` 쓰기 차단, VS2022 MSBuild 지원을 추가했습니다. 승인 팝업과 선택창은 활성 모니터 최상단 소유자 창으로 열어 Zed 창 뒤에 가려지지 않게 합니다.
+권한 정책에 따라 프로젝트 지식과 개인 공통 지식을 OpenViking에 저장하며, 주 대화는 `openViking.memory` 정책과 시크릿 마스킹·opt-out에 따라 백그라운드 VLM 요약으로 개인 기억을 자동 추출·회상합니다. [지식 사용법](knowledge-notes.md)과 [자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md)를 참고하세요. 0.4.0에서는 사내 PyPI 미러 라우팅(`.venv` 관리·오프라인 패키지 API 역추적·`marimo`/`Streamlit` 루프백 프리뷰), 턴별 Shadow Git 체크포인트와 `git worktree` 병렬 샌드박스(`spawn_subagent(isolation="worktree")`), Spec-Driven 워크플로(`specs/<feature>/`), 고정 해시 `workspace-tools` 번들(다국어 `ast-grep-py`·`bandit`·한글 `kordoc`·`openpyxl`/`python-docx`/`python-pptx`/`pdfplumber`·오프라인 `mermaid`), OpenAPI 로컬 Mock·계약 검증을 호스트 권한·스냅샷·Job Object 소유권 경계 안에서 통합 제공합니다. [0.4.0 변경 사항](changes-0.4.0.md)을 참고하세요.

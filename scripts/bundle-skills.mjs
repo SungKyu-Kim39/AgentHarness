@@ -69,6 +69,11 @@ const definitions = [
   ['statistical-analysis','anthropicWork','data/skills/statistical-analysis','통계 해석','분포·이상치·가설 검정·효과 크기·신뢰 구간·표본·인과 해석의 한계'],
   ['ab-testing','marketing','skills/ab-testing','A/B 실험 설계·판정','가설·무작위 배정·MDE·검정력·표본 수·가드레일·중지 규칙; 로컬 계산 예제'],
   ['web-design-guidelines','vercelInterface','.','UI 품질 검토','로컬 고정 UI 규칙으로 접근성·포커스·폼·상태·반응형·성능·한국어 사용성 검토'],
+  ['python-intranet-venv','local','skills/python-intranet-venv','사내 PyPI .venv 및 패키지 API 역추적','사내 PyPI 미러 라우팅으로 .venv를 구성하고 설치된 패키지의 실물 AST 시그니처와 독스트링을 오프라인 조회'],
+  ['data-app-builder','local','skills/data-app-builder','대화형 데이터 앱 구축·프리뷰','marimo·Streamlit·Uvicorn 로컬 데이터 앱을 작성하고 루프백 프리뷰와 브라우저 점검으로 자가 검증'],
+  ['spec-driven-dev','local','skills/spec-driven-dev','명세 주도 개발(SDD)','specs/<feature>/ 아래 spec.md·plan.md·tasks.md를 체계적으로 관리하고 완료 전 정합성 검증'],
+  ['korean-office-docs','local','skills/korean-office-docs','한글·오피스 문서 양방향 자동화','HWP·HWPX·PDF 표 읽기 및 XLSX·DOCX·PPTX·HWPX 보고서와 양식을 오피스 미설치 환경에서 생성·편집'],
+  ['architecture-diagramming','local','skills/architecture-diagramming','오프라인 다이어그램 및 .drawio 설계도','실제 코드 근거로 편집 가능한 .drawio XML 설계도와 오프라인 Mermaid SVG/PNG 이미지 생성'],
 ];
 async function tree(root) {
   const files = [];

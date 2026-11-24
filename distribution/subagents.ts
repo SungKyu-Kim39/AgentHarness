@@ -20,6 +20,8 @@ type Entry = {
   title: string;
   writes: string[];
   reviewer?: string;
+  worktreeId?: string;
+  worktreePath?: string;
   state: State;
   createdAt: number;
   endedAt?: number;
@@ -55,6 +57,10 @@ export const subagentReadTools = new Set([
   "document_read",
   "data_query",
   "browser_check",
+  "python_package_docs",
+  "ast_search",
+  "code_audit",
+  "spec_workflow",
 ]);
 export const goldfishReadTools = new Set(["read_file", "list_files", "read_skill"]);
 export const goldfishReviewers = new Set(["codebase_details","comprehension","design_critic","implementation_readiness","inventive_catalyst","structural","style","zoom_out"]);
@@ -92,6 +98,7 @@ export class Subagents {
     ) => Promise<any>,
     private project: (id: string) => Promise<string>,
     private request: (id: string) => Promise<string>,
+    private createWorktree?: (project: string, label: string, signal?: AbortSignal) => Promise<{ id: string; path: string }>,
   ) {}
   private file() {
     return path.join(this.root, "subagents.json");
@@ -150,6 +157,8 @@ export class Subagents {
         project: j.project,
         role: j.role,
         reviewer: j.reviewer,
+        ...(typeof j.worktreeId === "string" ? { worktreeId: j.worktreeId } : {}),
+        ...(typeof j.worktreePath === "string" ? { worktreePath: j.worktreePath } : {}),
         title: j.title,
         writes: j.writes,
         state: j.state,
@@ -193,7 +202,7 @@ export class Subagents {
     session: string,
     tool: string,
     args: unknown,
-  ): Promise<{ session: string; signal?: AbortSignal; contextText?: string }> {
+  ): Promise<{ session: string; signal?: AbortSignal; contextText?: string; projectOverride?: string }> {
     if (!this.ready)
       throw Error("하위 Agent 실행 준비·복구를 확인하고 있습니다.");
     const j = this.jobs.get(session);
@@ -227,13 +236,22 @@ export class Subagents {
         throw Error(
           "이 하위 Agent에는 해당 도구 권한이 없습니다. 빌드·Git 변경·환경 선택·GUI·추가 위임은 주 Agent가 처리합니다.",
         );
+      if (tool === "ast_search" && (args as any)?.apply === true)
+        throw Error("하위 Agent에서는 AST 읽기 전용 검색만 허용됩니다.");
+      if (tool === "spec_workflow" && (args as any)?.operation === "init")
+        throw Error("하위 Agent에서는 Spec 조회·검증만 허용됩니다.");
       if (
         editing.has(tool) &&
         !j.writes.includes(relative(String((args as any)?.path ?? "")))
       )
         throw Error("이 파일은 하위 Agent에 할당한 수정 대상이 아닙니다.");
       const contextText = [j.title, j.prompt ?? ""].filter(Boolean).join("\n");
-      return { session: j.parent, signal: j.abort.signal, ...(contextText ? { contextText } : {}) };
+      return {
+        session: j.parent,
+        signal: j.abort.signal,
+        ...(contextText ? { contextText } : {}),
+        ...(j.worktreePath ? { projectOverride: j.worktreePath } : {}),
+      };
     }
     const info = await this.info(session);
     if (info.parentID)
@@ -247,6 +265,7 @@ export class Subagents {
         [...this.jobs.values()].some(
           (j) =>
             j.project === project &&
+            !j.worktreePath &&
             active(j) &&
             j.role === "worker" &&
             j.writes.includes(p),
@@ -266,6 +285,7 @@ export class Subagents {
       prompt: string;
       reviewer?: string;
       writePaths: string[];
+      isolation?: "shared" | "worktree";
     },
     signal?: AbortSignal,
   ) {
@@ -282,15 +302,20 @@ export class Subagents {
     const project = await this.project(parent),
       request = await this.request(parent),
       writes = [...new Set(input.writePaths.map(relative))];
+    const isolation = input.isolation ?? "shared";
+    if (isolation === "worktree" && input.role !== "worker")
+      throw Error("git worktree 격리 모드는 구현 하위 Agent(worker)에서만 사용할 수 있습니다.");
     if (input.role === "worker" && !writes.length)
       throw Error("구현 하위 Agent에는 수정할 파일을 지정하세요.");
     if (input.role === "goldfish" && (!goldfishReviewers.has(input.reviewer ?? "") || writes.length)) throw Error("Goldfish 검토자와 읽기 전용 범위를 확인하세요.");
     if (input.role === "research" && writes.length)
       throw Error("조사 하위 Agent에는 수정 파일을 할당할 수 없습니다.");
     if (
+      isolation !== "worktree" &&
       [...this.jobs.values()].some(
         (j) =>
           j.project === project &&
+          !j.worktreePath &&
           active(j) &&
           j.writes.some((p) => writes.includes(p)),
       )
@@ -314,6 +339,14 @@ export class Subagents {
         "대기 중인 하위 작업이 많습니다. 기존 작업을 완료하거나 중지하세요.",
       );
     if (!current()) throw Error("하위 Agent 실행을 중지했습니다.");
+    let worktreeId: string | undefined;
+    let worktreePath: string | undefined;
+    if (isolation === "worktree") {
+      if (!this.createWorktree) throw Error("Worktree 샌드박스가 연결되지 않았습니다.");
+      const wt = await this.createWorktree(project, input.title, signal);
+      worktreeId = wt.id;
+      worktreePath = wt.path;
+    }
     const j: Job = {
       id: "ses_ned_" + randomBytes(16).toString("hex"),
       parent,
@@ -321,6 +354,8 @@ export class Subagents {
       project,
       role: input.role,
       reviewer: input.reviewer,
+      worktreeId,
+      worktreePath,
       title: input.title,
       writes,
       state: "queued",
@@ -483,6 +518,7 @@ export class Subagents {
       title: j.title,
       state: j.state,
       writePaths: j.writes,
+      ...(j.worktreeId ? { worktreeId: j.worktreeId } : {}),
       createdAt: j.createdAt,
       endedAt: j.endedAt,
     };

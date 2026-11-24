@@ -19,6 +19,11 @@ const groups: Array<{ ids: string[]; intent: RegExp; context?: RegExp }> = [
   { ids: ['codebase-design','domain-modeling'], intent: /모듈|설계|도메인|아키텍처|인터페이스|architecture|module|domain model|interface design/i },
   { ids: ['retro','session-handoff'], intent: /회고|인계|이어.*(?:pc|세션)|handoff|retrospective|postmortem/i },
   { ids: ['explore-data','statistical-analysis','ab-testing'], intent: /데이터.*분석|통계|가설.*검정|a\/b|실험.*분석|data analysis|statistic|experiment/i },
+  { ids: ['python-intranet-venv'], intent: /\bpip\b|\bvenv\b|\.venv|가상환경|패키지.*(?:설치|문서|api)|requirements\.txt|pypi|라이브러리.*(?:설치|시그니처|문서)/i },
+  { ids: ['data-app-builder','webapp-testing'], intent: /\bmarimo\b|\bstreamlit\b|\buvicorn\b|데이터.*(?:앱|대시보드|웹앱)|리액티브\s*노트북|interactive.*(?:dashboard|app)/i },
+  { ids: ['spec-driven-dev','writing-plans'], intent: /명세\s*주도|스펙.*(?:작성|기반|먼저|관리)|spec[-\s]?driven|\bsdd\b|specs\/|요구사항.*(?:명세서|체크리스트)/i },
+  { ids: ['korean-office-docs','humanize-korean'], intent: /\bhwp\b|\bhwpx\b|한글\s*(?:문서|공문|양식)|엑셀.*(?:만들|생성|작성)|파워포인트|\bpptx?\b|\bdocx\b|\bxlsx\b|보고서.*(?:생성|작성|양식)|표\s*추출/i },
+  { ids: ['architecture-diagramming'], intent: /\bdrawio\b|\.drawio|\bmermaid\b|다이어그램|구성도|아키텍처.*(?:그림|도식|시각화)|시퀀스.*도|flowchart/i },
 ];
 function text(content: unknown): string {
   if (typeof content === 'string') return content;
@@ -29,6 +34,10 @@ function text(content: unknown): string {
 export const specializedTools = [
   { prefix: 'desktop_', trigger: /(?:desktop|\bGUI\b|데스크톱|데스크탑|계산기|메모장|그림판|앱.*(?:클릭|실행|열어)|창.*(?:열어|클릭)|open.*calculator|click.*window)/i },
   { prefix: 'rea_', trigger: /(?:\bghidra\b|\brea\b|리버싱|역공학|디컴파일|디스어셈블|decompil|disassembl|binary.*analy|바이너리.*분석)/i },
+  { prefix: 'document_write', trigger: /(?:\bhwpx?\b|\bxlsx\b|\bdocx\b|\bpptx?\b|한글\s*(?:문서|양식|공문)|엑셀|워드|파워포인트|보고서.*(?:만들|생성|작성)|양식.*채워|export.*(?:excel|word|ppt|hwpx))/i },
+  { prefix: 'diagram_', trigger: /(?:\bdrawio\b|\.drawio|\bmermaid\b|다이어그램|구성도|흐름도|아키텍처.*(?:그려|그림|도식)|시퀀스.*다이어그램|flowchart|diagram)/i },
+  { prefix: 'api_', trigger: /(?:\bopenapi\b|\bswagger\b|\bmock\b.*(?:서버|api)|계약\s*검증|contract\s*test|\bschemathesis\b|api.*(?:목|모의|검증|퍼징|테스트))/i },
+  { prefix: 'worktree_', trigger: /(?:\bworktree\b|워크트리|격리.*(?:브랜치|샌드박스|비교)|병렬.*(?:비교|실험|구현)|a안.*b안)/i },
 ];
 
 export function specializedToolRequested(name: string, request: string) {

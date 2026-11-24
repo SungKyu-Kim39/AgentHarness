@@ -124,7 +124,7 @@ await writeFile(path.join(root,`downloads/${prefix}-bundle-verification.json`),J
 let readme=await readFile(path.join(root,'README.md'),'utf8');
 readme=readme.replace(/^최신 (?:게시 )?사전 릴리스는 .*$/m,`최신 사전 릴리스는 [Ned ${displayVersion}](${releaseUrl})입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](${validationFile}).`)
  .replace(/최신 배포는 .*?입니다\./,`최신 배포는 [Ned ${displayVersion}](${releaseUrl})입니다.`)
- .replace(/현재 배포 기준은 0\.3\.\d+(?: rebuild\d+)?입니다\./,`현재 배포 기준은 ${displayVersion}입니다.`);
+ .replace(/현재 배포 기준은 0\.[34]\.\d+(?: rebuild\d+)?입니다\./,`현재 배포 기준은 ${displayVersion}입니다.`);
 await writeFile(path.join(root,'README.md'),readme);
 const optionalLinks=optional?'\n- '+optional.assets.map(item=>`[${item.name.includes('-core-')?'Core 설치 EXE':'리버싱 팩'}](${releaseUrl.replace('/tag/','/download/')}/${item.name}) · [SHA-256](${item.name}.sha256)`).join('\n- '):'';
 const oldDownloads=await readFile(path.join(root,'downloads/README.md'),'utf8');

@@ -7,11 +7,12 @@ import { createPackage } from '@electron/asar';
 import { fileHash,verifyManifest } from './installer-audit.mjs';
 import { verifyBundledHost } from './ned-host-smoke.mjs';
 import { updateReleaseLauncher, updateReleaseMcpNodeWorker, updateReleaseSupervisor } from './release-supervisor.mjs';
-import { isReleaseVersion, isGhidraVersion, isModernVersion } from './release-policy.mjs';
+import { isReleaseVersion, isGhidraVersion, isModernVersion, isWorkspaceToolsVersion } from './release-policy.mjs';
 
 const json=async file=>JSON.parse(await readFile(file,'utf8'));
 const exists=file=>access(file).then(()=>true,()=>false);
 async function ghidraInputs(root){return Object.fromEntries(await Promise.all(['ghidra-runtime-lock.json','scripts/bundle-ghidra.py','scripts/CompileGhidraGuard.java','distribution/NedOfflineNetworkGuard.java'].map(async file=>[file,await fileHash(path.join(root,file))])));}
+async function workspaceToolsInputs(root){return Object.fromEntries(await Promise.all(['workspace-tools-lock.json','workspace-tools-node-lock.json','scripts/bundle-workspace-tools.py'].map(async file=>[file,await fileHash(path.join(root,file))])));}
 export async function prepareRelease(root,cache,staged,version,seven,record=false) {
  if(!isReleaseVersion(version))throw Error('Review a new runtime baseline before the next release');
  const {url: _download, components, ...base}=await json(path.join(root,'scripts/ned-bootstrap-lock.json'));
@@ -23,6 +24,7 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
   if(isGhidraVersion(version)&&lock.launcherSha256&&lock.launcherSha256!==await fileHash(path.join(root,'scripts/openviking-launch.py')))throw Error('Stale OpenViking launcher; rebuild and review its runtime manifest');
   if(isGhidraVersion(version)&&lock.mcpNodeWorkerSha256&&lock.mcpNodeWorkerSha256!==await fileHash(path.join(root,'scripts/mcp-node-worker.cjs')))throw Error('Stale MCP node worker; rebuild and review its runtime manifest');
   if(isGhidraVersion(version)&&JSON.stringify(lock.ghidraInputs)!==JSON.stringify(await ghidraInputs(root)))throw Error('Stale Ghidra inputs; rebuild and review its runtime manifest');
+  if(isWorkspaceToolsVersion(version)&&JSON.stringify(lock.workspaceToolsInputs)!==JSON.stringify(await workspaceToolsInputs(root)))throw Error('Stale workspace tools inputs; rebuild and review its runtime manifest');
   for(const [name,item]of Object.entries(lock.components))await verifyManifest(path.join(staged,'resources/runtime/windows-x64',name),item.manifestSha256,name==='mcp');
   return {lock,proof};
  }
@@ -41,17 +43,22 @@ export async function prepareRelease(root,cache,staged,version,seven,record=fals
   const ghidraManifest=path.join(staged,'resources/runtime/windows-x64/ghidra/manifest.json');
   proof.components.ghidra={originalManifestSha256:await fileHash(ghidraManifest),manifestSha256:await fileHash(ghidraManifest),files:(await json(ghidraManifest)).files.length};
  }
+ if(isWorkspaceToolsVersion(version)){
+  execFileSync('python3',[path.join(root,'scripts/bundle-workspace-tools.py'),path.join(staged,'resources/runtime/windows-x64/workspace-tools')],{cwd:root,stdio:'inherit'});
+  const wtManifest=path.join(staged,'resources/runtime/windows-x64/workspace-tools/manifest.json');
+  proof.components['workspace-tools']={originalManifestSha256:await fileHash(wtManifest),manifestSha256:await fileHash(wtManifest),files:(await json(wtManifest)).files.length};
+ }
  const supervisorSha256=isGhidraVersion(version)?await updateReleaseSupervisor(root,staged,proof):undefined;
  const launcherSha256=isGhidraVersion(version)?await updateReleaseLauncher(root,staged,proof):undefined;
  const mcpNodeWorkerSha256=isGhidraVersion(version)?await updateReleaseMcpNodeWorker(root,staged,proof):undefined;
- const lock={schemaVersion:1,version,supervisorSha256,launcherSha256,mcpNodeWorkerSha256,baseline:base,optimizerSha256:await fileHash(path.join(root,'scripts/optimize-runtime.py')),reportSha256:await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')),components:proof.components,ghidraInputs:await ghidraInputs(root)};
+ const lock={schemaVersion:1,version,supervisorSha256,launcherSha256,mcpNodeWorkerSha256,baseline:base,optimizerSha256:await fileHash(path.join(root,'scripts/optimize-runtime.py')),reportSha256:await fileHash(path.join(staged,'resources/ned/runtime-optimization.json')),components:proof.components,ghidraInputs:await ghidraInputs(root),...(isWorkspaceToolsVersion(version)?{workspaceToolsInputs:await workspaceToolsInputs(root)}:{})};
  await writeFile(lockFile,JSON.stringify(lock,null,2)+'\n');
  console.log(`Runtime prepared: ${proof.payloadFilesAvoided} file writes and ${proof.installedBytesAvoided} installed bytes avoided.`);
  return {lock,proof};
 }
 
 export async function refreshReleaseHost(root,cache,staged,version,sourceCommit) {
- const changes=execFileSync('git',['diff','HEAD','--name-only','--','src','distribution','scripts','package.json','package-lock.json','skills-lock.json','reviewed-skills-lock.json','release-runtime-lock.json','python-runtime-lock.json','openviking-upgrade-lock.json','ghidra-runtime-lock.json','egm-lock.json','studio-assets-lock.json','vendor/skills'],{cwd:root,encoding:'utf8'}).trim();
+ const changes=execFileSync('git',['diff','HEAD','--name-only','--','src','distribution','scripts','package.json','package-lock.json','skills-lock.json','reviewed-skills-lock.json','release-runtime-lock.json','python-runtime-lock.json','openviking-upgrade-lock.json','ghidra-runtime-lock.json','workspace-tools-lock.json','workspace-tools-node-lock.json','egm-lock.json','studio-assets-lock.json','vendor/skills'],{cwd:root,encoding:'utf8'}).trim();
  if(changes)throw Error('Commit reviewed executable and bundle inputs before release build: '+changes);
  execFileSync(process.execPath,[path.join(root,'scripts/prepare-acp.mjs')],{cwd:root,stdio:'inherit'});
  execFileSync(process.execPath,[path.join(root,'scripts/ned-build.mjs')],{cwd:root,stdio:'inherit'});
@@ -66,7 +73,7 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
  await rm(path.join(resources,'skills'),{recursive:true,force:true});await cp(path.join(root,'vendor/skills'),path.join(resources,'skills'),{recursive:true});
  await rm(path.join(resources,'skill-seed'),{recursive:true,force:true});
  await rm(path.join(resources,'personal-pack-recovery.py'),{force:true});
- for(const [from,to]of [['scripts/sidecar-supervisor.py','python-supervisor.py'],['distribution/python-runner.py','python-runner.py'],['docs/python-conda.md','python-conda.md'],['distribution/rea-ghidra-worker.mjs','rea-ghidra-worker.mjs'],['skills-lock.json','skills-lock.json'],['agent-config.example.json','agent-config.example.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/bundled-skills.md','SKILLS_GUIDE.md'],['docs/license-policy.md','LICENSE_POLICY.md'],['THIRD_PARTY_NOTICES.md','licenses/THIRD_PARTY_NOTICES.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(resources,to));
+ for(const [from,to]of [['scripts/sidecar-supervisor.py','python-supervisor.py'],['distribution/python-runner.py','python-runner.py'],['distribution/python-inspector.py','python-inspector.py'],['distribution/ast-audit-worker.py','ast-audit-worker.py'],['distribution/office-worker.py','office-worker.py'],['distribution/kordoc-worker.mjs','kordoc-worker.mjs'],['docs/python-conda.md','python-conda.md'],['distribution/rea-ghidra-worker.mjs','rea-ghidra-worker.mjs'],['skills-lock.json','skills-lock.json'],['agent-config.example.json','agent-config.example.json'],['docs/offline-setup.md','GETTING_STARTED.md'],['docs/bundled-skills.md','SKILLS_GUIDE.md'],['docs/license-policy.md','LICENSE_POLICY.md'],['THIRD_PARTY_NOTICES.md','licenses/THIRD_PARTY_NOTICES.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.join(root,from),path.join(resources,to));
  const astryxFile=path.join(root,'astryx-offline-lock.json');
  if(await exists(astryxFile)){
   const astryx=await json(astryxFile),archive=path.join(root,'downloads/astryx',astryx.archive.name);
@@ -79,7 +86,7 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
  }
  if(isModernVersion(version))for(const file of await readdir(path.join(root,'docs')))if(file.endsWith('.md'))await cp(path.join(root,'docs',file),path.join(resources,file));
  if(isModernVersion(version))await cp(path.join(root,'node_modules/yaml/LICENSE'),path.join(resources,'licenses/yaml-ISC.txt'));
- if(isModernVersion(version))for(const file of ['egm-lock.json','studio-assets-lock.json'])await cp(path.join(root,file),path.join(resources,'locks',file));
+ if(isModernVersion(version))for(const file of ['egm-lock.json','studio-assets-lock.json',...(isWorkspaceToolsVersion(version)?['workspace-tools-lock.json','workspace-tools-node-lock.json']:[])])await cp(path.join(root,file),path.join(resources,'locks',file));
  await cp(path.join(root,'release-runtime-lock.json'),path.join(resources,'locks/release-runtime.json'));
  const info={schemaVersion:1,product:'Ned',version,buildRevision:process.env.NED_BUILD_REVISION||undefined,sourceCommit,baselineRuntime:(await json(path.join(root,'release-runtime-lock.json'))).baseline,hostBuiltFromSource:true,acpBuiltFromPinnedSource:true,upstreamAcpSourceLockSha256:await fileHash(path.join(root,'ned-acp-lock.json')),buildDependencyLockSha256:await fileHash(path.join(root,'scripts/acp-build/package-lock.json')),hostModuleSmoke:smoke,windowsAcceptance:false};
  await writeFile(path.join(resources,'build-info.json'),JSON.stringify(info,null,2)+'\n');

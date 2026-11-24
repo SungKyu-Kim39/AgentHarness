@@ -12,11 +12,20 @@ import { GitTools } from './git-tools';
 import { ExternalRead } from './external-read';
 import { ReaGhidra } from './rea-ghidra';
 import { PythonProjects, type PythonSelector } from './python-projects';
+import { PythonVenvManager } from './python-venv';
+import { DataApps } from './data-apps';
+import { ProjectCheckpoints } from './checkpoints';
+import { WorktreeSandbox } from './worktree-sandbox';
+import { SpecWorkflow } from './spec-workflow';
+import { AstAuditTools } from './ast-audit';
+import { DocumentTools } from './document-tools';
+import { DiagramTools } from './diagram-tools';
+import { ApiTools } from './api-tools';
 import { ProjectFiles } from '../src/main/files';
 import { atomicJSON, Redactor } from '../src/main/config';
 import { OfflineSkills } from '../src/main/skills';
 import { McpExtensions, extensionTools } from '../src/main/mcp-extensions';
-import type { Proposal } from '../src/shared/contracts';
+import type { Proposal, PythonConfig } from '../src/shared/contracts';
 import { savedKnowledgeId, type KnowledgeService } from '../src/main/openviking';
 
 export interface ToolSpec { name: string; description: string; inputSchema: Record<string, unknown> }
@@ -232,9 +241,21 @@ export const hostTools: ToolSpec[] = [
   { name: 'run_python', description: 'Activate the user-selected Conda environment and start a project Python task under native command permission. Returns a job ID; use python_run_status to verify completion and exit code. Actions: run .py script, compile .py, test with installed pytest, wheel with installed build --no-isolation, or package a .py with installed PyInstaller. No dependency installation, arbitrary interpreter, shell or environment override. Args are JSON data, never inserted into a shell command.', inputSchema: object({ action: { type: 'string', enum: ['run', 'compile', 'test', 'wheel', 'pyinstaller'] }, script: string, args: { type: 'array', items: string, maxItems: 100 }, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }, ['action']) },
   { name: 'python_run_status', description: 'Read a Python job owned by this conversation/project; omit id to recover this session/project’s job list. Optionally wait up to 30 seconds. running is not success. Returns confirmed exit code and bounded output when finished.', inputSchema: object({ id: string, waitMs: { type: 'integer', minimum: 0, maximum: 30000 } }) },
   { name: 'stop_python_run', description: 'Stop one Python job owned by this conversation/project and confirm child process termination. Does not stop unrelated Python, Conda or OpenViking processes.', inputSchema: object({ id: string }, ['id']) },
-  {name:'spawn_subagent',description:'Delegate a self-contained research or implementation task to a real child agent. Uses the parent model/project and current native permissions. At most two child agents run across Ned; further tasks queue. Research is read-only. Workers require exact disjoint project-relative writePaths. No nested delegation, shell/build/Git writes/environment choices/desktop actions in children. Completion is reported back to this conversation automatically. Include all context; children do not see the parent transcript.',inputSchema:object({role:{type:'string',enum:['research','worker','goldfish']},title:{type:'string',maxLength:200},prompt:{type:'string',maxLength:32000},reviewer:{type:'string',enum:['codebase_details','comprehension','design_critic','implementation_readiness','inventive_catalyst','structural','style','zoom_out']},writePaths:{type:'array',items:string,maxItems:100}},['role','title','prompt'])},
+  {name:'spawn_subagent',description:'Delegate a self-contained research or implementation task to a real child agent. Uses the parent model/project and current native permissions. At most two child agents run across Ned; further tasks queue. Research is read-only. Workers require exact disjoint project-relative writePaths unless isolation="worktree" is used for isolated git worktree sandboxes. No nested delegation, shell/build/Git writes/environment choices/desktop actions in children. Completion is reported back to this conversation automatically. Include all context; children do not see the parent transcript.',inputSchema:object({role:{type:'string',enum:['research','worker','goldfish']},title:{type:'string',maxLength:200},prompt:{type:'string',maxLength:32000},reviewer:{type:'string',enum:['codebase_details','comprehension','design_critic','implementation_readiness','inventive_catalyst','structural','style','zoom_out']},writePaths:{type:'array',items:string,maxItems:100},isolation:{type:'string',enum:['shared','worktree']}},['role','title','prompt'])},
   {name:'subagent_status',description:'Inspect this conversation’s real child-agent states and confirmed results. Omit id for the latest 50 task metadata records. Supply id for a result page of up to 32000 characters; follow nextOffset using offset. Completion notifications arrive automatically; avoid polling. waitMs may wait up to 30 seconds without limiting child model generation.',inputSchema:object({id:string,waitMs:{type:'integer',minimum:0,maximum:30000},offset:{type:'integer',minimum:0,maximum:10000000}})},
   {name:'stop_subagent',description:'Stop an owned child task and confirm its engine loop is idle. Never stops another conversation’s tasks. An unconfirmed stop prevents further work.',inputSchema:object({id:string},['id'])},
+  {name:'manage_python_venv',description:'Manage a project-local Python .venv sandbox using intranet PyPI routing (respecting system pip.ini/routing and optional Ned python config). Operations: status, create, install (PEP 508 packages or requirementsPath), uninstall, freeze, run (.py script offline), test (pytest offline). Requires native approval for mutations/execution.',inputSchema:object({operation:{type:'string',enum:['status','create','install','uninstall','freeze','run','test']},packages:{type:'array',items:string,maxItems:100},requirementsPath:string,script:string,args:{type:'array',items:string,maxItems:100}},['operation'])},
+  {name:'python_package_docs',description:'Offline local Context7 equivalent: inspect actual installed Python package versions, submodules, function/class signatures, type annotations and docstrings from the project .venv or chosen Conda environment without network access.',inputSchema:object({package:string,symbol:string,query:string,maxChars:{type:'integer',minimum:1000,maximum:48000}},['package'])},
+  {name:'python_app_preview',description:'Start, inspect or stop a local loopback-only (127.0.0.1) preview server for marimo, streamlit, uvicorn or static http files using the project Python environment. Combine the returned local URL with browser_check for self-verification.',inputSchema:object({operation:{type:'string',enum:['start','status','stop']},id:string,framework:{type:'string',enum:['marimo','streamlit','uvicorn','http']},entry:string,args:{type:'array',items:string,maxItems:50}},['operation'])},
+  {name:'project_checkpoint',description:'Shadow-Git time-machine checkpoints stored outside the project .git history. List turn checkpoints, create a labeled checkpoint, diff against a checkpoint, or safely restore project files with unsaved-buffer validation and recovery snapshots.',inputSchema:object({operation:{type:'string',enum:['list','create','diff','restore']},checkpointId:string,label:string,limit:{type:'integer',minimum:1,maximum:100}},['operation'])},
+  {name:'worktree_sandbox',description:'Manage isolated git worktree sandboxes for parallel experiments or worktree-isolated subagents: list, create, diff, apply (through host approval and snapshots), or discard.',inputSchema:object({operation:{type:'string',enum:['list','create','diff','apply','discard']},id:string,label:string},['operation'])},
+  {name:'spec_workflow',description:'Spec-Driven Development workflow under project specs/<feature>/ (spec.md, plan.md, tasks.md). Operations: init, list, status, verify (checks REQ coverage, unchecked tasks and referenced files).',inputSchema:object({operation:{type:'string',enum:['init','list','status','verify']},feature:string,title:string,goal:string},['operation'])},
+  {name:'ast_search',description:'Multilingual AST structural search and optional rewrite across project files (Python, TS/JS, C/C++, C#, Java, Go, Rust, HTML, CSS). Defaults to read-only preview; apply=true applies rewrites via host approval, buffer check and snapshots.',inputSchema:object({language:{type:'string',enum:['python','typescript','tsx','javascript','c','cpp','csharp','java','go','rust','html','css','json']},pattern:string,paths:{type:'array',items:string,maxItems:100},rewrite:string,apply:{type:'boolean'}},['language','pattern'])},
+  {name:'code_audit',description:'Offline local static security, secret leak, and code quality audit over a project snapshot (multilingual AST/pattern SAST, Python AST + Bandit, and optional project .venv Ruff).',inputSchema:object({paths:{type:'array',items:string,maxItems:200},categories:{type:'array',items:{type:'string',enum:['security','secrets','quality','venv-ruff']},maxItems:4}})},
+  {name:'document_write',description:'Generate or template-fill local XLSX, DOCX, PPTX or Korean HWPX documents offline without Office/Hancom installation. Writes atomically inside the project after native approval and binary snapshot backup.',inputSchema:object({format:{type:'string',enum:['xlsx','docx','pptx','hwpx']},outputPath:string,templatePath:string,spec:{type:'object',additionalProperties:true}},['format','outputPath','spec'])},
+  {name:'diagram_generate',description:'Generate editable Draw.io (.drawio mxGraph XML) diagrams from structured spec or Mermaid flowchart, or render Mermaid offline to crisp SVG/PNG via isolated headless Chromium.',inputSchema:object({format:{type:'string',enum:['drawio','mermaid-svg','mermaid-png']},outputPath:string,source:{oneOf:[string,{type:'object',additionalProperties:true}]}},['format','outputPath','source'])},
+  {name:'api_mock_server',description:'Start, inspect or stop a local loopback-only (127.0.0.1) OpenAPI/Swagger mock server generated from a project spec file for offline frontend/client development.',inputSchema:object({operation:{type:'string',enum:['start','status','stop']},id:string,specPath:string},['operation'])},
+  {name:'api_contract_test',description:'Validate a local or intranet API server against an OpenAPI/Swagger spec (response status codes and JSON schemas, plus optional .venv Schemathesis fuzzing). Non-loopback hosts or mutating HTTP methods always require explicit approval.',inputSchema:object({specPath:string,baseUrl:string,methods:{type:'array',items:{type:'string',enum:['GET','HEAD','POST','PUT','PATCH','DELETE']},maxItems:6},maxRequests:{type:'integer',minimum:1,maximum:50},headers:{type:'object',additionalProperties:string},useSchemathesis:{type:'boolean'}},['specPath','baseUrl'])},
   ...extensionTools,
   ...desktopTools,
 ];
@@ -259,17 +280,27 @@ export class HostTools {
   readonly git: GitTools;
   readonly ghidra: ReaGhidra;
   readonly python: PythonProjects;
+  readonly venv: PythonVenvManager;
+  readonly dataApps: DataApps;
+  readonly checkpoints: ProjectCheckpoints;
+  readonly worktrees: WorktreeSandbox;
+  readonly specs: SpecWorkflow;
+  readonly astAudit: AstAuditTools;
+  readonly documents: DocumentTools;
+  readonly diagrams: DiagramTools;
+  readonly apiTools: ApiTools;
   private readonly terminal: TerminalJobs;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
-    sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal;contextText?:string}>;
-    subagents?: {spawn(parent:string,input:{role:'research'|'worker'|'goldfish';reviewer?:string;title:string;prompt:string;writePaths:string[]},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
+    sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal;contextText?:string;projectOverride?:string}>;
+    subagents?: {spawn(parent:string,input:{role:'research'|'worker'|'goldfish';reviewer?:string;title:string;prompt:string;writePaths:string[];isolation?:'shared'|'worktree'},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
     fullAccess?: () => boolean;
     toolRequested?: (session: string, name: string, extraContext?: string) => boolean;
     choosePython?: PythonSelector;
     locateConda?: (project: string, signal?: AbortSignal) => Promise<string | undefined>;
+    pythonConfig?: () => PythonConfig | undefined;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveExplicit?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
@@ -278,14 +309,24 @@ export class HostTools {
     redactor: Redactor;
     reservedPorts?: () => number[];
   }) {
+    const internalPorts = () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])];
     this.desktop = new DesktopTools(root, resources, options.approve);
     this.builds = new VisualStudioBuild(resources, options.approve);
     this.terminal = new TerminalJobs(root, resources);
     this.skills = new OfflineSkills(managedResource(resources, 'skills'), path.join(root, 'skills'));
-    this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: () => [...(options.reservedPorts?.() ?? []), ...(this.url ? [Number(new URL(this.url).port)] : [])] });
+    this.extensions = new McpExtensions(root, resources, { approve: options.approve, reservedPorts: internalPorts });
     this.git = new GitTools(root, resources, options.approve, () => this.extensions.verifyRuntime());
     this.ghidra = new ReaGhidra(root, resources, options.approve);
     this.python = new PythonProjects(root, resources, { approve: options.approve, choose: (project, environments, signal) => options.choosePython ? options.choosePython(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창이 연결되지 않았습니다.')), locate: options.locateConda, knowledge: options.knowledge, permissionSignal: options.permissionSignal });
+    this.venv = new PythonVenvManager(root, resources, { approve: options.approve, pythonConfig: options.pythonConfig, savedConda: project => this.python.savedEnvironment(project) });
+    this.dataApps = new DataApps(root, resources, { approve: options.approve, resolvePython: project => this.venv.resolveProjectPython(project), reservedPorts: internalPorts });
+    this.checkpoints = new ProjectCheckpoints(root, resources);
+    this.worktrees = new WorktreeSandbox(root, resources);
+    this.specs = new SpecWorkflow(root);
+    this.astAudit = new AstAuditTools(root, resources, { resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
+    this.documents = new DocumentTools(root, resources, { approve: options.approve, resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
+    this.diagrams = new DiagramTools(root, resources, { approve: options.approve });
+    this.apiTools = new ApiTools(resources, { approve: options.approve, approveExplicit: options.approveExplicit, resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
   }
   async start(progress?: (done:number,total:number)=>void) {
     await this.skills.load(progress);
@@ -298,7 +339,7 @@ export class HostTools {
         const input = JSON.parse(Buffer.concat(buffers).toString());
         if (input.id === undefined) { res.writeHead(202).end(); return; }
         let result;
-        if (input.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'Ned guarded tools', version: '0.2.0' } };
+        if (input.method === 'initialize') result = { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'Ned guarded tools', version: '0.4.0' } };
         else if (input.method === 'ping') result = {};
         else if (input.method === 'tools/list') result = { tools: hostTools };
         else if (input.method === 'tools/call') {
@@ -306,7 +347,7 @@ export class HostTools {
           const abort = new AbortController();
           let controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);
           res.once('close', () => abort.abort());
-          const work = (async()=>{const scope=await this.scope(session,input.params.name,input.params.arguments??{});if(session!==scope.session){controllers.delete(abort);if(!controllers.size)this.operations.delete(session);session=scope.session;controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);}return this.callScoped(input.params.name,input.params.arguments??{},session,scope.signal?AbortSignal.any([abort.signal,scope.signal]):abort.signal,scope.contextText);})(); this.active.add(work);
+          const work = (async()=>{const scope=await this.scope(session,input.params.name,input.params.arguments??{});if(session!==scope.session){controllers.delete(abort);if(!controllers.size)this.operations.delete(session);session=scope.session;controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);}return this.callScoped(input.params.name,input.params.arguments??{},session,scope.signal?AbortSignal.any([abort.signal,scope.signal]):abort.signal,scope.contextText,scope.projectOverride);})(); this.active.add(work);
           try {
             const text = await work;
             if (extensionTools.some(t => t.name === input.params.name) || desktopToolNames.includes(input.params.name)) {
@@ -324,9 +365,9 @@ export class HostTools {
     const address = this.server.address(); if (!address || typeof address === 'string') throw new Error('MCP 포트 할당 실패');
     this.url = `http://127.0.0.1:${address.port}/mcp`;
   }
-  private async scope(session:string,tool:string,args:unknown):Promise<{session:string;signal?:AbortSignal;contextText?:string}>{if(typeof session!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(session))throw Error('유효한 세션이 필요합니다.');return this.options.sessionScope?this.options.sessionScope(session,tool,args):{session};}
-  async call(name:string,args:unknown,session:string,signal?:AbortSignal):Promise<string>{const scope=await this.scope(session,name,args);return this.callScoped(name,args,scope.session,scope.signal?(signal?AbortSignal.any([signal,scope.signal]):scope.signal):signal,scope.contextText);}
-  private async callScoped(name: string, args: unknown, session: string, signal?: AbortSignal, extraContext?: string): Promise<string> {
+  private async scope(session:string,tool:string,args:unknown):Promise<{session:string;signal?:AbortSignal;contextText?:string;projectOverride?:string}>{if(typeof session!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(session))throw Error('유효한 세션이 필요합니다.');return this.options.sessionScope?this.options.sessionScope(session,tool,args):{session};}
+  async call(name:string,args:unknown,session:string,signal?:AbortSignal):Promise<string>{const scope=await this.scope(session,name,args);return this.callScoped(name,args,scope.session,scope.signal?(signal?AbortSignal.any([signal,scope.signal]):scope.signal):signal,scope.contextText,scope.projectOverride);}
+  private async callScoped(name: string, args: unknown, session: string, signal?: AbortSignal, extraContext?: string, projectOverride?: string): Promise<string> {
     const authority = this.options.permissionSignal?.();
     if (authority) signal = signal ? AbortSignal.any([signal, authority]) : authority;
     if (!this.accepting || typeof session !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(session)) throw new Error('유효한 세션이 필요합니다.');
@@ -334,15 +375,88 @@ export class HostTools {
     signal?.throwIfAborted();
     if (!hostTools.some(t => t.name === name)) throw new Error('등록되지 않은 도구입니다.');
     const run = this.runs.get(session) ?? Symbol(); this.runs.set(session, run);
-    const project = await this.options.project(session), files = new ProjectFiles(project);
+    const project = projectOverride ?? await this.options.project(session), files = new ProjectFiles(project);
     if (this.options.toolRequested && !this.options.toolRequested(session, name, extraContext)) throw new Error('이 도구는 관련 작업을 사용자가 요청했을 때 사용할 수 있습니다.');
     this.activateEditScope(session,project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
+    if (name === 'document_read') {
+      const a = z.object({ path: pathArg, mode: z.enum(['markdown', 'tables', 'docling']).optional(), pages: z.string().max(128).optional() }).strict().parse(args);
+      const ext = path.extname(a.path).toLowerCase();
+      if (ext === '.hwp' || ext === '.hwpx' || a.mode === 'tables' || a.mode === 'docling') {
+        const res = await this.documents.readExtended(project, a, signal);
+        return JSON.stringify({ isError: false, content: [{ type: 'text', text: JSON.stringify(res) }] });
+      }
+      return JSON.stringify(await this.extensions.call('document_read', { path: a.path }, project, signal));
+    }
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
     if (desktopToolNames.includes(name)) return JSON.stringify(await this.desktop.call(name, args, session, project, signal));
+    if (name === 'manage_python_venv') {
+      const a = z.object({ operation: z.enum(['status', 'create', 'install', 'uninstall', 'freeze', 'run', 'test']), packages: z.array(z.string().min(1).max(256)).max(100).optional(), requirementsPath: pathArg.optional(), script: pathArg.optional(), args: z.array(z.string().max(4096)).max(100).optional() }).strict().parse(args);
+      return JSON.stringify(await this.venv.manage(session, project, a, signal));
+    }
+    if (name === 'python_package_docs') {
+      const a = z.object({ package: z.string().min(1).max(128), symbol: z.string().min(1).max(256).optional(), query: z.string().min(1).max(256).optional(), maxChars: z.number().int().min(1000).max(48000).optional() }).strict().parse(args);
+      return JSON.stringify(await this.venv.inspectPackageDocs(project, a, signal));
+    }
+    if (name === 'python_app_preview') {
+      const a = z.object({ operation: z.enum(['start', 'status', 'stop']), id: z.string().uuid().optional(), framework: z.enum(['marimo', 'streamlit', 'uvicorn', 'http']).optional(), entry: z.string().min(1).max(4096).optional(), args: z.array(z.string().max(1024)).max(50).optional() }).strict().parse(args);
+      return JSON.stringify(await this.dataApps.call(session, project, a, signal));
+    }
+    if (name === 'project_checkpoint') {
+      const a = z.object({ operation: z.enum(['list', 'create', 'diff', 'restore']), checkpointId: z.string().min(7).max(40).optional(), label: z.string().max(160).optional(), limit: z.number().int().min(1).max(100).optional() }).strict().parse(args);
+      if (a.operation === 'list') return JSON.stringify(await this.checkpoints.list(project, a.limit, signal));
+      if (a.operation === 'create') return JSON.stringify(await this.checkpoints.create(project, a.label ?? 'manual', signal));
+      if (!a.checkpointId) throw new Error('checkpointId가 필요합니다.');
+      if (a.operation === 'diff') return JSON.stringify(await this.checkpoints.diff(project, a.checkpointId, signal));
+      return JSON.stringify(await this.checkpoints.restore(session, project, a.checkpointId, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+    }
+    if (name === 'worktree_sandbox') {
+      const a = z.object({ operation: z.enum(['list', 'create', 'diff', 'apply', 'discard']), id: z.string().min(1).max(64).optional(), label: z.string().max(120).optional() }).strict().parse(args);
+      if (a.operation === 'list') return JSON.stringify(await this.worktrees.list(project));
+      if (a.operation === 'create') {
+        if (!await this.options.approve('격리 git worktree 샌드박스 생성', `프로젝트: ${project}\n라벨: ${a.label ?? 'sandbox'}`, signal)) throw new Error('worktree 생성을 취소했습니다.');
+        return JSON.stringify(await this.worktrees.create(project, a.label, signal));
+      }
+      if (!a.id) throw new Error('worktree id가 필요합니다.');
+      if (a.operation === 'diff') return JSON.stringify(await this.worktrees.diff(project, a.id, signal));
+      if (a.operation === 'apply') return JSON.stringify(await this.worktrees.apply(session, project, a.id, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+      return JSON.stringify(await this.worktrees.discard(project, a.id, signal));
+    }
+    if (name === 'spec_workflow') {
+      const a = z.object({ operation: z.enum(['init', 'list', 'status', 'verify']), feature: z.string().max(80).optional(), title: z.string().max(120).optional(), goal: z.string().max(2000).optional() }).strict().parse(args);
+      return JSON.stringify(await this.specs.call(session, project, a, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+    }
+    if (name === 'ast_search') {
+      const a = z.object({ language: z.enum(['python', 'typescript', 'tsx', 'javascript', 'c', 'cpp', 'csharp', 'java', 'go', 'rust', 'html', 'css', 'json']), pattern: z.string().min(1).max(4000), paths: z.array(pathArg).max(100).optional(), rewrite: z.string().max(4000).optional(), apply: z.boolean().default(false) }).strict().parse(args);
+      if (a.apply && !projectOverride) {
+        const request = await this.options.request?.(session);
+        await this.checkpoints.autoCheckpointBeforeEdit(session, project, request, signal);
+      }
+      return JSON.stringify(await this.astAudit.astSearch(session, project, a, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+    }
+    if (name === 'code_audit') {
+      const a = z.object({ paths: z.array(pathArg).max(200).optional(), categories: z.array(z.enum(['security', 'secrets', 'quality', 'venv-ruff'])).max(4).optional() }).strict().parse(args);
+      return JSON.stringify(await this.astAudit.audit(project, a, signal));
+    }
+    if (name === 'document_write') {
+      const a = z.object({ format: z.enum(['xlsx', 'docx', 'pptx', 'hwpx']), outputPath: pathArg, templatePath: pathArg.optional(), spec: z.record(z.unknown()) }).strict().parse(args);
+      return JSON.stringify(await this.documents.write(session, project, a, signal));
+    }
+    if (name === 'diagram_generate') {
+      const a = z.object({ format: z.enum(['drawio', 'mermaid-svg', 'mermaid-png']), outputPath: pathArg, source: z.union([z.string().min(1).max(200000), z.record(z.unknown())]) }).strict().parse(args);
+      return JSON.stringify(await this.diagrams.generate(session, project, a as any, signal));
+    }
+    if (name === 'api_mock_server') {
+      const a = z.object({ operation: z.enum(['start', 'status', 'stop']), id: z.string().uuid().optional(), specPath: pathArg.optional() }).strict().parse(args);
+      return JSON.stringify(await this.apiTools.mock(session, project, a, signal));
+    }
+    if (name === 'api_contract_test') {
+      const a = z.object({ specPath: pathArg, baseUrl: z.string().min(1).max(2048), methods: z.array(z.enum(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'])).max(6).optional(), maxRequests: z.number().int().min(1).max(50).optional(), headers: z.record(z.string().max(1024)).optional(), useSchemathesis: z.boolean().optional() }).strict().parse(args);
+      return JSON.stringify(await this.apiTools.contractTest(project, a, signal));
+    }
     if(['spawn_subagent','subagent_status','stop_subagent'].includes(name)){
       const agents=this.options.subagents;if(!agents)throw Error('하위 Agent 실행기가 준비되지 않았습니다.');
-      if(name==='spawn_subagent'){const a=z.object({role:z.enum(['research','worker','goldfish']),reviewer:z.enum(['codebase_details','comprehension','design_critic','implementation_readiness','inventive_catalyst','structural','style','zoom_out']).optional(),title:z.string().trim().min(1).max(200),prompt:z.string().trim().min(1).max(32000),writePaths:z.array(pathArg).max(100).default([])}).strict().parse(args);return JSON.stringify(await agents.spawn(session,a,signal));}
+      if(name==='spawn_subagent'){const a=z.object({role:z.enum(['research','worker','goldfish']),reviewer:z.enum(['codebase_details','comprehension','design_critic','implementation_readiness','inventive_catalyst','structural','style','zoom_out']).optional(),title:z.string().trim().min(1).max(200),prompt:z.string().trim().min(1).max(32000),writePaths:z.array(pathArg).max(100).default([]),isolation:z.enum(['shared','worktree']).optional()}).strict().parse(args);return JSON.stringify(await agents.spawn(session,a,signal));}
       if(name==='subagent_status'){const a=z.object({id:z.string().max(128).optional(),waitMs:z.number().int().min(0).max(30000).default(0),offset:z.number().int().min(0).max(10000000).default(0)}).strict().parse(args);return JSON.stringify(await agents.status(session,a.id,a.waitMs,a.offset));}
       const a=z.object({id:z.string().max(128)}).strict().parse(args);return JSON.stringify(await agents.stop(session,a.id));
     }
@@ -483,6 +597,7 @@ export class HostTools {
         if (decision.autoApproveRequest) this.editGrant = { session, project, run, request };
         await this.options.validateEdit?.(session, project, proposal, editSignal);
         if (this.editPolicyEpoch !== policyEpoch || !this.accepting || editSignal.aborted || this.cancelled.has(session) || this.runs.get(session) !== run || (this.options.request && await this.options.request(session) !== request)) throw new Error('요청이 바뀌어 파일 수정을 보류합니다.');
+        if (!projectOverride) await this.checkpoints.autoCheckpointBeforeEdit(session, project, request, editSignal);
         await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
         try { await files.apply(proposal, editSignal); }
         catch (error) { this.revokeEditApproval(); throw error; }

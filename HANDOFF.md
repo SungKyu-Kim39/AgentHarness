@@ -2,6 +2,10 @@
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.16 rebuild1**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
+## 0.4.0 작업 기준 (`AG-work`)
+
+- **0.4.0 9대 통합 기능 구현**: 사내 PyPI 연동 `.venv` 샌드박스(`manage_python_venv`, `contracts.ts` `python` 설정), 오프라인 패키지 API 역추적(`python_package_docs`), `marimo`/`Streamlit`/`Uvicorn` 루프백 프리뷰(`python_app_preview`), 턴별 Shadow Git 체크포인트(`project_checkpoint`), 격리 `git worktree` 병렬 샌드박스(`worktree_sandbox` + `spawn_subagent(isolation="worktree")`), Spec-Driven 워크플로(`spec_workflow`), 다국어 `ast-grep-py` 검색·치환 및 `code_audit`(SAST·시크릿·`bandit`·`.venv` `ruff`), 한글(HWP/HWPX `kordoc`)·MS Office(XLSX/DOCX/PPTX)·PDF 표 추출(`pdfplumber`)/`.venv` `docling`, OpenAPI 로컬 Mock·계약 검증(`api_mock_server`, `api_contract_test`), `.drawio` XML 및 오프라인 Mermaid SVG/PNG 렌더링(`diagram_generate`), 내장 스킬 5종(기본 스킬 79개)을 통합했습니다.
+
 ## 0.3.16 rebuild1 배포 기준
 
 소스 `0f93d8a8baca28fe1de825da48ba8c2296d7c0fc`를 사용했습니다. Windows 새 설치·0.3.16 업데이트와 48개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.16-rebuild1.md)

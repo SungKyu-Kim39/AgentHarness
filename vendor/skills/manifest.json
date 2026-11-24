@@ -9092,6 +9092,106 @@
           "sha256": "7c189fb6c96539cc251a7b9214ed534dd99e98320e1b7c13d15615d2b165e222"
         }
       ]
+    },
+    {
+      "id": "python-intranet-venv",
+      "name": "사내 PyPI .venv 및 패키지 API 역추적",
+      "description": "사내 PyPI 미러 라우팅으로 .venv를 구성하고 설치된 패키지의 실물 AST 시그니처와 독스트링을 오프라인 조회",
+      "directory": "python-intranet-venv",
+      "source": "Ned original MIT guidance",
+      "commit": "0.4.0",
+      "license": "LICENSE",
+      "adapter": "Ned 0.4.0 native offline/intranet guidance. Does not grant execution permissions.",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "297568b82ae4ecbfae8b3172d28252827f087f2d0a4a9d4213356d309ba9a22d"
+        }
+      ]
+    },
+    {
+      "id": "data-app-builder",
+      "name": "대화형 데이터 앱 구축·프리뷰",
+      "description": "marimo·Streamlit·Uvicorn 로컬 데이터 앱을 작성하고 루프백 프리뷰와 브라우저 점검으로 자가 검증",
+      "directory": "data-app-builder",
+      "source": "Ned original MIT guidance",
+      "commit": "0.4.0",
+      "license": "LICENSE",
+      "adapter": "Ned 0.4.0 native offline/intranet guidance. Does not grant execution permissions.",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "ff1186f6b4797e8dc663fd651f87cbfe7947f1f07ecd799671daee1e818d56ef"
+        }
+      ]
+    },
+    {
+      "id": "spec-driven-dev",
+      "name": "명세 주도 개발(SDD)",
+      "description": "specs/<feature>/ 아래 spec.md·plan.md·tasks.md를 체계적으로 관리하고 완료 전 정합성 검증",
+      "directory": "spec-driven-dev",
+      "source": "Ned original MIT guidance",
+      "commit": "0.4.0",
+      "license": "LICENSE",
+      "adapter": "Ned 0.4.0 native offline/intranet guidance. Does not grant execution permissions.",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "540f6ec2414e7e3f92afda6a44a5b91d7f7c3273da06d755ac7ba9be3e9f6e40"
+        }
+      ]
+    },
+    {
+      "id": "korean-office-docs",
+      "name": "한글·오피스 문서 양방향 자동화",
+      "description": "HWP·HWPX·PDF 표 읽기 및 XLSX·DOCX·PPTX·HWPX 보고서와 양식을 오피스 미설치 환경에서 생성·편집",
+      "directory": "korean-office-docs",
+      "source": "Ned original MIT guidance",
+      "commit": "0.4.0",
+      "license": "LICENSE",
+      "adapter": "Ned 0.4.0 native offline/intranet guidance. Does not grant execution permissions.",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "a3c8c44b56cf60e7720314fad4a5829566f5177418cde0bae2e9e557379e44fe"
+        }
+      ]
+    },
+    {
+      "id": "architecture-diagramming",
+      "name": "오프라인 다이어그램 및 .drawio 설계도",
+      "description": "실제 코드 근거로 편집 가능한 .drawio XML 설계도와 오프라인 Mermaid SVG/PNG 이미지 생성",
+      "directory": "architecture-diagramming",
+      "source": "Ned original MIT guidance",
+      "commit": "0.4.0",
+      "license": "LICENSE",
+      "adapter": "Ned 0.4.0 native offline/intranet guidance. Does not grant execution permissions.",
+      "files": [
+        {
+          "path": "LICENSE",
+          "sha256": "199d7205ecbe460bc14a005ea9f542050fd4bc855e7bae4f40b27c14f56b9c8c"
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "759f1016f76b71a83350284035d28fecf2283da09404f37d2e095fb34438d6ad"
+        }
+      ]
     }
   ]
 }

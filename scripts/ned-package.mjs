@@ -15,7 +15,7 @@ import { verifyBundledHost } from './ned-host-smoke.mjs';
 import { prepareRelease, refreshReleaseHost } from './ned-release.mjs';
 import {nedSigning} from './ned-signing.mjs';
 import {installSourceEditor,verifySourceEditor} from './ned-source-editor.mjs';
-import {isReleaseVersion,isGhidraVersion,isModernVersion,isNoSeedVersion,isActionsTransportVersion,isRebuiltEditorReusable,isValidRevision} from './release-policy.mjs';
+import {isReleaseVersion,isGhidraVersion,isModernVersion,isNoSeedVersion,isActionsTransportVersion,isWorkspaceToolsVersion,isRebuiltEditorReusable,isValidRevision} from './release-policy.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
@@ -33,6 +33,7 @@ const signing = nedSigning();
 const fullRelease = isReleaseVersion(version);
 const ghidraRelease = isGhidraVersion(version);
 const modernRelease = isModernVersion(version);
+const workspaceToolsRelease = isWorkspaceToolsVersion(version);
 const sourceEditorRelease = (version==='0.3.8'&&revision==='rebuild1') || modernRelease;
 if(['0.3.7','0.3.8','0.3.12','0.3.13','0.3.14','0.3.15','0.3.16'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
@@ -188,7 +189,7 @@ async function audit() {
     if (!editorBranding.vendorOriginal) verifyEditorIcon(await readFile(path.join(resources,'zed/Zed.exe')),await readFile(path.join(root,'assets/ned-icon.ico')));
     if (signing) { signing.verify(installer); signing.verify(path.join(extracted,'Ned.exe')); signing.verify(path.join(extracted,'Uninstall Ned.exe')); if (!editorBranding.vendorOriginal) signing.verify(path.join(resources,'zed/Zed.exe')); }
     const sourceEditor=!editorBranding.vendorOriginal && sourceEditorRelease?await verifySourceEditor(root,resources):undefined;
-    if(modernRelease)for(const file of ['egm-lock.json','studio-assets-lock.json'])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
+    if(modernRelease)for(const file of ['egm-lock.json','studio-assets-lock.json',...(workspaceToolsRelease?['workspace-tools-lock.json','workspace-tools-node-lock.json']:[])])if(await fileHash(path.join(root,file))!==await fileHash(path.join(resources,'ned/locks',file)))throw Error('Installed feature lock mismatch: '+file);
     if(isNoSeedVersion(version))for(const file of ['skill-seed','personal-pack-recovery.py'])
       if(await exists(path.join(resources,'ned',file)))throw Error('Removed OpenViking resource still in installer: '+file);
     let astryx;
@@ -199,7 +200,7 @@ async function audit() {
     }
     const released=fullRelease?await json(path.join(root,'release-runtime-lock.json')):undefined;
     const components={};
-    for(const name of ['openviking','mcp','rea','agent-desktop',...(ghidraRelease?['ghidra']:[]),'skills']) {
+    for(const name of ['openviking','mcp','rea','agent-desktop',...(ghidraRelease?['ghidra']:[]),...(workspaceToolsRelease?['workspace-tools']:[]),'skills']) {
       const folder=name==='skills'?'ned/skills':'runtime/windows-x64/'+name;
       const original=name==='skills'?path.join(root,'vendor/skills'):path.join(root,'vendor/runtime/windows-x64',name);
       components[name]=await verifyManifest(path.join(resources,folder),name!=='skills'&&released?released.components[name].manifestSha256:await fileHash(path.join(original,'manifest.json')),name==='mcp');
