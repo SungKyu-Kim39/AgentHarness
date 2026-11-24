@@ -5,7 +5,7 @@ on:
       version:
         description: Immutable artifact version
         required: true
-        default: '0.3.15'
+        default: '0.3.16'
       candidate_run:
         description: Successful candidate build run ID
         required: false

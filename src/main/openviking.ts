@@ -205,8 +205,9 @@ export class OpenVikingService implements KnowledgeService {
     let launchError: string | undefined; let stderr = ''; let lastHealthStatus: number | undefined;
     this.process = spawn(launch.executable, ['-I', '-B', launch.launcher, '--config', this.configFile, '--port', String(port)], {
       cwd: launch.cwd, windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'],
-      env: { SYSTEMROOT: process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP,
+      env: { SYSTEMROOT: process.env.SYSTEMROOT ?? process.env.SystemRoot, SystemRoot: process.env.SystemRoot ?? process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP,
         PATH: path.dirname(launch.executable), HOME: folder, USERPROFILE: folder, APPDATA: folder, LOCALAPPDATA: folder,
+        PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8',
         HF_HUB_OFFLINE: '1', TRANSFORMERS_OFFLINE: '1', HF_HUB_DISABLE_TELEMETRY: '1', DO_NOT_TRACK: '1', OTEL_SDK_DISABLED: 'true',
         LITELLM_LOCAL_MODEL_COST_MAP: 'True', LITELLM_TELEMETRY: 'False', NO_PROXY: '127.0.0.1,localhost',
         TIKTOKEN_CACHE_DIR: path.join(launch.cwd, 'tokenizers'),

@@ -210,6 +210,10 @@ export class PythonProjects {
       combined.throwIfAborted(); if (current && !await current()) throw new Error('대화 요청이나 프로젝트가 변경되어 Python 실행을 보류합니다.');
       const controller = new AbortController();
       const jobSignal = AbortSignal.any([controller.signal, this.abort.signal, ...(authority ? [authority] : [])]);
+      for (const [oldId, oldJob] of this.jobs) {
+        if (this.jobs.size < 64) break;
+        if (['succeeded', 'failed', 'stopped'].includes(oldJob.state)) this.jobs.delete(oldId);
+      }
       const job: Job = { id, session, project, state: 'running', controller, environment, action: input.action, progress: '', progressTruncated: false, task: Promise.resolve() };
       this.jobs.set(id, job);
       job.task = (async () => {

@@ -67,5 +67,10 @@ async function importHistorySnapshot(source:string, editorData:string) {
       output.exec('COMMIT');committed=true;
     }catch(e){output.exec('ROLLBACK');throw e;}
     return result;
-  }finally{input?.close();snapshot?.close();output?.close();if(!existing&&!committed)await rm(target,{force:true});}
+  }finally{
+    input?.close();snapshot?.close();output?.close();
+    await rm(path.join(store,'zed-source.db'),{force:true}).catch(()=>{});
+    if(!existing)await rm(store,{recursive:true,force:true}).catch(()=>{});
+    if(!existing&&!committed)await rm(target,{force:true});
+  }
 }

@@ -1,5 +1,5 @@
 import {editorVersion} from './ned-editor-version.mjs';
-import { readFile, writeFile, mkdir, cp, rm, stat, access } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, cp, rm, stat, access, readdir } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
@@ -34,7 +34,7 @@ const fullRelease = isReleaseVersion(version);
 const ghidraRelease = isGhidraVersion(version);
 const modernRelease = isModernVersion(version);
 const sourceEditorRelease = (version==='0.3.8'&&revision==='rebuild1') || modernRelease;
-if(['0.3.7','0.3.8','0.3.12','0.3.13','0.3.14'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
+if(['0.3.7','0.3.8','0.3.12','0.3.13','0.3.14','0.3.15'].includes(version) && !revision && ['release','package','bundle'].includes(mode))throw new Error('Published release artifacts are immutable; use NED_BUILD_REVISION=rebuild1 for the reviewed runtime update');
 const verifierCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 const buildCommit=process.env.NED_REBUILT_SOURCE_COMMIT ?? verifierCommit;
 if(buildCommit!==verifierCommit && (!revision || !['audit','bundle'].includes(mode) || !/^[0-9a-f]{40}$/.test(buildCommit)))throw new Error('Source override is only for audited rebuild resumption');
@@ -120,12 +120,10 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'agent-config.example.json'),to:'ned/agent-config.example.json'},
       {from:path.join(root,'skills-lock.json'),to:'ned/skills-lock.json'},
       ...['egm-lock.json','studio-assets-lock.json'].map(file=>({from:path.join(root,file),to:'ned/locks/'+file})),
-      ...['egm.md','zed-history-import.md','changes-'+version+'.md'].map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
+      ...(await readdir(path.join(root,'docs'))).filter(file=>file.endsWith('.md')).map(file=>({from:path.join(root,'docs',file),to:'ned/'+file})),
       {from:path.join(root,'distribution/rea-ghidra-worker.mjs'),to:'ned/rea-ghidra-worker.mjs'},
       {from:path.join(root,'scripts/sidecar-supervisor.py'),to:'ned/python-supervisor.py'},
       {from:path.join(root,'distribution/python-runner.py'),to:'ned/python-runner.py'},
-      {from:path.join(root,'docs/python-conda.md'),to:'ned/python-conda.md'},
-      {from:path.join(root,'docs/git-and-binary-analysis.md'),to:'ned/git-and-binary-analysis.md'},
       {from:path.join(root,'LICENSE'),to:'ned/licenses/Ned-MIT.txt'},
       {from:path.join(root,'node_modules/jsonc-parser/LICENSE.md'),to:'ned/licenses/jsonc-parser-MIT.txt'},
       {from:path.join(root,'node_modules/yaml/LICENSE'),to:'ned/licenses/yaml-ISC.txt'},
@@ -140,6 +138,7 @@ async function packageApp(compileInstaller=true) {
       {from:path.join(root,'assets/ned-icon.png'),to:'ned/icon.png'},{from:path.join(root,'assets/ned-icon.ico'),to:'ned/icon.ico'},
       {from:path.join(root,'docs/offline-setup.md'),to:'ned/GETTING_STARTED.md'},
       {from:path.join(root,'docs/license-policy.md'),to:'ned/LICENSE_POLICY.md'},
+      {from:path.join(root,'docs/bundled-skills.md'),to:'ned/SKILLS_GUIDE.md'},
       {from:path.join(cache,'zed-source/LICENSE-GPL'),to:'ned/licenses/Zed-GPL.txt'},
       {from:path.join(cache,'zed-source/LICENSE-APACHE'),to:'ned/licenses/Zed-Apache.txt'},
       {from:path.join(cache,'zed-linux/zed.app/licenses.md'),to:'ned/licenses/Zed-third-party.md'},
@@ -235,7 +234,7 @@ async function bundle() {
   await cp(path.join(output,'installer-audit.json'),path.join(stage,'INSTALLER_AUDIT.json'));
   if(fullRelease)await cp(path.join(root,'docs/bundled-skills.md'),path.join(stage,'SKILLS_GUIDE.md'));
   if(fullRelease)await cp(path.join(root,'docs/openviking-0.5.5-update.md'),path.join(stage,'OPENVIKING_UPDATE.md'));
-  if(ghidraRelease)for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md'],['docs/openviking-personal-migration.md','openviking-personal-migration.md']])await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
+  if(ghidraRelease)for(const [from,to] of [['docs/python-conda.md','python-conda.md'],['docs/git-and-binary-analysis.md','git-and-binary-analysis.md'],['docs/extension-guide.md','extension-guide.md'],['docs/openviking-studio.md','openviking-studio.md'],['docs/compaction-troubleshooting.md','compaction-troubleshooting.md']])await cp(path.isAbsolute(from)?from:path.join(root,from),path.join(stage,to));
   if(report.payloadComparison){
     if(await fileHash(path.join(output,'payload-manifest.json'))!==report.payloadComparison.manifestSha256)throw Error('Stale complete payload manifest');
     await cp(path.join(output,'payload-manifest.json'),path.join(stage,'PAYLOAD_MANIFEST.json'));

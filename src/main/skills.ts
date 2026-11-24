@@ -26,12 +26,16 @@ function describeGlobalSkill(id: string, text: string): CatalogEntry {
 export class OfflineSkills {
   private entries: SkillEntry[] = [];
   private globalEntries = new Map<string, CatalogEntry>();
+  private loaded = false;
+  private activeCache = new Map<string, { at: number; items: CatalogEntry[] }>();
   constructor(private root: string, private globalRoot?: string) {}
   async load(progress?: (done:number,total:number)=>void) {
     this.entries = [];
     this.globalEntries.clear();
+    this.activeCache.clear();
+    this.loaded = false;
     const bytes = await readFile(path.join(this.root, 'manifest.json')).catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return undefined; throw error; });
-    if (!bytes) { await this.loadGlobalSkills(new Set()); return; }
+    if (!bytes) { await this.loadGlobalSkills(new Set()); this.loaded = true; return; }
     const manifest = JSON.parse(bytes.toString('utf8'));
     if (manifest.schemaVersion !== 1 || !Array.isArray(manifest.skills) || manifest.skills.length > 128) throw new Error('스킬 번들 형식 오류');
     const lock = await readFile(path.join(this.root, '..', 'skills-lock.json'), 'utf8').then(JSON.parse).catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return undefined; throw error; });
@@ -55,9 +59,31 @@ export class OfflineSkills {
     const failure=settled.find(result=>result.status==='rejected');if(failure?.status==='rejected')throw failure.reason;
     this.entries = manifest.skills;
     await this.loadGlobalSkills(ids);
+    this.loaded = true;
   }
   catalog(): CatalogEntry[] {
     return [...this.entries.map(({ id, name, description }) => ({ id, name, description })), ...this.globalEntries.values()];
+  }
+  async activeCatalog(project?: string): Promise<CatalogEntry[]> {
+    if (!this.loaded) return [];
+    const key = project ?? '';
+    const cached = this.activeCache.get(key);
+    if (cached && Date.now() - cached.at < 2000) return cached.items;
+    const builtInList = this.entries.map(({ id, name, description }) => ({ id, name, description }));
+    let custom: CatalogEntry[];
+    if (project) {
+      custom = await this.userCatalog(project);
+    } else if (this.globalRoot) {
+      const builtIn = new Set(this.entries.map(e => e.id));
+      custom = await this.discover(this.globalRoot, 'user', builtIn).catch(() => [...this.globalEntries.values()]);
+      this.globalEntries.clear();
+      for (const item of custom) this.globalEntries.set(item.id, item);
+    } else {
+      custom = [...this.globalEntries.values()];
+    }
+    const items = [...builtInList, ...custom];
+    this.activeCache.set(key, { at: Date.now(), items });
+    return items;
   }
   async userCatalog(project: string) {
     const builtIn = new Set(this.entries.map(e => e.id));

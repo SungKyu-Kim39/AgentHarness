@@ -14,7 +14,7 @@ OpenCode provider 형식의 중앙 JSON으로 여러 LLM을 등록·선택합니
 
 Aegis·Conductor, 기본 스킬 74개, Serena·clangd, OpenViking, Graphify, REA와 개발 MCP 6종을 고정 오프라인 구성으로 제공합니다. 필요한 지침만 읽고 도구를 고를 때마다 동의를 묻지 않습니다. 요청·대화 문맥에 맞는 지침 선택은 0.3.7에 포함됩니다.
 
-VS2017/2019가 있으면 MSBuild와 솔루션 구성을 조사합니다. 실행 파일·인자·작업 폴더·환경·대상을 고정해 승인 후 다시 확인합니다. MSBuild 도구는 SDK 자동 설치와 retarget을 수행하지 않고 고정 인자로 실행합니다. 별도 CMD·PowerShell 도구는 승인 요청·프로젝트 파일 자동 승인 모드에서 매번 확인하고, 전체 권한 모드에서는 일반 개발·빌드·테스트 명령을 자동 승인하며 명백히 치명적이거나 외부 전송을 수반하는 명령만 최소 가드로 확인합니다. Windows Job Object가 명령의 자식을 관리하며 종료가 확인되지 않으면 새 실행을 막습니다.
+VS2017/2019/2022가 있으면 MSBuild와 솔루션 구성을 조사합니다. 실행 파일·인자·작업 폴더·환경·대상을 고정해 승인 후 다시 확인합니다. MSBuild 도구는 SDK 자동 설치와 retarget을 수행하지 않고 고정 인자로 실행합니다. 별도 CMD·PowerShell 도구는 승인 요청·프로젝트 파일 자동 승인 모드에서 매번 확인하고, 전체 권한 모드에서는 일반 개발·빌드·테스트 명령을 자동 승인하며 명백히 치명적이거나 외부 전송을 수반하는 명령만 최소 가드로 확인합니다. Windows Job Object가 명령의 자식을 관리하며 종료가 확인되지 않으면 새 실행을 막습니다.
 
 ## 권한과 지식
 
@@ -28,4 +28,4 @@ OpenViking은 앱과 함께 실행·종료합니다. 기본 스킬은 설치 리
 
 설치·데이터 경로는 Ned 전용으로 사용합니다. L-Vibe 원본을 남겨 이관하고 기존 Ned 설정·자료는 덮어쓰지 않습니다. 자체 코드와 번들별 라이선스를 구분하며 Zed GPL 대응 소스와 고지도 제공합니다.
 
-검증 결과는 환경별로 기록합니다. 합성 모델·Linux 연동·설치 파일 생성, Windows Server 검사와 직원 PC의 실제 Windows·사내 모델·SDK·네트워크 검증을 합산해 완료로 판단하지 않습니다. [아키텍처](ned-architecture.md), [자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md), [0.3.15 검증 결과](validation-0.3.15.md), [Windows 확인 항목](windows-acceptance.md)에 구현과 남은 검사를 정리했습니다.
+검증 결과는 환경별로 기록합니다. 합성 모델·Linux 연동·설치 파일 생성, Windows Server 검사와 직원 PC의 실제 Windows·사내 모델·SDK·네트워크 검증을 합산해 완료로 판단하지 않습니다. [아키텍처](ned-architecture.md), [자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md), [0.3.16 검증 결과](validation-0.3.16.md), [Windows 확인 항목](windows-acceptance.md)에 구현과 남은 검사를 정리했습니다.

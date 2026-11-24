@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createServer } from 'node:http';
-import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, cp, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { McpExtensions } from '../src/main/mcp-extensions';
@@ -53,14 +53,18 @@ await writeFile(path.join(project, 'note.md'), '# 변경된 오프라인 문서\
 const versions = await readdir(path.join(root, '.cache/mcp-linux/serena/lib'));
 const version = versions.find(v => v.startsWith('python'))!;
 let diagnostics = '';
+const stagedMcp = path.join(temporary, 'mcp');
+await mkdir(stagedMcp, { recursive: true });
+await cp(path.join(root, '.cache/mcp-node/node_modules'), path.join(stagedMcp, 'node'), { recursive: true });
+await copyFile(path.join(root, 'scripts/mcp-node-worker.cjs'), path.join(stagedMcp, 'mcp-node-worker.cjs'));
 const manager = new McpExtensions(path.join(temporary, 'state'), root, {
   approve: async () => true, diagnostic: text => { diagnostics = (diagnostics + text).slice(-2 * 1024 * 1024); },
   paths: {
     python: service => path.join(root, '.cache/mcp-linux', ['playwright', 'devtools'].includes(service) ? 'git' : service, 'bin/python'),
     site: service => path.join(root, '.cache/mcp-linux', service, 'lib', version, 'site-packages'),
     git: '/usr/bin/git', clangd: path.join(root, '.cache/mcp-linux/clangd/clangd_23.1.0/bin/clangd'),
-    browser: '/usr/lib/chromium/chromium', node: path.join(root, '.cache/mcp-node/node_modules'),
-    pythonWorker: path.join(root, 'scripts/mcp-python-worker.py'), nodeWorker: path.join(root, 'scripts/mcp-node-worker.cjs'),
+    browser: '/usr/lib/chromium/chromium', node: path.join(stagedMcp, 'node'),
+    pythonWorker: path.join(root, 'scripts/mcp-python-worker.py'), nodeWorker: path.join(stagedMcp, 'mcp-node-worker.cjs'),
     supervisor: path.join(root, 'scripts/sidecar-supervisor.py'), testNoSandbox: true,
   },
 });

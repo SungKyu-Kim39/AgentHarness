@@ -16,7 +16,7 @@ import {
   requestSchema,
   type Session,
 } from "../src/shared/contracts";
-import { ConfigVault, Redactor, type Cipher } from "../src/main/config";
+import { ConfigVault, Redactor, atomicJSON, type Cipher } from "../src/main/config";
 import { ProjectFiles } from "../src/main/files";
 import { Lifecycle } from "../src/main/lifecycle";
 import { detectRepetition } from "../src/main/repetition";
@@ -385,3 +385,40 @@ test(
     await assert.rejects(adapter.read("aegis", "skills/update-aegis/SKILL.md"));
   },
 );
+test("ConfigVault accepts UTF-8 BOM JSON, Redactor ignores short or placeholder keys in plain text, atomicJSON serializes concurrent writes, and ProjectFiles blocks .ned/.vscode writes", async (t) => {
+  const root = await fixture(t),
+    vault = new ConfigVault(root, testCipher());
+  await writeFile(vault.staging, "\uFEFF" + JSON.stringify(config), "utf8");
+  assert.deepEqual(await vault.load(), config);
+  assert.deepEqual(
+    await vault.importText("\uFEFF" + JSON.stringify(config), true),
+    config,
+  );
+
+  const redactor = new Redactor();
+  for (const placeholder of ["", "   ", "1", "local", "EMPTY", "none", "test"])
+    redactor.add(placeholder);
+  redactor.add("real-secret-token-value");
+  assert.equal(
+    redactor.text("exit 1 from local test with real-secret-token-value"),
+    "exit 1 from local test with [REDACTED]",
+  );
+  assert.deepEqual(
+    redactor.object({ apiKey: "1", note: "line 1 local" }),
+    { apiKey: "[REDACTED]", note: "line 1 local" },
+  );
+
+  const targetJson = path.join(root, "concurrent", "state.json");
+  await Promise.all(
+    Array.from({ length: 12 }, (_, idx) => atomicJSON(targetJson, { step: idx })),
+  );
+  assert.deepEqual(JSON.parse(await readFile(targetJson, "utf8")), { step: 11 });
+
+  const projDir = path.join(root, "proj");
+  await mkdir(path.join(projDir, ".ned/skills/custom"), { recursive: true });
+  await writeFile(path.join(projDir, ".ned/skills/custom/SKILL.md"), "guide");
+  const files = new ProjectFiles(projDir);
+  await assert.rejects(files.resolve(".ned/skills/custom/SKILL.md", true), /차단/);
+  await assert.rejects(files.resolve(".vscode/tasks.json", true), /차단/);
+  assert.equal(await files.read(".ned/skills/custom/SKILL.md"), "guide");
+});

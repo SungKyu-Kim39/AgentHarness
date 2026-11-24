@@ -47,7 +47,7 @@ Ned 0.3.5부터 대화 입력창의 **권한** 메뉴와 Windows 알림 영역�
 
 `read_external_file`과 `list_external_directory`는 프로젝트 밖의 명시한 로컬 텍스트 파일(2 MiB 이하 UTF-8)과 폴더 목록(1,000개 이하)을 읽기 전용으로 조회합니다. **승인 요청**과 **프로젝트 파일 자동 승인** 모드에서는 승인창에서 확인 후 허용하고, **전체 권한** 모드에서는 자동 승인합니다.
 
-`%APPDATA%\Ned`(암호화 설정·실행 토큰·`skills` 글로벌 스킬 폴더 포함), 설치 리소스 폴더, `%USERPROFILE%\.agents\skills`, 개인 `.opencode`·`Zed` 프로필 등 보호 경로는 모드와 관계없이 차단합니다. `%APPDATA%\Ned\skills`는 글로벌 스킬 전용 도구(`skill_catalog`, `read_skill`, `/skill-<ID>`)로만 접근합니다. 외부 파일 생성·수정·삭제는 모든 모드에서 원천 차단합니다. Git 스테이징·커밋과 REA Ghidra 분석은 [예시와 제한](git-and-binary-analysis.md)을 참고하세요.
+`%APPDATA%\Ned`(암호화 설정·실행 토큰·`skills` 글로벌 스킬 폴더 포함), `%LOCALAPPDATA%\Ned-Launcher`, 구 `L-Vibe` 데이터 폴더, 설치 리소스 폴더, `%USERPROFILE%\.agents\skills`, 개인 `.opencode`·`Zed` 프로필, 사용자 자격증명 경로(`.ssh`, `.aws`, `.gnupg`, `.kube`, `.docker`, `.npmrc`, `.pypirc`, `.netrc`, `.git-credentials`)는 모드와 관계없이 차단합니다. `%APPDATA%\Ned\skills`는 글로벌 스킬 전용 도구(`skill_catalog`, `read_skill`, `/skill-<ID>`)로만 접근합니다. 외부 파일 생성·수정·삭제는 모든 모드에서 원천 차단합니다. Git 스테이징·커밋과 REA Ghidra 분석은 [예시와 제한](git-and-binary-analysis.md)을 참고하세요.
 
 ## Ned Agent의 터미널 명령
 

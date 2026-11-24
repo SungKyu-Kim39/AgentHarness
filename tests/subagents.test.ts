@@ -412,3 +412,23 @@ test('Subagents rotates oldest terminal records when history reaches 2000 entrie
   assert.ok(persisted.jobs.some((j: any) => j.id === spawned.id));
   assert.ok(!persisted.jobs.some((j: any) => j.id === 'ses_ned_old_0'));
 });
+
+test('child subagent scope supplies title and prompt contextText for specialized tool gating', async t => {
+  const { specializedToolRequested } = await import('../src/main/skill-routing');
+  const f = await fixture(t);
+  const child = await f.agents.spawn('root', {
+    role: 'research',
+    title: '바이너리 정적 분석',
+    prompt: 'Ghidra 디컴파일로 target.exe의 함수 목록을 확인하세요.',
+    writePaths: [],
+  });
+  await f.wait(() => f.sessions.get(child.id)?.running);
+  const scoped = await f.agents.scope(child.id, 'rea_ghidra', { path: 'target.exe', operation: 'functions' });
+  assert.equal(scoped.session, 'root');
+  assert.ok(scoped.contextText?.includes('Ghidra'));
+  // Even if parent turnHistory moved on to generic wording, child contextText authorizes rea_ghidra but not desktop GUI tools
+  assert.equal(specializedToolRequested('rea_ghidra', ['결과 정리해줘', scoped.contextText ?? ''].join('\n')), true);
+  assert.equal(specializedToolRequested('desktop_snapshot', ['결과 정리해줘', scoped.contextText ?? ''].join('\n')), false);
+  f.complete(child.id, 'functions inspected');
+  await f.wait(() => f.notifications.length === 1);
+});

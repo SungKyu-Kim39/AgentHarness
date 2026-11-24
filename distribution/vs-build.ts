@@ -29,7 +29,7 @@ export class VisualStudioBuild {
     const base = process.env['ProgramFiles(x86)'] ?? 'C:\\Program Files (x86)';
     const vswhere = path.join(base, 'Microsoft Visual Studio/Installer/vswhere.exe');
     if (!await exists(vswhere)) return [];
-    const result = await execute(vswhere, ['-all', '-products', '*', '-version', '[15.0,17.0)', '-requires', 'Microsoft.Component.MSBuild', '-format', 'json', '-utf8'], { windowsHide: true, timeout: 15000, maxBuffer: 1024 * 1024 });
+    const result = await execute(vswhere, ['-all', '-products', '*', '-version', '[15.0,18.0)', '-requires', 'Microsoft.Component.MSBuild', '-format', 'json', '-utf8'], { windowsHide: true, timeout: 15000, maxBuffer: 1024 * 1024 });
     const list: Toolchain[] = [];
     for (const instance of JSON.parse(result.stdout)) {
       if (typeof instance.installationPath !== 'string' || !path.isAbsolute(instance.installationPath)) continue;
@@ -49,7 +49,7 @@ export class VisualStudioBuild {
       const sdkVersions = [...new Set([...text.matchAll(/<WindowsTargetPlatformVersion>([^<]+)<\/WindowsTargetPlatformVersion>/g)].map(m => m[1]))];
       targets.push({ path: filename, configurations: configs, toolsets, sdkVersions });
     }
-    return { toolchains: await this.discover(), targets, limitation: 'Installed Visual Studio 2017/2019 MSBuild only. Missing C++ workloads, SDKs or third-party libraries are reported by the build. No restore, download or automatic retarget.' };
+    return { toolchains: await this.discover(), targets, limitation: 'Installed Visual Studio 2017/2019/2022 MSBuild only. Missing C++ workloads, SDKs or third-party libraries are reported by the build. No restore, download or automatic retarget.' };
   }
   private async inputs(project: string) {
     const files = new ProjectFiles(project), map: Record<string, string> = {};

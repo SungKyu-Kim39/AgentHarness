@@ -5,12 +5,18 @@ import { createHash } from 'node:crypto';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { ProjectFiles } from './files';
+import { atomicJSON } from './config';
 import { PrivateMcpClient, type McpToolResult } from './mcp-client';
 import { GitTools } from '../../distribution/git-tools';
 import { BrowserProxy } from './browser-proxy';
 import runtimeLock from '../../mcp-runtime-lock.json';
 import { matchesPinnedRuntimeManifest } from './runtime-pins';
 
+const MCP_STDERR_MARKERS = ['MODULE_NOT_FOUND', 'ERR_MODULE_NOT_FOUND', 'Cannot find module', 'SyntaxError', 'ReferenceError', 'TypeError', 'EACCES', 'EPERM', 'ENOENT', 'EINVAL', 'Access is denied', 'Permission denied', 'Target closed', 'Sandbox', 'No usable sandbox', 'Pinned DevTools worker failed'] as const;
+function extractMcpDiagnosticMarkers(stderr: string): string[] {
+  const lower = stderr.toLowerCase();
+  return MCP_STDERR_MARKERS.filter(marker => lower.includes(marker.toLowerCase()));
+}
 export interface ExtensionTool { name: string; description: string; inputSchema: Record<string, unknown> }
 const str = { type: 'string' };
 const obj = (properties: Record<string, unknown>, required: string[]) => ({ type: 'object', properties, required, additionalProperties: false });
@@ -154,27 +160,67 @@ export class McpExtensions {
       const argv = node ? [paths.nodeWorker, config] : ['-I', '-B', paths.pythonWorker, config];
       const binary = process.platform === 'win32' ? paths.python(service) : executable;
       const launchArgs = process.platform === 'win32' ? ['-I', '-B', paths.supervisor, executable, ...argv] : argv;
-      const env: NodeJS.ProcessEnv = { HOME: work, USERPROFILE: work, APPDATA: work, LOCALAPPDATA: work, PATH: path.dirname(paths.git), TEMP: work, TMP: work, ELECTRON_RUN_AS_NODE: '1', PYTHONDONTWRITEBYTECODE: '1', DO_NOT_TRACK: '1' };
-      for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR']) if (process.env[key]) env[key] = process.env[key];
-      const allowedTools = service === 'playwright' ? ['browser_navigate', 'browser_snapshot', 'browser_console_messages', 'browser_take_screenshot', 'browser_close'] : service === 'devtools' ? ['navigate_page', 'take_snapshot', 'list_console_messages', 'take_screenshot', 'performance_start_trace', 'close_page'] : [tool];
-      client = new PrivateMcpClient({ executable: binary, args: launchArgs, cwd: work, env, allowedTools, timeout: 90000, diagnostic: this.options.diagnostic });
-      this.clients.add(client); signal?.addEventListener('abort', abort, { once: true }); signal?.throwIfAborted();
-      const result = await client.call(tool, parameters, signal);
-      if (service === 'serena') {
-        const context = await readFile(path.join(work, 'analysis-context.json'), 'utf8').catch(() => '{}');
-        result.content.unshift({ type: 'text', text: 'Compilation context: ' + context });
+      const systemRoot = process.env.SystemRoot ?? process.env.SYSTEMROOT ?? 'C:\\Windows';
+      const pathEntries = [path.dirname(paths.git), ...(process.platform === 'win32' ? [path.join(systemRoot, 'System32')] : [])];
+      const env: NodeJS.ProcessEnv = {
+        HOME: work, USERPROFILE: work, APPDATA: work, LOCALAPPDATA: work,
+        PATH: pathEntries.join(path.delimiter),
+        ...(node ? { NODE_PATH: paths.node } : {}),
+        TEMP: work, TMP: work,
+        ELECTRON_RUN_AS_NODE: '1',
+        PYTHONDONTWRITEBYTECODE: '1', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8',
+        DO_NOT_TRACK: '1',
+      };
+      for (const key of ['SystemRoot', 'SYSTEMROOT', 'WINDIR', 'SystemDrive', 'ComSpec', 'COMSPEC', 'PATHEXT', 'ProgramFiles', 'ProgramFiles(x86)', 'ProgramW6432', 'ProgramData']) {
+        if (process.env[key]) env[key] = process.env[key];
       }
-      if (node && !result.isError) {
-        const append = (next: McpToolResult) => { result.content.push(...next.content); if (next.isError) result.isError = true; };
-        if (performance) {
-          const trace = await client.call('performance_start_trace', { reload: true, autoStop: true, ignoreCache: false }, signal);
-          append(trace);
+      if (process.platform === 'win32') {
+        env.SystemRoot ??= systemRoot;
+        env.WINDIR ??= systemRoot;
+        env.ComSpec ??= path.join(systemRoot, 'System32/cmd.exe');
+      }
+      let workerStderr = '';
+      const collectDiagnostic = (text: string) => {
+        workerStderr = (workerStderr + text).slice(-65536);
+        this.options.diagnostic?.(text);
+      };
+      const allowedTools = service === 'playwright' ? ['browser_navigate', 'browser_snapshot', 'browser_console_messages', 'browser_take_screenshot', 'browser_close'] : service === 'devtools' ? ['navigate_page', 'take_snapshot', 'list_console_messages', 'take_screenshot', 'performance_start_trace', 'close_page'] : [tool];
+      client = new PrivateMcpClient({ executable: binary, args: launchArgs, cwd: work, env, allowedTools, timeout: 90000, diagnostic: collectDiagnostic });
+      this.clients.add(client); signal?.addEventListener('abort', abort, { once: true }); signal?.throwIfAborted();
+      let result: McpToolResult;
+      try {
+        result = await client.call(tool, parameters, signal);
+        if (service === 'serena') {
+          const context = await readFile(path.join(work, 'analysis-context.json'), 'utf8').catch(() => '{}');
+          result.content.unshift({ type: 'text', text: 'Compilation context: ' + context });
         }
-        append(await client.call(service === 'playwright' ? 'browser_snapshot' : 'take_snapshot', {}, signal));
-        append(await client.call(service === 'playwright' ? 'browser_console_messages' : 'list_console_messages', service === 'playwright' ? { level: 'error' } : { types: ['error', 'warn'], pageSize: 30 }, signal));
-        if (screenshot)
-          append(await client.call(service === 'playwright' ? 'browser_take_screenshot' : 'take_screenshot', service === 'playwright' ? { type: 'png', fullPage: false } : { format: 'png' }, signal));
-        note += ` Blocked proxy requests: ${proxy!.blocked}.`;
+        if (node && !result.isError) {
+          const append = (next: McpToolResult) => { result.content.push(...next.content); if (next.isError) result.isError = true; };
+          if (performance) {
+            const trace = await client.call('performance_start_trace', { reload: true, autoStop: true, ignoreCache: false }, signal);
+            append(trace);
+          }
+          append(await client.call(service === 'playwright' ? 'browser_snapshot' : 'take_snapshot', {}, signal));
+          append(await client.call(service === 'playwright' ? 'browser_console_messages' : 'list_console_messages', service === 'playwright' ? { level: 'error' } : { types: ['error', 'warn'], pageSize: 30 }, signal));
+          if (screenshot)
+            append(await client.call(service === 'playwright' ? 'browser_take_screenshot' : 'take_screenshot', service === 'playwright' ? { type: 'png', fullPage: false } : { format: 'png' }, signal));
+          note += ` Blocked proxy requests: ${proxy!.blocked}.`;
+        }
+      } catch (callError) {
+        const markers = extractMcpDiagnosticMarkers(workerStderr);
+        await atomicJSON(path.join(this.root, 'diagnostics', 'mcp-extensions-status.json'), {
+          schemaVersion: 1,
+          component: 'mcp-extensions',
+          recordedAt: new Date().toISOString(),
+          tool: name,
+          service,
+          failureCode: client.failureCode ?? 'call-failed',
+          markers,
+        }).catch(() => {});
+        if (callError instanceof Error && callError.message === 'MCP 프로세스가 종료되었습니다.' && markers.length) {
+          throw new Error(`MCP 프로세스가 종료되었습니다. [${markers.join(', ')}]`);
+        }
+        throw callError;
       }
       result.content.unshift({ type: 'text', text: `Source: ${service} MCP\n${note}\n` });
       return result;

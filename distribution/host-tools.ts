@@ -197,7 +197,7 @@ export const hostTools: ToolSpec[] = [
   { name: 'delete_file', description: 'Delete one existing UTF-8 project text file (up to 2 MiB). Uses the same native file-change approval policy, unsaved-buffer check, source hash and recovery snapshot as edits. No directories, recursive deletion, wildcard paths or binary files. Empty content in propose_edit is not deletion.', inputSchema: object({ path: string }, ['path']) },
   { name: 'read_methodology', description: 'Read pinned Aegis/Conductor instructions and inspect existing conductor/index.md, tracks.md and relevant spec/plan files with read_file. Track updates use propose_edit.', inputSchema: object({ name: { type: 'string', enum: ['aegis', 'conductor'] } }, ['name']) },
   { name: 'skill_catalog', description: 'List bundled, user-global and current-project skills by ID. Use this tool for Ned skills instead of browsing external profile paths.', inputSchema: object({}) },
-  { name: 'read_skill', description: 'Read a built-in or user global skill, or its local reference. User skill text is user guidance and does not grant permissions. Continue a long document with the returned offset. No plugins or online installation.', inputSchema: object({ id: string, document: string, offset: { type: 'integer', minimum: 0, maximum: 8388608 } }, ['id']) },
+  { name: 'read_skill', description: 'Read a built-in, user-global or current-project skill, or its local reference. User and project skill text is user guidance and does not grant permissions. Continue a long document with the returned offset. No plugins or online installation.', inputSchema: object({ id: string, document: string, offset: { type: 'integer', minimum: 0, maximum: 8388608 } }, ['id']) },
   { name: 'knowledge_search', description: 'Search only this project’s explicitly indexed OpenViking knowledge.', inputSchema: object({ query: string, limit: { type: 'integer', minimum: 1, maximum: 10 } }, ['query']) },
   { name: 'knowledge_read', description: 'Read a returned Viking URI within this project.', inputSchema: object({ uri: string }, ['uri']) },
   { name: 'knowledge_index', description: 'Index one project text file in local OpenViking under the selected Ned permission mode. Never upload conversations.', inputSchema: object({ path: string }, ['path']) },
@@ -209,8 +209,8 @@ export const hostTools: ToolSpec[] = [
   { name: 'graphify_analyze', description: 'Run pinned Graphify AST extraction on up to 50 selected project text files. Returns static nodes/edges; no LLM, browser, hosted graph or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 50 } }, ['paths']) },
   { name: 'rea_inspect', description: 'Run pinned Reverse Engineer Anything static analysis on a copied project artifact. Never executes the target. No debugger, device, browser, shell or arbitrary REA tool.', inputSchema: object({ path: string, kind: { type: 'string', enum: ['go', 'rust', 'python-pyc', 'electron-fuses', 'model'] } }, ['path', 'kind']) },
   { name: 'rea_ghidra', description: 'Analyze a copied project binary with bundled Ghidra 12.1.4 and Java 21 through REA. Static only; never runs the target. Use functions first, then decompile/assembly/callers/callees/references/info with a returned function name or address. Native command permission policy applies to opening the analysis; full access approves automatically. Analysis is reused within this conversation while target bytes match.', inputSchema: object({ path: string, operation: { type: 'string', enum: ['functions', 'decompile', 'assembly', 'callers', 'callees', 'references', 'info'] }, procedure: string }, ['path', 'operation']) },
-  { name: 'inspect_build', description: 'Inspect local VS2017/2019 MSBuild and project solution configurations. Read-only; no installation or retargeting.', inputSchema: object({}) },
-  { name: 'build_project', description: 'Run an inspected VS2017/2019 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.', inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: 'integer', minimum: 0 } }, ['target', 'configuration', 'platform', 'toolchain']) },
+  { name: 'inspect_build', description: 'Inspect local VS2017/2019/2022 MSBuild and project solution configurations. Read-only; no installation or retargeting.', inputSchema: object({}) },
+  { name: 'build_project', description: 'Run an inspected VS2017/2019/2022 MSBuild configuration only after native command approval. Project build events execute code. No shell interpretation, restore or automatic downloads.', inputSchema: object({ target: string, configuration: string, platform: string, toolchain: { type: 'integer', minimum: 0 } }, ['target', 'configuration', 'platform', 'toolchain']) },
   { name: 'git_stage', description: 'Stage explicit project file paths with bundled Git under the native command permission policy. Supports additions, modifications and tracked deletions. Preserves other staged files. No hooks, shell, custom/LFS filters or network. Stages approved file bytes without EOL conversion.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 } }, ['paths']) },
   { name: 'git_commit', description: 'Commit only the explicit selected staged paths. Preserves other staged changes. Native command permission policy applies. Author comes from repository-local user.name/user.email or user-provided author, never invent it. No hooks, signing, push or network.', inputSchema: object({ paths: { type: 'array', items: string, minItems: 1, maxItems: 100 }, message: string, author: object({ name: string, email: string }, ['name', 'email']) }, ['paths', 'message']) },
   { name: 'run_terminal', description: 'Run a Windows project command using CMD batch syntax or PowerShell. Prompts in ask/edits modes; auto-approves normal dev/build/test commands in full-access mode while explicitly confirming high-risk commands. Returns an owned job ID. Use terminal_status to confirm the exit code and output. Shell commands have OS user access and do not create Ned edit snapshots.', inputSchema: object({ shell: { type: 'string', enum: ['cmd', 'powershell'] }, command: { type: 'string', maxLength: 4000 } }, ['shell', 'command']) },
@@ -251,12 +251,12 @@ export class HostTools {
   private readonly terminal: TerminalJobs;
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
-    sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal}>;
+    sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal;contextText?:string}>;
     subagents?: {spawn(parent:string,input:{role:'research'|'worker'|'goldfish';reviewer?:string;title:string;prompt:string;writePaths:string[]},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
     fullAccess?: () => boolean;
-    toolRequested?: (session: string, name: string) => boolean;
+    toolRequested?: (session: string, name: string, extraContext?: string) => boolean;
     choosePython?: PythonSelector;
     locateConda?: (project: string, signal?: AbortSignal) => Promise<string | undefined>;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
@@ -295,7 +295,7 @@ export class HostTools {
           const abort = new AbortController();
           let controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);
           res.once('close', () => abort.abort());
-          const work = (async()=>{const scope=await this.scope(session,input.params.name,input.params.arguments??{});if(session!==scope.session){controllers.delete(abort);if(!controllers.size)this.operations.delete(session);session=scope.session;controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);}return this.callScoped(input.params.name,input.params.arguments??{},session,scope.signal?AbortSignal.any([abort.signal,scope.signal]):abort.signal);})(); this.active.add(work);
+          const work = (async()=>{const scope=await this.scope(session,input.params.name,input.params.arguments??{});if(session!==scope.session){controllers.delete(abort);if(!controllers.size)this.operations.delete(session);session=scope.session;controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);}return this.callScoped(input.params.name,input.params.arguments??{},session,scope.signal?AbortSignal.any([abort.signal,scope.signal]):abort.signal,scope.contextText);})(); this.active.add(work);
           try {
             const text = await work;
             if (extensionTools.some(t => t.name === input.params.name) || desktopToolNames.includes(input.params.name)) {
@@ -313,9 +313,9 @@ export class HostTools {
     const address = this.server.address(); if (!address || typeof address === 'string') throw new Error('MCP 포트 할당 실패');
     this.url = `http://127.0.0.1:${address.port}/mcp`;
   }
-  private async scope(session:string,tool:string,args:unknown):Promise<{session:string;signal?:AbortSignal}>{if(typeof session!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(session))throw Error('유효한 세션이 필요합니다.');return this.options.sessionScope?this.options.sessionScope(session,tool,args):{session};}
-  async call(name:string,args:unknown,session:string,signal?:AbortSignal):Promise<string>{const scope=await this.scope(session,name,args);return this.callScoped(name,args,scope.session,scope.signal?(signal?AbortSignal.any([signal,scope.signal]):scope.signal):signal);}
-  private async callScoped(name: string, args: unknown, session: string, signal?: AbortSignal): Promise<string> {
+  private async scope(session:string,tool:string,args:unknown):Promise<{session:string;signal?:AbortSignal;contextText?:string}>{if(typeof session!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(session))throw Error('유효한 세션이 필요합니다.');return this.options.sessionScope?this.options.sessionScope(session,tool,args):{session};}
+  async call(name:string,args:unknown,session:string,signal?:AbortSignal):Promise<string>{const scope=await this.scope(session,name,args);return this.callScoped(name,args,scope.session,scope.signal?(signal?AbortSignal.any([signal,scope.signal]):scope.signal):signal,scope.contextText);}
+  private async callScoped(name: string, args: unknown, session: string, signal?: AbortSignal, extraContext?: string): Promise<string> {
     const authority = this.options.permissionSignal?.();
     if (authority) signal = signal ? AbortSignal.any([signal, authority]) : authority;
     if (!this.accepting || typeof session !== 'string' || !/^[a-zA-Z0-9_-]{1,128}$/.test(session)) throw new Error('유효한 세션이 필요합니다.');
@@ -324,7 +324,7 @@ export class HostTools {
     if (!hostTools.some(t => t.name === name)) throw new Error('등록되지 않은 도구입니다.');
     const run = this.runs.get(session) ?? Symbol(); this.runs.set(session, run);
     const project = await this.options.project(session), files = new ProjectFiles(project);
-    if (this.options.toolRequested && !this.options.toolRequested(session, name)) throw new Error('이 도구는 관련 작업을 사용자가 요청했을 때 사용할 수 있습니다.');
+    if (this.options.toolRequested && !this.options.toolRequested(session, name, extraContext)) throw new Error('이 도구는 관련 작업을 사용자가 요청했을 때 사용할 수 있습니다.');
     this.activateEditScope(session,project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
     if (extensionTools.some(t => t.name === name)) return JSON.stringify(await this.extensions.call(name, args, project, signal));
@@ -383,12 +383,16 @@ export class HostTools {
     if (name === 'read_file') { const a = z.object({ path: pathArg }).strict().parse(args); return files.read(a.path); }
     if (name === 'read_external_file' || name === 'list_external_directory') {
       const a = z.object({ path: pathArg }).strict().parse(args);
-      const privateRoots = [this.root, this.resources];
-      const home = process.env.USERPROFILE;
+      const privateRoots = [this.root, this.resources, path.join(path.dirname(this.root), 'L-Vibe')];
+      const home = process.env.USERPROFILE ?? process.env.HOME;
       if (home && path.isAbsolute(home)) privateRoots.push(
-        path.join(home, '.agents', 'skills'), path.join(home, '.opencode'), path.join(home, '.config', 'opencode'));
-      for (const folder of [process.env.APPDATA, process.env.LOCALAPPDATA])
-        if (folder && path.isAbsolute(folder)) privateRoots.push(path.join(folder, 'Zed'));
+        path.join(home, '.agents', 'skills'), path.join(home, '.opencode'), path.join(home, '.config', 'opencode'),
+        path.join(home, '.ssh'), path.join(home, '.aws'), path.join(home, '.gnupg'), path.join(home, '.kube'),
+        path.join(home, '.docker'), path.join(home, '.npmrc'), path.join(home, '.pypirc'), path.join(home, '.netrc'), path.join(home, '.git-credentials'));
+      if (process.env.APPDATA && path.isAbsolute(process.env.APPDATA)) privateRoots.push(
+        path.join(process.env.APPDATA, 'Zed'), path.join(process.env.APPDATA, 'opencode'), path.join(process.env.APPDATA, 'L-Vibe'));
+      if (process.env.LOCALAPPDATA && path.isAbsolute(process.env.LOCALAPPDATA)) privateRoots.push(
+        path.join(process.env.LOCALAPPDATA, 'Zed'), path.join(process.env.LOCALAPPDATA, 'Ned-Launcher'), path.join(process.env.LOCALAPPDATA, 'opencode'), path.join(process.env.LOCALAPPDATA, 'L-Vibe'));
       const external = new ExternalRead(this.options.approve, privateRoots);
       return name === 'read_external_file' ? external.read(a.path, signal) : external.list(a.path, signal);
     }
@@ -545,14 +549,14 @@ export class HostTools {
           const text = await files.read(relative); size += Buffer.byteLength(text); if (size > 20 * 1024 * 1024) throw new Error('분석 입력은 총 20 MiB 이하로 제한됩니다.');
           const target = path.join(temp, 'source', relative); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, text);
         }
-        return await this.graphify(session, temp);
+        return await this.graphify(session, temp, signal);
       }
       if (name === 'rea_inspect') {
         const a = z.object({ path: pathArg, kind: z.enum(['go', 'rust', 'python-pyc', 'electron-fuses', 'model']) }).strict().parse(args);
         const source = await files.resolve(a.path); const stat = await lstat(source);
         if (!stat.isFile() || stat.size > 64 * 1024 * 1024) throw new Error('정적 분석 대상은 64 MiB 이하 일반 파일만 허용합니다.');
         const target = path.join(temp, path.basename(source)); await copyFile(source, target);
-        return await this.rea(session, target, a.kind);
+        return await this.rea(session, target, a.kind, signal);
       }
       throw new Error('등록되지 않은 도구입니다.');
     } finally { await rm(temp, { recursive: true, force: true }); }
@@ -564,28 +568,33 @@ export class HostTools {
     const untrack = () => { owned!.delete(child); if (!owned!.size && this.children.get(session) === owned) this.children.delete(session); };
     child.once('exit', untrack); child.once('error', untrack);
   }
-  private graphify(session: string, folder: string) {
+  private graphify(session: string, folder: string, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     const executable = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
     const script = path.join(this.resources, 'runtime/windows-x64/openviking/analysis-worker.py');
     return new Promise<string>((resolve, reject) => {
       const supervisor = path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py');
       const args = process.platform === 'win32' ? ['-I', '-B', supervisor, executable, '-I', '-B', script, folder] : ['-I', '-B', script, folder];
-      const child = spawn(executable, args, { windowsHide: true, cwd: folder, env: { SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HF_HUB_OFFLINE: '1', DO_NOT_TRACK: '1' }, stdio: ['pipe', 'pipe', 'pipe'] });
+      const child = spawn(executable, args, { windowsHide: true, cwd: folder, env: { SYSTEMROOT: process.env.SYSTEMROOT ?? process.env.SystemRoot, SystemRoot: process.env.SystemRoot ?? process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', HF_HUB_OFFLINE: '1', DO_NOT_TRACK: '1' }, stdio: ['pipe', 'pipe', 'pipe'] });
       this.trackChild(session, child);
+      const onAbort = () => { child.kill('SIGKILL'); reject(new Error('중지된 작업입니다.')); };
+      signal?.addEventListener('abort', onAbort, { once: true });
       let output = ''; const timer = setTimeout(() => { child.kill('SIGKILL'); reject(new Error('Graphify 분석 시간 초과')); }, 60000);
+      const cleanup = () => { clearTimeout(timer); signal?.removeEventListener('abort', onAbort); };
       child.stdout.on('data', data => { output += data; if (output.length > 2 * 1024 * 1024) child.kill('SIGKILL'); }); child.stderr.on('data', () => {});
-      child.once('error', () => { clearTimeout(timer); reject(new Error('Graphify 런타임 실행 실패')); });
-      child.once('exit', code => { clearTimeout(timer); if (code === 0) resolve(output); else reject(new Error('Graphify 정적 분석 실패. 의미 분석 성공으로 기록하지 마세요.')); });
+      child.once('error', () => { cleanup(); reject(new Error('Graphify 런타임 실행 실패')); });
+      child.once('exit', code => { cleanup(); if (signal?.aborted) reject(new Error('중지된 작업입니다.')); else if (code === 0) resolve(output); else reject(new Error('Graphify 정적 분석 실패. 의미 분석 성공으로 기록하지 마세요.')); });
     });
   }
-  private async rea(session: string, file: string, kind: string) {
+  private async rea(session: string, file: string, kind: string, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     const tool = { go: 'inspect_go_binary', rust: 'inspect_rust_binary', 'python-pyc': 'inspect_python_pyc', 'electron-fuses': 'inspect_electron_fuses', model: 'inspect_model_artifact' }[kind];
     const script = path.join(await this.ghidra.verifiedRuntime(), 'rea/scripts/rea.mjs');
     const python = path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe');
     const supervisor = path.join(this.resources, 'runtime/windows-x64/openviking/sidecar-supervisor.py');
     const binary = process.platform === 'win32' ? python : process.execPath;
     const argv = process.platform === 'win32' ? ['-I', '-B', supervisor, process.execPath, script, '--mcp'] : [script, '--mcp'];
-    const child = spawn(binary, argv, { cwd: path.dirname(file), windowsHide: true, stdio: 'pipe', env: { ELECTRON_RUN_AS_NODE: '1', SYSTEMROOT: process.env.SYSTEMROOT, SystemRoot: process.env.SystemRoot, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HOME: path.dirname(file), USERPROFILE: path.dirname(file), APPDATA: path.dirname(file), LOCALAPPDATA: path.dirname(file), PATH: '', DO_NOT_TRACK: '1' } });
+    const child = spawn(binary, argv, { cwd: path.dirname(file), windowsHide: true, stdio: 'pipe', env: { ELECTRON_RUN_AS_NODE: '1', SYSTEMROOT: process.env.SYSTEMROOT ?? process.env.SystemRoot, SystemRoot: process.env.SystemRoot ?? process.env.SYSTEMROOT, WINDIR: process.env.WINDIR, TEMP: process.env.TEMP, TMP: process.env.TMP, HOME: path.dirname(file), USERPROFILE: path.dirname(file), APPDATA: path.dirname(file), LOCALAPPDATA: path.dirname(file), PATH: '', PYTHONUTF8: '1', PYTHONIOENCODING: 'utf-8', DO_NOT_TRACK: '1' } });
     this.trackChild(session, child);
     let buffer = ''; let sequence = 0; const pending = new Map<number, { resolve(value: any): void; reject(error: Error): void }>();
     const rpc = (method: string, params: unknown) => new Promise<any>((resolve, reject) => { const id = ++sequence; pending.set(id, { resolve, reject }); child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n'); });
@@ -595,8 +604,10 @@ export class HostTools {
       for (const line of lines) try { const message = JSON.parse(line); const request = pending.get(message.id); if (request) { pending.delete(message.id); message.error ? request.reject(new Error('REA 요청 실패')) : request.resolve(message.result); } } catch {}
     });
     child.stderr.on('data', () => {});
-    const fail = () => { for (const p of pending.values()) p.reject(new Error('REA 정적 분석 프로세스 종료')); pending.clear(); };
-    child.once('error', fail); child.once('exit', fail);
+    const fail = (reason = 'REA 정적 분석 프로세스 종료') => { for (const p of pending.values()) p.reject(new Error(reason)); pending.clear(); };
+    const onAbort = () => { child.kill('SIGKILL'); fail('중지된 작업입니다.'); };
+    signal?.addEventListener('abort', onAbort, { once: true });
+    child.once('error', () => fail()); child.once('exit', () => fail(signal?.aborted ? '중지된 작업입니다.' : 'REA 정적 분석 프로세스 종료'));
     const timer = setTimeout(() => child.kill('SIGKILL'), 60000);
     try {
       await rpc('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'Ned guarded static analysis', version: '0.2.0' } });
@@ -604,7 +615,7 @@ export class HostTools {
       const result = await rpc('tools/call', { name: tool, arguments: { path: file } });
       if (result.isError) throw new Error('REA가 분석 실패를 반환했습니다.');
       return JSON.stringify({ source: 'morluto/rea', mode: 'static-only', tool, result });
-    } finally { clearTimeout(timer); child.stdin.end(); child.kill(); }
+    } finally { clearTimeout(timer); signal?.removeEventListener('abort', onAbort); child.stdin.end(); child.kill(); }
   }
   activateEditScope(session: string, project: string) { if(this.sessionEditGrant && (this.sessionEditGrant.session!==session || this.sessionEditGrant.project!==project)) this.revokeEditApproval(); }
   editApprovalStatus() { return this.sessionEditGrant ? { mode: 'session-project' as const, ...this.sessionEditGrant } : { mode: 'ask' as const }; }

@@ -100,3 +100,23 @@ test('a normal coding request omits specialized tool schemas and preserves reque
   assert.equal(specializedToolRequested('ned_host_desktop_list_windows', '/skill-agent-desktop-windows\n실행해줘'), true);
   assert.equal(specializedToolRequested('ned_host_rea_ghidra', '/skill-rea-ghidra'), true);
 });
+
+test('automaticSkillContext loads project .ned/skills and newly added global skills without restarting Ned', async t => {
+  const base = await mkdtemp(path.join(tmpdir(), 'ned-routing-project-')); t.after(() => rm(base, { recursive: true, force: true }));
+  const builtInRoot = path.join(base, 'builtin'), globalRoot = path.join(base, 'global'), projectRoot = path.join(base, 'project');
+  await mkdir(builtInRoot); await mkdir(globalRoot); await mkdir(projectRoot);
+  const offline = new OfflineSkills(builtInRoot, globalRoot);
+  await offline.load();
+
+  await mkdir(path.join(globalRoot, 'live-global'), { recursive: true });
+  await writeFile(path.join(globalRoot, 'live-global', 'SKILL.md'), '---\nname: live-global\ndescription: 사내 공통 배포 점검\n---\nGLOBAL_LIVE_GUIDE\n');
+  const globalCtx = await automaticSkillContext(offline, [{ role: 'user', content: 'live-global 기준으로 배포 점검해줘' }]);
+  assert.match(globalCtx ?? '', /Automatically loaded user skill: live-global/);
+  assert.match(globalCtx ?? '', /GLOBAL_LIVE_GUIDE/);
+
+  await mkdir(path.join(projectRoot, '.ned/skills/team-api'), { recursive: true });
+  await writeFile(path.join(projectRoot, '.ned/skills/team-api/SKILL.md'), '---\nname: team-api\ndescription: 프로젝트 전용 API 규격\n---\nPROJECT_SCOPED_GUIDE\n');
+  const projectCtx = await automaticSkillContext(offline, [{ role: 'user', content: 'team-api 규격에 맞춰 엔드포인트 작성해줘' }], 6500, projectRoot);
+  assert.match(projectCtx ?? '', /Automatically loaded project skill: team-api/);
+  assert.match(projectCtx ?? '', /PROJECT_SCOPED_GUIDE/);
+});

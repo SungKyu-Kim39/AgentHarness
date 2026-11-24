@@ -228,3 +228,26 @@ test('real pinned engine forwards legacy thinking variants as wire fields, not o
   assert.equal(failure.code, 'LV_MODEL_UPSTREAM_RESET'); assert.equal(failure.phase, 'body');
 
 });
+
+test('prepareNative reports JSON import failure reason in the next startup decision prompt', async t => {
+  const { prepareNative } = await import('../distribution/native-control');
+  const root = await mkdtemp(path.join(tmpdir(), 'ned-prepare-import-')); t.after(() => rm(root, { recursive: true, force: true }));
+  const badJson = path.join(root, 'broken.json');
+  await writeFile(badJson, '{ broken json', 'utf8');
+  const seenMessages: string[] = [];
+  let turn = 0;
+  const ready = await prepareNative({
+    root: path.join(root, 'vault'),
+    resources: root,
+    cipher: { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() },
+    decide: async (message) => {
+      seenMessages.push(message);
+      return turn++ === 0 ? 'import' : 'cancel';
+    },
+    select: async () => badJson,
+    edit: () => {},
+  });
+  assert.equal(ready, false);
+  assert.equal(seenMessages.length, 2);
+  assert.match(seenMessages[1], /선택한 설정 JSON 가져오기 실패: JSON 문법이 올바르지 않습니다\./);
+});

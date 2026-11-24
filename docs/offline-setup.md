@@ -1,17 +1,17 @@
 # Ned 설치와 첫 실행
 
-이 안내는 0.3.15 기준입니다. 스킬 74개와 OpenViking 0.5.5, REA/Ghidra 등 관련 런타임을 전체 설치본 하나로 함께 반입하므로 직원 PC에서 npm·pip·uvx·Bun 설치나 Git clone을 할 필요가 없습니다. TGZ의 `source/`에는 대응 소스와 재현 자료가 있으니 묶음 전체를 보관하세요.
+이 안내는 0.3.16 기준입니다. 스킬 74개와 OpenViking 0.5.5, REA/Ghidra 등 관련 런타임을 전체 설치본 하나로 함께 반입하므로 직원 PC에서 npm·pip·uvx·Bun 설치나 Git clone을 할 필요가 없습니다. TGZ의 `source/`에는 대응 소스와 재현 자료가 있으니 묶음 전체를 보관하세요.
 
-지원 대상은 Windows 10 1903 이상·Windows 11 22H2 이상 x64입니다. 실제 사내 OS와 보안 정책에서 확인한 범위는 [검증 기록](validation-0.3.15.md)을 참고하세요.
+지원 대상은 Windows 10 1903 이상·Windows 11 22H2 이상 x64입니다. 실제 사내 OS와 보안 정책에서 확인한 범위는 [검증 기록](validation-0.3.16.md)을 참고하세요.
 
 ## 설치하고 설정하기
 
-1. 받은 `Ned-0.3.15-windows-x64.tgz`를 새 폴더에 풉니다.
+1. 받은 `Ned-0.3.16-windows-x64.tgz`를 새 폴더에 풉니다.
 2. 기존 Ned·L-Vibe와 개인 Zed를 완전히 종료한 뒤 설치 EXE를 실행합니다. 기본 위치는 `%LOCALAPPDATA%\Programs\Ned`이며, `D:\Programs\Ned` 같은 전용 폴더를 선택할 수 있습니다. 폴더와 상위 경로는 설치기가 자동으로 만듭니다. 일반 사용자 설치로 관리자 권한을 요구하지 않습니다.
 3. 최초 설정을 편집합니다. EXE 옆 `agent-config.json`이 있으면 설치기가 `%APPDATA%\Ned\config-import.json`으로 복사합니다. **설치 후 편집할 파일은 이 준비 사본입니다.** 배포 폴더의 원본을 나중에 바꿔도 이미 복사한 내용은 갱신되지 않습니다. 설치 전에 원본을 완성했다면 바로 다음 단계로 진행하면 됩니다. 원본 파일이 없으면 기본 예제를 준비합니다.
 4. Ned를 실행합니다. 설정을 검증하고 암호화한 뒤 빈 시작 화면을 엽니다. 알림 영역의 **Ned → 프로젝트 폴더 열기**에서 작업 폴더를 선택하고, **Ctrl+Shift+A**로 대화를 시작합니다. 모델은 대화의 선택 메뉴에서 바꿀 수 있습니다.
 
-여러 LLM은 JSON의 `providers`, 임베딩 모델 한 개는 `openViking.embedding`에 지정합니다. 실제 서버 주소·키·모델 ID를 입력하고 끝 쉼표나 Markdown 코드 블록 표시는 넣지 마세요. [모델 설정](model-controls.md)에 thinking 옵션과 대기 시간 설정도 설명했습니다.
+여러 LLM은 JSON의 `providers`, 임베딩 모델 한 개는 `openViking.embedding`에 지정합니다. 실제 서버 주소·키·모델 ID를 입력하고 끝 쉼표나 Markdown 코드 블록 표시는 넣지 마세요(메모장·PowerShell의 UTF-8 BOM은 자동 처리합니다). [모델 설정](model-controls.md)에 thinking 옵션과 대기 시간 설정도 설명했습니다.
 
 0.3.8에서는 알림 영역의 **OpenViking Studio 열기**로 번들 지식 관리 화면을 열 수 있습니다. [Studio 안내](openviking-studio.md),[요약 출력 한도 해결](compaction-troubleshooting.md),[새 스킬·MCP 추가 방법](extension-guide.md)도 함께 제공합니다.
 
@@ -51,8 +51,8 @@ Ned가 준비되는 동안 설정·모델 중계·스킬 문서 검사·편집�
 
 기본 스킬 74종은 Ned가 설치 파일에서 직접 읽습니다. OpenViking은 백그라운드에서 시작하며 프로젝트 지식을 색인하고 검색합니다. 설치나 업데이트에서 기본 스킬을 등록하는 단계는 없어졌습니다. 기존 지식과 이미 가져온 개인 자료는 유지하며 Ned의 새 개인 공통 지식 `.ovpack` 가져오기는 제거했습니다.
 
-사용자 스킬은 `%APPDATA%\Ned\skills\<스킬-ID>\SKILL.md`에 저장합니다.
-Ned를 재시작하면 모든 프로젝트에서 사용할 수 있고 업데이트가 파일을 지우지 않습니다.
+사용자 스킬은 `%APPDATA%\Ned\skills\<스킬-ID>\SKILL.md`(모든 프로젝트 공통) 또는 프로젝트 폴더 안 `.ned\skills\<스킬-ID>\SKILL.md`(해당 프로젝트 전용)에 저장합니다.
+0.3.16부터는 Ned를 재시작하지 않아도 바로 탐색·자동 라우팅에 반영되며 업데이트가 파일을 지우지 않습니다.
 [글로벌 스킬 등록 예시](extension-guide.md#사용자-글로벌-스킬-등록)
 
 ## 이전 버전에서 업데이트할 때
@@ -79,6 +79,6 @@ Ned의 승인 설정에 따라 실행하며, 출력과 종료 코드를 반환�
 개인 설정과 이전 모델·sandbox 승인은 복제하지 않습니다. [형식과 백업 안내](zed-history-import.md)를 읽습니다.
 
 EGM 설계·검토는 Ned Agent에 `egm-draft`, `egm-review` 등 필요한 워크플로를 요청합니다.
-[EGM 안내](egm.md), [전체 74종 안내](bundled-skills.md), [자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md), [버전 변경 사항](changes-0.3.15.md)을 제공합니다.
+[EGM 안내](egm.md), [전체 74종 안내](bundled-skills.md), [자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md), [버전 변경 사항](changes-0.3.16.md)을 제공합니다.
 
 [프로젝트·개인 공통 지식](knowledge-notes.md) · [권한 설정](approval-modes.md)

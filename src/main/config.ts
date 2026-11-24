@@ -9,17 +9,45 @@ import {
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { configSchema, type AgentConfig } from "../shared/contracts";
+const atomicQueues = new Map<string, Promise<void>>();
+const RENAME_RETRY_DELAYS_MS = [25, 60, 150];
+const PLACEHOLDER_SECRET_RE = /^(?:empty|none|local|null|dummy|test|no-key|not-needed|na|n\/a)$/i;
 export async function atomicJSON(file: string, value: unknown): Promise<void> {
-  await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
-  const temp = `${file}.${randomUUID()}.tmp`;
+  const key = path.resolve(file);
+  const previous = atomicQueues.get(key) ?? Promise.resolve();
+  const run = previous.catch(() => {}).then(async () => {
+    await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
+    const temp = `${file}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(temp, JSON.stringify(value, null, 2), {
+        mode: 0o600,
+        flag: "wx",
+      });
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await rename(temp, file);
+          break;
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException)?.code;
+          if (
+            attempt < RENAME_RETRY_DELAYS_MS.length &&
+            (code === "EPERM" || code === "EACCES" || code === "EBUSY")
+          ) {
+            await new Promise((resolve) => setTimeout(resolve, RENAME_RETRY_DELAYS_MS[attempt]));
+            continue;
+          }
+          throw error;
+        }
+      }
+    } finally {
+      await unlink(temp).catch(() => {});
+    }
+  });
+  atomicQueues.set(key, run);
   try {
-    await writeFile(temp, JSON.stringify(value, null, 2), {
-      mode: 0o600,
-      flag: "wx",
-    });
-    await rename(temp, file);
+    await run;
   } finally {
-    await unlink(temp).catch(() => {});
+    if (atomicQueues.get(key) === run) atomicQueues.delete(key);
   }
 }
 export interface Cipher {
@@ -62,7 +90,7 @@ export class ConfigVault {
       return this.importText(staged, false);
     }
     try {
-      const envelope = JSON.parse(await readFile(this.file, "utf8"));
+      const envelope = JSON.parse((await readFile(this.file, "utf8")).replace(/^\uFEFF/, ""));
       if (
         envelope.schemaVersion !== 1 ||
         typeof envelope.encrypted !== "string"
@@ -90,7 +118,7 @@ export class ConfigVault {
       throw new Error("저장된 설정이 있습니다. 설정 교체를 선택하세요.");
     let data: unknown;
     try {
-      data = JSON.parse(text);
+      data = JSON.parse(text.replace(/^\uFEFF/, ""));
     } catch {
       throw new Error("JSON 문법이 올바르지 않습니다.");
     }
@@ -113,11 +141,15 @@ export class ConfigVault {
 export class Redactor {
   private secrets: string[] = [];
   add(secret: string) {
-    if (secret && !this.secrets.includes(secret)) this.secrets.push(secret);
+    if (!secret || !secret.trim()) return;
+    if (!this.secrets.includes(secret)) this.secrets.push(secret);
   }
   text(value: string): string {
-    for (const secret of this.secrets.sort((a, b) => b.length - a.length))
+    for (const secret of [...this.secrets].sort((a, b) => b.length - a.length)) {
+      const trimmed = secret.trim();
+      if (trimmed.length < 6 || PLACEHOLDER_SECRET_RE.test(trimmed)) continue;
       value = value.split(secret).join("[REDACTED]");
+    }
     return value.replace(/Bearer\s+[A-Za-z0-9_.~+/=-]+/gi, "Bearer [REDACTED]");
   }
   object<T>(value: T): T {

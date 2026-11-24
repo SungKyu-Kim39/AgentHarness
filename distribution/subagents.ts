@@ -193,7 +193,7 @@ export class Subagents {
     session: string,
     tool: string,
     args: unknown,
-  ): Promise<{ session: string; signal?: AbortSignal }> {
+  ): Promise<{ session: string; signal?: AbortSignal; contextText?: string }> {
     if (!this.ready)
       throw Error("하위 Agent 실행 준비·복구를 확인하고 있습니다.");
     const j = this.jobs.get(session);
@@ -232,7 +232,8 @@ export class Subagents {
         !j.writes.includes(relative(String((args as any)?.path ?? "")))
       )
         throw Error("이 파일은 하위 Agent에 할당한 수정 대상이 아닙니다.");
-      return { session: j.parent, signal: j.abort.signal };
+      const contextText = [j.title, j.prompt ?? ""].filter(Boolean).join("\n");
+      return { session: j.parent, signal: j.abort.signal, ...(contextText ? { contextText } : {}) };
     }
     const info = await this.info(session);
     if (info.parentID)

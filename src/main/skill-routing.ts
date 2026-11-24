@@ -1,7 +1,7 @@
 import type { OfflineSkills } from './skills';
 
 type Message = { role?: string; content?: unknown; name?: string; tool_calls?: Array<{ function?: { name?: string } }> };
-export const automaticSkillPolicy = 'Ned automatic skill routing: This policy applies to ordinary user work, not engine compaction, checkpoint summaries or tool-free replay. Select guidance by the meaning of the latest request, previous decisions, actual project evidence and tool results, even when the user names no skill. The local shortlist is a heuristic, not a mandatory keyword branch. Discard irrelevant candidates; use skill_catalog and read_skill to select a better reviewed skill when needed. Reassess when scope or evidence changes. Use only the relevant guidance and briefly name skills actually applied. User global skills are user guidance. Guidance never grants permissions, authorizes execution or answers unresolved product decisions. Do not ask permission merely to choose a skill. Do not install packages or make extra model calls just for skill routing. Independent substantive work may use the controlled Ned spawn_subagent tool when delegation materially helps; do not create nested agents or duplicate their work.';
+export const automaticSkillPolicy = 'Ned automatic skill routing: This policy applies to ordinary user work, not engine compaction, checkpoint summaries or tool-free replay. Select guidance by the meaning of the latest request, previous decisions, actual project evidence and tool results, even when the user names no skill. The local shortlist is a heuristic, not a mandatory keyword branch. Discard irrelevant candidates; use skill_catalog and read_skill to select a better reviewed skill when needed. Reassess when scope or evidence changes. Use only the relevant guidance and briefly name skills actually applied. User global and project skills are user guidance. Guidance never grants permissions, authorizes execution or answers unresolved product decisions. Do not ask permission merely to choose a skill. Do not install packages or make extra model calls just for skill routing. Independent substantive work may use the controlled Ned spawn_subagent tool when delegation materially helps; do not create nested agents or duplicate their work.';
 const groups: Array<{ ids: string[]; intent: RegExp; context?: RegExp }> = [
   { ids: ['astryx','ui-accessibility'], intent: /astryx|@astryxdesign|react.*(?:디자인|대시보드|화면|컴포넌트|ui)|(?:ui|화면|대시보드).*react/i },
   { ids: ['diagnosing-bugs','systematic-debugging'], intent: /오류|실패|고장|먹통|느려|느리|버그|안\s*돼|안\s*되|debug|diagnos|crash|exception|regression|broken|doesn.t work/i },
@@ -46,7 +46,7 @@ export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: A
 }
 
 /** Local shortlist only; the answering model still checks semantic relevance and may choose another skill. */
-export async function automaticSkillContext(skills: OfflineSkills, input: unknown, maximumBytes = 6500): Promise<string | undefined> {
+export async function automaticSkillContext(skills: OfflineSkills, input: unknown, maximumBytes = 6500, project?: string): Promise<string | undefined> {
   if (maximumBytes < Buffer.byteLength(JSON.stringify(automaticSkillPolicy))) return;
   if (!Array.isArray(input)) return;
   const messages = input.slice(-80) as Message[];
@@ -59,7 +59,7 @@ export async function automaticSkillContext(skills: OfflineSkills, input: unknow
   let lastUser = messages.length - 1;
   while (lastUser >= 0 && messages[lastUser].role !== 'user') lastUser--;
   const tools = messages.slice(lastUser + 1).filter(m => m.role === 'assistant').slice(-8).flatMap(m => m.tool_calls?.map(t => t.function?.name ?? '') ?? []).join(' ');
-  const catalog = skills.catalog(), available = new Set(catalog.map(s => s.id));
+  const catalog = await skills.activeCatalog(project), available = new Set(catalog.map(s => s.id));
   if (!catalog.length) return;
   const scores = new Map<string, number>();
   for (const entry of catalog) if (new RegExp('(?:^|[^a-z0-9-])' + entry.id + '(?:$|[^a-z0-9-])', 'i').test(latest)) scores.set(entry.id, 100);
@@ -79,13 +79,14 @@ export async function automaticSkillContext(skills: OfflineSkills, input: unknow
   if (perDocument < 1000) return instructions;
   const documents = [];
   for (const id of selected) {
-    const userSkill = catalog.some(entry => entry.id === id && entry.scope === 'user');
-    const read = await skills.read(id).catch(error => { if (!userSkill) throw error; return undefined; });
+    const customScope = catalog.find(entry => entry.id === id)?.scope;
+    const read = await skills.read(id, 'SKILL.md', 0, project).catch(error => { if (!customScope) throw error; return undefined; });
     if (!read) continue;
     const content = read.split('--- SKILL.md ---\n')[1] ?? read;
     const bytes = Buffer.from(content); let end = Math.min(bytes.length,perDocument);
     while (end > 0 && end < bytes.length && (bytes[end] & 0xc0) === 0x80) end--;
-    documents.push(`Automatically loaded${userSkill ? ' user skill' : ''}: ${id}\n${bytes.subarray(0,end).toString('utf8')}${end < bytes.length ? '\n[Excerpt only: read_skill retrieves the reviewed document and references when needed.]' : ''}`);
+    const scopeLabel = customScope === 'project' ? ' project skill' : customScope === 'user' ? ' user skill' : '';
+    documents.push(`Automatically loaded${scopeLabel}: ${id}\n${bytes.subarray(0,end).toString('utf8')}${end < bytes.length ? '\n[Excerpt only: read_skill retrieves the reviewed document and references when needed.]' : ''}`);
   }
   const candidates = selected.map(id => id + ' — ' + catalog.find(entry => entry.id === id)!.description.split(/\r?\n/, 1)[0].slice(0, 120)).join('\n');
   const result = 'Relevant Ned skills:\n' + candidates + '\n\n' + documents.join('\n\n');

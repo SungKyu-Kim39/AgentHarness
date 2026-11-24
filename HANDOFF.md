@@ -1,6 +1,12 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.15**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.16**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+
+## 0.3.16 작업 기준 (`AG-work`)
+
+- `ned_host_browser_check` 워커 즉시 종료(`MODULE_NOT_FOUND` 및 Windows `System32`·`ComSpec` 실행 환경 누락) 근본 수정과 종료 진단 마커 기록(`src/main/mcp-extensions.ts`, `scripts/test-mcp-live.ts`, `tests/mcp-boundary.test.ts`, `scripts/windows-test-bundle.mjs`)을 반영했습니다.
+- UTF-8 BOM 설정 JSON 허용·가져오기 실패 사유 안내(`src/main/config.ts`, `distribution/native-control.ts`), 짧은/플레이스홀더 API 키 평문 오탐 마스킹 방지, `atomicJSON` 경로별 직렬화 및 Windows `rename` 재시도, Python/OpenViking/Graphify/REA 파이프 UTF-8 강제 및 `AbortSignal` 즉시 취소를 적용했습니다.
+- 재시작 없는 글로벌·프로젝트(`.ned/skills`) 자동 스킬 라우팅(`src/main/skills.ts`, `src/main/skill-routing.ts`), 하위 에이전트 `rea_*` 문맥 전달(`distribution/subagents.ts`, `distribution/host-tools.ts`), 외부 읽기 민감 경로(`.ssh`·`.aws`·`Ned-Launcher`·`L-Vibe` 등) 및 `.ned`/`.vscode` 쓰기 보호(`src/main/files.ts`), VS2017/2019/2022 MSBuild 지원(`distribution/vs-build.ts`), `PythonProjects` 완료 기록 정리 및 Zed 대화 가져오기 임시 스냅샷 삭제(`distribution/ned/zed-history.ts`)를 완료했습니다.
 
 ## 0.3.15 배포 기준
 

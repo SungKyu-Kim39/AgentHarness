@@ -63,4 +63,26 @@ test('external reads prompt in ask/edits modes, auto-approve in full mode, and a
   t.after(() => host.close());
   await assert.rejects(host.call('propose_edit', { path: note, content: 'overwrite' }, 's'), /상대 경로/);
   await assert.rejects(host.call('delete_file', { path: '../note.md' }, 's'), /허용되지 않는 경로/);
+
+  const fakeHome = path.join(root, 'fake-home');
+  const fakeLocalAppData = path.join(root, 'fake-localappdata');
+  const sshKey = path.join(fakeHome, '.ssh', 'id_ed25519');
+  const launcherState = path.join(fakeLocalAppData, 'Ned-Launcher', 'state.json');
+  const legacyLvibe = path.join(root, 'L-Vibe', 'settings.enc.json');
+  await mkdir(path.dirname(sshKey), { recursive: true }); await writeFile(sshKey, 'private-ssh');
+  await mkdir(path.dirname(launcherState), { recursive: true }); await writeFile(launcherState, '{}');
+  await mkdir(path.dirname(legacyLvibe), { recursive: true }); await writeFile(legacyLvibe, '{}');
+
+  const prevUserProfile = process.env.USERPROFILE;
+  const prevLocalAppData = process.env.LOCALAPPDATA;
+  process.env.USERPROFILE = fakeHome;
+  process.env.LOCALAPPDATA = fakeLocalAppData;
+  try {
+    for (const blocked of [sshKey, launcherState, legacyLvibe]) {
+      await assert.rejects(host.call('read_external_file', { path: blocked }, 's'), /앱 관리/);
+    }
+  } finally {
+    if (prevUserProfile === undefined) delete process.env.USERPROFILE; else process.env.USERPROFILE = prevUserProfile;
+    if (prevLocalAppData === undefined) delete process.env.LOCALAPPDATA; else process.env.LOCALAPPDATA = prevLocalAppData;
+  }
 });
