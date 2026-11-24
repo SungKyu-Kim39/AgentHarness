@@ -1,8 +1,11 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.16**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.16 rebuild1**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-<!-- current-release -->
+## 0.3.16 rebuild1 배포 기준
+
+소스 `0f93d8a8baca28fe1de825da48ba8c2296d7c0fc`를 사용했습니다. Windows 새 설치·0.3.16 업데이트와 48개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.16-rebuild1.md)
+
 
 - **0.3.16 rebuild1 추가 보완**: 동일 0.3.16 버전(편집기 `Ned-editor-0.3.16.exe` 재사용)으로 2회 전면 재검토(Goldfish) 검출 항목 15개 영역을 모두 통합했습니다 — `BrowserProxy` IPv6 `[::1]` 및 `localhost -> ::1` 폴백(`src/main/browser-proxy.ts`, `scripts/mcp-node-worker.cjs`), `contracts.ts` `providers` `defaultModel`/`defaultVariant` 검증 및 `ZedModels` 요청 옵션 우선순위, `SessionMemoryManager` 종료 시 미커밋 턴 보존·재시작 `flushPendingCommits()`·Compaction 후 세션 opt-out 유지·회상 본문 마스킹, 고위험 셸 가드(`& { ... }`/중첩 `$(...)`/`cmd /c"..."`/`shutdown`/`schtasks`), NSIS 업그레이드 전 실행 중 파일 잠금 선검사·한국어화, `prepareEditor()` `ensureTerminalTasks` 호출 연결, `DesktopTools`/`ReaGhidra` 단일 소유권 정리, `git_inspect` 보호 경로 읽기 필터 허용, 승인 프로젝트 재시작 유지 및 전체 초기화 동기화, `sanitizeVikingDiagnostic` 플레이스홀더 가드, MSBuild `/utf8output` + `StringDecoder`, `OfflineSkills` 실시간 글로벌 폴백·서로게이트 경계 보정, `runtime-*.json`·WAL·`agent.ts` 세션 상한 정리.
 

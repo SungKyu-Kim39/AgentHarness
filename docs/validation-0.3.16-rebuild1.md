@@ -25,3 +25,11 @@ Linux 단위 테스트와 Windows Server 스모크 검증은 실제 Windows 10·
 
 - 실제 Windows 10·11 직원 PC에서 실행 중인 Ned 상태에서 업그레이드 EXE 실행 시 파일 손상 없이 종료 안내창이 뜨는지 GUI 확인
 - 실제 사내 LLM·임베딩 서버와 폐쇄망(외부망 차단) 환경에서 `browser_check`(IPv4/IPv6 로컬 서버), 자동 대화 기억(짧은 세션 재시작 커밋 포함), OpenViking Studio, MSBuild 한글 출력의 최종 수용 확인 (`releaseReady: false` 유지)
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `0f93d8a8baca28fe1de825da48ba8c2296d7c0fc`입니다. Windows Server에 최종 EXE를 새로 설치해 48건 중 48건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.16에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535067285 bytes, SHA-256 `b26b2f5c2cf6481b26d3f70a32358f62d7f741407b711ed5c6de7357b45e48e8`입니다. 준비본과 추출본의 60127개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.16-rebuild1-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.16-rebuild1-installer-audit.json) · [반입 TGZ](../downloads/README.md)
