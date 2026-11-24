@@ -18,3 +18,11 @@ Ned 0.3.14의 Linux 단위 테스트, 문서 일관성 검사, Windows Server �
 - “이건 기억하지 마” 입력 턴이 회상·저장 모두에서 제외되는지 확인
 - 전체 권한 모드에서 일반 PowerShell 명령·지식 저장 무팝업 동작 및 치명적 명령 승인 팝업 확인
 - Windows 10/11 GUI 환경에서 OpenViking Studio 정상 렌더링 및 외부망 차단 확인
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `05ef6c8747c49e478df484f9270fd105030d2074`입니다. Windows Server에 최종 EXE를 새로 설치해 42건 중 42건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.13에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535028745 bytes, SHA-256 `eda81e93c9e33e689a924885801d64fbf5f806c7dce09cbea1092fe4cee78d67`입니다. 준비본과 추출본의 60118개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.14-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.14-installer-audit.json) · [반입 TGZ](../downloads/README.md)

@@ -1,8 +1,11 @@
 # Ned 개발 인계
 
-새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.13**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.3.14**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
-## 0.3.14 작업 기준 (`AG-work`)
+## 0.3.14 배포 기준
+
+소스 `05ef6c8747c49e478df484f9270fd105030d2074`를 사용했습니다. Windows 새 설치·0.3.13 업데이트와 42개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.3.14.md)
+
 
 - [P0] 개인화 대화 기억 턴·세션 opt-out 회상+수집/커밋 통합 적용, 회상 쿼리 시크릿 마스킹 및 JWT/PEM/AWS/DB URL/공백 포함 비밀번호 패턴 보강, 트레이 자동 대화 기억 상태 표시와 문서 고지 명확화(`src/main/session-memory.ts`, `distribution/native-control.ts`, `distribution/ned/main.ts`, `docs/knowledge-notes.md`, `docs/ned-user-guide.md`).
 - [P1] OpenViking 백그라운드 `semantic_and_vectors` 실패 진단 로깅(`OV_SEMANTIC_REFRESH_FAILED`), 409 1회 백오프 재시도(`OV_SEMANTIC_RETRY`), `saveNote` 실패 시 기존 타이머 보존, 상위 `index`/하위 노트 prefix 병합, 종료 시 미완료 대기 건수 기록(`OV_SEMANTIC_PENDING_SHUTDOWN`) 보강(`src/main/openviking.ts`).
