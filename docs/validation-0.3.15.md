@@ -21,3 +21,11 @@ Ned 0.3.15의 Linux 단위 테스트, 문서 일관성 검사, Windows Server �
 - 트레이 메뉴의 자동 대화 기억 상태 실시간 갱신(`준비 중` → `켜짐`, OpenViking 오류 시 `오류`) 및 `사용 안내 → 자연어 자동 도구 연결 소개·안내` 열림 확인
 - 전체 권한 모드에서 일반 명령 무팝업 실행과 중첩 셸/고위험 명령 승인 팝업 확인
 - Windows 10/11 GUI 환경에서 대용량 파일 `propose_edit`/`knowledge_index` 승인창 표시 및 외부망 차단 확인
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `0bb5233db20ba3ba9f7befe746c48143a81ffae4`입니다. Windows Server에 최종 EXE를 새로 설치해 43건 중 43건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.14에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1535047388 bytes, SHA-256 `921bbd9a841e2bdfddd1084c0cb03e3b8d91bfa6dcdfb7583c9bfcb0c9c3b061`입니다. 준비본과 추출본의 60122개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.3.15-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.3.15-installer-audit.json) · [반입 TGZ](../downloads/README.md)
