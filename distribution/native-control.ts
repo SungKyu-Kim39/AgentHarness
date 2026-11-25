@@ -359,7 +359,19 @@ export class NativeRuntime {
     this.memory?.onSessionActivated(session);
   }
   onTurnComplete(session: string) { this.memory?.onTurnComplete(session); }
-  onSessionDisconnected(session: string) { this.attachedProjects.delete(session); this.turnHistory.delete(session); this.sessionModes.delete(session); this.modeUpdates.delete(session); this.memory?.onSessionDisconnected(session); }
+  onSessionDisconnected(session: string, deleted = false) {
+    this.attachedProjects.delete(session);
+    this.turnHistory.delete(session);
+    this.sessionModes.delete(session);
+    this.modeUpdates.delete(session);
+    if (deleted) void this.memory?.stopSessionMemory(session).catch(() => {});
+    else this.memory?.onSessionDisconnected(session);
+  }
+  async releaseSession(session: string, deleted: boolean) {
+    this.onSessionDisconnected(session, deleted);
+    // ACP already closed or deleted the engine session. Finish the Ned-owned jobs.
+    await this.cancelChildren(session);
+  }
   async skillCommands(session: string) {
     if (!this.tools) throw new Error('Ned 스킬이 준비되지 않았습니다.');
     const project = await this.sessionProject(session);
@@ -501,7 +513,9 @@ export class NativeRuntime {
         });
         child.stdout.on('data', () => {});
         this.backend = { url, password };await this.subagents?.recover(); this.proxy = new SidecarProxy(this.backend,{cancelSession:id=>this.cancelChildren(id),resumeSession:async id=>{await this.cancelChildren(id);this.tools?.resumeSession(id);}});
-        this.current = await this.proxy.start(); return this.current;
+        this.current = await this.proxy.start();
+        void this.memory?.flushPendingCommits().catch(() => {});
+        return this.current;
       } catch (error) { await this.stopEngine(); throw error; }
     });
     this.queue = operation.catch(() => {}); return operation;

@@ -187,7 +187,7 @@ jobs:
             if (!(Test-Path -LiteralPath $file)) { Set-Content -LiteralPath $file -Value 'Ned installer preservation fixture' }
             $file
           }
-          if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5') {
+          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild5','0.4.0-rebuild6')) {
             $extra = Join-Path $install 'user-file-fixture.txt'
             Set-Content -LiteralPath $extra -Value 'Ned does not own this file'
             $savedPaths = @($savedPaths) + @($extra)
@@ -197,11 +197,11 @@ jobs:
           }
           $before = Get-FileHash -LiteralPath (@($main,$reference)+$savedPaths)
           $interruptedUpgradeRecovered = $false
-          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild3','0.4.0-rebuild4','0.4.0-rebuild5')) {
+          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild3','0.4.0-rebuild4','0.4.0-rebuild5','0.4.0-rebuild6')) {
             $backup = Join-Path $install '.ned-upgrade-backup'
             New-Item -ItemType Directory -Path $backup | Out-Null
-            if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild4','0.4.0-rebuild5')) {
-              if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5') {
+            if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild4','0.4.0-rebuild5','0.4.0-rebuild6')) {
+              if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild5','0.4.0-rebuild6')) {
                 Move-Item -LiteralPath $legacyExtra -Destination $backup
               }
               # Simulate partial rollback failure: resources already restored to live,
@@ -274,8 +274,24 @@ jobs:
           $proof | Add-Member -NotePropertyName userGlobalSkillsPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName userDataPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName interruptedUpgradeRecovered -NotePropertyValue $interruptedUpgradeRecovered
-          if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5') {
+          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild5','0.4.0-rebuild6')) {
             $proof | Add-Member -NotePropertyName installFolderUserFilesPreserved -NotePropertyValue $true
+          }
+          if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild6') {
+            $unrestored = Join-Path $backup 'unrecovered-fixture.txt'
+            New-Item -ItemType Directory -Path $backup | Out-Null
+            Set-Content -LiteralPath $unrestored -Value 'Unrecovered user backup fixture'
+            $preserved = @($before) + @(Get-FileHash -LiteralPath $unrestored)
+            $remove = Start-Process -FilePath (Join-Path $install 'Uninstall Ned.exe') -ArgumentList @('/S', "_?=$install") -Wait -PassThru
+            $remove.Refresh()
+            if ($remove.ExitCode -ne 0) { throw 'Candidate preservation uninstall failed' }
+            foreach ($owned in @('Ned.exe','resources','locales','ffmpeg.dll')) {
+              if (Test-Path -LiteralPath (Join-Path $install $owned)) { throw "Owned payload remains after removal: $owned" }
+            }
+            foreach ($file in $preserved) {
+              if ((Get-FileHash -LiteralPath $file.Path).Hash -ne $file.Hash) { throw 'Uninstall did not preserve user bytes' }
+            }
+            $proof | Add-Member -NotePropertyName uninstallUserFilesPreserved -NotePropertyValue $true
           }
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Restore disposable runner firewall configuration

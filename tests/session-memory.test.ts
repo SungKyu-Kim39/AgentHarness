@@ -827,3 +827,96 @@ test('automatic memory recovers a durable failed archive after a lost task ID an
   assert.equal((await readState()).sessions['fixture-session'].archiveRecoveries, undefined);
   assert.equal(commitCount, 1, 'an already archived turn never re-commits the empty live session');
 });
+
+test('lost append and commit responses reconcile across OpenViking restarts without replaying completed writes', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-memory-lost-response-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  let instance = 'initial', live = 0, total = 0, commits = 0;
+  let archive: 'pending' | 'completed' = 'pending';
+  let appendAttempts = 0, commitAttempts = 0;
+  const appended = new Set<string>();
+  const lookedUp: string[] = [];
+  const knowledge: KnowledgeService = {
+    state: () => ({ status: 'ready', indexedFiles: 0 }),
+    isReady: () => true,
+    configure: async () => {}, search: async () => '{}', read: async () => '{}', index: async () => '', close: async () => {},
+    ensureMemorySession: async () => {},
+    getMemoryProgress: async () => ({ instance, commits, messages: live, total }),
+    appendSessionMessages: async (_session, messages, _signal, ids) => {
+      appendAttempts++;
+      assert.deepEqual(ids, ['user-message', 'assistant-message']);
+      for (const id of ids ?? []) appended.add(id);
+      live += messages.length;
+      total += messages.length;
+      throw new Error('OV_RESPONSE_LOST');
+    },
+    hasMemoryAppendReceipt: async (_session, ids) => ids.every(id => appended.has(id)),
+    commitMemorySession: async () => {
+      commitAttempts++;
+      commits++;
+      live = 0;
+      throw new Error('OV_RESPONSE_LOST');
+    },
+    getMemoryArchive: async (_session, id) => { lookedUp.push(id); return { status: archive }; },
+  };
+  const make = () => new SessionMemoryManager({
+    root, policy: { enabled: true, autoRecall: false, commitEveryTurns: 1 }, knowledge: () => knowledge,
+    fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async () => [
+      { id: 'user-message', type: 'user', text: 'Fixture request.', time: { created: 1 } },
+      { id: 'assistant-message', type: 'assistant', time: { created: 2, completed: 3 }, content: [{ type: 'text', text: 'Fixture answer.' }] },
+    ],
+  });
+  let manager = make();
+  await manager.syncAndMaybeCommit('session');
+  await manager.close();
+  manager = make();
+  instance = 'second';
+  await manager.flushPendingCommits();
+  assert.equal(appendAttempts, 1);
+  assert.equal(commitAttempts, 1);
+  await manager.close();
+  manager = make();
+  instance = 'third';
+  await manager.flushPendingCommits();
+  assert.ok(lookedUp.includes('archive_001'));
+  archive = 'completed';
+  await manager.flushPendingCommits();
+  await manager.close();
+  assert.equal(total, 2);
+  assert.equal(appendAttempts, 1);
+  assert.equal(commitAttempts, 1);
+  const persisted = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8')).sessions.session;
+  assert.equal(persisted.pendingAppend, undefined);
+  assert.equal(persisted.pendingCommit, undefined);
+  assert.equal(persisted.archiveRecoveries, undefined);
+  assert.equal(persisted.uncommittedTurns, 0);
+});
+
+test('an unconfirmed append waits for its sidecar to exit before resending when no write was observed', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-memory-no-write-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  let instance = 'first';
+  let attempts = 0;
+  const knowledge: KnowledgeService = {
+    state: () => ({ status: 'ready', indexedFiles: 0 }),
+    isReady: () => true,
+    configure: async () => {}, search: async () => '{}', read: async () => '{}', index: async () => '', close: async () => {},
+    ensureMemorySession: async () => {},
+    getMemoryProgress: async () => ({ instance, commits: 0, messages: 0, total: 0 }),
+    appendSessionMessages: async () => { if (++attempts === 1) throw new Error('OV_TIMEOUT'); },
+    commitMemorySession: async () => ({ skipped: true, reason: 'no_messages' }),
+  };
+  const manager = new SessionMemoryManager({
+    root, policy: { enabled: true, autoRecall: false, commitEveryTurns: 1 }, knowledge: () => knowledge,
+    fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async () => [{ id: 'user-message', type: 'user', text: 'Fixture request.', time: { created: 1 } }],
+  });
+  await manager.syncAndMaybeCommit('session');
+  await manager.flushPendingCommits();
+  assert.equal(attempts, 1);
+  instance = 'new-process';
+  await manager.flushPendingCommits();
+  await manager.close();
+  assert.equal(attempts, 2);
+});

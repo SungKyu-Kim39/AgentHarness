@@ -79,10 +79,13 @@ export class ProjectFiles {
       throw new Error("바이너리 파일은 지원하지 않습니다.");
     return bytes.toString("utf8");
   }
-  async list() {
+  async list() { return (await this.inventory()).paths; }
+
+  async inventory() {
     const files: string[] = [];
+    let complete = true;
     const visit = async (relative: string, depth: number) => {
-      if (depth > 12 || files.length >= 4000) return;
+      if (depth > 12) { complete = false; return; }
       for (const entry of await readdir(path.join(this.root, relative), {
         withFileTypes: true,
       })) {
@@ -94,12 +97,15 @@ export class ProjectFiles {
           continue;
         const next = relative ? `${relative}/${entry.name}` : entry.name;
         if (entry.isDirectory()) await visit(next, depth + 1);
-        else if (entry.isFile()) files.push(next);
-        if (files.length >= 4000) break;
+        else if (entry.isFile()) {
+          if (files.length === 4000) { complete = false; return; }
+          files.push(next);
+        }
+        if (files.length === 4000 && !complete) return;
       }
     };
     await visit("", 0);
-    return files.sort();
+    return { paths: files.sort(), complete };
   }
   async createGeneratedFile(relative: string, bytes: Buffer, signal?: AbortSignal) {
     if (!bytes.length || bytes.length > 64 * 1024 * 1024) throw new Error('생성 파일 크기가 허용 범위를 벗어났습니다.');

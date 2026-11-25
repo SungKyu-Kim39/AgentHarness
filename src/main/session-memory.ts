@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { readFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { atomicJSON, type Redactor } from './config';
-import type { KnowledgeService, MemoryRecallResult } from './openviking';
+import type { KnowledgeService, MemoryProgress, MemoryRecallResult } from './openviking';
 import type { AgentConfig } from '../shared/contracts';
 
 export interface OpenCodeSessionMessage {
@@ -32,6 +32,8 @@ export interface MemorySyncEntry {
   watermarkCreatedAt?: number;
   lastMessageCursor?: string;
   skipTurnAtCursor?: boolean;
+  pendingAppend?: { before: MemoryProgress; ids: string[]; turns: number };
+  pendingCommit?: MemoryProgress;
   pendingCommitTaskId?: string;
   pendingCommitTurns?: number;
   pendingCommitArchiveId?: string;
@@ -210,6 +212,7 @@ export interface ExtractMemoryState {
 export interface ExtractedMemoryBatch {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   newlySyncedIds: string[];
+  messageIds: string[];
   completedTurns: number;
   sessionOptedOut: boolean;
   skipTurnAtCursor: boolean;
@@ -225,6 +228,7 @@ export function extractMemoryMessages(
     : (syncedOrState as ExtractMemoryState);
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   const newlySyncedIds: string[] = [];
+  const messageIds: string[] = [];
   let completedTurns = 0;
   let sessionOptedOut = state.sessionOptedOut ?? false;
   let skipCurrentTurn = state.skipInitialTurn ?? false;
@@ -256,7 +260,7 @@ export function extractMemoryMessages(
       newlySyncedIds.push(msg.id);
       if (sessionOptedOut || skipCurrentTurn || !cleaned || COMPACTION_PROMPT_RE.test(cleaned)) continue;
       const safe = truncateText(scrubMemoryText(cleaned, redactor), MAX_USER_CHARS);
-      if (safe) messages.push({ role: 'user', content: safe });
+      if (safe) { messages.push({ role: 'user', content: safe }); messageIds.push(msg.id); }
       continue;
     }
 
@@ -290,13 +294,14 @@ export function extractMemoryMessages(
       ].filter(Boolean).join('\n\n');
       if (combined) {
         messages.push({ role: 'assistant', content: combined });
+        messageIds.push(msg.id);
         completedTurns++;
       }
     }
   }
 
   if (state.nextCursorOffset === engineMessages.length) skipTurnAtCursor = skipCurrentTurn;
-  return { messages, newlySyncedIds, completedTurns, sessionOptedOut, skipTurnAtCursor };
+  return { messages, newlySyncedIds, messageIds, completedTurns, sessionOptedOut, skipTurnAtCursor };
 }
 
 function extractChatMessageText(content: unknown): string {
@@ -423,7 +428,7 @@ export class SessionMemoryManager {
     const keys = Object.keys(this.syncState);
     if (keys.length <= 500) return;
     const prunable = keys
-      .filter(id => id !== this.activeSessionId && !this.syncState[id]?.sessionOptedOut && (this.syncState[id]?.uncommittedTurns ?? 0) === 0 && !this.syncState[id]?.pendingCommitTaskId && !this.syncState[id]?.archiveRecoveries)
+      .filter(id => id !== this.activeSessionId && !this.syncState[id]?.sessionOptedOut && (this.syncState[id]?.uncommittedTurns ?? 0) === 0 && !this.syncState[id]?.pendingAppend && !this.syncState[id]?.pendingCommit && !this.syncState[id]?.pendingCommitTaskId && !this.syncState[id]?.archiveRecoveries)
       .sort((a, b) => (this.syncState[a]?.lastCommittedAt ?? '').localeCompare(this.syncState[b]?.lastCommittedAt ?? ''));
     let remaining = keys.length;
     for (const id of prunable) {
@@ -472,18 +477,25 @@ export class SessionMemoryManager {
     if (!this.deps.policy.enabled || this.closed) return;
     const previous = this.activeSessionId;
     this.activeSessionId = sessionId;
-    if (previous && previous !== sessionId && ((this.syncState[previous]?.uncommittedTurns ?? 0) > 0 || this.syncState[previous]?.pendingCommitTaskId || this.hasArchiveRecovery(this.syncState[previous]))) {
-      void this.enqueue(previous, () => this.commitInternal(previous));
+    if (previous && previous !== sessionId && ((this.syncState[previous]?.uncommittedTurns ?? 0) > 0 || this.syncState[previous]?.pendingAppend || this.syncState[previous]?.pendingCommit || this.syncState[previous]?.pendingCommitTaskId || this.hasArchiveRecovery(this.syncState[previous]))) {
+      void this.enqueue(previous, () => this.syncState[previous]?.pendingAppend ? this.syncInternal(previous, true) : this.commitInternal(previous));
     }
   }
 
   async onUserPrompt(sessionId: string, text: string) {
     if (!this.deps.policy.enabled || this.closed || !isSessionMemoryOptOut(cleanUserMessageText(text))) return;
+    await this.stopSessionMemory(sessionId);
+  }
+
+  async stopSessionMemory(sessionId: string) {
+    if (!this.deps.policy.enabled || this.closed) return;
     await this.load();
     await this.enqueue(sessionId, async () => {
       const entry = this.syncState[sessionId] ?? { ovSessionId: buildOvSessionId(sessionId), syncedIds: [], uncommittedTurns: 0 };
       if (entry.sessionOptedOut) return;
       entry.sessionOptedOut = true;
+      entry.pendingAppend = undefined;
+      entry.pendingCommit = undefined;
       entry.pendingCommitTaskId = undefined;
       entry.pendingCommitTurns = undefined;
       entry.pendingCommitArchiveId = undefined;
@@ -631,6 +643,49 @@ export class SessionMemoryManager {
     }
   }
 
+  private async reconcileWrites(entry: MemorySyncEntry, knowledge: KnowledgeService) {
+    if (!entry.pendingAppend && !entry.pendingCommit) return;
+    if (!knowledge.getMemoryProgress) throw new Error('OV_MEMORY_PROGRESS_UNAVAILABLE');
+    const actual = await knowledge.getMemoryProgress(entry.ovSessionId);
+    if (entry.pendingAppend) {
+      const { before, ids, turns } = entry.pendingAppend;
+      const delta = actual.total !== undefined && before.total !== undefined
+        ? actual.total - before.total
+        : actual.commits === before.commits ? actual.messages - before.messages : undefined;
+      if (delta === ids.length && (!knowledge.hasMemoryAppendReceipt || await knowledge.hasMemoryAppendReceipt(entry.ovSessionId, ids, before.commits, actual.commits))) {
+        entry.syncedIds = [...new Set([...entry.syncedIds, ...ids])];
+        entry.uncommittedTurns += turns;
+        this.status.syncedTurns += turns;
+        this.status.lastEventAt = new Date().toISOString();
+        this.persistStatus();
+      } else if (delta !== 0 || actual.instance === before.instance) {
+        // The timed-out request can still be writing in the same sidecar.
+        throw new Error('OV_MEMORY_APPEND_UNCONFIRMED');
+      }
+      entry.pendingAppend = undefined;
+      await this.persistSync();
+    }
+    if (entry.pendingCommit) {
+      const before = entry.pendingCommit;
+      if (actual.commits === before.commits + 1 && actual.messages < before.messages && knowledge.getMemoryArchive) {
+        const archiveId = 'archive_' + String(actual.commits).padStart(3, '0');
+        const archive = await knowledge.getMemoryArchive(entry.ovSessionId, archiveId);
+        if (archive.status === 'unknown') throw new Error('OV_MEMORY_COMMIT_UNCONFIRMED');
+        entry.pendingCommitArchiveId = archiveId;
+        this.preserveCommitArchive(entry, archive.cancelled);
+        entry.pendingCommitArchiveId = undefined;
+        entry.uncommittedTurns = 0;
+        entry.lastCommittedAt = new Date().toISOString();
+        this.status.commitsScheduled++;
+        this.persistStatus();
+      } else if (actual.commits !== before.commits || actual.messages !== before.messages || actual.instance === before.instance) {
+        throw new Error('OV_MEMORY_COMMIT_UNCONFIRMED');
+      }
+      entry.pendingCommit = undefined;
+      await this.persistSync();
+    }
+  }
+
   private async syncInternal(sessionId: string, forceCommit: boolean, skipCommit = false) {
     await this.load();
     if (this.syncState[sessionId]?.sessionOptedOut) return;
@@ -646,6 +701,7 @@ export class SessionMemoryManager {
         syncedIds: [],
         uncommittedTurns: 0,
       };
+      await this.reconcileWrites(entry, knowledge);
       if (entry.pendingCommitTaskId) {
         await this.reconcilePendingCommitTask(sessionId);
       }
@@ -657,7 +713,7 @@ export class SessionMemoryManager {
       const nextCursor = Array.isArray(rawFetch) ? undefined : rawFetch.nextCursor;
 
       const syncedSet = new Set(entry.syncedIds);
-      const { messages, newlySyncedIds, completedTurns, sessionOptedOut, skipTurnAtCursor } = extractMemoryMessages(
+      const { messages, newlySyncedIds, messageIds, completedTurns, sessionOptedOut, skipTurnAtCursor } = extractMemoryMessages(
         engineMessages,
         {
           syncedIds: syncedSet,
@@ -675,7 +731,15 @@ export class SessionMemoryManager {
 
       if (messages.length > 0) {
         await knowledge.ensureMemorySession(entry.ovSessionId);
-        await knowledge.appendSessionMessages(entry.ovSessionId, messages);
+        if (knowledge.getMemoryProgress) {
+          const progress = await knowledge.getMemoryProgress(entry.ovSessionId);
+          entry.pendingAppend = { before: progress, ids: messageIds, turns: completedTurns };
+          this.syncState[sessionId] = entry;
+          try { await this.persistSync(); }
+          catch (error) { entry.pendingAppend = undefined; throw error; }
+        }
+        await knowledge.appendSessionMessages(entry.ovSessionId, messages, undefined, messageIds);
+        entry.pendingAppend = undefined;
       }
       if (newlySyncedIds.length > 0 || sessionOptedOut !== Boolean(entry.sessionOptedOut) || (nextCursor && nextCursor !== entry.lastMessageCursor)) {
         const allSyncedNow = new Set([...entry.syncedIds, ...newlySyncedIds]);
@@ -726,7 +790,7 @@ export class SessionMemoryManager {
           this.status.lastEventAt = new Date().toISOString();
           this.persistStatus();
         }
-        this.persistSync();
+        await this.persistSync();
       }
 
       if (!skipCommit && ((forceCommit && entry.uncommittedTurns > 0) || entry.uncommittedTurns >= this.deps.policy.commitEveryTurns)) {
@@ -741,13 +805,19 @@ export class SessionMemoryManager {
     const knowledge = this.deps.knowledge();
     const entry = this.syncState[sessionId];
     if (!entry || entry.sessionOptedOut || !knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
-    const taskState = entry.pendingCommitTaskId ? await this.reconcilePendingCommitTask(sessionId) : 'idle';
-    if (recoverArchives) await this.reconcileArchives(entry);
-    if (taskState === 'in_flight') return;
-    if (entry.uncommittedTurns <= 0) return;
-    const turnsToCommit = entry.uncommittedTurns;
     try {
+      await this.reconcileWrites(entry, knowledge);
+      const taskState = entry.pendingCommitTaskId ? await this.reconcilePendingCommitTask(sessionId) : 'idle';
+      if (recoverArchives) await this.reconcileArchives(entry);
+      if (taskState === 'in_flight' || entry.uncommittedTurns <= 0) return;
+      const turnsToCommit = entry.uncommittedTurns;
+      if (knowledge.getMemoryProgress) {
+        entry.pendingCommit = await knowledge.getMemoryProgress(entry.ovSessionId);
+        try { await this.persistSync(); }
+        catch (error) { entry.pendingCommit = undefined; throw error; }
+      }
       const res = await knowledge.commitMemorySession(entry.ovSessionId, timeoutMs);
+      entry.pendingCommit = undefined;
       entry.uncommittedTurns = 0;
       if (res?.skipped) {
         entry.pendingCommitTaskId = undefined;
@@ -777,7 +847,7 @@ export class SessionMemoryManager {
       this.persistSync();
       this.persistStatus();
     } catch (error) {
-      // Phase 1 submission failed before OpenViking archived messages; keep uncommittedTurns for retry.
+      // Keep the receipt if Phase 1 may have completed before its acknowledgement.
       this.recordError(error);
     }
   }
@@ -788,10 +858,11 @@ export class SessionMemoryManager {
     const knowledge = this.deps.knowledge();
     if (!knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
     const pendingIds = Object.entries(this.syncState)
-      .filter(([, entry]) => !entry.sessionOptedOut && (entry.uncommittedTurns > 0 || !!entry.pendingCommitTaskId || this.hasArchiveRecovery(entry)))
+      .filter(([, entry]) => !entry.sessionOptedOut && (entry.uncommittedTurns > 0 || entry.pendingCommit || entry.pendingAppend || entry.pendingCommitTaskId || this.hasArchiveRecovery(entry)))
       .map(([sessionId]) => sessionId);
     if (!pendingIds.length) return;
-    await Promise.allSettled(pendingIds.map(sessionId => this.enqueue(sessionId, () => this.commitInternal(sessionId))));
+    await Promise.allSettled(pendingIds.map(sessionId => this.enqueue(sessionId, () => this.syncState[sessionId]?.pendingAppend
+      ? this.syncInternal(sessionId, true) : this.commitInternal(sessionId))));
   }
 
   async recallContext(chatMessages: unknown, requestBytes: number, sessionId?: string): Promise<string | undefined> {

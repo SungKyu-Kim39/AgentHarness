@@ -17,6 +17,7 @@ export class AgentOwner {
   private endpoint = '';
   private stopping = false;
   private cancelled = new Set<Promise<void>>();
+  private releases = new Map<string, Promise<void>>();
   private unwatchPermissions?: () => void;
   constructor(private root: string, private runtime: NativeRuntime, private connection: Credentials,
     private selectProject: (directory: string) => Promise<boolean>) {
@@ -61,6 +62,7 @@ export class AgentOwner {
         }
         if (method === 'bind') {
           if (typeof params?.session !== 'string') throw new Error('Session required');
+          await this.releases.get(params.session);
           const directory = await this.runtime.projectForSession(params.session);
           if (!authorized.has(directory)) throw new Error('프로젝트 범위가 확인되지 않았습니다.');
           const previous = this.sessions.get(params.session);
@@ -88,6 +90,16 @@ export class AgentOwner {
         if (method === 'skills/list' || method === 'skills/read') {
           if (!attached.has(params?.session)) throw new Error('Session not attached');
           return method === 'skills/list' ? this.runtime.skillCommands(params.session) : this.runtime.slashSkill(params.session, params.id);
+        }
+        if (method === 'session/release') {
+          if (!attached.has(params?.session) || this.sessions.get(params.session) !== peer) throw new Error('Session not attached');
+          attached.delete(params.session);
+          this.sessions.delete(params.session);
+          const release = this.runtime.releaseSession(params.session, params.deleted === true);
+          this.releases.set(params.session, release);
+          try { await release; }
+          finally { this.releases.delete(params.session); }
+          return {};
         }
         if (method === 'cancel') {
           if (!attached.has(params?.session)) throw new Error('Session not attached');
@@ -143,7 +155,7 @@ export class AgentOwner {
     this.stopping = true; await rm(this.descriptor, { force: true });
     for (const peer of this.peers) peer.close();
     await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); });
-    await Promise.allSettled([...this.cancelled]);
+    await Promise.allSettled([...this.cancelled, ...this.releases.values()]);
     if (process.platform !== 'win32' && this.endpoint) await rm(this.endpoint, { force: true });
   }
 }

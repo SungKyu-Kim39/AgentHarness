@@ -214,8 +214,7 @@ FunctionEnd
   ${EndIf}
 !macroend
 
-Function IsNedOwnedEntry
-  StrCpy $R2 "no"
+!macro NedOwnedEntries
   !insertmacro NedOwnedEntry "LICENSE.electron.txt"
   !insertmacro NedOwnedEntry "LICENSES.chromium.html"
   !insertmacro NedOwnedEntry "Ned.exe"
@@ -235,6 +234,15 @@ Function IsNedOwnedEntry
   !insertmacro NedOwnedEntry "vk_swiftshader_icd.json"
   !insertmacro NedOwnedEntry "vulkan-1.dll"
   !insertmacro NedOwnedEntry "Uninstall Ned.exe"
+!macroend
+
+Function IsNedOwnedEntry
+  StrCpy $R2 "no"
+  !insertmacro NedOwnedEntries
+FunctionEnd
+Function un.IsNedOwnedEntry
+  StrCpy $R2 "no"
+  !insertmacro NedOwnedEntries
 FunctionEnd
 
 Function BackupNedInstallation
@@ -465,6 +473,29 @@ Section "Uninstall"
     RMDir /r "$SMPROGRAMS\Ned"
     DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned"
   ${EndIf}
-  RMDir /r "$INSTDIR"
+  ; Remove only files owned by Ned. A personal file or an interrupted
+  ; upgrade's backup can keep the install directory in place.
+  FindFirst $R0 $R1 "$INSTDIR\*.*"
+  Push ""
+  ${DoWhile} $R1 != ""
+    Call un.IsNedOwnedEntry
+    ${If} $R2 == "yes"
+      Push "$R1"
+    ${EndIf}
+    FindNext $R0 $R1
+  ${Loop}
+  FindClose $R0
+  ${Do}
+    Pop $R1
+    ${If} $R1 == ""
+      ${ExitDo}
+    ${EndIf}
+    ${If} ${FileExists} "$INSTDIR\$R1\*.*"
+      RMDir /r "$INSTDIR\$R1"
+    ${Else}
+      Delete "$INSTDIR\$R1"
+    ${EndIf}
+  ${Loop}
+  RMDir "$INSTDIR"
   ; APPDATA\Ned, including global skills, encrypted settings and history, is retained.
 SectionEnd

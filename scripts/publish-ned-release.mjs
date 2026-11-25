@@ -36,7 +36,8 @@ const optionalName=`${prefix}-optional-packages.json`;
 const optional=version==='0.3.11'?await json(`${candidatePath}/${optionalName}`):undefined;
 if(optional&&(optional.sourceCommit!==source||optional.assets.length!==2||proof.coreAndReversingPackVerified!==true||proof.userDataPreserved!==true))throw Error('Optional packages or user data preservation lack installed validation');
 if(isUserDataPreservedVersion(version)&&proof.userDataPreserved!==true)throw Error('User data preservation lacks installed validation');
-if(artifactVersion==='0.4.0-rebuild5'&&(proof.installFolderUserFilesPreserved!==true||proof.interruptedUpgradeRecovered!==true))throw Error('Install-folder files or interrupted upgrade lack installed validation');
+if(['0.4.0-rebuild5','0.4.0-rebuild6'].includes(artifactVersion)&&(proof.installFolderUserFilesPreserved!==true||proof.interruptedUpgradeRecovered!==true))throw Error('Install-folder files or interrupted upgrade lack installed validation');
+if(artifactVersion==='0.4.0-rebuild6'&&proof.uninstallUserFilesPreserved!==true)throw Error('Uninstall file preservation lacks installed validation');
 if(proof.version!==artifactVersion||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){

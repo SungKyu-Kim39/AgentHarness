@@ -2,7 +2,7 @@ import { requestJSON } from './http-request';
 import pythonRuntime from '../../python-runtime-lock.json';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
-import { randomBytes, createHash } from 'node:crypto';
+import { randomBytes, createHash, randomUUID } from 'node:crypto';
 import { readFile, readdir, mkdir, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { atomicJSON } from './config';
@@ -32,6 +32,7 @@ function isSafePersonalMemoryUri(uri: string) {
 }
 export type MemoryTaskStatus = { status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'not_found' | 'unknown'; error?: string };
 export interface MemoryArchiveStatus { status: 'completed' | 'failed' | 'pending' | 'unknown'; messagesSha256?: string; cancelled?: boolean }
+export interface MemoryProgress { instance: string; commits: number; messages: number; total?: number }
 export interface MemoryCommitResult { taskId?: string; skipped?: boolean; reason?: string; archiveUri?: string }
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
@@ -47,7 +48,9 @@ export interface KnowledgeService {
   deleteNote?(scope: KnowledgeScope, project: string, id: string, signal?: AbortSignal): Promise<string>;
   listNotes?(scope: KnowledgeScope, project: string, signal?: AbortSignal): Promise<string>;
   ensureMemorySession?(sessionId: string, signal?: AbortSignal): Promise<void>;
-  appendSessionMessages?(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal): Promise<void>;
+  appendSessionMessages?(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal, sourceIds?: string[]): Promise<void>;
+  hasMemoryAppendReceipt?(sessionId: string, ids: string[], priorCommits: number, currentCommits: number): Promise<boolean>;
+  getMemoryProgress?(sessionId: string): Promise<MemoryProgress>;
   commitMemorySession?(sessionId: string, timeoutMs?: number): Promise<MemoryCommitResult>;
   getTaskStatus?(taskId: string, timeoutMs?: number): Promise<MemoryTaskStatus>;
   getMemoryArchive?(sessionId: string, archiveId: string): Promise<MemoryArchiveStatus>;
@@ -91,6 +94,7 @@ export class OpenVikingService implements KnowledgeService {
   private value: NonNullable<AppState['knowledge']> = { status: 'unconfigured', indexedFiles: 0 };
   private process?: ChildProcess; private gateway?: OpenVikingGateway; private configFile?: string;
   private account = 'ned';
+  private memoryInstance = randomUUID();
   private maintenance = false;
   private baseUrl = ''; private token = ''; private exited = true; private expectedExit = false;
   private operation = Promise.resolve(); private stopped?: Promise<void>;
@@ -179,6 +183,7 @@ export class OpenVikingService implements KnowledgeService {
     return { executable: path.join(root, 'python', process.platform === 'win32' ? 'python.exe' : 'bin/python3'), launcher: path.join(root, 'launch.py'), cwd: root };
   }
   private async start(config: AgentConfig, workspace = path.join(this.data, 'openviking', 'data'), account = vikingAccount, maintenance = false) {
+    this.memoryInstance = randomUUID();
     this.account = account; this.maintenance = maintenance;
     this.startupStage = 'bundle';
     const launch = await this.resolveLaunch();
@@ -489,11 +494,52 @@ export class OpenVikingService implements KnowledgeService {
       if ((error as { status?: number })?.status !== 409) throw error;
     }
   }
-  async appendSessionMessages(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal) {
+  async appendSessionMessages(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal, sourceIds?: string[]) {
     this.ready();
     if (!messages.length) return;
-    await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/messages/batch`, { messages }, 15000, 'POST', signal);
+    if (sourceIds && sourceIds.length !== messages.length) throw new Error('OV_MEMORY_APPEND_RECEIPT');
+    const rows = sourceIds ? messages.map((message, index) => ({ ...message, source_message_ids: [sourceIds[index]] })) : messages;
+    await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/messages/batch`, { messages: rows }, 15000, 'POST', signal);
   }
+
+  async hasMemoryAppendReceipt(sessionId: string, ids: string[], priorCommits: number, currentCommits: number): Promise<boolean> {
+    this.ready();
+    const missing = new Set(ids);
+    const check = (result: any) => {
+      if (!Array.isArray(result?.messages)) return;
+      for (const message of result.messages) {
+        if (!Array.isArray(message?.source_message_ids)) continue;
+        for (const id of message.source_message_ids) if (typeof id === 'string') missing.delete(id);
+      }
+    };
+    const context = await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/context`, undefined, 6000, 'GET');
+    check(context?.result);
+    // A sidecar auto-commit may have moved the acknowledged messages into an archive.
+    for (let index = currentCommits; missing.size && index > Math.max(priorCommits, currentCommits - 4); index--) {
+      const route = this.memoryArchiveRoute(sessionId, 'archive_' + String(index).padStart(3, '0'));
+      const archive = await this.request(route, undefined, 6000, 'GET', undefined, 'local-user', { quiet404: true }).catch(error => {
+        if ((error as { status?: number })?.status === 404) return undefined;
+        throw error;
+      });
+      check(archive?.result);
+    }
+    return missing.size === 0;
+  }
+  async getMemoryProgress(sessionId: string): Promise<MemoryProgress> {
+    this.ready();
+    const instance = this.memoryInstance;
+    const response = await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}`, undefined, 5000, 'GET');
+    const record = response?.result;
+    const count = (value: unknown): value is number => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+    if (instance !== this.memoryInstance || !count(record?.commit_count) || !count(record?.message_count)) {
+      throw new Error('OV_MEMORY_PROGRESS_UNAVAILABLE');
+    }
+    return {
+      instance, commits: record.commit_count, messages: record.message_count,
+      ...(count(record.total_message_count) ? { total: record.total_message_count } : {}),
+    };
+  }
+
   async commitMemorySession(sessionId: string, timeoutMs = 15000): Promise<MemoryCommitResult> {
     this.ready();
     const response = await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commit`, {}, timeoutMs, 'POST');

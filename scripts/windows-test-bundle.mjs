@@ -11,7 +11,7 @@ const revision=process.env.NED_BUILD_REVISION??'';
 if(!isSupportedReleaseVersion(version)||(revision&&!isValidRevision(revision)))throw Error('Review Windows fixture inputs for this version');
 const artifactVersion=version+(revision?'-'+revision:'');
 const groups={
- upgrade:['zed-settings','zed-history','terminal-jobs.windows','terminal','external-read','permission-policy','patch-file','buffer-check','mcp-boundary','session-memory','studio-policy','openviking-diagnostics','editor-preferences','editor-git-trust.windows','openviking.integration','skill-routing'],
+ upgrade:['zed-settings','zed-history','terminal-jobs.windows','terminal','external-read','permission-policy','patch-file','buffer-check','mcp-boundary','session-memory','studio-policy','openviking-diagnostics','editor-preferences','editor-git-trust.windows','openviking.integration','skill-routing','python-package-proxy'],
 };
 await mkdir(path.join(root,'.cache/ned/windows-tests'),{recursive:true});
 for(const [name,tests]of Object.entries(groups)){

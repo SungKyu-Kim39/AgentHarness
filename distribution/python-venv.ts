@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { PythonConfig } from '../src/shared/contracts';
 import { ProjectFiles } from '../src/main/files';
 import { OwnedCommand } from './owned-command';
+import { openPythonPackageProxy } from './python-package-proxy';
 import type { PythonEnvironment } from './python-projects';
 
 const isWin = process.platform === 'win32';
@@ -176,6 +177,7 @@ export class PythonVenvManager {
             allowPackageInstall: config?.allowPackageInstall === true && !!config.indexUrl,
             respectSystemPipConfig: config?.respectSystemPipConfig === true,
             indexUrl: config?.indexUrl,
+            wheelDownloadOrigins: config?.wheelDownloadOrigins ?? [],
             extraIndexUrls: config?.extraIndexUrls ?? [],
             trustedHosts: config?.trustedHosts ?? [],
           },
@@ -218,6 +220,7 @@ export class PythonVenvManager {
 
         if (input.operation === 'install') {
           const mirror = this.packageMirror(config);
+          const origins = [new URL(mirror), ...(config?.wheelDownloadOrigins ?? []).map(value => new URL(value))];
           const specs: string[] = [];
           for (const pkg of input.packages ?? []) specs.push(validatePackageSpec(pkg));
           if (input.requirementsPath) {
@@ -234,7 +237,7 @@ export class PythonVenvManager {
 
           const ok = await this.options.approveExplicit?.(
             '사내 PyPI 패키지 설치 (.venv)',
-            `프로젝트: ${project}\n대상: ${venv.venvRoot}\n미러: ${mirror}\n패키지: ${uniqueSpecs.join(', ')}\n고정 버전 wheel만 설치합니다. 전이 의존성은 패키지 목록에 명시하세요.`,
+            `프로젝트: ${project}\n대상: ${venv.venvRoot}\n미러: ${mirror}\n허용 HTTPS 출처: ${origins.map(url => url.origin).join(', ')}\n패키지: ${uniqueSpecs.join(', ')}\n고정 버전 wheel만 설치합니다. 전이 의존성은 패키지 목록에 명시하세요.`,
             combined,
           );
           if (!ok) throw new Error('패키지 설치를 명시적으로 승인하지 않았습니다.');
@@ -251,18 +254,28 @@ export class PythonVenvManager {
           delete env.PIP_NO_INDEX;
           env.PIP_CONFIG_FILE = isWin ? 'NUL' : '/dev/null';
           for (const key of ['REQUESTS_CA_BUNDLE', 'SSL_CERT_FILE', 'SSL_CERT_DIR']) if (process.env[key]) env[key] = process.env[key];
-          const args = ['-I', '-m', 'pip', 'install', '--no-input', '--disable-pip-version-check',
-            '--no-deps', '--only-binary=:all:', '--index-url', mirror, '--', ...uniqueSpecs];
-          const result = await this.commands.run({ executable: verified.python, args, cwd: project, env }, combined, 300000);
-          return {
-            status: result.exitCode === 0 ? 'ok' : 'failed',
-            exitCode: result.exitCode,
-            packages: uniqueSpecs,
-            venv: verified.venvRoot,
-            pipPolicy: { indexUrl: mirror, wheelsOnly: true, resolveDependencies: false },
-            output: result.output.slice(-12000),
-            outputTruncated: result.outputTruncated,
-          };
+          const certificateBundle = env.REQUESTS_CA_BUNDLE || env.SSL_CERT_FILE;
+          if (certificateBundle) env.PIP_CERT = certificateBundle;
+          const proxy = await openPythonPackageProxy(origins, combined);
+          try {
+            env.PIP_PROXY = proxy.url;
+            // urllib/requests may fall back to OS proxy exclusions when this is empty.
+            env.NO_PROXY = env.no_proxy = '/';
+            const args = ['-I', '-m', 'pip', 'install', '--no-input', '--disable-pip-version-check',
+              '--no-deps', '--only-binary=:all:', '--index-url', mirror, '--', ...uniqueSpecs];
+            const result = await this.commands.run({ executable: verified.python, args, cwd: project, env }, combined, 300000);
+            return {
+              status: result.exitCode === 0 ? 'ok' : 'failed',
+              exitCode: result.exitCode,
+              packages: uniqueSpecs,
+              venv: verified.venvRoot,
+              pipPolicy: { indexUrl: mirror, wheelsOnly: true, resolveDependencies: false },
+              output: proxy.redact(result.output).slice(-12000),
+              outputTruncated: result.outputTruncated,
+            };
+          } finally {
+            await proxy.close();
+          }
         }
 
         if (input.operation === 'uninstall') {

@@ -4,6 +4,12 @@
 
 
 
+## 0.4.0 rebuild6 교차 검토
+
+체크포인트의 목록 누락·바이트 변환·제외 정책, 제거기의 파일 소유권, OpenViking 쓰기 응답 유실, OpenAPI 검증, ACP 대화 종료, PyPI 다운로드 목적지를 보완했습니다. [변경 사항](docs/changes-0.4.0-rebuild6.md) · [검증 기록](docs/validation-0.4.0-rebuild6.md)
+
+<!-- current-release -->
+
 ## 0.4.0 rebuild5 교차 검토
 
 설치기 파일 소유권, REA 모드 동기화, 체크섬 기반 일괄 복구, 하위 작업과 편집 충돌, OpenViking 기억 아카이브, 전문 도구 이어가기, 정적 프리뷰를 보완했습니다. [변경 사항](docs/changes-0.4.0-rebuild5.md) · [검증 기록](docs/validation-0.4.0-rebuild5.md)

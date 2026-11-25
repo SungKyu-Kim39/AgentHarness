@@ -63,6 +63,10 @@ export const pythonConfigSchema = z.object({
   respectSystemPipConfig: z.boolean().default(false),
   indexUrl: endpoint.optional(),
   extraIndexUrls: z.array(endpoint).max(8).optional(),
+  wheelDownloadOrigins: z.array(endpoint.refine(value => {
+    try { const url = new URL(value); return url.protocol === 'https:' && url.pathname === '/'; }
+    catch { return false; }
+  }, 'wheel 서버는 HTTPS 출처(호스트와 포트)만 지정하세요.')).max(8).optional(),
   trustedHosts: z.array(z.string().trim().regex(/^[a-zA-Z0-9.-]+(?::\d{1,5})?$/)).max(16).optional(),
   allowPackageInstall: z.boolean().default(false),
 }).strict();

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import http from 'node:http';
-import { lstat, mkdir, mkdtemp, readFile, rm, writeFile, realpath } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, rm, writeFile, realpath, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { ProjectFiles, inspectBatchRecovery, inspectIncompleteBatchJournals } from '../src/main/files';
@@ -777,4 +777,80 @@ test('interrupted batch recovery uses file hashes even before the applied flag a
   assert.equal(JSON.parse(await recover()).restoredFiles, 1);
   assert.equal(await readFile(target, 'utf8'), 'before');
   assert.deepEqual(await inspectIncompleteBatchJournals(journalDir, canonical), []);
+});
+
+
+test('ProjectCheckpoints retains a pre-existing file omitted by the inventory cap', { skip: process.platform === 'win32', timeout: 60000 }, async t => {
+  const { root, project } = await makeTempWorkspace(t, 'ned-cp-coverage-');
+  const cp = new ProjectCheckpoints(root, '');
+  t.after(() => cp.close());
+  const name = (number: number) => 'file-' + String(number).padStart(4, '0') + '.txt';
+  for (let start = 0; start < 4000; start += 100) {
+    await Promise.all(Array.from({ length: 100 }, (_, index) => writeFile(path.join(project, name(start + index)), '')));
+  }
+  const target = 'z-pre-existing.txt';
+  await writeFile(path.join(project, target), 'preserve me');
+  const checkpoint = await cp.create(project, '4,001 files');
+  assert.equal(checkpoint.complete, false);
+  await unlink(path.join(project, name(0)));
+  const restored = await cp.restore('fixture', project, checkpoint.checkpointId, { approve: async () => true });
+  assert.equal(restored.skippedPaths, 1);
+  assert.equal(await readFile(path.join(project, target), 'utf8'), 'preserve me');
+  assert.equal(await readFile(path.join(project, name(0)), 'utf8'), '');
+});
+
+test('ProjectCheckpoints bypasses Git clean filters and preserves ignored user files', { skip: process.platform === 'win32' }, async t => {
+  const { root, project } = await makeTempWorkspace(t, 'ned-cp-fidelity-');
+  const cp = new ProjectCheckpoints(root, '');
+  t.after(() => cp.close());
+  await writeFile(path.join(project, '.gitattributes'), '*.txt text eol=lf\n');
+  await writeFile(path.join(project, '.gitignore'), 'local-notes.txt\n');
+  const target = path.join(project, 'demo.txt');
+  const notes = path.join(project, 'local-notes.txt');
+  await writeFile(target, 'before\r\n');
+  await writeFile(notes, 'private original');
+  const checkpoint = await cp.create(project, 'original bytes');
+  assert.equal(checkpoint.complete, true);
+  assert.equal(checkpoint.indexedFiles, 3);
+  await writeFile(target, 'changed\r\n');
+  await writeFile(notes, 'user revision');
+  // Removing the ignore rule does not turn a known pre-existing file into an addition.
+  await writeFile(path.join(project, '.gitignore'), '\n');
+  await cp.restore('fixture', project, checkpoint.checkpointId, { approve: async () => true });
+  assert.equal(await readFile(target, 'utf8'), 'before\r\n');
+  assert.equal(await readFile(notes, 'utf8'), 'user revision');
+});
+
+test('OpenAPI checks all bounded array items, reports unsupported schemas, and rejects invalid mock requests', async t => {
+  const { root, project } = await makeTempWorkspace(t, 'ned-api-validation-');
+  const numberSchema = { type: 'array', items: { type: 'integer' } };
+  const response = (schema: unknown) => ({ description: 'fixture', content: { 'application/json': { schema } } });
+  const body = { type: 'object', required: ['count'], properties: { count: { type: 'integer' } } };
+  await writeFile(path.join(project, 'openapi.json'), JSON.stringify({
+    openapi: '3.0.3', paths: {
+      '/numbers': { get: { responses: { 200: response(numberSchema) } } },
+      '/unsupported': { get: { responses: { 200: response({ type: 'string', pattern: '^a$' }) } } },
+      '/form': { post: { requestBody: { required: true, content: { 'application/json': { schema: body } } }, responses: { 201: { description: 'fixture' } } } },
+    },
+  }));
+  const api = new ApiTools(root, { approve: async () => true, approveExplicit: async () => true });
+  const server = http.createServer((req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.end(req.url === '/numbers' ? '[1,2,3,4,5,"bad"]' : '"a"');
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(async () => { await api.close(); server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve())); });
+  const report = await api.contractTest('ses', project, { specPath: 'openapi.json', baseUrl: 'http://127.0.0.1:' + (server.address() as { port: number }).port });
+  assert.equal(report.passed, 0);
+  assert.equal(report.failed, 1);
+  assert.equal(report.incomplete, 1);
+  assert.match(report.results[0].errors.join(), /\$\[5\]/);
+  const mock = await api.mock('ses', project, { operation: 'start', specPath: 'openapi.json' });
+  const post = (body: string) => fetch(mock.url + '/form', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+  const invalid = await post('{}');
+  assert.equal(invalid.status, 400);
+  assert.match(await invalid.text(), /missing required property/);
+  const valid = await post('{"count":6}');
+  assert.equal(valid.status, 201);
+  await valid.text();
 });

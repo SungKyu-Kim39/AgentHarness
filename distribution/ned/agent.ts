@@ -93,6 +93,15 @@ async function main() {
           try { await peer.call('bind', { session, ...(sessionMode ? { mode: sessionMode } : {}) }); trackSession(session); attachedSession = session; }
           catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: 'Ned session scope could not be verified' } }; }
         }
+        if (!message.error && request.session && ['session/close', 'session/delete'].includes(request.method)) {
+          const session = request.session;
+          try { await peer.call('session/release', { session, deleted: request.method === 'session/delete' }); }
+          catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: '대화는 종료됐으나 Ned 작업 정리를 확인하지 못했습니다.' } }; }
+          sessions.delete(session);
+          sessionOptions.delete(session);
+          replaying.delete(session);
+          delivered.reset(session);
+        }
         if (request.method === 'session/prompt' && !message.error && request.session && sessions.has(request.session)) {
           completedPromptSession = request.session;
         }

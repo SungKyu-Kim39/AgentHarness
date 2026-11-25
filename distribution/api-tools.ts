@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import http, { type Server } from 'node:http';
 import path from 'node:path';
 import YAML from 'yaml';
+import { isDeepStrictEqual } from 'node:util';
 import { ProjectFiles } from '../src/main/files';
 import { requestJSON } from '../src/main/http-request';
 
@@ -107,36 +108,104 @@ function pickSuccessResponse(doc: Record<string, any>, operation: Record<string,
   return { status, body: { ok: true } };
 }
 
-function validateJsonAgainstSchema(doc: Record<string, any>, rawSchema: any, value: any, pointer = '$', depth = 0): string[] {
-  if (depth > 6) return [];
-  const schema = resolveRef(doc, rawSchema, depth);
-  if (!schema || typeof schema !== 'object') return [];
+const schemaKeywords = new Set([
+  'type', 'nullable', 'required', 'properties', 'items', 'additionalProperties', 'enum', 'const', 'allOf',
+  'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum', 'minLength', 'maxLength', 'minItems', 'maxItems',
+  'title', 'description', 'default', 'example', 'examples', 'readOnly', 'writeOnly', 'deprecated', 'externalDocs', '$comment',
+]);
+
+function validateJsonAgainstSchema(doc: Record<string, any>, source: any, value: unknown, direction: 'request' | 'response') {
   const errors: string[] = [];
-  if (schema.type) {
-    const actual = Array.isArray(value) ? 'array' : value === null ? 'null' : typeof value;
-    const ok =
-      (schema.type === 'integer' && typeof value === 'number' && Number.isInteger(value)) ||
-      (schema.type === 'number' && typeof value === 'number') ||
-      (schema.type === actual) ||
-      (schema.nullable === true && value === null);
-    if (!ok) {
-      errors.push(`${pointer}: expected ${schema.type}, got ${actual}`);
-      return errors;
+  const incomplete = new Set<string>();
+  let remaining = 20_000;
+  const error = (detail: string) => { if (errors.length < 20) errors.push(detail); };
+  const check = (raw: any, data: unknown, pointer: string, depth: number) => {
+    if (--remaining < 0 || depth > 24) { incomplete.add('스키마 검사 상한에 도달했습니다.'); return; }
+    if (raw === true) return;
+    if (raw === false) { error(`${pointer}: schema rejects this value`); return; }
+    if (raw?.$ref && (typeof raw.$ref !== 'string' || !raw.$ref.startsWith('#/') ||
+        Object.keys(raw).some(key => key !== '$ref' && !['title', 'description'].includes(key)))) {
+      incomplete.add('외부 참조 또는 추가 조건이 있는 $ref를 확인할 수 없습니다.');
+      return;
     }
+    const schema = resolveRef(doc, raw);
+    if (!schema || typeof schema !== 'object' || Array.isArray(schema) || schema.$ref) {
+      incomplete.add('지원되지 않거나 해석할 수 없는 스키마입니다.');
+      return;
+    }
+    for (const key of Object.keys(schema)) {
+      if (!schemaKeywords.has(key) && !key.startsWith('x-') && incomplete.size < 20) incomplete.add('지원하지 않는 스키마 조건: ' + key);
+    }
+    const actual = Array.isArray(data) ? 'array' : data === null ? 'null' : typeof data;
+    if (schema.type) {
+      const expected = Array.isArray(schema.type) ? schema.type : [schema.type];
+      if (!expected.includes(actual) && !(expected.includes('integer') && Number.isInteger(data)) && !(data === null && schema.nullable === true)) {
+        error(`${pointer}: expected ${expected.join(' or ')}, got ${actual}`);
+        return;
+      }
+    }
+    if (Array.isArray(schema.enum) && !schema.enum.some((candidate: unknown) => isDeepStrictEqual(candidate, data))) error(`${pointer}: value is outside enum`);
+    if ('const' in schema && !isDeepStrictEqual(schema.const, data)) error(`${pointer}: value differs from const`);
+    for (const child of Array.isArray(schema.allOf) ? schema.allOf : []) check(child, data, pointer, depth + 1);
+    if (actual === 'object') {
+      const fields = data as Record<string, unknown>;
+      const properties = schema.properties ?? {};
+      for (const key of Array.isArray(schema.required) ? schema.required : []) {
+        const property = resolveRef(doc, Object.hasOwn(properties, key) ? properties[key] : undefined);
+        if ((direction === 'request' && property?.readOnly) || (direction === 'response' && property?.writeOnly)) continue;
+        if (!Object.hasOwn(fields, key)) error(`${pointer}.${key}: missing required property`);
+      }
+      for (const [key, field] of Object.entries(fields)) {
+        if (remaining < 0) break;
+        if (Object.hasOwn(properties, key)) check(properties[key], field, `${pointer}.${key}`, depth + 1);
+        else if (schema.additionalProperties === false) error(`${pointer}.${key}: additional property is not allowed`);
+        else if (schema.additionalProperties && typeof schema.additionalProperties === 'object') check(schema.additionalProperties, field, `${pointer}.${key}`, depth + 1);
+      }
+    } else if (Array.isArray(data)) {
+      if (data.length < schema.minItems || data.length > schema.maxItems) error(`${pointer}: array length is outside the allowed range`);
+      if ('items' in schema) for (const [index, item] of data.entries()) {
+        check(schema.items, item, `${pointer}[${index}]`, depth + 1);
+        if (remaining < 0) break;
+      }
+    } else if (typeof data === 'string') {
+      const length = [...data].length;
+      if (length < schema.minLength || length > schema.maxLength) error(`${pointer}: string length is outside the allowed range`);
+    } else if (typeof data === 'number') {
+      if (data < schema.minimum || data > schema.maximum ||
+          (typeof schema.exclusiveMinimum === 'number' ? data <= schema.exclusiveMinimum : schema.exclusiveMinimum === true && data === schema.minimum) ||
+          (typeof schema.exclusiveMaximum === 'number' ? data >= schema.exclusiveMaximum : schema.exclusiveMaximum === true && data === schema.maximum)) {
+        error(`${pointer}: number is outside the allowed range`);
+      }
+    }
+  };
+  check(source, value, '$', 0);
+  return { errors, incomplete: [...incomplete] };
+}
+
+function jsonRequestContract(doc: Record<string, any>, operation: Record<string, any>) {
+  if (operation.requestBody) {
+    const body = resolveRef(doc, operation.requestBody);
+    const schema = body?.content?.['application/json']?.schema;
+    return { required: body?.required === true, schema, unsupported: schema === undefined };
   }
-  if (schema.type === 'object' && value && typeof value === 'object' && !Array.isArray(value)) {
-    for (const reqKey of schema.required ?? []) {
-      if (!(reqKey in value)) errors.push(`${pointer}.${reqKey}: missing required property`);
-    }
-    for (const [k, propSchema] of Object.entries(schema.properties ?? {})) {
-      if (k in value) errors.push(...validateJsonAgainstSchema(doc, propSchema, value[k], `${pointer}.${k}`, depth + 1));
-    }
-  } else if (schema.type === 'array' && Array.isArray(value) && schema.items) {
-    for (let i = 0; i < Math.min(value.length, 5); i++) {
-      errors.push(...validateJsonAgainstSchema(doc, schema.items, value[i], `${pointer}[${i}]`, depth + 1));
-    }
-  }
-  return errors;
+  const body = (Array.isArray(operation.parameters) ? operation.parameters : [])
+    .map((parameter: any) => resolveRef(doc, parameter)).find((parameter: any) => parameter?.in === 'body');
+  return body ? { required: body.required === true, schema: body.schema, unsupported: body.schema === undefined } : undefined;
+}
+
+function readMockBody(request: http.IncomingMessage): Promise<string | undefined> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let length = 0;
+    request.on('data', (chunk: Buffer) => {
+      length += chunk.length;
+      if (length > 512 * 1024) { resolve(undefined); return; }
+      chunks.push(chunk);
+    });
+    request.once('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    request.once('error', reject);
+    request.once('aborted', reject);
+  });
 }
 
 function buildRoutes(doc: Record<string, any>): ParsedRoute[] {
@@ -223,7 +292,7 @@ export class ApiTools {
 
     const id = randomUUID();
     const requests: MockServerEntry['requests'] = [];
-    const server = http.createServer((req, res) => {
+    const server = http.createServer({ requestTimeout: 15000 }, async (req, res) => {
       let reqUrl: URL;
       try { reqUrl = new URL(req.url ?? '/', 'http://127.0.0.1'); }
       catch { res.writeHead(400).end(); return; }
@@ -241,6 +310,29 @@ export class ApiTools {
       }
       let status: number, body: string | undefined;
       try {
+        const contract = jsonRequestContract(doc, matched.operation);
+        if (contract) {
+          const rawBody = await readMockBody(req);
+          let rejected = 0;
+          let details: string[] = [];
+          if (rawBody === undefined) { rejected = 413; details = ['Request body is too large']; }
+          else if (!rawBody && contract.required) { rejected = 400; details = ['Missing required request body']; }
+          else if (rawBody && contract.unsupported) { rejected = 501; details = ['Request schema cannot be verified']; }
+          else if (rawBody && !/^application\/json(?:\s*;|$)/i.test(req.headers['content-type'] ?? '')) { rejected = 415; details = ['Expected application/json']; }
+          else if (rawBody) {
+            try {
+              const verified = validateJsonAgainstSchema(doc, contract.schema, JSON.parse(rawBody), 'request');
+              rejected = verified.errors.length ? 400 : verified.incomplete.length ? 501 : 0;
+              details = [...verified.errors, ...verified.incomplete];
+            } catch { rejected = 400; details = ['Request body is not valid JSON']; }
+          }
+          if (rejected) {
+            requests.push({ at: new Date().toISOString(), method, path: reqUrl.pathname, status: rejected });
+            if (requests.length > 200) requests.shift();
+            res.writeHead(rejected, { 'Content-Type': 'application/json' }).end(JSON.stringify({ errors: details }));
+            return;
+          }
+        } else req.resume();
         const picked = pickSuccessResponse(doc, matched.operation);
         status = picked.status;
         body = method === 'HEAD' || status === 204 || status === 304 ? undefined : JSON.stringify(picked.body);
@@ -332,15 +424,16 @@ export class ApiTools {
     if (!ok) throw new Error('API 계약 검증을 취소했습니다.');
     combined.throwIfAborted();
 
-    const results: Array<{ method: string; template: string; url: string; status: number; passed: boolean; errors: string[] }> = [];
+    const results: Array<{ method: string; template: string; url: string; status: number; passed: boolean; errors: string[]; incomplete: string[] }> = [];
     for (const { route, reqUrl } of targets) {
       combined.throwIfAborted();
       let reqBody: string | undefined;
       if (!['GET', 'HEAD'].includes(route.method)) {
-        const bodySchema = route.operation.requestBody?.content?.['application/json']?.schema;
+        const bodySchema = jsonRequestContract(doc, route.operation)?.schema;
         if (bodySchema) reqBody = JSON.stringify(synthesizeFromSchema(doc, bodySchema));
       }
       const errors: string[] = [];
+      const incomplete: string[] = [];
       let status = 0;
       try {
         const resp = await requestJSON(reqUrl.href, {
@@ -357,33 +450,39 @@ export class ApiTools {
           errors.push(`Undocumented HTTP status ${status}`);
         } else if (route.method !== 'HEAD') {
           const schema = respDef.content?.['application/json']?.schema ?? respDef.schema;
-          if (schema) {
+          if (schema !== undefined) {
             if (!(resp.headers.get('content-type') ?? '').toLowerCase().includes('json')) {
               errors.push(`Expected JSON response Content-Type, got "${resp.headers.get('content-type') ?? ''}"`);
             } else {
               try {
                 const parsedBody = JSON.parse(await resp.text());
-                errors.push(...validateJsonAgainstSchema(doc, schema, parsedBody));
+                const checked = validateJsonAgainstSchema(doc, schema, parsedBody, 'response');
+                errors.push(...checked.errors);
+                incomplete.push(...checked.incomplete);
               } catch {
                 errors.push('Response body is not valid JSON');
               }
             }
+          } else if (respDef.content && Object.keys(respDef.content).length) {
+            incomplete.push('응답 본문의 미디어 형식 또는 스키마를 검증할 수 없습니다.');
           }
         }
       } catch (err) {
         combined.throwIfAborted();
         errors.push(`HTTP error: ${err instanceof Error ? err.message : String(err)}`);
       }
-      results.push({ method: route.method, template: route.template, url: reqUrl.href, status, passed: errors.length === 0, errors });
+      results.push({ method: route.method, template: route.template, url: reqUrl.href, status, passed: errors.length === 0 && incomplete.length === 0, errors, incomplete });
     }
 
     const passed = results.filter(r => r.passed).length;
+    const failed = results.filter(result => result.errors.length > 0).length;
     return {
-      status: passed === results.length ? 'passed' : 'failed',
+      status: failed ? 'failed' : passed === results.length ? 'passed' : 'incomplete',
       baseUrl: parsedUrl.origin,
       total: results.length,
       passed,
-      failed: results.length - passed,
+      failed,
+      incomplete: results.length - failed - passed,
       results,
     };
   }

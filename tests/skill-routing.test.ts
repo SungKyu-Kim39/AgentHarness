@@ -169,7 +169,7 @@ test('REA conversation mode enables REA tools immediately without keywords and w
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
   const port = (server.address() as { port: number }).port;
   const address = `http://127.0.0.1:${port}`;
-  const runtime = new NativeRuntime(app, resources, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: bytes => bytes.toString() });
+  const runtime = new NativeRuntime(app, resources, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: bytes => bytes.toString() }, async () => true);
   t.after(async () => {
     await runtime.close();
     server.closeAllConnections();
@@ -305,6 +305,15 @@ test('REA conversation mode enables REA tools immediately without keywords and w
   sessionAgents['owner-session'] = 'plan';
   await peer.call('session/mode', { session: 'owner-session', mode: 'plan' });
   assert.equal(runtime.currentSessionMode('owner-session'), 'plan');
+  const preview = await host.dataApps.call('owner-session', project, { operation: 'start', framework: 'http', entry: '.' }) as { url: string };
+  await peer.call('session/release', { session: 'owner-session', deleted: false });
+  await assert.rejects(fetch(preview.url));
+  assert.equal(runtime['attachedProjects'].has('owner-session'), false);
+  await assert.rejects(peer.call('session/mode', { session: 'owner-session', mode: 'rea' }), /Session not attached/);
+  await peer.call('bind', { session: 'owner-session', mode: 'rea' });
+  await peer.call('session/release', { session: 'owner-session', deleted: true });
+  assert.equal(runtime.currentSessionMode('owner-session'), 'build');
+
 
   // Verify engineConfiguration registers Build, Plan, and primary REA agents.
   const cfg = configSchema.parse({ model: { baseUrl: address + '/v1', id: 'test', apiKey: 'synthetic-only' } });

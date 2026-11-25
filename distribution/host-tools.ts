@@ -269,6 +269,7 @@ export class HostTools {
   private children = new Map<string, Set<ChildProcess>>();
   private operations = new Map<string, Set<AbortController>>();
   private cancelled = new Set<string>();
+  private resourceStops = new Map<string, Promise<void>>();
   private runs = new Map<string, symbol>();
   private editQueue: Promise<void> = Promise.resolve();
   private editGrant?: { session: string; project: string; run: symbol; request?: string };
@@ -833,8 +834,14 @@ export class HostTools {
   }
   cancelSession(session: string) {
     if (this.sessionEditGrant?.session === session) this.revokeEditApproval();
-    void this.desktop.cancel(session).catch(() => {});
-    void this.ghidra.cancel(session).catch(() => {});
+    if (!this.resourceStops.has(session)) {
+      const stopping = Promise.allSettled([this.desktop.cancel(session), this.ghidra.cancel(session)]).then(results => {
+        const failed = results.find(result => result.status === 'rejected');
+        if (failed?.status === 'rejected') throw failed.reason;
+      });
+      this.resourceStops.set(session, stopping);
+      void stopping.catch(() => {});
+    }
     this.python.cancel(session);
     this.terminal.cancel(session);
     this.dataApps.cancel(session);
@@ -844,6 +851,15 @@ export class HostTools {
     for (const child of this.children.get(session) ?? []) child.kill('SIGKILL');
   }
   resumeSession(session: string) { if(this.sessionEditGrant && this.sessionEditGrant.session!==session)this.revokeEditApproval(); this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
-  async waitSessionStop(session:string){const deadline=Date.now()+15000;while(this.operations.get(session)?.size){if(Date.now()>deadline)throw Error('호스트 도구 중지를 확인하지 못했습니다.');await new Promise(r=>setTimeout(r,20));}await Promise.all([this.python.stopped(session), this.terminal.stopped(session), this.dataApps.stopped(session), this.apiTools.stopped(session)]);}
+  async waitSessionStop(session: string) {
+    const deadline = Date.now() + 15000;
+    while (this.operations.get(session)?.size) {
+      if (Date.now() > deadline) throw Error('호스트 도구 중지를 확인하지 못했습니다.');
+      await new Promise(resolve => setTimeout(resolve, 20));
+    }
+    await Promise.all([this.resourceStops.get(session), this.python.stopped(session), this.terminal.stopped(session),
+      this.dataApps.stopped(session), this.apiTools.stopped(session)]);
+    this.resourceStops.delete(session);
+  }
   waitPythonStop(session: string) { return this.python.stopped(session); }
 }

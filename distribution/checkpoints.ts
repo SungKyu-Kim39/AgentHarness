@@ -10,6 +10,8 @@ const isWin = process.platform === 'win32';
 const sha = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const CHECKPOINT_ID = /^[a-f0-9]{7,40}$/;
 const MAX_CHECKPOINT_FILE_BYTES = 2 * 1024 * 1024;
+const QUOTED_ARGUMENT_BUDGET = 16_000;
+const EXCLUDED_FILE = /(?:^|\/)(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.git-credentials)$|\.(?:pem|key|pfx|p12)$/i;
 const EXCLUDE_RULES = [
   '.git/',
   '.venv/',
@@ -79,7 +81,7 @@ export class ProjectCheckpoints {
     work: string,
     args: string[],
     signal?: AbortSignal,
-    options: { omitWorkTree?: boolean; indexFile?: string; maxStdoutBytes?: number } = {},
+    options: { omitWorkTree?: boolean; indexFile?: string; maxStdoutBytes?: number; literalPaths?: boolean } = {},
   ) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
@@ -103,7 +105,7 @@ export class ProjectCheckpoints {
       GIT_CONFIG_GLOBAL: empty,
       GIT_TERMINAL_PROMPT: '0',
       GIT_ATTR_NOSYSTEM: '1',
-      GIT_LITERAL_PATHSPECS: '1',
+      GIT_LITERAL_PATHSPECS: options.literalPaths === false ? '0' : '1',
       GIT_OPTIONAL_LOCKS: '0',
       LC_ALL: 'C',
       PATH: path.isAbsolute(binary) ? path.dirname(binary) : process.env.PATH,
@@ -144,53 +146,119 @@ export class ProjectCheckpoints {
     return gitDir;
   }
 
+  private *chunkPaths(paths: string[], absolutePrefixBytes = 0) {
+    let batch: string[] = [];
+    let size = 0;
+    for (const file of paths) {
+      const bytes = Math.max(Buffer.byteLength(file) + 80, absolutePrefixBytes + 24);
+      if (batch.length && (batch.length >= 200 || size + bytes > QUOTED_ARGUMENT_BUDGET)) {
+        yield batch;
+        batch = [];
+        size = 0;
+      }
+      batch.push(file);
+      size += bytes;
+    }
+    if (batch.length) yield batch;
+  }
+
+  private async ignoredPaths(project: string, gitDir: string, work: string, paths: string[], signal?: AbortSignal) {
+    const ignored = new Set<string>();
+    for (const chunk of this.chunkPaths(paths)) {
+      const result = await this.runGit(project, gitDir, work, ['-c', 'core.quotePath=false', 'check-ignore', '--no-index', '--', ...chunk.map(file => './' + file)], signal, { literalPaths: false });
+      if (result.outputTruncated || (result.exitCode !== 0 && result.exitCode !== 1)) throw new Error('체크포인트 제외 경로를 확인하지 못했습니다.');
+      for (const file of result.stdout.split('\n').filter(Boolean)) ignored.add(file.replace(/^\.\//, ''));
+    }
+    return ignored;
+  }
+
   private async stageProjectFiles(project: string, gitDir: string, work: string, signal?: AbortSignal, indexFile?: string) {
     const files = new ProjectFiles(project);
-    const listed = await files.list();
-    const eligible: string[] = [];
+    const { paths, complete } = await files.inventory();
+    const ignored = await this.ignoredPaths(project, gitDir, work, paths, signal);
+    let indexedFiles = 0;
     let skippedLarge = 0;
-    for (const rel of listed) {
-      if (/(?:^|\/)(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.git-credentials)$|\.(?:pem|key|pfx|p12)$/i.test(rel)) continue;
-      const resolved = await files.resolve(rel, true).catch(() => undefined);
-      if (!resolved) continue;
-      const stat = await lstat(resolved).catch(() => undefined);
-      if (!stat?.isFile() || stat.isSymbolicLink()) continue;
-      if (stat.size > MAX_CHECKPOINT_FILE_BYTES) {
-        skippedLarge++;
-        continue;
-      }
-      if (await files.readStrictUtf8(rel).catch(() => undefined) === undefined) continue;
-      eligible.push(rel);
-    }
+    const contentDir = await mkdtemp(path.join(work, 'blobs-'));
     const gitOpts = indexFile ? { indexFile } : {};
-    // Clear index first so deletions are accurately reflected in the shadow commit.
     const reset = await this.runGit(project, gitDir, work, ['read-tree', '--empty'], signal, gitOpts);
     if (reset.exitCode !== 0) throw new Error('체크포인트 임시 인덱스를 초기화하지 못했습니다.');
-    const batchSize = 200;
-    for (let i = 0; i < eligible.length; i += batchSize) {
-      const chunk = eligible.slice(i, i + batchSize);
-      const added = await this.runGit(project, gitDir, work, ['add', '-f', '--', ...chunk], signal, gitOpts);
+    const batch: Array<{ relative: string; blob: string; mode: string }> = [];
+    let copied = 0;
+    const flush = async () => {
+      if (!batch.length) return;
+      const blobs = batch.map(file => file.blob);
+      const hashed = await this.runGit(project, gitDir, work, ['hash-object', '-w', '--no-filters', '--', ...blobs], signal, gitOpts);
+      const ids = hashed.stdout.trim().split(/\s+/);
+      if (hashed.exitCode !== 0 || hashed.outputTruncated || ids.length !== batch.length || ids.some(id => !/^[a-f0-9]{40,64}$/.test(id))) {
+        throw new Error('체크포인트 원본 바이트를 저장하지 못했습니다.');
+      }
+      const entries = batch.flatMap(({ relative, mode }, index) => ['--cacheinfo', `${mode},${ids[index]},${relative}`]);
+      const added = await this.runGit(project, gitDir, work, ['update-index', '--add', ...entries], signal, gitOpts);
       if (added.exitCode !== 0) throw new Error(`체크포인트 인덱싱 실패: ${added.output.slice(0, 500)}`);
+      await Promise.all(blobs.map(blob => rm(blob)));
+      indexedFiles += batch.length;
+      batch.length = 0;
+      copied = 0;
+    };
+    for (const chunk of this.chunkPaths(paths, Buffer.byteLength(contentDir))) {
+      for (const rel of chunk) {
+        signal?.throwIfAborted();
+        if (EXCLUDED_FILE.test(rel) || ignored.has(rel)) continue;
+        const resolved = await files.resolve(rel, true).catch(() => undefined);
+        if (!resolved) continue;
+        const stat = await lstat(resolved).catch(() => undefined);
+        if (!stat?.isFile() || stat.isSymbolicLink()) continue;
+        if (stat.size > MAX_CHECKPOINT_FILE_BYTES) { skippedLarge++; continue; }
+        const text = await files.readStrictUtf8(rel).catch(() => undefined);
+        if (text === undefined) continue;
+        const bytes = Buffer.byteLength(text);
+        if (copied + bytes > 16 * 1024 * 1024) await flush();
+        const blob = path.join(contentDir, String(indexedFiles + batch.length));
+        await writeFile(blob, text, { mode: 0o600 });
+        batch.push({ relative: rel, blob, mode: !isWin && stat.mode & 0o111 ? '100755' : '100644' });
+        copied += bytes;
+      }
+      await flush();
     }
-    return { indexedFiles: eligible.length, skippedLarge };
+    return { indexedFiles, skippedLarge, inventory: { complete, paths } };
+  }
+
+  private coverageFile(gitDir: string, commit: string) { return path.join(gitDir, 'ned-coverage', commit + '.json'); }
+
+  private async coverage(gitDir: string, commit: string) {
+    try {
+      const file = this.coverageFile(gitDir, commit);
+      if ((await lstat(file)).size > 8 * 1024 * 1024) return;
+      const value = JSON.parse(await readFile(file, 'utf8'));
+      if (value.schemaVersion !== 1 || typeof value.complete !== 'boolean' || !Array.isArray(value.paths) ||
+          value.paths.length > 4000 || value.paths.some((file: unknown) => typeof file !== 'string')) return;
+      return value as { complete: boolean; paths: string[] };
+    } catch { return undefined; }
   }
 
   private async createLocked(project: string, label: string, work: string, signal?: AbortSignal) {
     const gitDir = await this.ensureRepo(project, work, signal);
-    const { indexedFiles, skippedLarge } = await this.stageProjectFiles(project, gitDir, work, signal);
+    const { indexedFiles, skippedLarge, inventory } = await this.stageProjectFiles(project, gitDir, work, signal);
     const hasHead = (await this.runGit(project, gitDir, work, ['rev-parse', '--verify', 'HEAD'], signal)).exitCode === 0;
     if (hasHead) {
       const diff = await this.runGit(project, gitDir, work, ['diff', '--cached', '--quiet'], signal);
       if (diff.exitCode === 0) {
         const headId = (await this.runGit(project, gitDir, work, ['rev-parse', 'HEAD'], signal)).stdout.trim();
-        return { status: 'unchanged', checkpointId: headId, shortId: headId.slice(0, 8), label, indexedFiles, skippedLarge };
+        const saved = await this.coverage(gitDir, headId);
+        if (saved?.complete === inventory.complete && saved.paths.length === inventory.paths.length &&
+            saved.paths.every((file, index) => file === inventory.paths[index])) {
+          return { status: 'unchanged', checkpointId: headId, shortId: headId.slice(0, 8), label, indexedFiles, skippedLarge, complete: inventory.complete };
+        }
       }
     }
     const safeLabel = label.replace(/[\r\n\0]+/g, ' ').trim().slice(0, 160) || 'checkpoint';
     const commit = await this.runGit(project, gitDir, work, ['commit', '--allow-empty', '-m', safeLabel], signal);
     if (commit.exitCode !== 0) throw new Error(`체크포인트 저장 실패: ${commit.output.slice(0, 600)}`);
     const id = (await this.runGit(project, gitDir, work, ['rev-parse', 'HEAD'], signal)).stdout.trim();
-    return { status: 'created', checkpointId: id, shortId: id.slice(0, 8), label: safeLabel, indexedFiles, skippedLarge };
+    if (!/^[a-f0-9]{40,64}$/.test(id)) throw new Error('새 체크포인트 ID를 확인하지 못했습니다.');
+    await mkdir(path.dirname(this.coverageFile(gitDir, id)), { recursive: true, mode: 0o700 });
+    await atomicJSON(this.coverageFile(gitDir, id), { schemaVersion: 1, ...inventory });
+    return { status: 'created', checkpointId: id, shortId: id.slice(0, 8), label: safeLabel, indexedFiles, skippedLarge, complete: inventory.complete };
   }
 
   async create(project: string, label = 'manual', signal?: AbortSignal) {
@@ -261,8 +329,9 @@ export class ProjectCheckpoints {
     try {
       const indexFile = path.join(work, 'index');
       const commit = await this.resolveCheckpointCommit(project, gitDir, work, checkpointId, signal);
-      await this.stageProjectFiles(project, gitDir, work, signal, indexFile);
+      const { inventory } = await this.stageProjectFiles(project, gitDir, work, signal, indexFile);
       const status = await this.runGit(project, gitDir, work, ['diff', '--cached', '--name-status', '--no-renames', commit], signal, { indexFile });
+      if (status.exitCode !== 0 || status.outputTruncated) throw new Error('체크포인트 비교 목록을 모두 확인하지 못했습니다.');
       const changes = status.stdout
         .split('\n')
         .map(l => l.trim())
@@ -277,9 +346,10 @@ export class ProjectCheckpoints {
         checkpointId: commit,
         shortId: commit.slice(0, 8),
         changedCount: changes.length,
+        complete: inventory.complete && (await this.coverage(gitDir, commit))?.complete === true,
         changes: changes.slice(0, 200),
         diffPreview: patch.stdout.slice(0, 16000),
-        diffTruncated: patch.stdout.length > 16000,
+        diffTruncated: patch.outputTruncated || patch.stdout.length > 16000,
       };
     } finally {
       await rm(work, { recursive: true, force: true }).catch(() => {});
@@ -298,7 +368,10 @@ export class ProjectCheckpoints {
     try {
       const commit = await this.resolveCheckpointCommit(project, gitDir, work, checkpointId, signal);
       const indexFile = path.join(work, 'index');
-      await this.stageProjectFiles(project, gitDir, work, signal, indexFile);
+      const { inventory } = await this.stageProjectFiles(project, gitDir, work, signal, indexFile);
+      const original = await this.coverage(gitDir, commit);
+      const key = (file: string) => isWin ? file.toLowerCase() : file;
+      const existing = new Set(original?.paths.map(key));
       // Compare current staged state against target checkpoint:
       // A in (commit -> current) means added after checkpoint -> delete to restore.
       // D in (commit -> current) means deleted after checkpoint -> recreate from commit.
@@ -313,13 +386,19 @@ export class ProjectCheckpoints {
         if (!relPath || !['A', 'D', 'M'].includes(code)) throw new Error('지원하지 않는 체크포인트 변경 항목이 있습니다.');
         entries.push({ code, relPath });
       }
-      if (!entries.length) {
-        return { status: 'noop', checkpointId: commit, message: '현재 프로젝트 상태가 선택한 체크포인트와 동일합니다.' };
+      const ignored = await this.ignoredPaths(project, gitDir, work, entries.map(entry => entry.relPath), signal);
+      const restoreEntries = entries.filter(({ code, relPath }) => !EXCLUDED_FILE.test(relPath) && !ignored.has(relPath) &&
+        (code !== 'A' || (inventory.complete && original?.complete === true && !existing.has(key(relPath)))));
+      const skippedPaths = entries.length - restoreEntries.length;
+      if (!restoreEntries.length) {
+        return { status: 'noop', checkpointId: commit, skippedPaths, message: skippedPaths
+          ? '제외 경로 또는 생성 당시의 범위를 확인할 수 없는 파일을 보존했습니다.'
+          : '확인한 파일에 복원할 변경이 없습니다.' };
       }
 
       const files = new ProjectFiles(project);
       const proposals: Proposal[] = [];
-      for (const entry of entries) {
+      for (const entry of restoreEntries) {
         if (entry.code === 'A') {
           const proposal = await files.proposeDelete(randomUUID(), entry.relPath);
           await hooks.validateEdit?.(session, project, proposal, signal);
@@ -333,13 +412,13 @@ export class ProjectCheckpoints {
         }
       }
 
-      const summary = entries
+      const summary = restoreEntries
         .slice(0, 50)
         .map(e => `${e.code === 'A' ? '삭제(복원)' : e.code === 'D' ? '재생성' : '되돌리기'}: ${e.relPath}`)
         .join('\n');
       const ok = await hooks.approve(
         `프로젝트 체크포인트 복원 (${commit.slice(0, 8)})`,
-        `프로젝트: ${project}\n대상 체크포인트: ${commit}\n변경 파일(${proposals.length}개):\n${summary}${entries.length > 50 ? '\n...(이하 생략)' : ''}`,
+        `프로젝트: ${project}\n대상 체크포인트: ${commit}\n변경 파일(${proposals.length}개):\n${summary}${restoreEntries.length > 50 ? '\n...(이하 생략)' : ''}\n보존 또는 제외: ${skippedPaths}개`,
         signal,
       );
       if (!ok) throw new Error('체크포인트 복원을 취소했습니다.');
@@ -360,6 +439,7 @@ export class ProjectCheckpoints {
         checkpointId: commit,
         shortId: commit.slice(0, 8),
         restoredFiles: proposals.length,
+        skippedPaths,
         safetyCheckpointId: safety.checkpointId,
         paths: proposals.map(p => p.path).slice(0, 100),
       };
