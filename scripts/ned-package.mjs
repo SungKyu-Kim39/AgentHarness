@@ -153,8 +153,15 @@ async function packageApp(compileInstaller=true) {
   run(process.execPath,['node_modules/electron-builder/out/cli/cli.js','--win','--dir','--x64','--publish','never','--config',configuration]);
   await stamp(); await verifyAsciiTree(staged);
   if(!compileInstaller)return;
+  await verifyInstallerOwnership();
   const nsis=await getMakeNsisPath('0.0.0');
   run(nsis.path,['-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+installer,'-DNED_ICON='+path.join(root,'assets/ned-icon.ico'),path.join(root,'distribution/ned/installer.nsi')],{env:{...process.env,...nsis.env}});
+}
+async function verifyInstallerOwnership() {
+  const script = await readFile(path.join(root, 'distribution/ned/installer.nsi'), 'utf8');
+  const owned = new Set([...script.matchAll(/^\s*!insertmacro NedOwnedEntry "([^"]+)"$/gm)].map(match => match[1].toLowerCase()));
+  const unowned = (await readdir(staged)).filter(name => !owned.has(name.toLowerCase()));
+  if (unowned.length) throw new Error('Missing installer ownership entries: ' + unowned.join(', '));
 }
 async function audit() {
   const extracted=path.join(cache,'installer-audit');
@@ -323,6 +330,7 @@ else if(mode==='release') {
     }
   }
   await verifyAsciiTree(staged);
+  await verifyInstallerOwnership();
   const nsis=await getMakeNsisPath('0.0.0');
   const buildInstaller = (filename, flags = []) => {
     run(nsis.path,[process.env.NED_VERBOSE_INSTALLER==='1'?'-V4':'-V2','-DNED_VERSION='+version,'-DNED_APP_DIR='+staged,'-DNED_OUT_FILE='+filename,

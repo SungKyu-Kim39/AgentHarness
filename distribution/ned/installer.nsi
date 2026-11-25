@@ -206,6 +206,37 @@ Function CheckInstallNotRunning
   ${EndIf}
 FunctionEnd
 
+; Top-level entries owned by released Ned payloads or created by this installer.
+!macro NedOwnedEntry NAME
+  ${If} $R1 == "${NAME}"
+    StrCpy $R2 "yes"
+    Return
+  ${EndIf}
+!macroend
+
+Function IsNedOwnedEntry
+  StrCpy $R2 "no"
+  !insertmacro NedOwnedEntry "LICENSE.electron.txt"
+  !insertmacro NedOwnedEntry "LICENSES.chromium.html"
+  !insertmacro NedOwnedEntry "Ned.exe"
+  !insertmacro NedOwnedEntry "chrome_100_percent.pak"
+  !insertmacro NedOwnedEntry "chrome_200_percent.pak"
+  !insertmacro NedOwnedEntry "d3dcompiler_47.dll"
+  !insertmacro NedOwnedEntry "dxcompiler.dll"
+  !insertmacro NedOwnedEntry "dxil.dll"
+  !insertmacro NedOwnedEntry "ffmpeg.dll"
+  !insertmacro NedOwnedEntry "icudtl.dat"
+  !insertmacro NedOwnedEntry "locales"
+  !insertmacro NedOwnedEntry "resources"
+  !insertmacro NedOwnedEntry "resources.pak"
+  !insertmacro NedOwnedEntry "snapshot_blob.bin"
+  !insertmacro NedOwnedEntry "v8_context_snapshot.bin"
+  !insertmacro NedOwnedEntry "vk_swiftshader.dll"
+  !insertmacro NedOwnedEntry "vk_swiftshader_icd.json"
+  !insertmacro NedOwnedEntry "vulkan-1.dll"
+  !insertmacro NedOwnedEntry "Uninstall Ned.exe"
+FunctionEnd
+
 Function BackupNedInstallation
   StrCpy $7 "ok"
   ClearErrors
@@ -217,9 +248,8 @@ Function BackupNedInstallation
   Push ""
   FindFirst $R0 $R1 "$INSTDIR\*.*"
   ${DoWhile} $R1 != ""
-    ${If} $R1 != "."
-    ${AndIf} $R1 != ".."
-    ${AndIf} $R1 != ".ned-upgrade-backup"
+    Call IsNedOwnedEntry
+    ${If} $R2 == "yes"
       Push "$R1"
     ${EndIf}
     FindNext $R0 $R1
@@ -244,9 +274,8 @@ Function CleanPartialNedExtract
   Push ""
   FindFirst $R0 $R1 "$INSTDIR\*.*"
   ${DoWhile} $R1 != ""
-    ${If} $R1 != "."
-    ${AndIf} $R1 != ".."
-    ${AndIf} $R1 != ".ned-upgrade-backup"
+    Call IsNedOwnedEntry
+    ${If} $R2 == "yes"
       Push "$R1"
     ${EndIf}
     FindNext $R0 $R1
@@ -284,11 +313,19 @@ Function RestoreNedUpgradeBackup
     ${If} $R1 == ""
       ${ExitDo}
     ${EndIf}
-    ClearErrors
-    ${If} ${FileExists} "$INSTDIR\$R1\*.*"
-      RMDir /r "$INSTDIR\$R1"
+    Call IsNedOwnedEntry
+    ${If} $R2 == "yes"
+      ${If} ${FileExists} "$INSTDIR\$R1\*.*"
+        RMDir /r "$INSTDIR\$R1"
+      ${ElseIf} ${FileExists} "$INSTDIR\$R1"
+        Delete "$INSTDIR\$R1"
+      ${EndIf}
     ${ElseIf} ${FileExists} "$INSTDIR\$R1"
-      Delete "$INSTDIR\$R1"
+    ${OrIf} ${FileExists} "$INSTDIR\$R1\*.*"
+      ; A pre-rebuild5 installer may have moved user files into this backup.
+      ; Keep both copies on collision and ask the user to resolve it.
+      StrCpy $7 "failed"
+      ${Continue}
     ${EndIf}
     ClearErrors
     Rename "$INSTDIR\.ned-upgrade-backup\$R1" "$INSTDIR\$R1"
@@ -317,9 +354,8 @@ Section "Ned"
     SetErrorLevel 1
     Abort
   ${EndIf}
-  ; Back up the entire existing top-level install set (Electron DLLs/PAKs,
-  ; Ned.exe, locales, resources) before replacing them so a mid-upgrade failure
-  ; restores a consistent previous build. User data remains outside INSTDIR.
+  ; Back up all Ned-owned components before replacing them. Files placed
+  ; alongside those components by the user stay in the installation folder.
   StrCpy $8 "no"
   ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\*.*"
     Call RestoreNedUpgradeBackup
@@ -367,7 +403,7 @@ Section "Ned"
     SetErrorLevel 1
     Abort
   backup_preserved:
-    MessageBox MB_OK|MB_ICONSTOP "이전 Ned 파일을 모두 복구하지 못했습니다. 남은 백업은 설치 폴더의 .ned-upgrade-backup에 보존했습니다. 잠금과 권한을 확인한 뒤 같은 경로에서 설치를 다시 실행하세요." /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "이전 Ned 파일을 모두 복구하지 못했습니다. 남은 백업은 설치 폴더의 .ned-upgrade-backup에 보존했습니다. 실행 중인 파일·권한·같은 이름의 개인 파일을 확인한 뒤 같은 경로에서 설치를 다시 실행하세요." /SD IDOK
     SetErrorLevel 1
     Abort
   install_verified:

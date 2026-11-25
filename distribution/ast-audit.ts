@@ -25,6 +25,7 @@ export interface CodeAuditInput {
 export interface AstRewriteHooks {
   approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
   validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
+  reserveWrites?: (paths: string[]) => () => void;
   beforeApply?: () => Promise<void>;
 }
 
@@ -174,6 +175,7 @@ export class AstAuditTools {
       combined.throwIfAborted();
       await hooks.beforeApply?.();
       await files.applyBatch(proposals, {
+        reserve: hooks.reserveWrites,
         signal: combined,
         validate: proposal => hooks.validateEdit?.(session, project, proposal, combined) ?? Promise.resolve(),
         snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),

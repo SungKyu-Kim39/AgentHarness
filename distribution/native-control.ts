@@ -3,7 +3,7 @@ import { randomBytes, createHash } from 'node:crypto';
 import { mkdir, readFile, copyFile, access, realpath, stat, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { ConfigVault, Redactor, atomicJSON, type Cipher } from '../src/main/config';
-import { inspectIncompleteBatchJournals } from '../src/main/files';
+import { inspectBatchRecovery, inspectIncompleteBatchJournals, ProjectFiles } from '../src/main/files';
 import { ModelGateway } from '../src/main/model-gateway';
 import { OpenVikingService } from '../src/main/openviking';
 import type { Proposal } from '../src/shared/contracts';
@@ -134,7 +134,11 @@ export class NativeRuntime {
             const parts = [reaNotice, skillsGuidance, memoryGuidance].filter((part): part is string => !!part);
             return parts.length ? parts.join('\n\n') : undefined;
           }, definition?.limit?.output ?? 4096, 'ned',
-          (session, parent) => { const owner = parent ?? session; return Boolean(owner && this.isReaSession(owner)); });
+          (session, parent) => { const owner = parent ?? session; return Boolean(owner && this.isReaSession(owner)); },
+          (session, parent) => {
+            const owner = parent ?? session;
+            return owner && this.attachedProjects.has(owner) ? this.turnHistory.get(owner)?.join('\n') : undefined;
+          });
         await gateway.start();
         this.models.push({ provider: m.providerID ?? providerID(m.name), name: m.name, id: m.modelKey ?? m.id, gateway });
       }
@@ -155,6 +159,7 @@ export class NativeRuntime {
         choosePython: (project, environments, signal) => this.pythonSelector ? this.pythonSelector(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창을 사용할 수 없습니다.')),
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
         pythonConfig: () => this.config?.python,
+        batchRecovered: () => this.scanBatchJournals(),
         reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...(this.zedModels?.ports() ?? []), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
       });
       progress('skills');
@@ -190,22 +195,31 @@ export class NativeRuntime {
       await unlink(statusFile).catch(() => {});
       return;
     }
-    await atomicJSON(statusFile, {
-      schemaVersion: 1,
-      recordedAt: new Date().toISOString(),
-      incompleteCount: incomplete.length,
-      batches: incomplete.map(batch => ({
+    const batches = [];
+    for (const batch of incomplete) {
+      const entries = (this.projects.has(batch.project)
+        ? await inspectBatchRecovery(batch, new ProjectFiles(batch.project), path.join(this.root, 'snapshots'))
+        : batch.entries.map(entry => ({ ...entry, state: 'unavailable' })))
+        .map(({ path, operation, snapshotId, state }) => ({ path, operation, snapshotId, state, applied: state === 'applied' }));
+      batches.push({
         id: batch.id,
         operation: batch.operation,
         status: batch.status,
         startedAt: batch.startedAt,
         updatedAt: batch.updatedAt,
-        appliedCount: batch.entries.filter(e => e.applied && !e.reverted).length,
-        totalCount: batch.entries.length,
-        entries: batch.entries.map(e => ({ path: e.path, operation: e.operation, snapshotId: e.snapshotId, applied: e.applied, ...(e.reverted ? { reverted: true } : {}) })),
-      })),
+        appliedCount: entries.filter(entry => entry.applied).length,
+        totalCount: entries.length,
+        entries,
+      });
+    }
+    await atomicJSON(statusFile, {
+      schemaVersion: 1,
+      recordedAt: new Date().toISOString(),
+      incompleteCount: incomplete.length,
+      batches,
     }).catch(() => {});
   }
+
   async zedConnection() {
     if (!this.config || this.shutdownUnconfirmed) throw new Error('모델 설정을 먼저 확인하세요.');
     this.zedModels ??= new ZedModels(this.config, event => { void atomicJSON(path.join(this.root, 'zed-model-status.json'), { ...event, source: 'zed-native' }).catch(() => {}); });
@@ -270,11 +284,29 @@ export class NativeRuntime {
   }
   private turnHistory = new Map<string, string[]>();
   private sessionModes = new Map<string, string>();
+  private modeUpdates = new Map<string, symbol>();
 
   setSessionMode(session: string, mode: string) {
     const normalized = normalizeConversationMode(mode);
-    if (!normalized || normalized.startsWith('ned-')) return;
-    this.sessionModes.set(session, normalized);
+    if (normalized === 'build' || normalized === 'plan' || normalized === 'rea') this.sessionModes.set(session, normalized);
+  }
+
+  async refreshSessionMode(session: string, reportedMode?: string) {
+    if (reportedMode && !this.modeUpdates.has(session) && this.sessionModes.get(session) === normalizeConversationMode(reportedMode)) return;
+    const project = this.attachedProjects.get(session);
+    if (!project) throw new Error('Ned 대화가 연결되지 않았습니다.');
+    const update = Symbol();
+    this.modeUpdates.set(session, update);
+    // Keep a REA-only tool disabled while the saved mode is being confirmed.
+    this.sessionModes.delete(session);
+    try {
+      const binding = await this.sessionBinding(session);
+      if (this.modeUpdates.get(session) !== update) return;
+      if (binding.project !== project || this.attachedProjects.get(session) !== project) throw new Error('대화 프로젝트가 변경되었습니다.');
+      this.setSessionMode(session, binding.mode);
+    } finally {
+      if (this.modeUpdates.get(session) === update) this.modeUpdates.delete(session);
+    }
   }
 
   currentSessionMode(session: string): string {
@@ -287,13 +319,14 @@ export class NativeRuntime {
   }
 
   async setTurnText(session: string, text: string) {
+    if (/^\s*\/compact(?:\s|$)/i.test(text) || isCompactionPrompt(text)) return;
     await this.memory?.onUserPrompt(session, text);
     const request = text.slice(0, 16000);
     const continuing = isContinuationTurn(request);
     const project = this.attachedProjects.get(session);
     const existingHistory = this.turnHistory.get(session);
-    if (project && this.projects.has(project) && !this.sessionModes.has(session) && this.backend) {
-      await this.sessionProject(session).catch(() => {});
+    if (project && this.projects.has(project) && !this.sessionModes.has(session) && !this.modeUpdates.has(session) && this.backend) {
+      await this.refreshSessionMode(session).catch(() => {});
     }
     let recoveredAnchor: string | undefined;
     if (project && this.projects.has(project) && continuing && !existingHistory?.length) {
@@ -326,7 +359,7 @@ export class NativeRuntime {
     this.memory?.onSessionActivated(session);
   }
   onTurnComplete(session: string) { this.memory?.onTurnComplete(session); }
-  onSessionDisconnected(session: string) { this.attachedProjects.delete(session); this.turnHistory.delete(session); this.sessionModes.delete(session); this.memory?.onSessionDisconnected(session); }
+  onSessionDisconnected(session: string) { this.attachedProjects.delete(session); this.turnHistory.delete(session); this.sessionModes.delete(session); this.modeUpdates.delete(session); this.memory?.onSessionDisconnected(session); }
   async skillCommands(session: string) {
     if (!this.tools) throw new Error('Ned 스킬이 준비되지 않았습니다.');
     const project = await this.sessionProject(session);
@@ -397,7 +430,9 @@ export class NativeRuntime {
     }
     throw new Error('현재 사용자 요청을 확인하지 못해 파일 수정을 보류합니다.');
   }
-  private async sessionProject(id: string) {
+  private async sessionProject(id: string) { return (await this.sessionBinding(id)).project; }
+
+  private async sessionBinding(id: string) {
     if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('엔진 세션을 확인할 수 없습니다.');
     const response = await fetch(this.backend.url + '/api/session/' + encodeURIComponent(id), { redirect: 'error', headers: { Authorization: 'Basic ' + Buffer.from('opencode:' + this.backend.password).toString('base64') }, signal: AbortSignal.timeout(10000) });
     if (!response.ok) throw new Error('엔진 세션을 확인할 수 없습니다.');
@@ -405,8 +440,7 @@ export class NativeRuntime {
     if (typeof directory !== 'string' || !path.isAbsolute(directory)) throw new Error('프로젝트 범위를 확인할 수 없습니다.');
     const selected = await realpath(directory);
     if (!this.projects.has(selected)) throw new Error('프로젝트 메뉴에서 이 폴더를 다시 선택하여 접근 범위를 확인하세요.');
-    if (typeof document.data?.agent === 'string') this.setSessionMode(id, document.data.agent);
-    return selected;
+    return { project: selected, mode: normalizeConversationMode(document.data?.agent) };
   }
   private environment(password: string): NodeJS.ProcessEnv {
     const runtime = path.join(this.root, 'runtime');

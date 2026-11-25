@@ -138,6 +138,7 @@ export class DataApps {
   private commands: OwnedCommand;
   private abort = new AbortController();
   private servers = new Map<string, PreviewServer>();
+  private previewSlots = 0;
 
   constructor(
     private root: string,
@@ -221,8 +222,9 @@ export class DataApps {
         res.writeHead(405, { Allow: 'GET, HEAD' }).end();
         return;
       }
-      const rawTarget = (req.url ?? '/').split(/[?#]/, 1)[0];
-      if (!rawTarget.startsWith('/') || rawTarget.includes('\\')) {
+      const target = req.url ?? '/';
+      const rawTarget = target.split(/[?#]/, 1)[0];
+      if (!rawTarget.startsWith('/') || rawTarget.startsWith('//') || rawTarget.includes('\\')) {
         res.writeHead(403).end('Forbidden');
         return;
       }
@@ -272,7 +274,11 @@ export class DataApps {
           return;
         }
         if (st.isDirectory()) {
-          await serveRelParts([...parts, 'index.html']);
+          if (!pathname.endsWith('/')) {
+            res.writeHead(308, { Location: pathname + '/' + target.slice(pathname.length) }).end();
+            return;
+          }
+          res.writeHead(404).end('Not Found');
           return;
         }
         if (!st.isFile()) {
@@ -383,17 +389,33 @@ export class DataApps {
 
     // operation === 'start'
     if (input.args?.length) throw new Error('프리뷰 서버는 호스트가 정한 실행 옵션만 사용합니다.');
-    const activeCount = [...this.servers.values()].filter(s => ['starting', 'running', 'stopping'].includes(s.state)).length;
-    if (activeCount >= 2) throw new Error('동시에 실행할 수 있는 로컬 프리뷰 서버는 최대 2개입니다. 기존 서버를 중지하세요.');
+    if (this.previewSlots >= 2) throw new Error('동시에 실행할 수 있는 로컬 프리뷰 서버는 최대 2개입니다. 기존 서버를 중지하세요.');
     const framework = input.framework ?? 'marimo';
     const entry = input.entry?.trim();
     if (!entry) throw new Error('실행할 앱 진입점(entry)을 지정하세요.');
     const files = new ProjectFiles(project);
-
-    if (framework === 'http') {
-      return this.startStaticHttpServer(session, project, entry, files, combined);
+    this.previewSlots++;
+    const release = () => { this.previewSlots--; };
+    try {
+      const preview = framework === 'http'
+        ? await this.startStaticHttpServer(session, project, entry, files, combined)
+        : await this.startPythonPreview(session, project, framework, entry, files, combined);
+      void this.servers.get(preview.id)?.task.then(release, release);
+      return preview;
+    } catch (error) {
+      release();
+      throw error;
     }
+  }
 
+  private async startPythonPreview(
+    session: string,
+    project: string,
+    framework: Exclude<DataAppFramework, 'http'>,
+    entry: string,
+    files: ProjectFiles,
+    combined: AbortSignal,
+  ) {
     const python = await this.options.resolvePython(project);
 
     const reserved = new Set([...(this.options.reservedPorts?.() ?? []), ...this.ports()]);

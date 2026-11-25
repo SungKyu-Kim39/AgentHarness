@@ -83,6 +83,7 @@ function relative(s: string) {
 /** Host-owned child sessions. The engine receives no unrestricted task/command executor. */
 export class Subagents {
   private jobs = new Map<string, Job>();
+  private batchWrites = new Map<string, Set<string>>();
   private closed = false;
   private ready = false;
   private epochs = new Map<string, number>();
@@ -277,25 +278,35 @@ export class Subagents {
       throw Error("Ned 호스트가 생성·소유한 하위 Agent만 허용합니다.");
     if (this.closed || this.blocked.has(session))
       throw Error("하위 작업 중지가 확인되지 않아 새 작업을 보류합니다.");
-    if (editing.has(tool)) {
-      const p = relative(String((args as any)?.path ?? "")),
-        project = await this.project(session);
-      if (
-        [...this.jobs.values()].some(
-          (j) =>
-            j.project === project &&
-            !j.worktreePath &&
-            active(j) &&
-            j.role === "worker" &&
-            j.writes.includes(p),
-        )
-      )
-        throw Error(
-          "하위 Agent가 수정 중인 파일입니다. 완료·중지 후 수정하세요.",
-        );
-    }
+    if (editing.has(tool)) this.assertWritesAvailable(await this.project(session), [String((args as any)?.path ?? "")]);
     return { session };
   }
+  private writeKey(file: string) {
+    const key = relative(file);
+    return process.platform === "win32" ? key.toLowerCase() : key;
+  }
+
+  assertWritesAvailable(project: string, paths: string[]) {
+    const writes = new Set(paths.map(file => this.writeKey(file)));
+    const batch = this.batchWrites.get(project);
+    const overlap = [...writes].some(file => batch?.has(file)) ||
+      [...this.jobs.values()].some(j => j.project === project && !j.worktreePath && active(j) &&
+        j.writes.some(file => writes.has(this.writeKey(file))));
+    if (overlap) throw Error("하위 Agent 또는 일괄 작업이 수정 중인 파일과 겹칩니다. 완료·중지 후 수정하세요.");
+  }
+
+  reserveBatchWrites(project: string, paths: string[]) {
+    this.assertWritesAvailable(project, paths);
+    const entries = paths.map(file => this.writeKey(file));
+    const reserved = this.batchWrites.get(project) ?? new Set<string>();
+    for (const entry of entries) reserved.add(entry);
+    this.batchWrites.set(project, reserved);
+    return () => {
+      for (const entry of entries) reserved.delete(entry);
+      if (!reserved.size) this.batchWrites.delete(project);
+    };
+  }
+
   async spawn(
     parent: string,
     input: {
@@ -329,17 +340,7 @@ export class Subagents {
     if (input.role === "goldfish" && (!goldfishReviewers.has(input.reviewer ?? "") || writes.length)) throw Error("Goldfish 검토자와 읽기 전용 범위를 확인하세요.");
     if (input.role === "research" && writes.length)
       throw Error("조사 하위 Agent에는 수정 파일을 할당할 수 없습니다.");
-    if (
-      isolation !== "worktree" &&
-      [...this.jobs.values()].some(
-        (j) =>
-          j.project === project &&
-          !j.worktreePath &&
-          active(j) &&
-          j.writes.some((p) => writes.includes(p)),
-      )
-    )
-      throw Error("다른 하위 작업과 수정 파일이 겹칩니다.");
+    if (isolation !== "worktree" && writes.length) this.assertWritesAvailable(project, writes);
     if (this.jobs.size >= 2000) {
       const terminal = [...this.jobs.values()]
         .filter((j) => !active(j) && !j.work)

@@ -4,6 +4,12 @@
 
 
 
+## 0.4.0 rebuild5 교차 검토
+
+설치기 파일 소유권, REA 모드 동기화, 체크섬 기반 일괄 복구, 하위 작업과 편집 충돌, OpenViking 기억 아카이브, 전문 도구 이어가기, 정적 프리뷰를 보완했습니다. [변경 사항](docs/changes-0.4.0-rebuild5.md) · [검증 기록](docs/validation-0.4.0-rebuild5.md)
+
+<!-- current-release -->
+
 ## 0.4.0 rebuild3 배포 기준
 
 소스 `36c5c99c30e2236ad5a35bb0f555e1fa34ade55e`를 사용했습니다. Windows 새 설치·0.4.0-rebuild2 업데이트와 51개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.4.0-rebuild3.md)

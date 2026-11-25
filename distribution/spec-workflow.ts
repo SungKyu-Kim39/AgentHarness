@@ -17,6 +17,7 @@ export interface SpecWorkflowInput {
 export interface SpecHooks {
   approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
   validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
+  reserveWrites?: (paths: string[]) => () => void;
 }
 
 function parseRequirements(specText: string) {
@@ -124,6 +125,7 @@ export class SpecWorkflow {
       if (!ok) throw new Error('Spec 초기화를 취소했습니다.');
       signal?.throwIfAborted();
       await files.applyBatch(proposals, {
+        reserve: hooks.reserveWrites,
         signal,
         validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
         snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),

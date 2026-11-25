@@ -768,3 +768,62 @@ test('incremental memory persists turn opt-out at the cursor and keeps the next 
   await overlap.close();
   assert.ok(appended.every(message => message.content !== 'SYNTHETIC_EXCLUDED_REPLY'));
 });
+
+
+test('automatic memory recovers a durable failed archive after a lost task ID and waits for confirmation across restarts', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-memory-archive-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const messagesSha256 = 'c'.repeat(64);
+  let archiveStatus: 'pending' | 'failed' | 'completed' = 'pending';
+  let commitCount = 0;
+  const retried: string[][] = [];
+  const readState = async () => JSON.parse(await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8'));
+  const fakeKnowledge: KnowledgeService = {
+    state: () => ({ status: 'ready', indexedFiles: 0 }),
+    isReady: () => true,
+    configure: async () => {}, search: async () => '{}', read: async () => '{}',
+    index: async () => '', close: async () => {}, ensureMemorySession: async () => {},
+    appendSessionMessages: async () => {},
+    commitMemorySession: async () => {
+      commitCount++;
+      return { taskId: 'original-task', archiveUri: 'viking://session/ned-fixture/history/archive_001' };
+    },
+    getTaskStatus: async () => ({ status: 'not_found' }),
+    getMemoryArchive: async (_session, id) => {
+      assert.equal(id, 'archive_001');
+      return { status: archiveStatus, messagesSha256 };
+    },
+    retryMemoryArchive: async (session, archive, hash) => { retried.push([session, archive, hash]); },
+  };
+  const create = () => new SessionMemoryManager({
+    root, policy: { enabled: true, autoRecall: false, commitEveryTurns: 1 },
+    knowledge: () => fakeKnowledge,
+    fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async () => [
+      { type: 'user', id: 'u', text: '테스트 규칙을 설명해줘', time: { created: 10 } },
+      { type: 'assistant', id: 'a', content: [{ type: 'text', text: '테스트 규칙 설명입니다.' }], time: { created: 11, completed: 12 } },
+    ],
+  });
+  let manager = create();
+  await manager.syncAndMaybeCommit('fixture-session', true);
+  await manager.close();
+  const initial = (await readState()).sessions['fixture-session'];
+  assert.equal(initial.pendingCommitArchiveId, 'archive_001');
+
+  manager = create();
+  await manager.flushPendingCommits();
+  assert.equal(retried.length, 0, 'the durable archive still has background work');
+  archiveStatus = 'failed';
+  await manager.flushPendingCommits();
+  assert.deepEqual(retried, [[initial.ovSessionId, 'archive_001', messagesSha256]]);
+  await manager.close();
+
+  manager = create();
+  await manager.flushPendingCommits();
+  assert.equal(retried.length, 1, 'the retry attempt survives a restart');
+  archiveStatus = 'completed';
+  await manager.flushPendingCommits();
+  await manager.close();
+  assert.equal((await readState()).sessions['fixture-session'].archiveRecoveries, undefined);
+  assert.equal(commitCount, 1, 'an already archived turn never re-commits the empty live session');
+});

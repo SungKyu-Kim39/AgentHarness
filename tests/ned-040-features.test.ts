@@ -2,15 +2,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import http from 'node:http';
-import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, rm, writeFile, realpath } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { ProjectFiles } from '../src/main/files';
+import { ProjectFiles, inspectBatchRecovery, inspectIncompleteBatchJournals } from '../src/main/files';
+import { Redactor } from '../src/main/config';
 import { configSchema } from '../src/shared/contracts';
 import { PythonVenvManager, parseRequirementsText, validatePackageSpec } from '../distribution/python-venv';
 import { DataApps } from '../distribution/data-apps';
 import { ProjectCheckpoints } from '../distribution/checkpoints';
 import { WorktreeSandbox } from '../distribution/worktree-sandbox';
+import { randomUUID } from 'node:crypto';
+import { HostTools } from '../distribution/host-tools';
 import { SpecWorkflow } from '../distribution/spec-workflow';
 import { AstAuditTools } from '../distribution/ast-audit';
 import { DocumentTools } from '../distribution/document-tools';
@@ -615,6 +618,9 @@ test('DataApps static HTTP preview enforces symlink/dotfile boundaries without r
   const outsideFile = path.join(dir, 'outside-secret.txt');
   await writeFile(outsideFile, 'OUTSIDE_SECRET_DATA');
   await writeFile(path.join(project, 'index.html'), '<h1>Safe Index</h1>');
+  await mkdir(path.join(project, 'page'));
+  await writeFile(path.join(project, 'page/index.html'), '<link rel="stylesheet" href="./style.css">');
+  await writeFile(path.join(project, 'page/style.css'), 'body {}');
   await writeFile(path.join(project, '.env'), 'API_KEY=supersecret');
   await mkdir(path.join(project, '.git'), { recursive: true });
   await writeFile(path.join(project, '.git/config'), '[core]\n');
@@ -623,8 +629,16 @@ test('DataApps static HTTP preview enforces symlink/dotfile boundaries without r
   await symlink(outsideFile, path.join(project, 'escape.txt'));
 
   let pythonResolved = 0;
+  let approvals = 0;
+  let openApproval!: (allowed: boolean) => void;
+  let approvalEntered!: () => void;
+  const pending = new Promise<boolean>(resolve => { openApproval = resolve; });
+  const entered = new Promise<void>(resolve => { approvalEntered = resolve; });
   const apps = new DataApps(root, '', {
-    approve: async () => true,
+    approve: async () => {
+      if (++approvals === 2) { approvalEntered(); return pending; }
+      return true;
+    },
     resolvePython: async () => { pythonResolved++; throw new Error('Python should not be required for static http'); },
   });
   t.after(() => apps.close());
@@ -637,6 +651,20 @@ test('DataApps static HTTP preview enforces symlink/dotfile boundaries without r
   assert.equal(okIndex.status, 200);
   assert.equal(okIndex.headers.get('x-content-type-options'), 'nosniff');
   assert.match(await okIndex.text(), /Safe Index/);
+
+  const directory = await fetch(started.url + '/page?from=preview');
+  assert.equal(new URL(directory.url).pathname, '/page/');
+  assert.equal(new URL(directory.url).search, '?from=preview');
+  assert.equal((await fetch(new URL('./style.css', directory.url))).status, 200);
+  const running = apps.call('ses2', project, { operation: 'start', framework: 'http', entry: '.' });
+  await entered;
+  try {
+    await assert.rejects(apps.call('ses3', project, { operation: 'start', framework: 'http', entry: '.' }), /최대 2개/);
+  } finally {
+    openApproval(true);
+  }
+  const second = await running as { id: string };
+  await apps.call('ses2', project, { operation: 'stop', id: second.id });
 
   const headRes = await fetch(started.url + '/index.html', { method: 'HEAD' });
   assert.equal(headRes.status, 200);
@@ -693,7 +721,7 @@ test('NativeRuntime surfaces incomplete batch journals on startup and ast_search
   const recovery = JSON.parse(await readFile(path.join(root, 'batch-recovery-status.json'), 'utf8'));
   assert.equal(recovery.incompleteCount, 1);
   assert.equal(recovery.batches[0].id, 'crash-batch');
-  assert.equal(recovery.batches[0].appliedCount, 1);
+  assert.equal(recovery.batches[0].entries[0].state, 'unavailable');
 
   // Verify ast_search(apply: true) does NOT call beforeApply when user denies approval.
   await writeFile(path.join(project, 'demo.py'), 'old_call(1)\n');
@@ -708,4 +736,45 @@ test('NativeRuntime surfaces incomplete batch journals on startup and ast_search
     /취소/,
   );
   assert.equal(beforeApplyCalls, 0);
+});
+
+
+test('interrupted batch recovery uses file hashes even before the applied flag and preserves later user edits', async t => {
+  const { root, project } = await makeTempWorkspace(t, 'ned-batch-recovery-');
+  const canonical = await realpath(project);
+  const files = new ProjectFiles(canonical);
+  const journalDir = path.join(root, 'batch-journals');
+  const snapshotDir = path.join(root, 'snapshots');
+  const batchId = randomUUID();
+  const target = path.join(canonical, 'sample.txt');
+  await mkdir(journalDir);
+  await mkdir(path.join(snapshotDir, 'ses1'), { recursive: true });
+  await writeFile(target, 'before');
+  const proposal = await files.propose('fixture', 'sample.txt', 'after');
+  await writeFile(path.join(snapshotDir, 'ses1', proposal.id + '.json'), JSON.stringify(proposal));
+  // The release can recover both new journals with result hashes and older ones with only a snapshot.
+  await writeFile(path.join(journalDir, batchId + '.json'), JSON.stringify({
+    schemaVersion: 1, id: batchId, operation: 'ast_search', project: canonical, session: 'ses1',
+    startedAt: new Date().toISOString(), status: 'in_progress',
+    entries: [{ path: proposal.path, operation: 'write', snapshotId: proposal.id, baseHash: proposal.baseHash, applied: false }],
+  }));
+  await files.apply(proposal);
+  const [batch] = await inspectIncompleteBatchJournals(journalDir, canonical);
+  assert.equal((await inspectBatchRecovery(batch, files, snapshotDir))[0].state, 'applied');
+  let approval = false;
+  const host = new HostTools(root, '', {
+    project: async () => canonical, approve: async () => approval,
+    redactor: new Redactor(), knowledge: () => undefined,
+  });
+  t.after(() => host.close());
+  const recover = () => host.call('project_checkpoint', { operation: 'recover_batch', batchId }, 'ses1');
+  await writeFile(target, 'user edit');
+  assert.equal(JSON.parse(await recover()).status, 'blocked');
+  assert.equal(await readFile(target, 'utf8'), 'user edit');
+  await writeFile(target, 'after');
+  await assert.rejects(recover(), /복구를 취소/);
+  approval = true;
+  assert.equal(JSON.parse(await recover()).restoredFiles, 1);
+  assert.equal(await readFile(target, 'utf8'), 'before');
+  assert.deepEqual(await inspectIncompleteBatchJournals(journalDir, canonical), []);
 });

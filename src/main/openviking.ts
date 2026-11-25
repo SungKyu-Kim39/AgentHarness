@@ -31,6 +31,7 @@ function isSafePersonalMemoryUri(uri: string) {
   return uri.startsWith(personalMemories + '/') && !/(?:^|\/)\.{1,2}(?:\/|$)|[%\\\x00-\x1f?#]/.test(uri);
 }
 export type MemoryTaskStatus = { status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'not_found' | 'unknown'; error?: string };
+export interface MemoryArchiveStatus { status: 'completed' | 'failed' | 'pending' | 'unknown'; messagesSha256?: string; cancelled?: boolean }
 export interface MemoryCommitResult { taskId?: string; skipped?: boolean; reason?: string; archiveUri?: string }
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
@@ -49,6 +50,8 @@ export interface KnowledgeService {
   appendSessionMessages?(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal): Promise<void>;
   commitMemorySession?(sessionId: string, timeoutMs?: number): Promise<MemoryCommitResult>;
   getTaskStatus?(taskId: string, timeoutMs?: number): Promise<MemoryTaskStatus>;
+  getMemoryArchive?(sessionId: string, archiveId: string): Promise<MemoryArchiveStatus>;
+  retryMemoryArchive?(sessionId: string, archiveId: string, messagesSha256: string): Promise<void>;
   recallMemories?(query: string, limit?: number, timeoutMs?: number): Promise<MemoryRecallResult>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void; semanticDebounceMs?: number; semanticRetryDelayMs?: number }
@@ -507,6 +510,37 @@ export class OpenVikingService implements KnowledgeService {
       ...(archiveUri ? { archiveUri } : {}),
     };
   }
+  private memoryArchiveRoute(sessionId: string, archiveId: string) {
+    if (!/^archive_[0-9]+$/.test(archiveId)) throw new Error('OV_MEMORY_ARCHIVE_ID');
+    return `/api/v1/sessions/${encodeURIComponent(sessionId)}/archives/${archiveId}`;
+  }
+
+  async getMemoryArchive(sessionId: string, archiveId: string): Promise<MemoryArchiveStatus> {
+    this.ready();
+    const route = this.memoryArchiveRoute(sessionId, archiveId);
+    const response = await this.request(route, undefined, 6000, 'GET', undefined, 'local-user', { quiet404: true }).catch(error => {
+      if ((error as { status?: number })?.status === 404) return undefined;
+      throw error;
+    });
+    const res = response?.result;
+    const raw = res?.status;
+    const status = raw === 'completed' || raw === 'failed' ? raw : raw === 'ready' || raw === 'pending' || raw === 'running' ? 'pending' : 'unknown';
+    const fail = res?.failure;
+    const failureCode = [fail?.error_code, fail?.stage, fail?.reason, fail?.kind, fail?.error, fail?.message].filter(value => typeof value === 'string').join(' ');
+    return {
+      status,
+      ...(typeof res?.messages_sha256 === 'string' && /^[0-9a-f]{64}$/.test(res.messages_sha256) ? { messagesSha256: res.messages_sha256 } : {}),
+      ...(status === 'failed' && /cancel/i.test(failureCode) ? { cancelled: true } : {}),
+    };
+  }
+
+  async retryMemoryArchive(sessionId: string, archiveId: string, messagesSha256: string): Promise<void> {
+    this.ready();
+    if (!/^[0-9a-f]{64}$/.test(messagesSha256)) throw new Error('OV_MEMORY_ARCHIVE_HASH');
+    const route = this.memoryArchiveRoute(sessionId, archiveId);
+    await this.request(route + '/retry', { expected_messages_sha256: messagesSha256 }, 10000, 'POST');
+  }
+
   async getTaskStatus(taskId: string, timeoutMs = 5000): Promise<MemoryTaskStatus> {
     this.ready();
     if (!/^[a-zA-Z0-9._:-]{1,128}$/.test(taskId)) return { status: 'unknown' };

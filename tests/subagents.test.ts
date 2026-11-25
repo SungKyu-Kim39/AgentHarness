@@ -432,3 +432,20 @@ test('child subagent scope supplies title and prompt contextText for specialized
   f.complete(child.id, 'functions inspected');
   await f.wait(() => f.notifications.length === 1);
 });
+
+
+test("batch and shared worker reserve the same project paths in both directions", async t => {
+  const { agents, project } = await fixture(t);
+  const release = agents.reserveBatchWrites(project, ["first.txt", "second.txt"]);
+  await assert.rejects(agents.spawn("root", {
+    role: "worker", title: "Edit", prompt: "Edit second", writePaths: ["second.txt"],
+  }), /수정 중인 파일/);
+  release();
+  const child = await agents.spawn("root", {
+    role: "worker", title: "Edit", prompt: "Edit second", writePaths: ["second.txt"],
+  });
+  assert.throws(() => agents.reserveBatchWrites(project, ["first.txt", "second.txt"]), /수정 중인 파일/);
+  const free = agents.reserveBatchWrites(project, ["first.txt"]);
+  free();
+  await agents.stop("root", child.id);
+});

@@ -78,7 +78,7 @@ async function main() {
       sessionUpdate: 'available_commands_update', availableCommands: [{ name: 'compact', description: '대화 요약' }, ...skills],
     } } });
   };
-  const pending = new Map<string | number, { method: string; cwd?: string; session?: string; configId?: string; mode?: string }>();
+  const pending = new Map<string | number, { method: string; cwd?: string; session?: string; mode?: string }>();
   const output = new WritableStream<any>({
     async write(message) {
       let attachedSession: string | undefined;
@@ -99,12 +99,9 @@ async function main() {
         if (request.method === 'initialize' && message.result) message.result.agentInfo = { name: 'Ned', version: NED_VERSION, title: 'Ned' };
         const session = message.result?.sessionId ?? request.session;
         if (!message.error && session && sessions.has(session)) {
-          if (request.method === 'session/set_mode' && request.mode) {
-            await peer.call('session/mode', { session, mode: request.mode }).catch(() => {});
-          } else if (request.method === 'session/set_config_option') {
-            const nextMode = extractModeFromConfigOptions(message.result?.configOptions)
-              ?? (request.configId === 'mode' ? request.mode : undefined);
-            if (nextMode) await peer.call('session/mode', { session, mode: nextMode }).catch(() => {});
+          if ((request.method === 'session/set_mode' || request.method === 'session/set_config_option') && request.mode) {
+            try { await peer.call('session/mode', { session, mode: request.mode }); }
+            catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: 'Ned 대화 모드를 확인하지 못했습니다. 모드를 다시 선택하세요.' } }; }
           }
         }
         if (message.result?.configOptions && session && sessions.has(session)) {
@@ -183,7 +180,6 @@ async function main() {
           method: message.method,
           cwd: message.params?.cwd,
           session: message.params?.sessionId,
-          configId: typeof message.params?.configId === 'string' ? message.params.configId : undefined,
           mode: message.method === 'session/set_mode' && typeof message.params?.modeId === 'string'
             ? message.params.modeId
             : message.method === 'session/set_config_option' && message.params?.configId === 'mode' && typeof message.params?.value === 'string'

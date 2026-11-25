@@ -2,7 +2,7 @@ import { verifyFiles } from '../src/main/parallel-files';
 import { TerminalJobs } from './terminal-jobs';
 import { createServer, type Server } from 'node:http';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
-import { readFile, mkdir, mkdtemp, writeFile, copyFile, lstat, rm } from 'node:fs/promises';
+import { readFile, mkdir, mkdtemp, writeFile, copyFile, lstat, rm, unlink } from 'node:fs/promises';
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import { managedResource } from './ned/resources';
@@ -22,7 +22,7 @@ import { AstAuditTools } from './ast-audit';
 import { DocumentTools } from './document-tools';
 import { DiagramTools } from './diagram-tools';
 import { ApiTools } from './api-tools';
-import { ProjectFiles } from '../src/main/files';
+import { inspectBatchRecovery, inspectIncompleteBatchJournals, ProjectFiles } from '../src/main/files';
 import { atomicJSON, Redactor } from '../src/main/config';
 import { OfflineSkills } from '../src/main/skills';
 import { McpExtensions, extensionTools } from '../src/main/mcp-extensions';
@@ -249,7 +249,7 @@ export const hostTools: ToolSpec[] = [
   {name:'manage_python_venv',description:'Manage a project-local Python .venv sandbox. Operations: status, create, install (explicitly approved pinned name==version wheels from a single configured HTTPS mirror when python.allowPackageInstall is true), uninstall, freeze, run (.py script offline), test (pytest offline). Requires native approval for mutations/execution.',inputSchema:object({operation:{type:'string',enum:['status','create','install','uninstall','freeze','run','test']},packages:{type:'array',items:string,maxItems:100},requirementsPath:string,script:string,args:{type:'array',items:string,maxItems:100}},['operation'])},
   {name:'python_package_docs',description:'Offline local Context7 equivalent: inspect actual installed Python package versions, submodules, function/class signatures, type annotations and docstrings from the project .venv or chosen Conda environment without network access.',inputSchema:object({package:string,symbol:string,query:string,maxChars:{type:'integer',minimum:1000,maximum:48000}},['package'])},
   {name:'python_app_preview',description:'Start, inspect or stop a local loopback-only (127.0.0.1) preview server for marimo, streamlit, uvicorn or static http files using the project Python environment. Combine the returned local URL with browser_check for self-verification.',inputSchema:object({operation:{type:'string',enum:['start','status','stop']},id:string,framework:{type:'string',enum:['marimo','streamlit','uvicorn','http']},entry:string,args:{type:'array',items:string,maxItems:50}},['operation'])},
-  {name:'project_checkpoint',description:'Shadow-Git time-machine checkpoints stored outside the project .git history. List turn checkpoints, create a labeled checkpoint, diff against a checkpoint, or safely restore project files with unsaved-buffer validation and recovery snapshots.',inputSchema:object({operation:{type:'string',enum:['list','create','diff','restore']},checkpointId:string,label:string,limit:{type:'integer',minimum:1,maximum:100}},['operation'])},
+  {name:'project_checkpoint',description:'Use list_recovery and recover_batch for interrupted multi-file edits. Shadow-Git time-machine checkpoints stored outside the project .git history. List turn checkpoints, create a labeled checkpoint, diff against a checkpoint, or safely restore project files with unsaved-buffer validation and recovery snapshots.',inputSchema:object({operation:{type:'string',enum:['list','create','diff','restore','list_recovery','recover_batch']},checkpointId:string,batchId:string,label:string,limit:{type:'integer',minimum:1,maximum:100}},['operation'])},
   {name:'worktree_sandbox',description:'Manage isolated git worktree sandboxes for parallel experiments or worktree-isolated subagents: list, create, diff, apply (through host approval and snapshots), or discard.',inputSchema:object({operation:{type:'string',enum:['list','create','diff','apply','discard']},id:string,label:string},['operation'])},
   {name:'spec_workflow',description:'Spec-Driven Development workflow under project specs/<feature>/ (spec.md, plan.md, tasks.md). Operations: init, list, status, verify (checks REQ coverage, unchecked tasks and referenced files).',inputSchema:object({operation:{type:'string',enum:['init','list','status','verify']},feature:string,title:string,goal:string},['operation'])},
   {name:'ast_search',description:'Multilingual AST structural search and optional rewrite across project files (Python, TS/JS, C/C++, C#, Java, Go, Rust, HTML, CSS). Defaults to read-only preview; apply=true applies rewrites via host approval, buffer check and snapshots.',inputSchema:object({language:{type:'string',enum:['python','typescript','tsx','javascript','c','cpp','csharp','java','go','rust','html','css','json']},pattern:string,paths:{type:'array',items:string,maxItems:100},rewrite:string,apply:{type:'boolean'}},['language','pattern'])},
@@ -295,11 +295,12 @@ export class HostTools {
   constructor(readonly root: string, readonly resources: string, private options: {
     project: (session: string) => Promise<string>;
     sessionScope?: (session:string,tool:string,args:unknown)=>Promise<{session:string;signal?:AbortSignal;contextText?:string;projectOverride?:string}>;
-    subagents?: {spawn(parent:string,input:{role:'research'|'worker'|'goldfish';reviewer?:string;title:string;prompt:string;writePaths:string[];isolation?:'shared'|'worktree'},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
+    subagents?: {reserveBatchWrites?(project:string,paths:string[]):()=>void;spawn(parent:string,input:{role:'research'|'worker'|'goldfish';reviewer?:string;title:string;prompt:string;writePaths:string[];isolation?:'shared'|'worktree'},signal?:AbortSignal):Promise<unknown>;status(parent:string,id?:string,waitMs?:number,offset?:number):Promise<unknown>;stop(parent:string,id:string):Promise<unknown>};
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
     fullAccess?: () => boolean;
     sessionMode?: (session: string) => string;
+    batchRecovered?: () => Promise<void>;
     toolRequested?: (session: string, name: string, extraContext?: string) => boolean;
     choosePython?: PythonSelector;
     locateConda?: (project: string, signal?: AbortSignal) => Promise<string | undefined>;
@@ -425,13 +426,52 @@ export class HostTools {
       const a = z.object({ operation: z.enum(['start', 'status', 'stop']), id: z.string().uuid().optional(), framework: z.enum(['marimo', 'streamlit', 'uvicorn', 'http']).optional(), entry: z.string().min(1).max(4096).optional(), args: z.array(z.string().max(1024)).max(50).optional() }).strict().parse(args);
       return JSON.stringify(await this.dataApps.call(session, project, a, signal));
     }
+    const batchHooks = {
+      approve: this.options.approve,
+      validateEdit: this.options.validateEdit,
+      reserveWrites: (paths: string[]) => this.options.subagents?.reserveBatchWrites?.(project, paths) ?? (() => {}),
+    };
     if (name === 'project_checkpoint') {
-      const a = z.object({ operation: z.enum(['list', 'create', 'diff', 'restore']), checkpointId: z.string().min(7).max(40).optional(), label: z.string().max(160).optional(), limit: z.number().int().min(1).max(100).optional() }).strict().parse(args);
+      const a = z.object({ operation: z.enum(['list', 'create', 'diff', 'restore', 'list_recovery', 'recover_batch']), checkpointId: z.string().min(7).max(40).optional(), batchId: z.string().uuid().optional(), label: z.string().max(160).optional(), limit: z.number().int().min(1).max(100).optional() }).strict().parse(args);
+      if (a.operation === 'list_recovery' || a.operation === 'recover_batch') {
+        const journalDir = path.join(this.root, 'batch-journals');
+        const snapshotDir = path.join(this.root, 'snapshots');
+        if (a.operation === 'list_recovery') {
+          const batches = await inspectIncompleteBatchJournals(journalDir, project);
+          return JSON.stringify(batches.map(batch => ({
+            id: batch.id, operation: batch.operation, status: batch.status, files: batch.entries.length,
+          })));
+        }
+        if (!a.batchId) throw new Error('복구할 batchId가 필요합니다.');
+        return this.withEditQueue(async () => {
+          signal?.throwIfAborted();
+          const batch = (await inspectIncompleteBatchJournals(journalDir, project)).find(record => record.id === a.batchId);
+          if (!batch) throw new Error('현재 프로젝트에 해당 복구 기록이 없습니다.');
+          const entries = await inspectBatchRecovery(batch, files, snapshotDir, true);
+          const blocked = entries.filter(entry => entry.state === 'conflict' || entry.state === 'unavailable');
+          if (blocked.length) return JSON.stringify({
+            status: 'blocked', batchId: batch.id, paths: blocked.map(({ path, state }) => ({ path, state })),
+          });
+          const proposals = entries.flatMap(entry => entry.proposal ? [entry.proposal] : []);
+          if (proposals.length) {
+            const validate = (proposal: Proposal) => this.options.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve();
+            for (const proposal of proposals) await validate(proposal);
+            const summary = proposals.slice(0, 50).map(proposal => proposal.path).join('\n');
+            if (!await this.options.approve('미완료 일괄 변경 복구', `프로젝트: ${project}\n복구 파일 ${proposals.length}개\n${summary}`, signal)) {
+              throw new Error('일괄 변경 복구를 취소했습니다.');
+            }
+            await files.applyBatch(proposals, { signal, validate, reserve: batchHooks.reserveWrites });
+          }
+          await unlink(path.join(journalDir, batch.id + '.json'));
+          await this.options.batchRecovered?.();
+          return JSON.stringify({ status: 'recovered', batchId: batch.id, restoredFiles: proposals.length });
+        });
+      }
       if (a.operation === 'list') return JSON.stringify(await this.checkpoints.list(project, a.limit, signal));
       if (a.operation === 'create') return JSON.stringify(await this.checkpoints.create(project, a.label ?? 'manual', signal));
       if (!a.checkpointId) throw new Error('checkpointId가 필요합니다.');
       if (a.operation === 'diff') return JSON.stringify(await this.checkpoints.diff(project, a.checkpointId, signal));
-      return JSON.stringify(await this.withEditQueue(() => this.checkpoints.restore(session, project, a.checkpointId!, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal)));
+      return JSON.stringify(await this.withEditQueue(() => this.checkpoints.restore(session, project, a.checkpointId!, batchHooks, signal)));
     }
     if (name === 'worktree_sandbox') {
       const a = z.object({ operation: z.enum(['list', 'create', 'diff', 'apply', 'discard']), id: z.string().min(1).max(64).optional(), label: z.string().max(120).optional() }).strict().parse(args);
@@ -442,20 +482,19 @@ export class HostTools {
       }
       if (!a.id) throw new Error('worktree id가 필요합니다.');
       if (a.operation === 'diff') return JSON.stringify(await this.worktrees.diff(project, a.id, signal));
-      if (a.operation === 'apply') return JSON.stringify(await this.withEditQueue(() => this.worktrees.apply(session, project, a.id!, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal)));
+      if (a.operation === 'apply') return JSON.stringify(await this.withEditQueue(() => this.worktrees.apply(session, project, a.id!, batchHooks, signal)));
       if (!await this.options.approveExplicit?.('Worktree 샌드박스 삭제', `프로젝트: ${project}\n샌드박스: ${a.id}\n반영하지 않은 샌드박스 변경도 제거됩니다.`, signal)) throw new Error('worktree 삭제를 승인하지 않았습니다.');
       return JSON.stringify(await this.worktrees.discard(project, a.id, signal));
     }
     if (name === 'spec_workflow') {
       const a = z.object({ operation: z.enum(['init', 'list', 'status', 'verify']), feature: z.string().max(80).optional(), title: z.string().max(120).optional(), goal: z.string().max(2000).optional() }).strict().parse(args);
-      const runSpec = () => this.specs.call(session, project, a, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal);
+      const runSpec = () => this.specs.call(session, project, a, batchHooks, signal);
       return JSON.stringify(a.operation === 'init' ? await this.withEditQueue(runSpec) : await runSpec());
     }
     if (name === 'ast_search') {
       const a = z.object({ language: z.enum(['python', 'typescript', 'tsx', 'javascript', 'c', 'cpp', 'csharp', 'java', 'go', 'rust', 'html', 'css', 'json']), pattern: z.string().min(1).max(4000), paths: z.array(pathArg).max(100).optional(), rewrite: z.string().max(4000).optional(), apply: z.boolean().default(false) }).strict().parse(args);
       const runAst = () => this.astAudit.astSearch(session, project, a, {
-        approve: this.options.approve,
-        validateEdit: this.options.validateEdit,
+        ...batchHooks,
         beforeApply: a.apply && !projectOverride ? async () => {
           const request = await this.options.request?.(session);
           await this.checkpoints.autoCheckpointBeforeEdit(session, project, request, signal);

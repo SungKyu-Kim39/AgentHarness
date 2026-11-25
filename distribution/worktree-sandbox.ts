@@ -26,6 +26,7 @@ export interface WorktreeSandboxInput {
 export interface WorktreeApplyHooks {
   approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
   validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
+  reserveWrites?: (paths: string[]) => () => void;
 }
 
 /** Isolated git worktree sandboxes for parallel worker subagents and side-by-side experiments. */
@@ -276,6 +277,7 @@ export class WorktreeSandbox {
       if (!ok) throw new Error('Worktree 변경 반영을 취소했습니다.');
       signal?.throwIfAborted();
       await mainFiles.applyBatch(proposals, {
+        reserve: hooks.reserveWrites,
         signal,
         validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
         snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),

@@ -112,6 +112,9 @@ Ned는 Windows 10·11 x64 폐쇄망 환경을 위해 **Zed 편집기 + 전용 Op
 - **자동 연결 도구**: `git_inspect`, `git_stage`, `git_commit`, `project_checkpoint`, `worktree_sandbox`, `spawn_subagent(isolation="worktree")`
 - **동작 특징**: 번들 Git을 사용하며 사용자가 지정한 파일만 스테이징·커밋합니다. 0.4.0부터는 `<project>/.git` 이력을 전혀 더럽히지 않는 별도 Shadow Git 저장소(`%APPDATA%\Ned\checkpoints\`)에 수정 전 체크포인트를 자동 생성해 파일 단위·전체 복원을 지원하고, `worktree_sandbox`로 격리된 작업 트리에서 병렬 실험·구현을 수행합니다.
 
+
+일괄 수정 직후 앱이 중단됐다면 해당 프로젝트를 다시 열고 “미완료 일괄 변경 복구 목록을 보여줘”라고 요청할 수 있습니다. 표시된 기록의 복구를 요청하면 Ned가 바뀐 파일과 스냅샷을 확인하고, 미저장 버퍼와 승인 정책을 적용합니다. 복구 대상에 이후 편집한 파일이나 스냅샷을 확인할 수 없는 파일이 포함되면 변경 없이 문제 경로를 안내합니다.
+
 ### 3.7 Windows 터미널(CMD·PowerShell) 작업
 
 - **자연어 요청 예시**: "PowerShell로 빌드 산출물 크기를 확인하고 테스트 스크립트를 실행해줘"

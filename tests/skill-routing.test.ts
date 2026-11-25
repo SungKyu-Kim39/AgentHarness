@@ -134,6 +134,8 @@ test('REA conversation mode enables REA tools immediately without keywords and w
   await Promise.all([app, resources, project].map(directory => mkdir(directory)));
   let forwardedTools: string[] = [];
   let forwardedSystem = '';
+  let heldProjectResponse: (() => void) | undefined;
+  let onProjectResponse: (() => void) | undefined;
   const sessionAgents: Record<string, string> = {
     'rea-session': 'rea',
     'build-session': 'build',
@@ -155,7 +157,13 @@ test('REA conversation mode enables REA tools immediately without keywords and w
       res.end('{}');
     } else {
       const sid = req.url?.split('/').at(-1) ?? '';
-      res.end(JSON.stringify({ data: { id: sid, agent: sessionAgents[sid] ?? 'build', location: { directory: project } } }));
+      const payload = JSON.stringify({ data: { id: sid, agent: sessionAgents[sid] ?? 'build', location: { directory: project } } });
+      if (onProjectResponse && sid === 'rea-session') {
+        heldProjectResponse = () => res.end(payload);
+        const notify = onProjectResponse;
+        onProjectResponse = undefined;
+        notify();
+      } else res.end(payload);
     }
   });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -246,9 +254,20 @@ test('REA conversation mode enables REA tools immediately without keywords and w
   await checkGateway('build-session', 'Ghidra는 사용하지 말고 코드만 정리해줘');
   assert.doesNotMatch(forwardedSystem, /REA 대화 모드 전환 필요/);
 
-  // 7. Switching an REA session back to Plan immediately blocks REA tools with the Plan->REA warning.
+  // The selected mode is authoritative even if prompt wording mentions disuse.
+  await checkGateway('rea-session', 'Ghidra는 사용하지 마');
+  assert.ok(forwardedTools.includes('ned_host_rea_ghidra'));
+  assert.equal(await host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'rea-session'), 'SYNTHETIC_REA_RESULT');
+
+  // An in-flight validation of the same project must not restore a stale mode after the switch.
+  const readingProject = new Promise<void>(resolve => { onProjectResponse = resolve; });
+  const projectLookup = runtime.projectForSession('rea-session');
+  await readingProject;
   sessionAgents['rea-session'] = 'plan';
-  runtime.setSessionMode('rea-session', 'plan');
+  await runtime.refreshSessionMode('rea-session');
+  heldProjectResponse!();
+  await projectLookup;
+  assert.equal(runtime.currentSessionMode('rea-session'), 'plan');
   await checkGateway('rea-session', '이어서 분석해줘');
   assert.ok(!forwardedTools.includes('ned_host_rea_ghidra'));
   await assert.rejects(host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'rea-session'), /Plan.*대화 모드를 REA로 변경/);
@@ -280,8 +299,10 @@ test('REA conversation mode enables REA tools immediately without keywords and w
   sessionAgents['owner-session'] = 'build';
   await peer.call('bind', { session: 'owner-session', mode: 'build' });
   assert.equal(runtime.currentSessionMode('owner-session'), 'build');
+  sessionAgents['owner-session'] = 'rea';
   await peer.call('session/mode', { session: 'owner-session', mode: 'rea' });
   assert.equal(runtime.currentSessionMode('owner-session'), 'rea');
+  sessionAgents['owner-session'] = 'plan';
   await peer.call('session/mode', { session: 'owner-session', mode: 'plan' });
   assert.equal(runtime.currentSessionMode('owner-session'), 'plan');
 
@@ -359,6 +380,20 @@ test('specialized tools stay aligned across compaction prompts, interruptSession
   runtime['tools']!.resumeSession('doc-s');
   await runtime.setTurnText('doc-s', '이어서 해줘');
   assert.equal(runtime['tools']!['options'].toolRequested!('doc-s', 'document_write'), true);
+  await runtime.setTurnText('doc-s', '/compact');
+  await runtime.setTurnText('doc-s', '계속해줘');
+  const { gateway } = runtime['models'][0];
+  const summarized = {
+    messages: [
+      { role: 'assistant', content: '요약된 이전 응답입니다.' },
+      { role: 'user', content: '이어서 해줘' },
+    ],
+    tools: [...tools],
+  };
+  const forwarded = runtime['turnHistory'].get('doc-s')?.join('\n');
+  assert.equal(gateway['toolRequestContext']?.('doc-s'), forwarded);
+  hideUnrequestedTools(summarized, false, forwarded);
+  assert.deepEqual(summarized.tools.map(item => item.function.name), ['ned_host_read_file', 'ned_host_document_write']);
   // Switching to an unrelated task drops the specialized tool after a follow-up.
   await runtime.setTurnText('doc-s', '이제 README 문구만 다듬어줘');
   assert.equal(runtime['tools']!['options'].toolRequested!('doc-s', 'document_write'), false);

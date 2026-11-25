@@ -32,7 +32,8 @@ export class ModelGateway {
   private requests = new Set<AbortController>();
   constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void,
     private skillContext?: (messages: unknown, requestBytes: number, sessionId?: string, parentSessionId?: string) => Promise<string | undefined>, private outputLimit = 4096, private behavior: 'ned' | 'native' = 'ned',
-    private reaRequested?: (sessionId?: string, parentSessionId?: string) => boolean) {}
+    private reaRequested?: (sessionId?: string, parentSessionId?: string) => boolean,
+    private toolRequestContext?: (sessionId?: string, parentSessionId?: string) => string | undefined) {}
   async start() {
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== `Bearer ${this.token}`) { res.writeHead(401).end(); return; }
@@ -81,7 +82,7 @@ export class ModelGateway {
         const sessionId = localSessionId(req.headers['x-opencode-session-id']);
         const parentSessionId = localSessionId(req.headers['x-opencode-parent-session-id']);
         if (this.behavior === 'ned' && this.skillContext && !compacting) {
-          hideUnrequestedTools(body, this.reaRequested?.(sessionId, parentSessionId));
+          hideUnrequestedTools(body, this.reaRequested?.(sessionId, parentSessionId), this.toolRequestContext?.(sessionId, parentSessionId));
         }
         const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages, requestBytes, sessionId, parentSessionId);
         if (guidance && Array.isArray(body.messages)) {

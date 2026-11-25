@@ -139,7 +139,7 @@ export function specializedToolRequested(name: string, request: string, reaReque
   return !group || group.trigger.test(request.replace(/```[\s\S]*?```/g, ' '));
 }
 
-export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: Array<{ function?: { name?: string } }>}, reaRequested?: boolean) {
+export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: Array<{ function?: { name?: string } }>}, reaRequested?: boolean, requestContext?: string) {
   if (!Array.isArray(body.tools) || !Array.isArray(body.messages)) return;
   const userTexts = body.messages
     .filter(message => message.role === 'user')
@@ -149,7 +149,7 @@ export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: A
   while (anchor > 0 && isContinuationTurn(userTexts[anchor])) anchor--;
   const start = Math.min(anchor, Math.max(0, userTexts.length - 2));
   const recentUsers = userTexts.slice(start);
-  const request = recentUsers
+  const request = requestContext ?? recentUsers
     .map(raw => raw.split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0])
     .join('\n');
   const rea = reaRequested ?? recentUsers.reduce((allowed, raw) => {

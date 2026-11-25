@@ -48,6 +48,8 @@ OpenViking이 활성화되어 있으면(`openViking.enabled: true`) Ned 에이�
 
 OpenViking은 [모델·임베딩 설정](offline-setup.md)이 적용된 상태에서 사용합니다. 파일을 직접 색인하는 방식도 유지됩니다.
 
+OpenViking 재시작으로 작업 번호를 조회할 수 없으면 저장된 아카이브 번호를 기준으로 추출 상태를 확인합니다. 진행 중인 작업은 그대로 두고, 실패가 확인된 아카이브는 원본 체크섬을 확인해 한 번 재시도합니다. 사용자가 취소한 작업과 이미 재시도했으나 실패가 남은 작업에는 자동 재시도를 반복하지 않습니다.
+
 ## 저장·검색 오류 진단
 
 지식 저장·검색에 실패하면 `OV_EMBEDDING`(임베딩 모델 연결·모델 ID 오류), `OV_EMBEDDING_DIMENSION`(벡터 차원 불일치), `OV_FORBIDDEN`(403 권한 거부), `OV_TIMEOUT`(응답 시간 초과), `OV_TLS`(인증서 오류), `OV_SERVER_ERROR`(5xx 서버 오류) 등 세부 오류 코드를 반환합니다. 백그라운드 VLM 의미 요약 중 `409` 잠금 충돌이 발생하면 1회 짧은 지연 후 자동 재시도하며(`OV_SEMANTIC_RETRY`), 최종 실패(`OV_SEMANTIC_REFRESH_FAILED`)나 종료 시 미완료 대기 건수(`OV_SEMANTIC_PENDING_SHUTDOWN`)도 `%APPDATA%\Ned\openviking\request-diagnostics.json`에 기록합니다. 실패한 요청의 HTTP 상태·경로와 토큰·개인 경로를 마스킹한 응답 요약은 `%APPDATA%\Ned\openviking\request-diagnostics.json`과 `model-status.json`에서 확인할 수 있습니다. 임베딩 모델 주소·키·ID·차원을 다시 확인한 뒤 **Ned → 설정 JSON 가져와 적용 (자동 재시작)**으로 반영하세요.

@@ -34,7 +34,8 @@ export interface MemorySyncEntry {
   skipTurnAtCursor?: boolean;
   pendingCommitTaskId?: string;
   pendingCommitTurns?: number;
-  pendingCommitRetries?: number;
+  pendingCommitArchiveId?: string;
+  archiveRecoveries?: Record<string, { submittedAt?: number; needsReview?: boolean; checkedAt?: number }>;
   sessionOptedOut?: boolean;
   lastCommittedAt?: string;
 }
@@ -55,6 +56,7 @@ export interface MemoryStatusSnapshot {
   commitsFailed?: number;
   commitsUnconfirmed?: number;
   commitsSkipped?: number;
+  archiveRetries?: number;
   recallsInjected: number;
   lastEventAt?: string;
   lastErrorCode?: string;
@@ -421,7 +423,7 @@ export class SessionMemoryManager {
     const keys = Object.keys(this.syncState);
     if (keys.length <= 500) return;
     const prunable = keys
-      .filter(id => id !== this.activeSessionId && !this.syncState[id]?.sessionOptedOut && (this.syncState[id]?.uncommittedTurns ?? 0) === 0 && !this.syncState[id]?.pendingCommitTaskId)
+      .filter(id => id !== this.activeSessionId && !this.syncState[id]?.sessionOptedOut && (this.syncState[id]?.uncommittedTurns ?? 0) === 0 && !this.syncState[id]?.pendingCommitTaskId && !this.syncState[id]?.archiveRecoveries)
       .sort((a, b) => (this.syncState[a]?.lastCommittedAt ?? '').localeCompare(this.syncState[b]?.lastCommittedAt ?? ''));
     let remaining = keys.length;
     for (const id of prunable) {
@@ -434,10 +436,12 @@ export class SessionMemoryManager {
   private persistSync() {
     this.pruneSyncState();
     const snapshot: MemorySyncFile = { schemaVersion: 1, sessions: structuredClone(this.syncState) };
-    this.statusWrites = this.statusWrites.catch(() => {}).then(async () => {
+    const write = this.statusWrites.catch(() => {}).then(async () => {
       await mkdir(path.dirname(this.syncFile()), { recursive: true, mode: 0o700 });
       await atomicJSON(this.syncFile(), snapshot);
-    }).catch(() => {});
+    });
+    this.statusWrites = write.catch(() => {});
+    return write;
   }
 
   private persistStatus() {
@@ -468,7 +472,7 @@ export class SessionMemoryManager {
     if (!this.deps.policy.enabled || this.closed) return;
     const previous = this.activeSessionId;
     this.activeSessionId = sessionId;
-    if (previous && previous !== sessionId && ((this.syncState[previous]?.uncommittedTurns ?? 0) > 0 || this.syncState[previous]?.pendingCommitTaskId)) {
+    if (previous && previous !== sessionId && ((this.syncState[previous]?.uncommittedTurns ?? 0) > 0 || this.syncState[previous]?.pendingCommitTaskId || this.hasArchiveRecovery(this.syncState[previous]))) {
       void this.enqueue(previous, () => this.commitInternal(previous));
     }
   }
@@ -482,6 +486,8 @@ export class SessionMemoryManager {
       entry.sessionOptedOut = true;
       entry.pendingCommitTaskId = undefined;
       entry.pendingCommitTurns = undefined;
+      entry.pendingCommitArchiveId = undefined;
+      entry.archiveRecoveries = undefined;
       this.syncState[sessionId] = entry;
       this.persistSync();
       await this.statusWrites;
@@ -507,14 +513,69 @@ export class SessionMemoryManager {
     await this.enqueue(sessionId, () => this.syncInternal(sessionId, forceCommit, false));
   }
 
+  private hasArchiveRecovery(entry?: MemorySyncEntry) {
+    return Object.values(entry?.archiveRecoveries ?? {}).some(value => !value.needsReview);
+  }
+
+  private preserveCommitArchive(entry: MemorySyncEntry, needsReview = false) {
+    const id = entry.pendingCommitArchiveId;
+    if (!id || !/^archive_[0-9]+$/.test(id)) return;
+    (entry.archiveRecoveries ??= {})[id] ??= { ...(needsReview ? { needsReview: true } : {}) };
+  }
+
+  private async reconcileArchives(entry: MemorySyncEntry) {
+    const knowledge = this.deps.knowledge();
+    const archives = entry.archiveRecoveries;
+    if (!knowledge?.getMemoryArchive || !archives) return;
+    const recoveries = Object.entries(archives).filter(([, item]) => !item.needsReview)
+      .sort(([, a], [, b]) => (a.checkedAt ?? 0) - (b.checkedAt ?? 0));
+    // Leave idle polling to normal turn/session activity. Bound work in a single background pass.
+    for (const [id, recovery] of recoveries.slice(0, 4)) {
+      recovery.checkedAt = Date.now();
+      try {
+        const result = await knowledge.getMemoryArchive(entry.ovSessionId, id);
+        if (result.status === 'completed') {
+          delete archives[id];
+          if (!Object.keys(archives).length) entry.archiveRecoveries = undefined;
+          this.status.commitsCompleted = (this.status.commitsCompleted ?? 0) + 1;
+          this.status.lastEventAt = new Date().toISOString();
+          this.status.lastErrorCode = undefined;
+          this.recallCache.clear();
+          this.persistSync();
+          this.persistStatus();
+        } else if (result.status === 'failed' && result.cancelled) {
+          recovery.needsReview = true;
+          this.persistSync();
+        } else if (result.status === 'failed' && recovery.submittedAt &&
+                   Date.now() - recovery.submittedAt >= 60_000) {
+          recovery.needsReview = true;
+          this.persistSync();
+        } else if (result.status === 'failed' && !recovery.submittedAt &&
+                   result.messagesSha256 && knowledge.retryMemoryArchive) {
+          // Persist before POST. If a response is lost, later checks reconcile
+          // the archive without blindly submitting the same extraction again.
+          recovery.submittedAt = Date.now();
+          try { await this.persistSync(); }
+          catch (error) { delete recovery.submittedAt; throw error; }
+          await knowledge.retryMemoryArchive(entry.ovSessionId, id, result.messagesSha256);
+          this.status.archiveRetries = (this.status.archiveRetries ?? 0) + 1;
+          this.persistStatus();
+        }
+      } catch (error) {
+        this.recordError(error);
+      }
+    }
+  }
+
   private async reconcilePendingCommitTask(sessionId: string): Promise<'idle' | 'in_flight'> {
     const entry = this.syncState[sessionId];
     const knowledge = this.deps.knowledge();
     if (!entry?.pendingCommitTaskId || !knowledge?.isReady?.()) return 'idle';
     if (!knowledge.getTaskStatus) {
+      this.preserveCommitArchive(entry);
       entry.pendingCommitTaskId = undefined;
       entry.pendingCommitTurns = undefined;
-      entry.pendingCommitRetries = undefined;
+      entry.pendingCommitArchiveId = undefined;
       this.persistSync();
       return 'idle';
     }
@@ -526,7 +587,7 @@ export class SessionMemoryManager {
       if (task.status === 'completed') {
         entry.pendingCommitTaskId = undefined;
         entry.pendingCommitTurns = undefined;
-        entry.pendingCommitRetries = undefined;
+        entry.pendingCommitArchiveId = undefined;
         this.status.commitsCompleted = (this.status.commitsCompleted ?? 0) + 1;
         this.status.lastEventAt = new Date().toISOString();
         this.status.lastErrorCode = undefined;
@@ -540,9 +601,10 @@ export class SessionMemoryManager {
         // Re-calling POST /commit on an empty buffer is a no-op ("skipped: no_messages")
         // rather than an archive retry, so record the Phase 2 extraction failure cleanly
         // without restoring uncommittedTurns into a bogus empty-buffer retry loop.
+        this.preserveCommitArchive(entry, task.status === 'cancelled');
         entry.pendingCommitTaskId = undefined;
         entry.pendingCommitTurns = undefined;
-        entry.pendingCommitRetries = undefined;
+        entry.pendingCommitArchiveId = undefined;
         this.status.commitsFailed = (this.status.commitsFailed ?? 0) + 1;
         this.status.lastErrorCode = 'OV_MEMORY_EXTRACTION_FAILED';
         this.status.lastEventAt = new Date().toISOString();
@@ -552,10 +614,11 @@ export class SessionMemoryManager {
       }
       // 'not_found' (e.g. after OpenViking sidecar restart; QueueManager resumes Phase 2
       // from SQLite even though in-memory task lookup returns 404) or 'unknown':
-      // clear stale task metadata and record unconfirmed diagnostic visibility.
+      // record the missing task and retain the durable archive reference.
+      this.preserveCommitArchive(entry);
       entry.pendingCommitTaskId = undefined;
       entry.pendingCommitTurns = undefined;
-      entry.pendingCommitRetries = undefined;
+      entry.pendingCommitArchiveId = undefined;
       this.status.commitsUnconfirmed = (this.status.commitsUnconfirmed ?? 0) + 1;
       this.status.lastErrorCode = task.status === 'not_found' ? 'OV_MEMORY_TASK_NOT_FOUND' : 'OV_MEMORY_TASK_UNKNOWN';
       this.status.lastEventAt = new Date().toISOString();
@@ -586,6 +649,7 @@ export class SessionMemoryManager {
       if (entry.pendingCommitTaskId) {
         await this.reconcilePendingCommitTask(sessionId);
       }
+      if (!skipCommit) await this.reconcileArchives(entry);
 
       const rawFetch = await this.deps.fetchSessionMessages(sessionId, entry.lastMessageCursor);
       const isIncremental = !Array.isArray(rawFetch) && Boolean(entry.lastMessageCursor);
@@ -666,21 +730,20 @@ export class SessionMemoryManager {
       }
 
       if (!skipCommit && ((forceCommit && entry.uncommittedTurns > 0) || entry.uncommittedTurns >= this.deps.policy.commitEveryTurns)) {
-        await this.commitInternal(sessionId);
+        await this.commitInternal(sessionId, 15000, false);
       }
     } catch (error) {
       this.recordError(error);
     }
   }
 
-  private async commitInternal(sessionId: string, timeoutMs = 15000) {
+  private async commitInternal(sessionId: string, timeoutMs = 15000, recoverArchives = true) {
     const knowledge = this.deps.knowledge();
     const entry = this.syncState[sessionId];
     if (!entry || entry.sessionOptedOut || !knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
-    if (entry.pendingCommitTaskId) {
-      const state = await this.reconcilePendingCommitTask(sessionId);
-      if (state === 'in_flight') return;
-    }
+    const taskState = entry.pendingCommitTaskId ? await this.reconcilePendingCommitTask(sessionId) : 'idle';
+    if (recoverArchives) await this.reconcileArchives(entry);
+    if (taskState === 'in_flight') return;
     if (entry.uncommittedTurns <= 0) return;
     const turnsToCommit = entry.uncommittedTurns;
     try {
@@ -689,7 +752,7 @@ export class SessionMemoryManager {
       if (res?.skipped) {
         entry.pendingCommitTaskId = undefined;
         entry.pendingCommitTurns = undefined;
-        entry.pendingCommitRetries = undefined;
+        entry.pendingCommitArchiveId = undefined;
         this.syncState[sessionId] = entry;
         this.status.commitsSkipped = (this.status.commitsSkipped ?? 0) + 1;
         this.status.lastEventAt = new Date().toISOString();
@@ -698,14 +761,13 @@ export class SessionMemoryManager {
         return;
       }
       entry.lastCommittedAt = new Date().toISOString();
-      if (res?.taskId) {
-        entry.pendingCommitTaskId = res.taskId;
-        entry.pendingCommitTurns = turnsToCommit;
-        entry.pendingCommitRetries = undefined;
-      } else {
-        entry.pendingCommitTaskId = undefined;
-        entry.pendingCommitTurns = undefined;
-        entry.pendingCommitRetries = undefined;
+      const archiveId = typeof res?.archiveUri === 'string' ? /(?:^|\/)(archive_[0-9]+)\/?$/.exec(res.archiveUri)?.[1] : undefined;
+      entry.pendingCommitTaskId = res?.taskId;
+      entry.pendingCommitTurns = res?.taskId ? turnsToCommit : undefined;
+      entry.pendingCommitArchiveId = archiveId;
+      if (!res?.taskId) {
+        this.preserveCommitArchive(entry);
+        entry.pendingCommitArchiveId = undefined;
       }
       this.syncState[sessionId] = entry;
       this.status.commitsScheduled++;
@@ -726,7 +788,7 @@ export class SessionMemoryManager {
     const knowledge = this.deps.knowledge();
     if (!knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
     const pendingIds = Object.entries(this.syncState)
-      .filter(([, entry]) => !entry.sessionOptedOut && (entry.uncommittedTurns > 0 || !!entry.pendingCommitTaskId))
+      .filter(([, entry]) => !entry.sessionOptedOut && (entry.uncommittedTurns > 0 || !!entry.pendingCommitTaskId || this.hasArchiveRecovery(entry)))
       .map(([sessionId]) => sessionId);
     if (!pendingIds.length) return;
     await Promise.allSettled(pendingIds.map(sessionId => this.enqueue(sessionId, () => this.commitInternal(sessionId))));

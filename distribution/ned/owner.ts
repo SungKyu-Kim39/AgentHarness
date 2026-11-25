@@ -72,7 +72,7 @@ export class AgentOwner {
         }
         if (method === 'session/mode') {
           if (!attached.has(params?.session) || typeof params?.mode !== 'string') throw new Error('Session not attached');
-          this.runtime.setSessionMode(params.session, params.mode);
+          await this.runtime.refreshSessionMode(params.session, params.mode);
           return {};
         }
         if (method === 'turn/text') {

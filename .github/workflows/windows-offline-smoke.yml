@@ -187,12 +187,23 @@ jobs:
             if (!(Test-Path -LiteralPath $file)) { Set-Content -LiteralPath $file -Value 'Ned installer preservation fixture' }
             $file
           }
+          if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5') {
+            $extra = Join-Path $install 'user-file-fixture.txt'
+            Set-Content -LiteralPath $extra -Value 'Ned does not own this file'
+            $savedPaths = @($savedPaths) + @($extra)
+            $legacyExtra = Join-Path $install 'legacy-recovered-fixture.txt'
+            Set-Content -LiteralPath $legacyExtra -Value 'Legacy upgrade backup user file'
+            $savedPaths = @($savedPaths) + @($legacyExtra)
+          }
           $before = Get-FileHash -LiteralPath (@($main,$reference)+$savedPaths)
           $interruptedUpgradeRecovered = $false
-          if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild3' -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild4') {
+          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild3','0.4.0-rebuild4','0.4.0-rebuild5')) {
             $backup = Join-Path $install '.ned-upgrade-backup'
             New-Item -ItemType Directory -Path $backup | Out-Null
-            if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild4') {
+            if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild4','0.4.0-rebuild5')) {
+              if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5') {
+                Move-Item -LiteralPath $legacyExtra -Destination $backup
+              }
               # Simulate partial rollback failure: resources already restored to live,
               # while Ned.exe and a top-level Electron runtime file remain in .ned-upgrade-backup.
               foreach ($item in @('Ned.exe','ffmpeg.dll','locales')) {
@@ -263,6 +274,9 @@ jobs:
           $proof | Add-Member -NotePropertyName userGlobalSkillsPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName userDataPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName interruptedUpgradeRecovered -NotePropertyValue $interruptedUpgradeRecovered
+          if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5') {
+            $proof | Add-Member -NotePropertyName installFolderUserFilesPreserved -NotePropertyValue $true
+          }
           $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Restore disposable runner firewall configuration
         if: always()

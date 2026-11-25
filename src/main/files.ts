@@ -15,6 +15,8 @@ import type { Proposal } from "../shared/contracts";
 const MAX_FILE = 2 * 1024 * 1024;
 const hash = (value: string) =>
   createHash("sha256").update(value).digest("hex");
+const proposalResultHash = (proposal: Pick<Proposal, "operation" | "after">) =>
+  proposal.operation === "delete" ? `missing:${hash("")}` : `file:${hash(proposal.after)}`;
 const protectedParts = new Set([".git", ".opencode", ".zed", ".ned", ".vscode", "node_modules"]);
 export class ProjectFiles {
   constructor(readonly root: string) {}
@@ -282,9 +284,11 @@ export class ProjectFiles {
       validate?: (proposal: Proposal) => Promise<void>;
       signal?: AbortSignal;
       journal?: BatchJournalOptions;
+      reserve?: (paths: string[]) => () => void;
     } = {},
   ): Promise<void> {
     const applied: Proposal[] = [];
+    let applying: Proposal | undefined;
     const journalPath = options.journal
       ? path.join(options.journal.dir, `${options.journal.batchId ?? randomUUID()}.json`)
       : undefined;
@@ -303,6 +307,7 @@ export class ProjectFiles {
             operation: proposal.operation === "delete" ? "delete" : "write",
             snapshotId: proposal.id,
             baseHash: proposal.baseHash,
+            afterHash: proposalResultHash(proposal),
             applied: false,
           })),
         }
@@ -317,6 +322,8 @@ export class ProjectFiles {
       await unlink(journalPath).catch(() => {});
     };
 
+    options.signal?.throwIfAborted();
+    const release = options.reserve?.(proposals.map(proposal => proposal.path));
     try {
       await writeJournal();
       for (let idx = 0; idx < proposals.length; idx++) {
@@ -324,8 +331,10 @@ export class ProjectFiles {
         options.signal?.throwIfAborted();
         await options.validate?.(proposal);
         await options.snapshot?.(proposal);
+        applying = proposal;
         await this.apply(proposal, options.signal);
         applied.push(proposal);
+        applying = undefined;
         if (journalRecord) {
           journalRecord.entries[idx].applied = true;
           await writeJournal().catch(() => {});
@@ -334,10 +343,15 @@ export class ProjectFiles {
       await clearJournal();
     } catch (error) {
       const rollbackFailures: string[] = [];
+      if (applying) {
+        const current = await this.propose("batch-rollback", applying.path, "").catch(() => undefined);
+        if (current?.baseHash === proposalResultHash(applying) && current.baseHash !== applying.baseHash) applied.push(applying);
+        else if (current?.baseHash !== applying.baseHash) rollbackFailures.push(`${applying.path} (snapshot ${applying.id})`);
+      }
       for (let i = applied.length - 1; i >= 0; i--) {
         const done = applied[i];
         try {
-          const expected = done.operation === "delete" ? `missing:${hash("")}` : `file:${hash(done.after)}`;
+          const expected = proposalResultHash(done);
           const revert = done.operation === "delete" || done.baseHash.startsWith("file:")
             ? await this.propose(randomUUID(), done.path, done.before)
             : await this.proposeDelete(randomUUID(), done.path);
@@ -352,10 +366,6 @@ export class ProjectFiles {
         }
       }
       const baseMsg = error instanceof Error ? error.message : String(error);
-      if (applied.length === 0) {
-        await clearJournal();
-        throw error;
-      }
       if (rollbackFailures.length > 0) {
         if (journalRecord) {
           journalRecord.status = "rollback_failed";
@@ -367,9 +377,12 @@ export class ProjectFiles {
         );
       }
       await clearJournal();
+      if (applied.length === 0) throw error;
       throw new Error(
         `다중 파일 적용 중 오류가 발생해 먼저 반영한 ${applied.length}개 파일을 원래 상태로 복구했습니다. 원인: ${baseMsg}`,
       );
+    } finally {
+      release?.();
     }
   }
 }
@@ -386,6 +399,7 @@ export interface BatchJournalEntry {
   operation: "write" | "delete";
   snapshotId: string;
   baseHash: string;
+  afterHash?: string;
   applied: boolean;
   reverted?: boolean;
 }
@@ -414,7 +428,7 @@ async function writeAtomicJsonFile(file: string, data: unknown) {
   }
 }
 
-export async function inspectIncompleteBatchJournals(journalDir: string): Promise<BatchJournalRecord[]> {
+export async function inspectIncompleteBatchJournals(journalDir: string, project?: string): Promise<BatchJournalRecord[]> {
   const entries = await readdir(journalDir, { withFileTypes: true }).catch(() => []);
   const incomplete: BatchJournalRecord[] = [];
   for (const entry of entries) {
@@ -427,7 +441,9 @@ export async function inspectIncompleteBatchJournals(journalDir: string): Promis
       const parsed = JSON.parse(await readFile(full, "utf8")) as BatchJournalRecord;
       if (
         parsed?.schemaVersion === 1 &&
-        typeof parsed.id === "string" &&
+        parsed.id === path.basename(entry.name, ".json") &&
+        (!project || parsed.project === project) &&
+        typeof parsed.startedAt === "string" &&
         typeof parsed.operation === "string" &&
         typeof parsed.project === "string" &&
         Array.isArray(parsed.entries) &&
@@ -438,6 +454,74 @@ export async function inspectIncompleteBatchJournals(journalDir: string): Promis
     } catch { /* Ignore corrupt or transient journal files without modifying them. */ }
   }
   return incomplete.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
+}
+
+const UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
+const CONTENT_HASH = /^(file|missing):[0-9a-f]{64}$/;
+type RecoveryState = "original" | "applied" | "conflict" | "unavailable";
+
+async function recoverySnapshot(snapshotDir: string, session: string | undefined, entry: BatchJournalEntry): Promise<Proposal | undefined> {
+  if (!session || !/^[a-zA-Z0-9_-]{1,128}$/.test(session) || !UUID.test(entry.snapshotId)) return;
+  const relative = session + "/" + entry.snapshotId + ".json";
+  try {
+    const file = await new ProjectFiles(snapshotDir).resolve(relative);
+    const info = await lstat(file);
+    if (!info.isFile() || info.size > MAX_FILE * 14) return;
+    const record = JSON.parse(await readFile(file, "utf8")) as Proposal;
+    if (record.id !== entry.snapshotId || record.path !== entry.path || record.baseHash !== entry.baseHash ||
+        (record.operation ?? "write") !== entry.operation || typeof record.before !== "string" || typeof record.after !== "string" ||
+        entry.baseHash.split(":")[1] !== hash(record.before) ||
+        (entry.afterHash && entry.afterHash !== proposalResultHash(record))) return;
+    return record;
+  } catch {
+    return undefined;
+  }
+}
+
+export async function inspectBatchRecovery(batch: BatchJournalRecord, files: ProjectFiles, snapshotDir: string, plan = false) {
+  if (batch.project !== files.root) throw new Error("현재 프로젝트의 복구 작업만 확인할 수 있습니다.");
+  const entries: Array<{ path: string; operation: BatchJournalEntry["operation"]; snapshotId: string; state: RecoveryState; proposal?: Proposal }> = [];
+  for (const entry of batch.entries) {
+    const result = { path: entry?.path, operation: entry?.operation, snapshotId: entry?.snapshotId };
+    if (typeof result.path !== "string" || !CONTENT_HASH.test(entry?.baseHash)) {
+      entries.push({ ...result, state: "unavailable" });
+      continue;
+    }
+    try {
+      const current = await files.propose("batch-recovery", entry.path, "");
+      if (current.baseHash === entry.baseHash) {
+        entries.push({ ...result, state: "original" });
+        continue;
+      }
+      const snapshot = await recoverySnapshot(snapshotDir, batch.session, entry);
+      const expected = entry.afterHash ?? (snapshot && proposalResultHash(snapshot));
+      if (!expected) {
+        entries.push({ ...result, state: "unavailable" });
+        continue;
+      }
+      if (current.baseHash !== expected) {
+        entries.push({ ...result, state: "conflict" });
+        continue;
+      }
+      if (!snapshot) {
+        entries.push({ ...result, state: "unavailable" });
+        continue;
+      }
+      if (!plan) {
+        entries.push({ ...result, state: "applied" });
+        continue;
+      }
+      const proposal = entry.baseHash.startsWith("missing:")
+        ? await files.proposeDelete("batch-recovery", entry.path)
+        : await files.propose("batch-recovery", entry.path, snapshot.before);
+      entries.push(proposal.baseHash === expected
+        ? { ...result, state: "applied", proposal }
+        : { ...result, state: "conflict" });
+    } catch {
+      entries.push({ ...result, state: "unavailable" });
+    }
+  }
+  return entries;
 }
 
 export interface TextPatchEdit {

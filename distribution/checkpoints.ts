@@ -43,6 +43,7 @@ export interface CheckpointInput {
 export interface CheckpointRestoreHooks {
   approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
   validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
+  reserveWrites?: (paths: string[]) => () => void;
 }
 
 /** Shadow-Git turn checkpoints stored outside the project's own .git history. */
@@ -348,6 +349,7 @@ export class ProjectCheckpoints {
       const safety = await this.createLocked(project, `pre-restore:${commit.slice(0, 8)}`, work, signal);
 
       await files.applyBatch(proposals, {
+        reserve: hooks.reserveWrites,
         signal,
         validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
         snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
