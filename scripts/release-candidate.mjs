@@ -35,7 +35,9 @@ if(mode==='candidate'){
  const old=await json('release-runtime-lock.json');if(old.version!==version)throw Error('Runtime preparation did not record '+version);
  run('gh',['run','watch',editorRun,'--exit-status','--interval','30']);
  const editor=gh(['api',`repos/${process.env.GH_REPO}/actions/runs/${editorRun}`]);
- if(editor.conclusion!=='success'||editor.path!=='.github/workflows/windows-offline-smoke.yml'||editor.head_branch!==branch)throw Error('Unverified editor build');
+ const reuseEditor=isRebuiltEditorReusable(version,revision);
+ if(editor.conclusion!=='success'||editor.path!=='.github/workflows/windows-offline-smoke.yml'||(!reuseEditor&&editor.head_branch!==branch))throw Error('Unverified editor build');
+ if(reuseEditor)run('git',['merge-base','--is-ancestor',editor.head_sha,'HEAD']);
  run('git',['diff','--exit-code',editor.head_sha,'HEAD','--','scripts/patch-ned-editor.mjs','scripts/ned-editor-version.mjs','scripts/release-policy.mjs','ned-editor-source-lock.json','assets/ned-icon.png','package.json']);
  run('gh',['run','download',editorRun,'--pattern',`ned-editor-${editorArtifactVersion}-*`,'--dir','.cache/ned/editor-download']);
  const {readdir}=await import('node:fs/promises');const records=(await readdir(path.join(root,'.cache/ned/editor-download'),{recursive:true})).filter(name=>path.basename(name)===`build-${editorArtifactVersion}.json`);

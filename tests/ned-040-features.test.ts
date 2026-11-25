@@ -69,6 +69,7 @@ test('PythonVenvManager validates PEP 508 specs, creates .venv, runs scripts off
   const before = await mgr.manage('ses1', project, { operation: 'status' });
   assert.equal((before as any).venv.exists, false);
 
+  await assert.rejects(mgr.manage('ses1', project, { operation: 'install', packages: ['numpy==1.26.4'] }), /HTTPS 미러/);
   const created = await mgr.manage('ses1', project, { operation: 'create' });
   assert.equal((created as any).status, 'ok');
   assert.equal((created as any).created, true);
@@ -88,6 +89,12 @@ test('PythonVenvManager validates PEP 508 specs, creates .venv, runs scripts off
     '"""Corporate internal telemetry client."""\n\nclass TelemetryClient:\n    """Connects to intranet collector."""\n    def emit(self, metric: str, value: float, tags: dict[str, str] | None = None) -> bool:\n        """Emit a single metric point."""\n        return True\n',
   );
 
+  const marker = path.join(project, 'startup-executed');
+  await writeFile(path.join(sitePkg, 'ned-audit.pth'), `import pathlib; pathlib.Path(${JSON.stringify(marker)}).touch()\n`);
+  const missingSymbol = await mgr.inspectPackageDocs(project, { package: 'corp-sdk', symbol: 'not_exported' });
+  assert.deepEqual(missingSymbol.matches, []);
+  await assert.rejects(readFile(marker), { code: 'ENOENT' });
+  await rm(path.join(sitePkg, 'ned-audit.pth'));
   const docs = await mgr.inspectPackageDocs(project, { package: 'corp-sdk', symbol: 'TelemetryClient.emit' });
   assert.equal(docs.status, 'ok');
   assert.equal(docs.version, '2.4.1');
@@ -121,8 +128,9 @@ test('DataApps starts a loopback-only HTTP preview server and cleans it up clean
   });
   assert.match(body, /Ned Local Dashboard/);
 
-  const stopped = await apps.call('ses1', project, { operation: 'stop', id: started.id }) as { status: string };
-  assert.equal(stopped.status, 'stopped');
+  apps.cancel('ses1');
+  await apps.stopped('ses1');
+  await assert.rejects(fetch(started.url));
 });
 
 test('ProjectCheckpoints records shadow Git history without creating project .git and restores safely', { skip: process.platform === 'win32' }, async t => {
@@ -176,6 +184,9 @@ test('WorktreeSandbox isolates parallel edits to the same file, diffs, applies s
 
   const applied = await sandbox.apply('ses1', project, wtA.id, { approve: async () => true });
   assert.equal(applied.status, 'applied');
+  assert.equal(await readFile(path.join(project, 'core.ts'), 'utf8'), 'export const mode = "A";\n');
+
+  await assert.rejects(sandbox.apply('ses1', project, wtB.id, { approve: async () => true }), /기준 커밋 이후/);
   assert.equal(await readFile(path.join(project, 'core.ts'), 'utf8'), 'export const mode = "A";\n');
 
   await sandbox.discard(project, wtA.id);
@@ -291,6 +302,8 @@ test('DiagramTools generates valid editable .drawio XML from structured spec and
   const saved = await readFile(path.join(project, 'docs/arch.drawio'), 'utf8');
   assert.match(saved, /사용자 요청/);
   assert.match(saved, /사내 PyPI/);
+  await assert.rejects(diag.generate('ses1', project, { format: 'drawio', outputPath: 'docs/arch.drawio', source: spec }), /이미 있습니다/);
+  assert.equal(await readFile(path.join(project, 'docs/arch.drawio'), 'utf8'), saved);
 });
 
 test('ApiTools runs local OpenAPI mock server, verifies schema contracts, and gates mutating methods explicitly', async t => {
@@ -336,16 +349,20 @@ test('ApiTools runs local OpenAPI mock server, verifies schema contracts, and ga
   const mock = await api.mock('ses1', project, { operation: 'start', specPath: 'openapi.yaml' });
   assert.equal(mock.status, 'running');
 
-  const check = await api.contractTest(project, { specPath: 'openapi.yaml', baseUrl: mock.url!, methods: ['GET'] });
+  const check = await api.contractTest('ses1', project, { specPath: 'openapi.yaml', baseUrl: mock.url!, methods: ['GET'] });
   assert.equal(check.status, 'passed');
   assert.equal(check.passed, 1);
   assert.equal(explicitCalls, 0);
 
-  const mutCheck = await api.contractTest(project, { specPath: 'openapi.yaml', baseUrl: mock.url!, methods: ['POST'] });
+  const mutCheck = await api.contractTest('ses1', project, { specPath: 'openapi.yaml', baseUrl: mock.url!, methods: ['POST'] });
   assert.equal(mutCheck.status, 'passed');
   assert.equal(explicitCalls, 1);
 
-  await api.mock('ses1', project, { operation: 'stop', id: mock.id });
+  await assert.rejects(api.contractTest('other', project, { specPath: 'openapi.yaml', baseUrl: mock.url! }), /현재 대화/);
+  await assert.rejects(api.contractTest('ses1', project, { specPath: 'openapi.yaml', baseUrl: mock.url!, useSchemathesis: true }), /비활성화/);
+  api.cancel('ses1');
+  await api.stopped('ses1');
+  await assert.rejects(fetch(mock.url!));
 });
 
 test('skill-routing automatically selects 0.4.0 skills and conditionally gates specialized 0.4.0 tools', async () => {

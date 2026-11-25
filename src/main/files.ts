@@ -99,6 +99,26 @@ export class ProjectFiles {
     await visit("", 0);
     return files.sort();
   }
+  async createGeneratedFile(relative: string, bytes: Buffer, signal?: AbortSignal) {
+    if (!bytes.length || bytes.length > 64 * 1024 * 1024) throw new Error('생성 파일 크기가 허용 범위를 벗어났습니다.');
+    signal?.throwIfAborted();
+    const target = await this.resolve(relative, true);
+    await mkdir(path.dirname(target), { recursive: true, mode: 0o700 });
+    await this.resolve(relative, true);
+    const temp = path.join(path.dirname(target), `.ned-${randomUUID()}.tmp`);
+    try {
+      await writeFile(temp, bytes, { flag: 'wx', mode: 0o600 });
+      await this.resolve(relative, true);
+      signal?.throwIfAborted();
+      await link(temp, target);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') throw new Error('대상 파일이 이미 있습니다. 기존 파일을 보존했으니 새 출력 경로를 지정하세요.');
+      throw error;
+    } finally {
+      await unlink(temp).catch(() => {});
+    }
+  }
+
   async readStrictUtf8(relative: string) {
     const file = await this.resolve(relative);
     const stat = await lstat(file);

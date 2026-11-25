@@ -60,11 +60,11 @@ const providerSchema = z.object({
 }).strict();
 const selectionSchema = z.union([z.string().min(3), z.object({ providerID: z.string().min(1), model: z.string().min(1), variant: z.string().optional() }).strict()]);
 export const pythonConfigSchema = z.object({
-  respectSystemPipConfig: z.boolean().default(true),
+  respectSystemPipConfig: z.boolean().default(false),
   indexUrl: endpoint.optional(),
   extraIndexUrls: z.array(endpoint).max(8).optional(),
   trustedHosts: z.array(z.string().trim().regex(/^[a-zA-Z0-9.-]+(?::\d{1,5})?$/)).max(16).optional(),
-  allowPackageInstall: z.boolean().default(true),
+  allowPackageInstall: z.boolean().default(false),
 }).strict();
 export type PythonConfig = z.infer<typeof pythonConfigSchema>;
 const rawConfigSchema = z.object({

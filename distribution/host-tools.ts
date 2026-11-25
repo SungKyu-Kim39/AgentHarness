@@ -1,3 +1,4 @@
+import { verifyFiles } from '../src/main/parallel-files';
 import { TerminalJobs } from './terminal-jobs';
 import { createServer, type Server } from 'node:http';
 import { randomBytes, randomUUID, createHash } from 'node:crypto';
@@ -252,7 +253,7 @@ export const hostTools: ToolSpec[] = [
   {name:'spec_workflow',description:'Spec-Driven Development workflow under project specs/<feature>/ (spec.md, plan.md, tasks.md). Operations: init, list, status, verify (checks REQ coverage, unchecked tasks and referenced files).',inputSchema:object({operation:{type:'string',enum:['init','list','status','verify']},feature:string,title:string,goal:string},['operation'])},
   {name:'ast_search',description:'Multilingual AST structural search and optional rewrite across project files (Python, TS/JS, C/C++, C#, Java, Go, Rust, HTML, CSS). Defaults to read-only preview; apply=true applies rewrites via host approval, buffer check and snapshots.',inputSchema:object({language:{type:'string',enum:['python','typescript','tsx','javascript','c','cpp','csharp','java','go','rust','html','css','json']},pattern:string,paths:{type:'array',items:string,maxItems:100},rewrite:string,apply:{type:'boolean'}},['language','pattern'])},
   {name:'code_audit',description:'Offline local static security, secret leak, and code quality audit over a project snapshot (multilingual AST/pattern SAST, Python AST + Bandit, and optional project .venv Ruff).',inputSchema:object({paths:{type:'array',items:string,maxItems:200},categories:{type:'array',items:{type:'string',enum:['security','secrets','quality','venv-ruff']},maxItems:4}})},
-  {name:'document_write',description:'Generate or template-fill local XLSX, DOCX, PPTX or Korean HWPX documents offline without Office/Hancom installation. Writes atomically inside the project after native approval and binary snapshot backup.',inputSchema:object({format:{type:'string',enum:['xlsx','docx','pptx','hwpx']},outputPath:string,templatePath:string,spec:{type:'object',additionalProperties:true}},['format','outputPath','spec'])},
+  {name:'document_write',description:'Generate or template-fill local XLSX, DOCX, PPTX or Korean HWPX documents offline without Office/Hancom installation. Creates a new project file after native approval. Choose an unused output path; templates are preserved.',inputSchema:object({format:{type:'string',enum:['xlsx','docx','pptx','hwpx']},outputPath:string,templatePath:string,spec:{type:'object',additionalProperties:true}},['format','outputPath','spec'])},
   {name:'diagram_generate',description:'Generate editable Draw.io (.drawio mxGraph XML) diagrams from structured spec or Mermaid flowchart, or render Mermaid offline to crisp SVG/PNG via isolated headless Chromium.',inputSchema:object({format:{type:'string',enum:['drawio','mermaid-svg','mermaid-png']},outputPath:string,source:{oneOf:[string,{type:'object',additionalProperties:true}]}},['format','outputPath','source'])},
   {name:'api_mock_server',description:'Start, inspect or stop a local loopback-only (127.0.0.1) OpenAPI/Swagger mock server generated from a project spec file for offline frontend/client development.',inputSchema:object({operation:{type:'string',enum:['start','status','stop']},id:string,specPath:string},['operation'])},
   {name:'api_contract_test',description:'Validate a local or intranet API server against an OpenAPI/Swagger spec (response status codes and JSON schemas, plus optional .venv Schemathesis fuzzing). Non-loopback hosts or mutating HTTP methods always require explicit approval.',inputSchema:object({specPath:string,baseUrl:string,methods:{type:'array',items:{type:'string',enum:['GET','HEAD','POST','PUT','PATCH','DELETE']},maxItems:6},maxRequests:{type:'integer',minimum:1,maximum:50},headers:{type:'object',additionalProperties:string},useSchemathesis:{type:'boolean'}},['specPath','baseUrl'])},
@@ -318,15 +319,31 @@ export class HostTools {
     this.git = new GitTools(root, resources, options.approve, () => this.extensions.verifyRuntime());
     this.ghidra = new ReaGhidra(root, resources, options.approve);
     this.python = new PythonProjects(root, resources, { approve: options.approve, choose: (project, environments, signal) => options.choosePython ? options.choosePython(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창이 연결되지 않았습니다.')), locate: options.locateConda, knowledge: options.knowledge, permissionSignal: options.permissionSignal });
-    this.venv = new PythonVenvManager(root, resources, { approve: options.approve, pythonConfig: options.pythonConfig, savedConda: project => this.python.savedEnvironment(project) });
+    this.venv = new PythonVenvManager(root, resources, { approve: options.approve, approveExplicit: options.approveExplicit, pythonConfig: options.pythonConfig, savedConda: project => this.python.savedEnvironment(project) });
     this.dataApps = new DataApps(root, resources, { approve: options.approve, resolvePython: project => this.venv.resolveProjectPython(project), reservedPorts: internalPorts });
     this.checkpoints = new ProjectCheckpoints(root, resources);
     this.worktrees = new WorktreeSandbox(root, resources);
     this.specs = new SpecWorkflow(root);
-    this.astAudit = new AstAuditTools(root, resources, { resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
-    this.documents = new DocumentTools(root, resources, { approve: options.approve, resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
-    this.diagrams = new DiagramTools(root, resources, { approve: options.approve });
-    this.apiTools = new ApiTools(resources, { approve: options.approve, approveExplicit: options.approveExplicit, resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
+    let workspaceVerification: Promise<void> | undefined;
+    const verifyWorkspaceTools = () => {
+      if (process.platform !== 'win32') return Promise.resolve();
+      return workspaceVerification ??= (async () => {
+        const folder = path.join(resources, 'runtime/windows-x64/workspace-tools');
+        const lock = JSON.parse(await readFile(managedResource(resources, 'locks/release-runtime.json'), 'utf8'));
+        const bytes = await readFile(path.join(folder, 'manifest.json'));
+        const proof = lock.components?.['workspace-tools'];
+        const manifest = JSON.parse(bytes.toString('utf8'));
+        if (!proof || createHash('sha256').update(bytes).digest('hex') !== proof.manifestSha256 ||
+            !Array.isArray(manifest.files) || !manifest.files.length || manifest.files.length !== proof.files) {
+          throw new Error('Workspace Tools의 고정 무결성 목록을 확인하지 못했습니다.');
+        }
+        await verifyFiles(folder, manifest.files);
+      })();
+    };
+    this.astAudit = new AstAuditTools(root, resources, { verifyWorkspaceTools, resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
+    this.documents = new DocumentTools(root, resources, { verifyWorkspaceTools, approve: options.approve, resolveVenvPython: project => this.venv.resolveProjectPython(project).catch(() => undefined) });
+    this.diagrams = new DiagramTools(root, resources, { verifyWorkspaceTools, approve: options.approve });
+    this.apiTools = new ApiTools(resources, { approve: options.approve, approveExplicit: options.approveExplicit, reservedPorts: internalPorts });
   }
   async start(progress?: (done:number,total:number)=>void) {
     await this.skills.load(progress);
@@ -420,6 +437,7 @@ export class HostTools {
       if (!a.id) throw new Error('worktree id가 필요합니다.');
       if (a.operation === 'diff') return JSON.stringify(await this.worktrees.diff(project, a.id, signal));
       if (a.operation === 'apply') return JSON.stringify(await this.worktrees.apply(session, project, a.id, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+      if (!await this.options.approveExplicit?.('Worktree 샌드박스 삭제', `프로젝트: ${project}\n샌드박스: ${a.id}\n반영하지 않은 샌드박스 변경도 제거됩니다.`, signal)) throw new Error('worktree 삭제를 승인하지 않았습니다.');
       return JSON.stringify(await this.worktrees.discard(project, a.id, signal));
     }
     if (name === 'spec_workflow') {
@@ -452,7 +470,7 @@ export class HostTools {
     }
     if (name === 'api_contract_test') {
       const a = z.object({ specPath: pathArg, baseUrl: z.string().min(1).max(2048), methods: z.array(z.enum(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'])).max(6).optional(), maxRequests: z.number().int().min(1).max(50).optional(), headers: z.record(z.string().max(1024)).optional(), useSchemathesis: z.boolean().optional() }).strict().parse(args);
-      return JSON.stringify(await this.apiTools.contractTest(project, a, signal));
+      return JSON.stringify(await this.apiTools.contractTest(session, project, a, signal));
     }
     if(['spawn_subagent','subagent_status','stop_subagent'].includes(name)){
       const agents=this.options.subagents;if(!agents)throw Error('하위 Agent 실행기가 준비되지 않았습니다.');
@@ -655,8 +673,8 @@ export class HostTools {
       if (!knowledge?.personalRead) throw new Error('개인 지식 읽기를 사용할 수 없습니다.');
       return knowledge.personalRead(a.uri);
     }
-    if (name === 'knowledge_search') { const a = z.object({ query: z.string().min(1).max(2000), limit: z.number().int().min(1).max(10).default(5) }).strict().parse(args); if (!knowledge) throw new Error('OpenViking 설정이 필요합니다.'); return knowledge.search(projectID, a.query, a.limit); }
-    if (name === 'knowledge_read') { const a = z.object({ uri: pathArg }).strict().parse(args); if (!knowledge) throw new Error('OpenViking 설정이 필요합니다.'); return knowledge.read(projectID, a.uri); }
+    if (name === 'knowledge_search') { const a = z.object({ query: z.string().min(1).max(2000), limit: z.number().int().min(1).max(10).default(5) }).strict().parse(args); if (!knowledge) throw new Error('OpenViking 설정이 필요합니다.'); return knowledge.search(projectID, a.query, a.limit, signal); }
+    if (name === 'knowledge_read') { const a = z.object({ uri: pathArg }).strict().parse(args); if (!knowledge) throw new Error('OpenViking 설정이 필요합니다.'); return knowledge.read(projectID, a.uri, signal); }
     if (name === 'knowledge_index') {
       const a = z.object({ path: pathArg }).strict().parse(args); if (!knowledge) throw new Error('OpenViking 설정이 필요합니다.');
       const text = await files.read(a.path);
@@ -664,7 +682,7 @@ export class HostTools {
         ? text.slice(0, 20000) + `\n(이하 생략 · 전체 ${Buffer.byteLength(text)} bytes · SHA-256 ${createHash('sha256').update(text).digest('hex')})`
         : text;
       if (!await this.options.approve('프로젝트 지식 색인 승인', `${a.path}\n선택한 텍스트를 로컬 OpenViking과 설정한 사내 임베딩 API로 전달합니다.\n\n${preview}`, signal) || !this.accepting || signal?.aborted || this.cancelled.has(session)) throw new Error('색인을 취소했습니다.');
-      return knowledge.index(projectID, a.path, text);
+      return knowledge.index(projectID, a.path, text, signal);
     }
     const tempRoot = path.join(this.root, 'analysis'); await mkdir(tempRoot, { recursive: true, mode: 0o700 });
     const temp = await mkdtemp(path.join(tempRoot, 'run-'));
@@ -750,7 +768,7 @@ export class HostTools {
     this.revokeEditApproval();
     this.accepting = false; this.editGrant = undefined; this.runs.clear();
     for (const controllers of this.operations.values()) for (const controller of controllers) controller.abort();
-    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close(), this.python.close(), this.terminal.close()]); }
+    try { await Promise.all([this.extensions.close(), this.builds.close(), this.desktop.close(), this.git.close(), this.ghidra.close(), this.python.close(), this.terminal.close(), this.venv.close(), this.dataApps.close(), this.checkpoints.close(), this.worktrees.close(), this.astAudit.close(), this.documents.close(), this.diagrams.close(), this.apiTools.close()]); }
     finally {
       for (const owned of this.children.values()) for (const child of owned) child.kill('SIGKILL');
       await Promise.allSettled(this.active);
@@ -764,11 +782,13 @@ export class HostTools {
     void this.ghidra.cancel(session).catch(() => {});
     this.python.cancel(session);
     this.terminal.cancel(session);
+    this.dataApps.cancel(session);
+    this.apiTools.cancel(session);
     this.cancelled.add(session); this.editGrant = undefined; this.runs.delete(session);
     for (const controller of this.operations.get(session) ?? []) controller.abort();
     for (const child of this.children.get(session) ?? []) child.kill('SIGKILL');
   }
   resumeSession(session: string) { if(this.sessionEditGrant && this.sessionEditGrant.session!==session)this.revokeEditApproval(); this.desktop.resume(session); this.editGrant = undefined; this.runs.set(session, Symbol()); this.cancelled.delete(session); }
-  async waitSessionStop(session:string){const deadline=Date.now()+15000;while(this.operations.get(session)?.size){if(Date.now()>deadline)throw Error('호스트 도구 중지를 확인하지 못했습니다.');await new Promise(r=>setTimeout(r,20));}await Promise.all([this.python.stopped(session), this.terminal.stopped(session)]);}
+  async waitSessionStop(session:string){const deadline=Date.now()+15000;while(this.operations.get(session)?.size){if(Date.now()>deadline)throw Error('호스트 도구 중지를 확인하지 못했습니다.');await new Promise(r=>setTimeout(r,20));}await Promise.all([this.python.stopped(session), this.terminal.stopped(session), this.dataApps.stopped(session), this.apiTools.stopped(session)]);}
   waitPythonStop(session: string) { return this.python.stopped(session); }
 }

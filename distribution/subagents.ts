@@ -111,7 +111,7 @@ export class Subagents {
       },
     );
     if (!bytes) return;
-    if (bytes.length > 4 * 1024 * 1024)
+    if (bytes.length > 8 * 1024 * 1024)
       throw Error(
         "하위 Agent 기록 크기를 확인하세요. 기존 기록을 보존했습니다.",
       );
@@ -169,17 +169,28 @@ export class Subagents {
     }
   }
   private save() {
-    const snapshot = {
-      schemaVersion: 1,
-      jobs: [...this.jobs.values()].map(
-        ({ admitted, prompt, model, abort, work, result, ...j }) => j,
-      ),
-    };
-    if (Buffer.byteLength(JSON.stringify(snapshot)) > 4 * 1024 * 1024)
-      return Promise.reject(
-        Error("하위 Agent 기록 크기 한도입니다. 기존 기록을 보존했습니다."),
-      );
-    const operation = this.saving.then(() => atomicJSON(this.file(), snapshot));
+    const operation = this.saving.then(async () => {
+      const records = [...this.jobs.values()];
+      const retired = new Set<string>();
+      const snapshot = () => ({
+        schemaVersion: 1,
+        jobs: records.filter(j => !retired.has(j.id)).map(
+          ({ admitted, prompt, model, abort, work, result, ...j }) => j,
+        ),
+      });
+      let next = snapshot();
+      if (Buffer.byteLength(JSON.stringify(next, null, 2)) > 4 * 1024 * 1024) {
+        const old = records.filter(j => !active(j) && !j.work)
+          .sort((a, b) => (a.endedAt ?? a.createdAt) - (b.endedAt ?? b.createdAt));
+        for (const j of old.slice(0, Math.ceil(old.length / 2))) retired.add(j.id);
+        next = snapshot();
+        if (Buffer.byteLength(JSON.stringify(next, null, 2)) > 4 * 1024 * 1024) {
+          throw Error("하위 Agent 기록 크기 한도입니다. 기존 기록을 보존했습니다.");
+        }
+      }
+      await atomicJSON(this.file(), next);
+      for (const id of retired) this.jobs.delete(id);
+    });
     this.saving = operation.catch(() => {});
     return operation;
   }

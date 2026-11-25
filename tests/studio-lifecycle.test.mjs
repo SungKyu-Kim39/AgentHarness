@@ -11,12 +11,12 @@ function fixture(proxy=Promise.resolve(),load=()=>Promise.resolve(),options={}) 
  const isolated={setProxy:()=>proxy,setPermissionRequestHandler(){},setPermissionCheckHandler(){},on(){},clearStorageData:async()=>{cleared++;},webRequest:Object.fromEntries(['onBeforeRequest','onBeforeSendHeaders','onHeadersReceived'].map(key=>[key,handler=>{hooks[key]=handler;}]))};
  class Window extends EventEmitter {
   destroyed=false;focused=0;visible=false;webContents=new EventEmitter();
-  constructor(options){super();this.options=options;this.webContents.setWindowOpenHandler=handler=>{this.popup=handler;};this.webContents.executeJavaScript=async script=>{assert.ok(!script.includes('private-run-token'));this.bootstrap=script;if(script.includes('sidebar-wrapper'))return state.phase ?? 'waiting';if(script.includes('data-slot'))return state.dom ?? {url:'http://127.0.0.1:12345/studio/',readyState:'complete',appExists:true,childCount:1,dataSlots:['loading-shell'],textSnippet:'Loading Studio'};};windows.push(this);}
+  constructor(options){super();this.options=options;this.webContents.setWindowOpenHandler=handler=>{this.popup=handler;};this.webContents.executeJavaScript=async script=>{assert.ok(!script.includes('private-run-token'));this.bootstrap=script;if(script.includes('sidebar-wrapper'))return options.stalledProbe ? new Promise(()=>{}) : state.phase ?? 'waiting';if(script.includes('data-slot'))return state.dom ?? {url:'http://127.0.0.1:12345/studio/',readyState:'complete',appExists:true,childCount:1,dataSlots:['loading-shell'],textSnippet:'Loading Studio'};};windows.push(this);}
   setMenu(){}show(){this.visible=true;}isVisible(){return this.visible;}focus(){this.focused++;}isDestroyed(){return this.destroyed;}
-  loadURL(url){assert.ok(!url.endsWith('/health'));this.url=url;return load();}destroy(){this.destroyed=true;this.emit('closed');}
+  loadURL(url){assert.ok(!url.endsWith('/health'));this.url=url;return url.startsWith('data:')?Promise.resolve():load();}destroy(){this.destroyed=true;this.emit('closed');}
  }
  const electron={BrowserWindow:Window,session:{fromPartition:name=>{assert.ok(!name.startsWith('persist:'));return isolated;}}};
- const module={exports:{}};vm.runInNewContext(compiled.outputFiles[0].text,{module,exports:module.exports,__dirname: '/app',require:name=>name==='electron'?electron:require(name),URL,Date:Clock,setInterval:fn=>{tick=fn;return {unref(){}};},clearInterval(){tick=undefined;}});
+ const module={exports:{}};vm.runInNewContext(compiled.outputFiles[0].text,{module,exports:module.exports,__dirname: '/app',require:name=>name==='electron'?electron:require(name),URL,Date:Clock,setInterval:fn=>{tick=fn;return {unref(){}};},clearInterval(){tick=undefined;},setTimeout,clearTimeout});
  return {studio:new module.exports.OpenVikingStudio(event=>diagnostics.push(event)),windows,hooks,diagnostics,cleared:()=>cleared,advance:async ms=>{now+=ms;tick?.();await new Promise(resolve=>setImmediate(resolve));}};
 }
 const connection={baseUrl:'http://127.0.0.1:12345',headers:{Authorization:'Bearer private-run-token','X-OpenViking-Account':'ned','X-OpenViking-Role':'admin','X-API-Key':'private-run-token'}};
@@ -90,4 +90,21 @@ test('onHeadersReceived fixes text/plain JS module responses and classifies MIME
  await f.advance(31000);
  assert.equal(f.diagnostics.at(-1).code,'STUDIO_MIME');
  f.studio.close();
+});
+
+test('Studio reports a stalled initial navigation or renderer probe', async () => {
+ const waiting = new Promise(()=>{});
+ const navigation = fixture(Promise.resolve(),()=>waiting);
+ void navigation.studio.open(connection,'icon');
+ await navigation.advance(0);
+ await navigation.advance(31000);
+ assert.equal(navigation.diagnostics.at(-1).code,'STUDIO_NAVIGATION');
+ assert.equal(navigation.windows[0].visible,true);
+ navigation.studio.close();
+ const render = fixture(Promise.resolve(),()=>Promise.resolve(),{stalledProbe:true});
+ await render.studio.open(connection,'icon');
+ await render.advance(31000);
+ assert.equal(render.diagnostics.at(-1).code,'STUDIO_RENDER_TIMEOUT');
+ assert.equal(render.windows[0].visible,true);
+ render.studio.close();
 });

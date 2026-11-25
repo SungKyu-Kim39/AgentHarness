@@ -32,7 +32,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     env:
-      NED_ARTIFACT_VERSION: ${{ inputs.artifact_version || '0.4.0' }}
+      NED_ARTIFACT_VERSION: ${{ inputs.build_revision && format('{0}-{1}', inputs.artifact_version, inputs.build_revision) || inputs.artifact_version || '0.4.0' }}
       NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262

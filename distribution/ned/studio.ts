@@ -106,33 +106,40 @@ export class OpenVikingStudio {
     this.window = window; window.setMenu(null);
     let timer: ReturnType<typeof setInterval> | undefined;
     let loading: Promise<void> | undefined;
-    let checking = false, shownAt = 0, ready = false;
+    let checking = false, ready = false, attempt = 0;
     const alive = () => generation === this.generation && !window.isDestroyed();
     const captureDom = async (): Promise<StudioDomSummary | undefined> => {
       if (!alive()) return undefined;
+      let timeout: ReturnType<typeof setTimeout> | undefined;
       try {
-        const summary = await window.webContents.executeJavaScript(studioDiagnosticProbe);
+        const summary = await Promise.race([
+          window.webContents.executeJavaScript(studioDiagnosticProbe),
+          new Promise<undefined>(resolve => { timeout = setTimeout(resolve, 250); }),
+        ]);
         if (summary && typeof summary === 'object' && typeof summary.appExists === 'boolean') return summary as StudioDomSummary;
-      } catch { /* Renderer may be gone or unresponsive during failure capture. */ }
+      } catch { /* Renderer may be gone during failure capture. */ }
+      finally { clearTimeout(timeout); }
       return undefined;
     };
     const showFailure = async (code: string) => {
       if (!alive() || failureUrl) return;
       clearInterval(timer);
-      const domSummary = await captureDom();
-      if (!alive() || failureUrl) return;
-      this.diagnostic({ code, ...diagnosticContext(), ...(domSummary ? { domSummary } : {}) });
+
       const html = `<!doctype html><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>Ned · OpenViking Studio</title><main style="font-family:Segoe UI,sans-serif;padding:40px"><h1>OpenViking Studio를 표시하지 못했습니다.</h1><p>진단 코드: ${code}</p><p>상세 진단 파일: %APPDATA%\\Ned\\openviking\\studio-status.json</p><p>Ned의 대화와 코드 작업은 계속 사용할 수 있습니다.</p><p><a href="${studioUrl}">다시 불러오기</a></p></main>`;
       failureUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+      const domSummary = await captureDom();
+      if (!alive()) return;
+      this.diagnostic({ code, ...diagnosticContext(), ...(domSummary ? { domSummary } : {}) });
+      loading = undefined;
       await window.loadURL(failureUrl).catch(() => {});
       if (alive()) { visible = true; window.show(); window.focus(); }
     };
-    const inspect = async () => {
+    const inspect = async (current: number) => {
       if (checking || !alive() || failureUrl) return;
       checking = true;
       try {
         const state = await window.webContents.executeJavaScript(studioRenderProbe);
-        if (!alive() || failureUrl) return;
+        if (!alive() || failureUrl || current !== attempt) return;
         if (state === 'ready') {
           clearInterval(timer); ready = true; this.diagnostic({ code: 'STUDIO_READY', ...diagnosticContext() });
           if (!visible) { visible = true; window.show(); window.focus(); }
@@ -140,30 +147,33 @@ export class OpenVikingStudio {
           await showFailure('STUDIO_CREDENTIAL_STORAGE');
         } else if (state === 'auth' || state === 'api') {
           await showFailure(state === 'auth' ? 'STUDIO_AUTH' : 'STUDIO_RESOURCE');
-        } else if (Date.now() - shownAt > STUDIO_RENDER_TIMEOUT_MS) {
-          await showFailure(lastCode);
         }
       } catch {
-        if (Date.now() - shownAt > STUDIO_RENDER_TIMEOUT_MS) await showFailure('STUDIO_SCRIPT');
-      } finally { checking = false; }
+        if (current === attempt && lastCode === 'STUDIO_RENDER_TIMEOUT') lastCode = 'STUDIO_SCRIPT';
+      } finally { if (current === attempt) checking = false; }
     };
     const load = () => {
       if (loading) return loading;
-      loading = (async () => {
-        clearInterval(timer);
-        failureUrl = undefined; ready = false; lastCode = 'STUDIO_RENDER_TIMEOUT';
-        blockedUrls = []; loadFailures = []; consoleMessages = [];
-        try {
-          await window.loadURL(studioUrl);
-        } catch {
-          if (alive()) await showFailure(lastCode === 'STUDIO_RENDER_TIMEOUT' ? 'STUDIO_NAVIGATION' : lastCode);
-          return;
-        }
-        if (!alive() || failureUrl) return;
-        shownAt = Date.now();
-        timer = setInterval(() => { void inspect(); }, 750); timer.unref();
-        void inspect();
-      })().finally(() => { loading = undefined; });
+      const current = ++attempt;
+      const startedAt = Date.now();
+      let navigated = false;
+      clearInterval(timer);
+      failureUrl = undefined; ready = false; checking = false; lastCode = 'STUDIO_RENDER_TIMEOUT';
+      blockedUrls = []; loadFailures = []; consoleMessages = [];
+      timer = setInterval(() => {
+        if (!alive() || failureUrl || current !== attempt) return;
+        if (Date.now() - startedAt >= STUDIO_RENDER_TIMEOUT_MS) {
+          void showFailure(!navigated && lastCode === 'STUDIO_RENDER_TIMEOUT' ? 'STUDIO_NAVIGATION' : lastCode);
+        } else if (navigated) void inspect(current);
+      }, 750);
+      timer.unref();
+      loading = window.loadURL(studioUrl).then(() => {
+        if (current !== attempt || failureUrl) return;
+        navigated = true;
+        void inspect(current);
+      }, async () => {
+        if (current === attempt && alive()) await showFailure(lastCode === 'STUDIO_RENDER_TIMEOUT' ? 'STUDIO_NAVIGATION' : lastCode);
+      }).finally(() => { if (current === attempt) loading = undefined; });
       return loading;
     };
     window.webContents.on('render-process-gone', () => {

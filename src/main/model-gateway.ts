@@ -29,7 +29,7 @@ export class ModelGateway {
   private server?: Server;
   private requests = new Set<AbortController>();
   constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void,
-    private skillContext?: (messages: unknown, requestBytes: number) => Promise<string | undefined>, private outputLimit = 4096, private behavior: 'ned' | 'native' = 'ned') {}
+    private skillContext?: (messages: unknown, requestBytes: number, sessionId?: string) => Promise<string | undefined>, private outputLimit = 4096, private behavior: 'ned' | 'native' = 'ned') {}
   async start() {
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== `Bearer ${this.token}`) { res.writeHead(401).end(); return; }
@@ -76,7 +76,9 @@ export class ModelGateway {
         const withoutThinking = (policy?.disableQwenThinking ?? true) && /qwen/i.test(this.config.model.id);
         if (compacting) body = summaryRequest(original, summaryLimit, false, withoutThinking);
         if (this.behavior === 'ned' && this.skillContext && !compacting) hideUnrequestedTools(body);
-        const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages,requestBytes);
+        const sessionHeader = req.headers['x-opencode-session-id'];
+        const sessionId = typeof sessionHeader === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(sessionHeader) ? sessionHeader : undefined;
+        const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages, requestBytes, sessionId);
         if (guidance && Array.isArray(body.messages)) {
           const first = body.messages[0];
           // Several OpenAI-compatible chat templates accept only one initial

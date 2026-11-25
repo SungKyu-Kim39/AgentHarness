@@ -1,16 +1,13 @@
 """Offline Python package API & docstring inspector (local Context7 equivalent).
 
 Reads installed distribution metadata and parses .py/.pyi files statically via Python AST
-without executing arbitrary third-party import-time code. For compiled C extensions (.pyd/.so)
-where static AST cannot see a symbol, falls back to a guarded isolated inspection with an
-audit hook blocking network access, file writes, and subprocess spawning.
+without importing third-party packages or executing their startup code.
 """
 import ast
-import importlib
 import importlib.metadata
 import inspect
 import json
-import os
+import re
 from pathlib import Path
 import sys
 
@@ -157,7 +154,7 @@ def _find_site_dirs(env_prefix: Path):
     for path in candidates:
         if path.is_dir():
             resolved = path.resolve()
-            if str(resolved) not in seen:
+            if resolved.is_relative_to(env_prefix) and str(resolved) not in seen:
                 seen.add(str(resolved))
                 found.append(resolved)
     return found
@@ -181,7 +178,7 @@ def _collect_source_files(site_dirs, package: str, dist):
     root_names = []
     if dist is not None:
         top = (dist.read_text('top_level.txt') or '').splitlines()
-        root_names.extend([t.strip() for t in top if t.strip() and not t.startswith('_')])
+        root_names.extend(t for t in map(str.strip, top) if re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_]*', t))
     cleaned = package.replace('-', '_')
     if cleaned not in root_names:
         root_names.append(cleaned)
@@ -191,11 +188,13 @@ def _collect_source_files(site_dirs, package: str, dist):
     for sp in site_dirs:
         for root_name in root_names:
             pkg_dir = sp / root_name
+            if pkg_dir.is_symlink():
+                continue
             if pkg_dir.is_dir():
                 for p in sorted(pkg_dir.rglob('*')):
                     if len(files) >= 120:
                         break
-                    if not p.is_file():
+                    if not p.is_file() or not p.resolve().is_relative_to(pkg_dir) or p.stat().st_size > 1024 * 1024:
                         continue
                     rel_parts = p.relative_to(sp).parts
                     if any(part == '__pycache__' or part == 'tests' or part == 'test' for part in rel_parts):
@@ -215,7 +214,7 @@ def _collect_source_files(site_dirs, package: str, dist):
             else:
                 for suffix in ('.pyi', '.py'):
                     single = sp / (root_name + suffix)
-                    if single.is_file():
+                    if single.is_file() and single.resolve().is_relative_to(sp) and single.stat().st_size <= 1024 * 1024:
                         files.append((single, root_name))
                         if root_name not in submodules:
                             submodules.append(root_name)
@@ -224,73 +223,6 @@ def _collect_source_files(site_dirs, package: str, dist):
                         has_native_ext = True
     # Prefer .pyi stubs before .py for the same module when deduplicating later, keep both parsed
     return files, submodules[:80], has_native_ext
-
-
-def _runtime_fallback(site_dirs, module_name: str, symbol: str | None):
-    def audit(event, args):
-        if event in ('socket.connect', 'socket.connect_ex', 'socket.getaddrinfo', 'socket.gethostbyname', 'socket.sendto'):
-            raise PermissionError('Network blocked during package inspection')
-        if event in ('os.system', 'os.exec', 'os.fork', 'pty.spawn', 'subprocess.Popen', 'os.posix_spawn'):
-            raise PermissionError('Subprocess creation blocked during package inspection')
-        if event == 'open':
-            _file, mode, flags = args
-            writing = (isinstance(mode, str) and any(c in mode for c in 'wax+')) or (
-                isinstance(flags, int) and bool(flags & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND))
-            )
-            if writing:
-                raise PermissionError('File writes blocked during package inspection')
-        elif event in ('os.remove', 'os.rmdir', 'os.mkdir', 'os.rename', 'os.link', 'os.symlink'):
-            raise PermissionError('Filesystem mutation blocked during package inspection')
-
-    for sp in reversed(site_dirs):
-        if str(sp) not in sys.path:
-            sys.path.insert(0, str(sp))
-    sys.addaudithook(audit)
-    mod = importlib.import_module(module_name)
-    results = []
-    if symbol:
-        obj = mod
-        for part in symbol.split('.'):
-            obj = getattr(obj, part)
-        try:
-            sig = str(inspect.signature(obj))
-        except Exception:
-            sig = ''
-        results.append({
-            'kind': 'class' if inspect.isclass(obj) else 'function' if callable(obj) else 'attribute',
-            'module': module_name,
-            'name': symbol,
-            'qualname': f'{module_name}.{symbol}',
-            'signature': f'{symbol}{sig}' if sig else symbol,
-            'doc': _trim_doc(inspect.getdoc(obj) or '', 1200),
-            'source': 'guarded-runtime-inspect',
-        })
-    else:
-        for name in sorted(dir(mod)):
-            if name.startswith('_'):
-                continue
-            try:
-                obj = getattr(mod, name)
-            except Exception:
-                continue
-            if not (callable(obj) or inspect.isclass(obj)):
-                continue
-            try:
-                sig = str(inspect.signature(obj))
-            except Exception:
-                sig = ''
-            results.append({
-                'kind': 'class' if inspect.isclass(obj) else 'function',
-                'module': module_name,
-                'name': name,
-                'qualname': f'{module_name}.{name}',
-                'signature': f'{name}{sig}' if sig else name,
-                'doc': _trim_doc(inspect.getdoc(obj) or '', 240),
-                'source': 'guarded-runtime-inspect',
-            })
-            if len(results) >= 40:
-                break
-    return results
 
 
 def main():
@@ -350,26 +282,10 @@ def main():
     else:
         matched = all_symbols[:40]
 
-    mode = 'static-ast'
-    if not matched and (has_native_ext or symbol):
-        try:
-            mod_name = package.replace('-', '_')
-            if symbol and '.' in symbol:
-                parts = symbol.split('.')
-                try:
-                    matched = _runtime_fallback(site_dirs, f'{mod_name}.{parts[0]}', '.'.join(parts[1:]))
-                except Exception:
-                    matched = _runtime_fallback(site_dirs, mod_name, symbol)
-            else:
-                matched = _runtime_fallback(site_dirs, mod_name, symbol)
-            mode = 'guarded-runtime-inspect'
-        except Exception as exc:
-            matched = []
-            mode = f'static-ast (runtime fallback skipped: {type(exc).__name__})'
-
     payload = {
         'status': 'ok',
-        'mode': mode,
+        'mode': 'static-ast',
+        'nativeSymbolsNotInspected': has_native_ext,
         'package': dist.metadata.get('Name') if dist else package,
         'version': dist.version if dist else 'unknown',
         'summary': (dist.metadata.get('Summary') if dist else '') or '',
@@ -379,12 +295,13 @@ def main():
         'totalSymbolsParsed': len(all_symbols),
         'matches': matched[:50],
     }
-    text = json.dumps(payload, ensure_ascii=False, indent=2)
+    text = json.dumps(payload, ensure_ascii=False)
+    while len(text) > max_chars and payload['matches']:
+        payload['matches'].pop()
+        payload['truncated'] = True
+        text = json.dumps(payload, ensure_ascii=False)
     if len(text) > max_chars:
-        while len(payload['matches']) > 1 and len(json.dumps(payload, ensure_ascii=False, indent=2)) > max_chars:
-            payload['matches'].pop()
-            payload['truncated'] = True
-        text = json.dumps(payload, ensure_ascii=False, indent=2)[:max_chars]
+        text = json.dumps({'status': 'ok', 'mode': 'static-ast', 'truncated': True, 'matches': []})
     print(text)
 
 

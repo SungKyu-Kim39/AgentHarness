@@ -1,5 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { copyFile, lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ProjectFiles } from '../src/main/files';
 import { OwnedCommand } from './owned-command';
@@ -276,7 +276,7 @@ const { chromium } = require(pwPath);
   try {
     const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
     await page.route('**/*', route => {
-      if (route.request().url().startsWith('file://')) return route.continue();
+      if (route.request().url() === pathToFileURL(process.env.NED_HTML).href) return route.continue();
       return route.abort();
     });
     await page.goto(pathToFileURL(process.env.NED_HTML).href, { waitUntil: 'load' });
@@ -317,7 +317,7 @@ const { chromium } = require(pwPath);
     return readFile(outFile);
   }
 
-  async generate(session: string, project: string, input: DiagramInput, signal?: AbortSignal) {
+  async generate(_session: string, project: string, input: DiagramInput, signal?: AbortSignal) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
     await this.options.verifyWorkspaceTools?.();
@@ -329,6 +329,10 @@ const { chromium } = require(pwPath);
     }
     const files = new ProjectFiles(project);
     const targetPath = await files.resolve(input.outputPath, true);
+    if (await lstat(targetPath).then(() => true, (error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return false;
+      throw error;
+    })) throw new Error('대상 파일이 이미 있습니다. 새 출력 경로를 지정하세요.');
 
     await mkdir(path.join(this.root, 'diagram-work'), { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(this.root, 'diagram-work/gen-'));
@@ -346,28 +350,17 @@ const { chromium } = require(pwPath);
       }
 
       const hash = sha(bytes);
-      const existed = await lstat(targetPath).then(s => s.isFile(), () => false);
       const ok = await this.options.approve(
-        `다이어그램 파일 ${existed ? '덮어쓰기' : '생성'} 승인: ${input.outputPath}`,
+        `다이어그램 파일 생성 승인: ${input.outputPath}`,
         `프로젝트: ${project}\n형식: ${input.format}\n출력 경로: ${input.outputPath}\n크기: ${bytes.length} bytes\nSHA-256: ${hash}`,
         combined,
       );
       if (!ok) throw new Error('다이어그램 생성을 취소했습니다.');
       combined.throwIfAborted();
 
-      let snapshotId: string | undefined;
-      if (existed) {
-        snapshotId = randomUUID();
-        const snapDir = path.join(this.root, 'snapshots', session);
-        await mkdir(snapDir, { recursive: true, mode: 0o700 });
-        await copyFile(targetPath, path.join(snapDir, `${snapshotId}${expectedExt}`));
-      }
-      await mkdir(path.dirname(targetPath), { recursive: true });
-      const tmpDest = `${targetPath}.${randomUUID()}.tmp`;
-      await writeFile(tmpDest, bytes);
-      await rename(tmpDest, targetPath);
+      await files.createGeneratedFile(input.outputPath, bytes, combined);
 
-      return { status: 'written', format: input.format, path: input.outputPath, bytes: bytes.length, sha256: hash, ...(snapshotId ? { snapshot: snapshotId } : {}) };
+      return { status: 'written', format: input.format, path: input.outputPath, bytes: bytes.length, sha256: hash };
     } finally {
       await rm(work, { recursive: true, force: true }).catch(() => {});
     }

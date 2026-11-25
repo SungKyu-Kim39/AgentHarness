@@ -2,6 +2,11 @@
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.4.0**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
+
+## 0.4.0 rebuild1 교차 검토
+
+공개 0.4.0 이후 교차 검토한 경계와 후속 항목은 [rebuild1 변경 사항](docs/changes-0.4.0-rebuild1.md)에 기록했습니다. 제품 버전은 0.4.0이며, 기존 0.4.0 태그 및 설치본의 검증 기록은 해당 배포본에 해당합니다.
+
 ## 0.4.0 배포 기준
 
 소스 `fa3a630fb4699b13c45a9034a60af81ce7ffd692`를 사용했습니다. Windows 새 설치·0.3.16-rebuild1 업데이트와 48개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.4.0.md)

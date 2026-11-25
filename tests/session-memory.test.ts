@@ -181,8 +181,8 @@ test('SessionMemoryManager deduplicates messages, commits on N turns / session s
 
   // Auto-recall injects profile + high-score hit (filtering low score) and caches repeated tool-loop calls.
   const queryMessages = [{ role: 'user', content: 'VS2019 빌드 설정 어떻게 맞춰?' }];
-  const recalled1 = await manager.recallContext(queryMessages, 1024);
-  const recalled2 = await manager.recallContext(queryMessages, 1024);
+  const recalled1 = await manager.recallContext(queryMessages, 1024, 's1');
+  const recalled2 = await manager.recallContext(queryMessages, 1024, 's1');
   assert.equal(recallCalls, 1);
   assert.equal(recalled1, recalled2);
   assert.ok(recalled1?.includes('VS2019 x64 Release 빌드 선호'));
@@ -203,7 +203,7 @@ test('SessionMemoryManager deduplicates messages, commits on N turns / session s
   assert.deepEqual(committed, ['ned-s1']);
 
   // After commit, recall cache was cleared so next recall queries fresh memories.
-  await manager.recallContext(queryMessages, 1024);
+  await manager.recallContext(queryMessages, 1024, 's1');
   assert.equal(recallCalls, 2);
 
   // Sync 1 turn in s2, then close -> close preserves uncommittedTurns on disk without racing OpenViking shutdown.
@@ -234,7 +234,7 @@ test('SessionMemoryManager deduplicates messages, commits on N turns / session s
 
   // Degrades silently when OpenViking is not ready.
   ready = false;
-  assert.equal(await manager.recallContext(queryMessages, 1024), undefined);
+  assert.equal(await manager.recallContext(queryMessages, 1024, 's1'), undefined);
 });
 
 test('OpenVikingGateway allowlists OpenViking internal memory tools while blocking arbitrary tools and non-text parts', async t => {
@@ -343,7 +343,7 @@ test('turn and session opt-out skip both recall and capture/commit across reload
   await manager.load();
 
   // Turn opt-out skips BOTH recall AND capture/commit.
-  assert.equal(await manager.recallContext([{ role: 'user', content: '이건 기억하지 마. 임시 테스트 계정 확인해줘.' }], 512), undefined);
+  assert.equal(await manager.recallContext([{ role: 'user', content: '기억에서 빼줘. 임시 테스트 계정 확인해줘.' }], 512, 'turn-s'), undefined);
   assert.equal(recallQueries.length, 0);
   await manager.syncAndMaybeCommit('turn-s', true);
   assert.equal(appended.length, 0);
@@ -354,7 +354,7 @@ test('turn and session opt-out skip both recall and capture/commit across reload
     { id: 'u2', type: 'user', text: '이제 일반 빌드 규칙 정리해줘' },
     { id: 'a2', type: 'assistant', time: { created: 3, completed: 4 }, content: [{ type: 'text', text: '일반 빌드 규칙입니다.' }] },
   );
-  assert.ok(await manager.recallContext([{ role: 'user', content: '이제 일반 빌드 규칙 정리해줘' }], 512));
+  assert.ok(await manager.recallContext([{ role: 'user', content: '이제 일반 빌드 규칙 정리해줘' }], 512, 'turn-s'));
   assert.equal(recallQueries.length, 1);
   await manager.syncAndMaybeCommit('turn-s');
   assert.equal(appended.length, 1);
@@ -368,10 +368,11 @@ test('turn and session opt-out skip both recall and capture/commit across reload
       { role: 'user', content: '이 세션은 기억하지 마. 비공개 보안 검토 시작하자.' },
       { role: 'assistant', content: '보안 검토를 진행합니다.' },
       { role: 'user', content: '다음 단계 체크리스트 보여줘' },
-    ], 512),
+    ], 512, 'sess-s'),
     undefined,
   );
   assert.equal(recallQueries.length, 1);
+  await manager.onUserPrompt('sess-s', '이 세션은 기억하지 마');
   await manager.syncAndMaybeCommit('sess-s', true);
   await manager.close();
   assert.equal(appended.length, 1);
@@ -384,10 +385,10 @@ test('turn and session opt-out skip both recall and capture/commit across reload
   );
   const reloaded = makeManager();
   await reloaded.load();
-  reloaded.onSessionActivated('sess-s');
+  reloaded.onSessionActivated('other-session');
   // Even after compaction replaces the original opt-out message from chatMessages, recall remains disabled for sess-s.
   assert.equal(
-    await reloaded.recallContext([{ role: 'user', content: '다음 보안 항목 확인해줘' }], 512),
+    await reloaded.recallContext([{ role: 'user', content: '다음 보안 항목 확인해줘' }], 512, 'sess-s'),
     undefined,
   );
   assert.equal(recallQueries.length, 1);
@@ -468,7 +469,7 @@ test('scrubMemoryText masks JWT, PEM private keys, AWS keys, DB credentials, and
     ],
   });
   await manager.load();
-  await manager.recallContext([{ role: 'user', content: payload }], 1024);
+  await manager.recallContext([{ role: 'user', content: payload }], 1024, 'sec-1');
   await manager.syncAndMaybeCommit('sec-1');
   await manager.close();
 

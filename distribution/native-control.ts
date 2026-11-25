@@ -79,7 +79,7 @@ export class NativeRuntime {
   private tools?: HostTools;
   private proxy?: SidecarProxy;
   private projects = new Set<string>();
-  private activeProject?: string;
+  private attachedProjects = new Map<string, string>();
   private exit?: Promise<void>;
   private queue: Promise<unknown> = Promise.resolve();
   private engineConfig = '';
@@ -108,11 +108,14 @@ export class NativeRuntime {
         const transport = { ...provider?.settings, ...definition?.settings };
         const gateway = new ModelGateway({ ...config, model: m }, { timeout: transport.timeout, headerTimeout: transport.headerTimeout, chunkTimeout: transport.chunkTimeout },
           event => { void atomicJSON(path.join(this.root, 'model-gateway-status.json'), { ...event, diagnosticRevision: 1, knowledgeRequests: this.knowledge?.modelActivity() ?? { completion: 0, embedding: 0 } }).catch(() => {}); },
-          async (messages, bytes) => {
+          async (messages, bytes, session) => {
+            if (!session) return undefined;
+            const project = this.attachedProjects.get(session);
+            if (!project || !this.projects.has(project)) return undefined;
             if (JSON.stringify(Array.isArray(messages) ? messages.filter((item: any) => item.role === 'system') : []).includes('NED_EGM_GOLDFISH_V1')) return undefined;
             const [skillsGuidance, memoryGuidance] = await Promise.all([
-              this.tools ? automaticSkillContext(this.tools.skills, messages, bytes < 1024 * 1024 ? 6500 : 0, this.activeProject) : Promise.resolve(undefined),
-              this.memory ? this.memory.recallContext(messages, bytes) : Promise.resolve(undefined),
+              this.tools ? automaticSkillContext(this.tools.skills, messages, bytes < 1024 * 1024 ? 6500 : 0, project) : Promise.resolve(undefined),
+              this.memory ? this.memory.recallContext(messages, bytes, session) : Promise.resolve(undefined),
             ]);
             const parts = [skillsGuidance, memoryGuidance].filter((part): part is string => !!part);
             return parts.length ? parts.join('\n\n') : undefined;
@@ -121,11 +124,18 @@ export class NativeRuntime {
         this.models.push({ provider: m.providerID ?? providerID(m.name), name: m.name, id: m.modelKey ?? m.id, gateway });
       }
       const saved = await readFile(path.join(this.root, 'approved-projects.json'), 'utf8').then(text => JSON.parse(text)).catch(() => []);
-      if (Array.isArray(saved)) for (const directory of saved) if (typeof directory === 'string' && path.isAbsolute(directory)) { this.projects.add(directory); this.activeProject ??= directory; }
+      if (Array.isArray(saved)) for (const directory of saved) {
+        if (typeof directory !== 'string' || !path.isAbsolute(directory)) continue;
+        const project = await this.canonicalProject(directory).catch(() => undefined);
+        if (project) this.projects.add(project);
+      }
       const redactor = new Redactor();
       for (const model of configured) redactor.add(model.apiKey);
       if (config.openViking) { redactor.add(config.openViking.embedding.apiKey); if (config.openViking.vlm) redactor.add(config.openViking.vlm.apiKey); }
-      this.subagents=new Subagents(this.root,(route,body,signal)=>this.subagentAPI(route,body,signal),id=>this.sessionProject(id),id=>this.sessionRequest(id),(project,label,signal)=>this.tools!.worktrees.create(project,label,signal));await this.subagents.load();
+      this.subagents=new Subagents(this.root,(route,body,signal)=>this.subagentAPI(route,body,signal),id=>this.sessionProject(id),id=>this.sessionRequest(id),async (project, label, signal) => {
+        if (!await this.approveOperation('격리 git worktree 샌드박스 생성', `프로젝트: ${project}\n라벨: ${label}`, signal)) throw new Error('worktree 생성을 취소했습니다.');
+        return this.tools!.worktrees.create(project, label, signal);
+      });await this.subagents.load();
       this.tools = new HostTools(this.root, this.resources, { sessionScope:(session,tool,args)=>this.subagents!.scope(session,tool,args),subagents:this.subagents,project: id => this.sessionProject(id), request: id => this.sessionRequest(id), permissionSignal: () => this.permissions?.signal, fullAccess: () => this.permissions?.mode === 'full', toolRequested: (session, name, extraContext) => specializedToolRequested(name, [...(this.turnHistory.get(session) ?? []), extraContext ?? ''].filter(Boolean).join('\n')), approve: (message, detail, signal) => this.approveOperation(redactor.text(message), redactor.text(detail), signal), approveExplicit: (message, detail, signal) => this.approveExplicitOperation(redactor.text(message), redactor.text(detail), signal), approveEdit: (message, detail, signal) => this.approveFile(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor, validateEdit: (session, project, proposal, signal) => this.editorCheck?.(session, project, proposal, signal) ?? Promise.resolve(),
         choosePython: (project, environments, signal) => this.pythonSelector ? this.pythonSelector(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창을 사용할 수 없습니다.')),
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
@@ -190,29 +200,45 @@ export class NativeRuntime {
   async canonicalProject(directory: string) {
     const selected = await realpath(directory);
     if (!(await stat(selected)).isDirectory()) throw new Error('프로젝트 폴더를 선택하세요.');
-    if (selected === path.parse(selected).root || selected === this.root || selected.startsWith(this.root + path.sep) || selected.startsWith(this.resources + path.sep)) throw new Error('프로젝트로 사용할 수 없는 앱 관리 경로입니다.');
+    const within = (base: string, target: string) => {
+      const relative = path.relative(base, target);
+      return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative);
+    };
+    const protectedRoots = [this.root, this.resources, path.join(path.dirname(this.root), 'L-Vibe')];
+    const home = process.env.USERPROFILE ?? process.env.HOME;
+    if (home && path.isAbsolute(home)) protectedRoots.push(
+      ...['.ssh', '.aws', '.gnupg', '.kube', '.docker', '.opencode', '.config/opencode', '.agents/skills', '.npmrc', '.pypirc', '.netrc', '.git-credentials'].map(name => path.join(home, name)));
+    for (const data of [process.env.APPDATA, process.env.LOCALAPPDATA]) {
+      if (data && path.isAbsolute(data)) protectedRoots.push(...['Ned', 'Ned-Launcher', 'L-Vibe', 'Zed', 'opencode'].map(name => path.join(data, name)));
+    }
+    for (const root of protectedRoots) {
+      const canonical = await realpath(root).catch(() => path.resolve(root));
+      if (within(canonical, selected) || within(selected, canonical)) throw new Error('앱 관리·사용자 보호 경로 또는 이를 포함하는 폴더는 프로젝트로 사용할 수 없습니다.');
+    }
+    if (selected === path.parse(selected).root) throw new Error('드라이브 루트는 프로젝트로 사용할 수 없습니다.');
     return selected;
   }
   isProjectAuthorized(directory: string) { return this.projects.has(directory); }
   async authorizeProject(directory: string) {
     const selected = await this.canonicalProject(directory);
-    this.projects.add(selected); this.activeProject = selected; await atomicJSON(path.join(this.root, 'approved-projects.json'), [...this.projects]);
+    this.projects.add(selected); await atomicJSON(path.join(this.root, 'approved-projects.json'), [...this.projects]);
   }
   async revokeProjectApprovals() {
     this.projects.clear();
     await atomicJSON(path.join(this.root, 'approved-projects.json'), []);
   }
   private turnHistory = new Map<string, string[]>();
-  setTurnText(session: string, text: string) {
+  async setTurnText(session: string, text: string) {
+    await this.memory?.onUserPrompt(session, text);
     const history = [...(this.turnHistory.get(session) ?? []), text.slice(0, 16000)].slice(-2);
     this.turnHistory.set(session, history);
   }
-  onSessionActivated(session: string) {
+  onSessionActivated(session: string, project: string) {
+    this.attachedProjects.set(session, project);
     this.memory?.onSessionActivated(session);
-    void this.sessionProject(session).then(project => { this.activeProject = project; }, () => {});
   }
   onTurnComplete(session: string) { this.memory?.onTurnComplete(session); }
-  onSessionDisconnected(session: string) { this.turnHistory.delete(session); this.memory?.onSessionDisconnected(session); }
+  onSessionDisconnected(session: string) { this.attachedProjects.delete(session); this.turnHistory.delete(session); this.memory?.onSessionDisconnected(session); }
   async skillCommands(session: string) {
     if (!this.tools) throw new Error('Ned 스킬이 준비되지 않았습니다.');
     const project = await this.sessionProject(session);
@@ -259,10 +285,10 @@ export class NativeRuntime {
   async interruptSession(id: string) {
     if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('Invalid session');
     this.turnHistory.delete(id);
-    await this.cancelChildren(id);
-    const pythonStopped = this.tools?.waitPythonStop(id) ?? Promise.resolve();
-    if (!this.backend) { await pythonStopped; return; }
-    await Promise.all([pythonStopped, fetch(this.backend.url + '/api/session/' + id + '/interrupt', { method: 'POST', redirect: 'error', headers: { Authorization: 'Basic ' + Buffer.from('opencode:' + this.backend.password).toString('base64') }, signal: AbortSignal.timeout(15000) }).then(response => { if (!response.ok) throw new Error('작업 중지 확인 실패'); })]);
+    const engine = this.backend ? this.subagentAPI('/api/session/' + id + '/interrupt', {}).then(() => {}) : Promise.resolve();
+    const results = await Promise.allSettled([engine, this.cancelChildren(id)]);
+    const failure = results.find(result => result.status === 'rejected');
+    if (failure?.status === 'rejected') throw failure.reason;
   }
   private async sessionRequest(id: string) {
     if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('엔진 요청을 확인할 수 없습니다.');
@@ -287,7 +313,6 @@ export class NativeRuntime {
     if (typeof directory !== 'string' || !path.isAbsolute(directory)) throw new Error('프로젝트 범위를 확인할 수 없습니다.');
     const selected = await realpath(directory);
     if (!this.projects.has(selected)) throw new Error('프로젝트 메뉴에서 이 폴더를 다시 선택하여 접근 범위를 확인하세요.');
-    this.activeProject = selected;
     return selected;
   }
   private environment(password: string): NodeJS.ProcessEnv {

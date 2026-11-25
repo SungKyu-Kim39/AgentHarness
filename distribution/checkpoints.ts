@@ -9,7 +9,7 @@ import { OwnedCommand } from './owned-command';
 const isWin = process.platform === 'win32';
 const sha = (v: string | Buffer) => createHash('sha256').update(v).digest('hex');
 const CHECKPOINT_ID = /^[a-f0-9]{7,40}$/;
-const MAX_CHECKPOINT_FILE_BYTES = 4 * 1024 * 1024;
+const MAX_CHECKPOINT_FILE_BYTES = 2 * 1024 * 1024;
 const EXCLUDE_RULES = [
   '.git/',
   '.venv/',
@@ -141,7 +141,8 @@ export class ProjectCheckpoints {
     const eligible: string[] = [];
     let skippedLarge = 0;
     for (const rel of listed) {
-      const resolved = await files.resolve(rel).catch(() => undefined);
+      if (/(?:^|\/)(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.git-credentials)$|\.(?:pem|key|pfx|p12)$/i.test(rel)) continue;
+      const resolved = await files.resolve(rel, true).catch(() => undefined);
       if (!resolved) continue;
       const stat = await lstat(resolved).catch(() => undefined);
       if (!stat?.isFile() || stat.isSymbolicLink()) continue;
@@ -149,10 +150,12 @@ export class ProjectCheckpoints {
         skippedLarge++;
         continue;
       }
+      if (await files.readStrictUtf8(rel).catch(() => undefined) === undefined) continue;
       eligible.push(rel);
     }
     // Clear index first so deletions are accurately reflected in the shadow commit.
-    await this.runGit(project, gitDir, work, ['read-tree', '--empty'], signal);
+    const reset = await this.runGit(project, gitDir, work, ['read-tree', '--empty'], signal);
+    if (reset.exitCode !== 0) throw new Error('체크포인트 임시 인덱스를 초기화하지 못했습니다.');
     const batchSize = 200;
     for (let i = 0; i < eligible.length; i += batchSize) {
       const chunk = eligible.slice(i, i + batchSize);
@@ -287,15 +290,16 @@ export class ProjectCheckpoints {
       // A in (commit -> current) means added after checkpoint -> delete to restore.
       // D in (commit -> current) means deleted after checkpoint -> recreate from commit.
       // M in (commit -> current) means modified after checkpoint -> overwrite from commit.
-      const status = await this.runGit(project, gitDir, work, ['diff', '--cached', '--name-status', '--no-renames', commit], signal);
-      const entries = status.stdout
-        .split('\n')
-        .map(l => l.trim())
-        .filter(Boolean)
-        .map(line => {
-          const [code, ...parts] = line.split('\t');
-          return { code, relPath: parts.join('\t') };
-        });
+      const status = await this.runGit(project, gitDir, work, ['diff', '--cached', '--name-status', '-z', '--no-renames', commit], signal);
+      if (status.exitCode !== 0 || status.outputTruncated) throw new Error('복원할 파일 목록을 모두 확인하지 못했습니다.');
+      const fields = status.stdout.split('\0');
+      const entries: Array<{ code: string; relPath: string }> = [];
+      for (let i = 0; i < fields.length - 1; i += 2) {
+        const code = fields[i];
+        const relPath = fields[i + 1];
+        if (!relPath || !['A', 'D', 'M'].includes(code)) throw new Error('지원하지 않는 체크포인트 변경 항목이 있습니다.');
+        entries.push({ code, relPath });
+      }
       if (!entries.length) {
         return { status: 'noop', checkpointId: commit, message: '현재 프로젝트 상태가 선택한 체크포인트와 동일합니다.', safetyCheckpointId: safety.checkpointId };
       }
@@ -309,7 +313,7 @@ export class ProjectCheckpoints {
           proposals.push(proposal);
         } else if (entry.code === 'M' || entry.code === 'D') {
           const blob = await this.runGit(project, gitDir, work, ['show', `${commit}:${entry.relPath}`], signal);
-          if (blob.exitCode !== 0) throw new Error(`체크포인트 파일 복원 읽기 실패: ${entry.relPath}`);
+          if (blob.exitCode !== 0 || blob.outputTruncated || blob.stdout.includes('\0')) throw new Error(`체크포인트 파일 복원 읽기 실패: ${entry.relPath}`);
           const proposal = await files.propose(randomUUID(), entry.relPath, blob.stdout);
           await hooks.validateEdit?.(session, project, proposal, signal);
           proposals.push(proposal);

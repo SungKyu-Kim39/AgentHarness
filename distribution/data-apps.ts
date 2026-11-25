@@ -134,6 +134,7 @@ export class DataApps {
     }
 
     // operation === 'start'
+    if (input.args?.length) throw new Error('프리뷰 서버는 호스트가 정한 실행 옵션만 사용합니다.');
     const activeCount = [...this.servers.values()].filter(s => ['starting', 'running', 'stopping'].includes(s.state)).length;
     if (activeCount >= 2) throw new Error('동시에 실행할 수 있는 로컬 프리뷰 서버는 최대 2개입니다. 기존 서버를 중지하세요.');
     const framework = input.framework ?? 'marimo';
@@ -197,6 +198,9 @@ export class DataApps {
     const id = randomUUID();
     const controller = new AbortController();
     const jobSignal = AbortSignal.any([controller.signal, this.abort.signal]);
+    const cancelStart = () => controller.abort();
+    combined.addEventListener('abort', cancelStart, { once: true });
+    if (combined.aborted) cancelStart();
     const entryObj: PreviewServer = {
       id,
       session,
@@ -229,13 +233,21 @@ export class DataApps {
       }
     })();
 
-    const ready = await waitForHttpReady(url, 12000, AbortSignal.any([combined, controller.signal]));
-    if (ready && entryObj.state === 'starting') {
-      entryObj.state = 'running';
-    } else if (entryObj.state === 'failed') {
-      throw new Error(`로컬 프리뷰 서버 시작 실패: ${entryObj.logs.slice(-1000) || entryObj.error || 'process exited'}`);
+    try {
+      const ready = await Promise.race([waitForHttpReady(url, 12000, jobSignal), entryObj.task.then(() => false)]);
+      combined.throwIfAborted();
+      if (ready && entryObj.state === 'starting') {
+        entryObj.state = 'running';
+        return { ...this.sanitize(entryObj), ready: true };
+      }
+      throw new Error(`로컬 프리뷰 서버 시작 실패: ${entryObj.logs.slice(-1000) || entryObj.error || '루프백 응답을 확인하지 못했습니다.'}`);
+    } finally {
+      combined.removeEventListener('abort', cancelStart);
+      if (entryObj.state !== 'running') {
+        controller.abort();
+        await entryObj.task;
+      }
     }
-    return { ...this.sanitize(entryObj), ready };
   }
 
   cancel(session: string) {
@@ -245,6 +257,11 @@ export class DataApps {
         s.controller.abort();
       }
     }
+  }
+
+  async stopped(session: string) {
+    await Promise.all([...this.servers.values()].filter(s => s.session === session).map(s => s.task));
+    if (this.commands.stoppingUnconfirmed) throw new Error('프리뷰 프로세스 종료를 확인하지 못했습니다.');
   }
 
   async close() {

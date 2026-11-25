@@ -67,12 +67,12 @@ export class AgentOwner {
           if (previous && previous !== peer) throw new Error('다른 편집기에서 사용 중인 세션입니다.');
           await this.runtime.activateEditScope(params.session);
           this.sessions.set(params.session, peer); attached.add(params.session);
-          this.runtime.onSessionActivated(params.session);
+          this.runtime.onSessionActivated(params.session, directory);
           return {};
         }
         if (method === 'turn/text') {
           if (!attached.has(params?.session) || typeof params?.text !== 'string') throw new Error('Session not attached');
-          this.runtime.setTurnText(params.session, params.text);
+          await this.runtime.setTurnText(params.session, params.text);
           return {};
         }
         if (method === 'turn/complete') {

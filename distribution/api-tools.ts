@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import http, { type Server } from 'node:http';
-import https from 'node:https';
 import path from 'node:path';
 import YAML from 'yaml';
 import { ProjectFiles } from '../src/main/files';
-import { OwnedCommand } from './owned-command';
+import { requestJSON } from '../src/main/http-request';
 
 export interface ApiMockInput {
   operation: 'start' | 'status' | 'stop';
@@ -37,11 +36,12 @@ interface MockServerEntry {
   url: string;
   server: Server;
   routes: ParsedRoute[];
+  closing?: Promise<void>;
   requests: Array<{ at: string; method: string; path: string; status: number }>;
 }
 
 function parseOpenApi(text: string, specPath: string): Record<string, any> {
-  const doc = /\.json$/i.test(specPath) ? JSON.parse(text) : YAML.parse(text);
+  const doc = /\.json$/i.test(specPath) ? JSON.parse(text) : YAML.parse(text, { maxAliasCount: 0 });
   if (!doc || typeof doc !== 'object' || (!doc.openapi && !doc.swagger) || !doc.paths || typeof doc.paths !== 'object') {
     throw new Error('유효한 OpenAPI 3.x 또는 Swagger 2.0 명세(paths 포함)가 아닙니다.');
   }
@@ -89,7 +89,7 @@ function synthesizeFromSchema(doc: Record<string, any>, rawSchema: any, depth = 
 function pickSuccessResponse(doc: Record<string, any>, operation: Record<string, any>): { status: number; body: any } {
   const responses = operation.responses ?? {};
   const statusKey = Object.keys(responses).find(k => /^2\d\d$/.test(k)) ?? Object.keys(responses)[0] ?? '200';
-  const status = /^\d{3}$/.test(statusKey) ? Number(statusKey) : 200;
+  const status = /^[2-5]\d{2}$/.test(statusKey) ? Number(statusKey) : 200;
   const resp = resolveRef(doc, responses[statusKey]);
   if (!resp) return { status, body: { ok: true } };
   // OpenAPI 3
@@ -161,50 +161,19 @@ function isLoopbackHost(hostname: string): boolean {
   return h === '127.0.0.1' || h === 'localhost' || h === '::1' || h === '[::1]';
 }
 
-function httpRequest(targetUrl: URL, method: string, headers: Record<string, string>, body?: string): Promise<{ status: number; contentType: string; body: string }> {
-  return new Promise((resolve, reject) => {
-    const client = targetUrl.protocol === 'https:' ? https : http;
-    const req = client.request(
-      targetUrl,
-      { method, headers: { Accept: 'application/json', ...headers, ...(body ? { 'Content-Type': 'application/json', 'Content-Length': String(Buffer.byteLength(body)) } : {}) }, timeout: 10000 },
-      res => {
-        const chunks: Buffer[] = [];
-        let size = 0;
-        res.on('data', (c: Buffer) => {
-          if (size < 512 * 1024) { chunks.push(c); size += c.length; }
-        });
-        res.on('end', () => {
-          resolve({
-            status: res.statusCode ?? 0,
-            contentType: String(res.headers['content-type'] ?? ''),
-            body: Buffer.concat(chunks).toString('utf8'),
-          });
-        });
-      },
-    );
-    req.once('error', reject);
-    req.once('timeout', () => { req.destroy(new Error('Request timed out')); });
-    if (body) req.write(body);
-    req.end();
-  });
-}
-
 /** Local OpenAPI/Swagger mock server and contract verification tools. */
 export class ApiTools {
   private mocks = new Map<string, MockServerEntry>();
-  private commands: OwnedCommand;
   private abort = new AbortController();
 
   constructor(
-    private resources: string,
+    _resources: string,
     private options: {
       approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
       approveExplicit?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
-      resolveVenvPython?: (project: string) => Promise<{ kind: 'venv' | 'conda'; prefix: string; python: string } | undefined>;
+      reservedPorts?: () => number[];
     },
-  ) {
-    this.commands = new OwnedCommand(resources);
-  }
+  ) {}
 
   ports(): number[] {
     return [...this.mocks.values()].map(m => m.port);
@@ -255,7 +224,9 @@ export class ApiTools {
     const id = randomUUID();
     const requests: MockServerEntry['requests'] = [];
     const server = http.createServer((req, res) => {
-      const reqUrl = new URL(req.url ?? '/', 'http://127.0.0.1');
+      let reqUrl: URL;
+      try { reqUrl = new URL(req.url ?? '/', 'http://127.0.0.1'); }
+      catch { res.writeHead(400).end(); return; }
       const method = (req.method ?? 'GET').toUpperCase();
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD');
@@ -268,11 +239,16 @@ export class ApiTools {
         res.writeHead(404, { 'Content-Type': 'application/json' }).end(JSON.stringify({ error: 'Not Found in OpenAPI spec', method, path: reqUrl.pathname }));
         return;
       }
-      const { status, body } = pickSuccessResponse(doc, matched.operation);
+      let status: number, body: string | undefined;
+      try {
+        const picked = pickSuccessResponse(doc, matched.operation);
+        status = picked.status;
+        body = method === 'HEAD' || status === 204 || status === 304 ? undefined : JSON.stringify(picked.body);
+      } catch { res.writeHead(500).end(); return; }
       requests.push({ at: new Date().toISOString(), method, path: reqUrl.pathname, status });
       if (requests.length > 200) requests.shift();
       res.writeHead(status, { 'Content-Type': 'application/json' });
-      res.end(method === 'HEAD' ? undefined : JSON.stringify(body));
+      res.end(body);
     });
 
     await new Promise<void>((resolve, reject) => {
@@ -286,15 +262,23 @@ export class ApiTools {
     }
     const url = `http://127.0.0.1:${addr.port}`;
     this.mocks.set(id, { id, session, project, specPath: input.specPath, port: addr.port, url, server, routes, requests });
+    if (combined.aborted) {
+      await this.closeMock(id);
+      combined.throwIfAborted();
+    }
     return { status: 'running', id, url, specPath: input.specPath, routes: routes.map(r => `${r.method} ${r.template}`).slice(0, 60) };
   }
 
-  async contractTest(project: string, input: ApiContractTestInput, signal?: AbortSignal) {
+  async contractTest(session: string, project: string, input: ApiContractTestInput, signal?: AbortSignal) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
+    if (input.useSchemathesis) throw new Error('Schemathesis 연동은 요청 상한과 대상 범위를 확인할 수 있을 때까지 비활성화되어 있습니다.');
+    if (Object.keys(input.headers ?? {}).some(name => /^(host|connection|content-length|transfer-encoding|upgrade|proxy-)/i.test(name))) {
+      throw new Error('요청 주소와 전송 방식을 바꾸는 HTTP 헤더는 지정할 수 없습니다.');
+    }
     let parsedUrl: URL;
     try { parsedUrl = new URL(input.baseUrl); } catch { throw new Error('유효한 baseUrl을 지정하세요.'); }
-    if (!['http:', 'https:'].includes(parsedUrl.protocol) || parsedUrl.username || parsedUrl.password) {
+    if (!['http:', 'https:'].includes(parsedUrl.protocol) || parsedUrl.username || parsedUrl.password || parsedUrl.search || parsedUrl.hash) {
       throw new Error('baseUrl은 인증 정보 없는 http/https 주소여야 합니다.');
     }
 
@@ -304,28 +288,53 @@ export class ApiTools {
     const allowedMethods = new Set((input.methods?.length ? input.methods : ['GET', 'HEAD']).map(m => m.toUpperCase()));
     const hasMutating = [...allowedMethods].some(m => !['GET', 'HEAD'].includes(m));
     const loopback = isLoopbackHost(parsedUrl.hostname);
+    const port = Number(parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80));
+    const ownedMock = [...this.mocks.values()].find(mock => !mock.closing && mock.port === port && loopback);
+    if (ownedMock && (ownedMock.session !== session || ownedMock.project !== project)) {
+      throw new Error('현재 대화·프로젝트에서 시작한 Mock만 검증할 수 있습니다.');
+    }
+    if (!ownedMock && loopback && this.options.reservedPorts?.().includes(port)) {
+      throw new Error('Ned 내부 서비스는 API 계약 검증 대상이 될 수 없습니다.');
+    }
     const maxRequests = Math.min(50, Math.max(1, input.maxRequests ?? 20));
     const routes = buildRoutes(doc).filter(r => allowedMethods.has(r.method)).slice(0, maxRequests);
     if (!routes.length) throw new Error('지정한 메서드 조건에 해당하는 명세 엔드포인트가 없습니다.');
 
-    const approveFn = (!loopback || hasMutating) && this.options.approveExplicit ? this.options.approveExplicit : this.options.approve;
-    const ok = await approveFn(
+    const prefix = parsedUrl.pathname.endsWith('/') ? parsedUrl.pathname : parsedUrl.pathname + '/';
+    const targets = routes.map(route => {
+      const filledPath = route.template.replace(/\{([^}]+)\}/g, (_m, name) => {
+        const param = (route.operation.parameters ?? []).find((p: any) => p.name === name && p.in === 'path');
+        const val = param?.example ?? param?.schema?.example ?? (param?.schema?.type === 'integer' ? '1' : 'sample');
+        return encodeURIComponent(String(val));
+      });
+      if (!filledPath.startsWith('/') || filledPath.startsWith('//') || /[\\?#]/.test(filledPath)) {
+        throw new Error('명세의 요청 경로는 승인할 서버 내부의 URL 경로여야 합니다.');
+      }
+      const reqUrl = new URL(parsedUrl.origin + prefix + filledPath.slice(1));
+      if (reqUrl.origin !== parsedUrl.origin || !reqUrl.pathname.startsWith(prefix)) {
+        throw new Error('명세의 요청 경로가 승인할 API 범위를 벗어납니다.');
+      }
+      return { route, reqUrl };
+    });
+
+    const explicit = !ownedMock || hasMutating;
+    if (explicit && !this.options.approveExplicit) throw new Error('실제 API 호출에는 명시적 승인 기능이 필요합니다.');
+    const approve = explicit ? this.options.approveExplicit! : this.options.approve;
+    const ok = await approve(
       `API 계약 검증 실행 (${parsedUrl.host})`,
-      `프로젝트: ${project}\n명세 파일: ${input.specPath}\n대상 서버: ${parsedUrl.origin}\n허용 메서드: ${[...allowedMethods].join(', ')}\n최대 요청 수: ${routes.length}건\n${!loopback ? '[주의] 비-루프백 사내 서버에 실제 HTTP 요청을 전송합니다.\n' : ''}${hasMutating ? '[주의] 상태 변경 메서드가 포함되어 있습니다.' : ''}`,
+      `프로젝트: ${project}
+명세 파일: ${input.specPath}
+대상 서버: ${parsedUrl.origin}${prefix}
+허용 메서드: ${[...allowedMethods].join(', ')}
+최대 요청 수: ${targets.length}건`,
       combined,
     );
     if (!ok) throw new Error('API 계약 검증을 취소했습니다.');
     combined.throwIfAborted();
 
     const results: Array<{ method: string; template: string; url: string; status: number; passed: boolean; errors: string[] }> = [];
-    for (const route of routes) {
+    for (const { route, reqUrl } of targets) {
       combined.throwIfAborted();
-      const filledPath = route.template.replace(/\{([^}]+)\}/g, (_m, name) => {
-        const param = (route.operation.parameters ?? []).find((p: any) => p.name === name && p.in === 'path');
-        const val = param?.example ?? param?.schema?.example ?? (param?.schema?.type === 'integer' ? '1' : 'sample');
-        return encodeURIComponent(String(val));
-      });
-      const reqUrl = new URL(filledPath.replace(/^\//, ''), parsedUrl.href.endsWith('/') ? parsedUrl.href : parsedUrl.href + '/');
       let reqBody: string | undefined;
       if (!['GET', 'HEAD'].includes(route.method)) {
         const bodySchema = route.operation.requestBody?.content?.['application/json']?.schema;
@@ -334,7 +343,13 @@ export class ApiTools {
       const errors: string[] = [];
       let status = 0;
       try {
-        const resp = await httpRequest(reqUrl, route.method, input.headers ?? {}, reqBody);
+        const resp = await requestJSON(reqUrl.href, {
+          method: route.method,
+          headers: { Accept: 'application/json', ...input.headers, ...(reqBody ? { 'Content-Type': 'application/json' } : {}) },
+          body: reqBody,
+          maxBytes: 512 * 1024,
+          signal: AbortSignal.any([combined, AbortSignal.timeout(10000)]),
+        });
         status = resp.status;
         const responses = route.operation.responses ?? {};
         const respDef = resolveRef(doc, responses[String(status)] ?? responses[`${Math.floor(status / 100)}XX`] ?? responses.default);
@@ -343,11 +358,11 @@ export class ApiTools {
         } else if (route.method !== 'HEAD') {
           const schema = respDef.content?.['application/json']?.schema ?? respDef.schema;
           if (schema) {
-            if (!resp.contentType.toLowerCase().includes('json')) {
-              errors.push(`Expected JSON response Content-Type, got "${resp.contentType}"`);
+            if (!(resp.headers.get('content-type') ?? '').toLowerCase().includes('json')) {
+              errors.push(`Expected JSON response Content-Type, got "${resp.headers.get('content-type') ?? ''}"`);
             } else {
               try {
-                const parsedBody = JSON.parse(resp.body);
+                const parsedBody = JSON.parse(await resp.text());
                 errors.push(...validateJsonAgainstSchema(doc, schema, parsedBody));
               } catch {
                 errors.push('Response body is not valid JSON');
@@ -356,21 +371,10 @@ export class ApiTools {
           }
         }
       } catch (err) {
+        combined.throwIfAborted();
         errors.push(`HTTP error: ${err instanceof Error ? err.message : String(err)}`);
       }
       results.push({ method: route.method, template: route.template, url: reqUrl.href, status, passed: errors.length === 0, errors });
-    }
-
-    let schemathesisOutput: string | undefined;
-    if (input.useSchemathesis && this.options.resolveVenvPython) {
-      const pyEnv = await this.options.resolveVenvPython(project).catch(() => undefined);
-      if (pyEnv) {
-        const resolvedSpec = await files.resolve(input.specPath);
-        const args = ['-B', '-m', 'schemathesis', 'run', resolvedSpec, '--url', parsedUrl.origin, '--max-examples', '5'];
-        for (const m of allowedMethods) args.push('--include-method', m);
-        const sRes = await this.commands.run({ executable: pyEnv.python, args, cwd: project, env: { ...process.env, DO_NOT_TRACK: '1' } }, combined, 90000).catch(() => undefined);
-        if (sRes) schemathesisOutput = sRes.output.slice(-4000);
-      }
     }
 
     const passed = results.filter(r => r.passed).length;
@@ -381,16 +385,18 @@ export class ApiTools {
       passed,
       failed: results.length - passed,
       results,
-      ...(schemathesisOutput ? { schemathesisOutput } : {}),
     };
   }
 
   private async closeMock(id: string) {
     const entry = this.mocks.get(id);
     if (!entry) return;
-    this.mocks.delete(id);
-    entry.server.closeAllConnections?.();
-    await new Promise<void>(resolve => entry.server.close(() => resolve()));
+    if (!entry.closing) {
+      entry.closing = new Promise<void>(resolve => entry.server.close(() => resolve()))
+        .finally(() => this.mocks.delete(id));
+      entry.server.closeAllConnections();
+    }
+    await entry.closing;
   }
 
   cancel(session: string) {
@@ -399,9 +405,12 @@ export class ApiTools {
     }
   }
 
+  async stopped(session: string) {
+    await Promise.all([...this.mocks.values()].filter(m => m.session === session).map(m => m.closing));
+  }
+
   async close() {
     this.abort.abort();
     await Promise.all([...this.mocks.keys()].map(id => this.closeMock(id)));
-    await this.commands.close();
   }
 }

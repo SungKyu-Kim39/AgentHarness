@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, realpath, mkdir, readFile, writeFile, rm, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { PermissionPolicy } from '../distribution/ned/permission-policy';
@@ -46,6 +46,19 @@ test('status keeps a consistent mode/revision during save while new effects are 
   assert.equal(policy.mode,'full');assert.equal(policy.revision,previous);
   await assert.rejects(policy.decide('effect',undefined,true,async()=>true),/적용 중/);
   await changing;assert.equal(policy.mode,'ask');assert.equal(policy.revision,previous+1);
+});
+
+test('project approval rejects app roots and ancestors containing protected files', async t => {
+  const base = await mkdtemp(path.join(tmpdir(), 'ned-private-project-'));
+  t.after(() => rm(base, { recursive: true, force: true }));
+  const root = path.join(base, 'Ned');
+  const resources = path.join(base, 'resources');
+  const project = path.join(base, 'project');
+  await Promise.all([root, resources, project].map(directory => mkdir(directory)));
+  const runtime = new NativeRuntime(root, resources, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: b => b.toString() });
+  await assert.rejects(runtime.canonicalProject(base), /보호 경로/);
+  await assert.rejects(runtime.canonicalProject(resources), /보호 경로/);
+  assert.equal(await runtime.canonicalProject(project), await realpath(project));
 });
 
 test('full mode covers the runtime effect gate; restart suspension and failed persistence fail closed', async t => {

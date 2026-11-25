@@ -34,9 +34,9 @@ export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
   isReady?(): boolean;
   configure(config?: AgentConfig): Promise<void>;
-  search(project: string, query: string, limit: number): Promise<string>;
-  read(project: string, uri: string): Promise<string>;
-  index(project: string, filename: string, content: string): Promise<string>;
+  search(project: string, query: string, limit: number, signal?: AbortSignal): Promise<string>;
+  read(project: string, uri: string, signal?: AbortSignal): Promise<string>;
+  index(project: string, filename: string, content: string, signal?: AbortSignal): Promise<string>;
   close(): Promise<void>;
   personalSearch?(query: string, limit: number): Promise<string>;
   personalRead?(uri: string): Promise<string>;
@@ -439,21 +439,21 @@ export class OpenVikingService implements KnowledgeService {
     const result = await this.request('/api/v1/fs/ls?uri=' + encodeURIComponent(root) + '&limit=100', undefined, false, 'GET', signal);
     return JSON.stringify({ scope, root, entries: result.result });
   }
-  async search(project: string, query: string, limit: number) {
+  async search(project: string, query: string, limit: number, signal?: AbortSignal) {
     this.ready(); const root = knowledgeRoot(project);
-    const result = await this.request('/api/v1/search/find', { query, target_uri: root, limit, read_content: false });
+    const result = await this.request('/api/v1/search/find', { query, target_uri: root, limit, read_content: false }, false, 'POST', signal);
     const matches = result.result ?? result;
     return JSON.stringify({ source: 'OpenViking', project, results: matches });
   }
-  async read(project: string, uri: string) {
+  async read(project: string, uri: string, signal?: AbortSignal) {
     this.ready(); const scoped = scopedKnowledgeUri(project, uri);
-    return JSON.stringify(await this.request('/api/v1/content/read?uri=' + encodeURIComponent(scoped) + '&limit=300'));
+    return JSON.stringify(await this.request('/api/v1/content/read?uri=' + encodeURIComponent(scoped) + '&limit=300', undefined, false, 'GET', signal));
   }
-  async index(project: string, filename: string, content: string) {
+  async index(project: string, filename: string, content: string, signal?: AbortSignal) {
     this.ready();
     if (Buffer.byteLength(content) > 2 * 1024 * 1024) throw new Error('2 MiB 이하 텍스트만 색인할 수 있습니다.');
     const form = new FormData(); form.append('file', new Blob([content], { type: 'text/plain' }), path.basename(filename).replace(/[^a-zA-Z0-9_.-]/g, '_') + '.txt');
-    const response = await fetch(this.baseUrl + '/api/v1/resources/temp_upload', { method: 'POST', redirect: 'error', headers: this.credentials('local-user'), body: form, signal: AbortSignal.timeout(30000) });
+    const response = await fetch(this.baseUrl + '/api/v1/resources/temp_upload', { method: 'POST', redirect: 'error', headers: this.credentials('local-user'), body: form, signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000) });
     if (!response.ok) {
       const detail = await response.text();
       const code = vikingErrorCode(detail, response.status);
@@ -463,7 +463,7 @@ export class OpenVikingService implements KnowledgeService {
     const upload = await response.json(); const id = upload.result?.temp_file_id ?? upload.temp_file_id;
     if (typeof id !== 'string') throw new Error('OpenViking 업로드 확인 실패');
     const target = knowledgeRoot(project) + '/' + createHash('sha256').update(filename).digest('hex').slice(0, 20);
-    await this.request('/api/v1/resources', { temp_file_id: id, to: target, wait: true, reason: '사용자가 선택한 프로젝트 텍스트 파일', processing_mode: 'vectors_only' });
+    await this.request('/api/v1/resources', { temp_file_id: id, to: target, wait: true, reason: '사용자가 선택한 프로젝트 텍스트 파일', processing_mode: 'vectors_only' }, false, 'POST', signal);
     this.scheduleIndexSemanticRefresh(target);
     this.value.indexedFiles++; this.changed(); return `OpenViking 색인 완료: ${filename} (VLM 의미 요약 백그라운드 진행)`;
   }

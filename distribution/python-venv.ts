@@ -1,4 +1,3 @@
-import { createHash, randomUUID } from 'node:crypto';
 import { lstat, mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { PythonConfig } from '../src/shared/contracts';
@@ -58,6 +57,7 @@ export class PythonVenvManager {
     private resources: string,
     private options: {
       approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
+      approveExplicit?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
       pythonConfig?: () => PythonConfig | undefined;
       savedConda?: (project: string) => Promise<PythonEnvironment | undefined>;
       basePython?: () => Promise<string | undefined>;
@@ -84,8 +84,10 @@ export class PythonVenvManager {
       throw new Error('프로젝트 .venv 경로는 심볼릭 링크가 아닌 일반 디렉터리여야 합니다.');
     }
     const python = this.venvPython(venvRoot);
+    const bin = await lstat(path.dirname(python)).catch(() => undefined);
+    if (bin?.isSymbolicLink()) throw new Error('가상환경 실행 파일 폴더는 연결 경로를 사용할 수 없습니다.');
     const pyStat = await lstat(python).catch(() => undefined);
-    if (!pyStat || (!isWin && pyStat.isSymbolicLink() && !(await realpath(python).then(() => true, () => false))) || (isWin && pyStat.isSymbolicLink())) {
+    if (!pyStat || (!pyStat.isFile() && !pyStat.isSymbolicLink()) || (!isWin && pyStat.isSymbolicLink() && !(await realpath(python).then(() => true, () => false))) || (isWin && pyStat.isSymbolicLink())) {
       return { exists: false, venvRoot, python };
     }
     return { exists: true, venvRoot, python };
@@ -122,42 +124,16 @@ export class PythonVenvManager {
     throw new Error('프로젝트 .venv 또는 선택된 Conda 환경이 없습니다. manage_python_venv(operation: "create")로 .venv를 만들거나 choose_python_environment로 Conda 환경을 선택하세요.');
   }
 
-  private buildPipEnv(work: string, config?: PythonConfig): { env: NodeJS.ProcessEnv; extraArgs: string[]; summary: string } {
-    const respectSystem = config?.respectSystemPipConfig !== false;
-    const env: NodeJS.ProcessEnv = {
-      TEMP: work,
-      TMP: work,
-      TMPDIR: work,
-      PYTHONUTF8: '1',
-      PYTHONIOENCODING: 'utf-8',
-      PYTHONDONTWRITEBYTECODE: '1',
-      PIP_DISABLE_PIP_VERSION_CHECK: '1',
-      PIP_NO_INPUT: '1',
-    };
-    const passthrough = [
-      'SystemRoot', 'SYSTEMROOT', 'WINDIR', 'USERPROFILE', 'APPDATA', 'LOCALAPPDATA',
-      'HOME', 'ProgramData', 'ProgramFiles', 'ProgramFiles(x86)', 'COMSPEC', 'PATH',
-      'REQUESTS_CA_BUNDLE', 'SSL_CERT_FILE', 'SSL_CERT_DIR',
-    ];
-    if (respectSystem) {
-      passthrough.push('PIP_INDEX_URL', 'PIP_EXTRA_INDEX_URL', 'PIP_TRUSTED_HOST', 'PIP_CONFIG_FILE', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy');
-    } else {
-      env.PIP_CONFIG_FILE = isWin ? 'NUL' : '/dev/null';
+  private packageMirror(config?: PythonConfig) {
+    if (!config?.allowPackageInstall || !config.indexUrl) {
+      throw new Error('승인된 사내 HTTPS 미러와 python.allowPackageInstall을 명시해야 패키지를 설치할 수 있습니다.');
     }
-    for (const key of passthrough) {
-      if (process.env[key]) env[key] = process.env[key];
+    const mirror = new URL(config.indexUrl);
+    if (mirror.protocol !== 'https:' || mirror.username || mirror.password || mirror.search || mirror.hash ||
+        config.respectSystemPipConfig || config.extraIndexUrls?.length || config.trustedHosts?.length) {
+      throw new Error('패키지 설치에는 시스템 pip 설정, 추가 인덱스, TLS 예외 없이 단일 HTTPS 미러만 지정할 수 있습니다.');
     }
-    const extraArgs: string[] = [];
-    if (config?.indexUrl) extraArgs.push('--index-url', config.indexUrl);
-    for (const extra of config?.extraIndexUrls ?? []) extraArgs.push('--extra-index-url', extra);
-    for (const host of config?.trustedHosts ?? []) extraArgs.push('--trusted-host', host);
-    const summaryParts = [
-      `respectSystemPipConfig=${respectSystem}`,
-      ...(config?.indexUrl ? [`indexUrl=${config.indexUrl}`] : []),
-      ...(config?.extraIndexUrls?.length ? [`extraIndexUrls=${config.extraIndexUrls.join(', ')}`] : []),
-      ...(config?.trustedHosts?.length ? [`trustedHosts=${config.trustedHosts.join(', ')}`] : []),
-    ];
-    return { env, extraArgs, summary: summaryParts.join(' · ') };
+    return mirror.href;
   }
 
   private buildOfflineEnv(work: string, venvRoot?: string): NodeJS.ProcessEnv {
@@ -190,25 +166,15 @@ export class PythonVenvManager {
     const work = await mkdtemp(path.join(this.root, 'python-venv-work/op-'));
     try {
       if (input.operation === 'status') {
-        let version: string | undefined;
-        let packages: Array<{ name: string; version: string }> = [];
-        if (venv.exists) {
-          const ver = await this.commands.run({ executable: venv.python, args: ['--version'], cwd: project, env: this.buildOfflineEnv(work, venv.venvRoot) }, combined, 15000);
-          if (ver.exitCode === 0) version = ver.output.trim();
-          const list = await this.commands.run({ executable: venv.python, args: ['-m', 'pip', 'list', '--format=json', '--disable-pip-version-check'], cwd: project, env: this.buildOfflineEnv(work, venv.venvRoot) }, combined, 30000);
-          if (list.exitCode === 0) {
-            try { packages = JSON.parse(list.stdout); } catch {}
-          }
-        }
         const savedConda = await this.options.savedConda?.(project);
         return {
           status: 'ok',
           project,
-          venv: { exists: venv.exists, path: venv.venvRoot, python: venv.python, version, packageCount: packages.length, packagesSample: packages.slice(0, 60) },
+          venv: { exists: venv.exists, path: venv.venvRoot, python: venv.python },
           savedConda: savedConda ? { name: savedConda.name, prefix: savedConda.prefix } : undefined,
           pipPolicy: {
-            allowPackageInstall: config?.allowPackageInstall !== false,
-            respectSystemPipConfig: config?.respectSystemPipConfig !== false,
+            allowPackageInstall: config?.allowPackageInstall === true && !!config.indexUrl,
+            respectSystemPipConfig: config?.respectSystemPipConfig === true,
             indexUrl: config?.indexUrl,
             extraIndexUrls: config?.extraIndexUrls ?? [],
             trustedHosts: config?.trustedHosts ?? [],
@@ -218,6 +184,9 @@ export class PythonVenvManager {
 
       if (input.operation === 'freeze') {
         const target = await this.resolveProjectPython(project);
+        if (!await this.options.approveExplicit?.('Python 패키지 목록 조회', target.python + '\n선택된 인터프리터를 실행합니다.', combined)) {
+          throw new Error('인터프리터 실행을 승인하지 않았습니다.');
+        }
         const list = await this.commands.run({ executable: target.python, args: ['-m', 'pip', 'list', '--format=json', '--disable-pip-version-check'], cwd: project, env: this.buildOfflineEnv(work, target.prefix) }, combined, 30000);
         if (list.exitCode !== 0) throw new Error(`패키지 목록 조회 실패 (exit ${list.exitCode}): ${list.output.slice(0, 1000)}`);
         const packages = JSON.parse(list.stdout);
@@ -232,7 +201,7 @@ export class PythonVenvManager {
             return { status: 'ok', created: false, message: '이미 프로젝트 .venv가 존재합니다.', path: venv.venvRoot, python: venv.python };
           }
           const basePython = await this.resolveBasePython(project);
-          const args = ['-m', 'venv', ...(isWin ? ['--copies'] : []), venv.venvRoot];
+          const args = ['-I', '-m', 'venv', ...(isWin ? ['--copies'] : []), venv.venvRoot];
           const ok = await this.options.approve(
             '프로젝트 Python 가상환경(.venv) 생성',
             `프로젝트: ${project}\n대상 경로: ${venv.venvRoot}\n기준 인터프리터: ${basePython}\n명령: ${basePython} ${args.join(' ')}\n\n프로젝트 내부에 격리된 .venv를 생성합니다.`,
@@ -248,9 +217,7 @@ export class PythonVenvManager {
         }
 
         if (input.operation === 'install') {
-          if (config?.allowPackageInstall === false) {
-            throw new Error('Ned 설정(python.allowPackageInstall=false)에 의해 패키지 설치가 비활성화되어 있습니다.');
-          }
+          const mirror = this.packageMirror(config);
           const specs: string[] = [];
           for (const pkg of input.packages ?? []) specs.push(validatePackageSpec(pkg));
           if (input.requirementsPath) {
@@ -261,40 +228,38 @@ export class PythonVenvManager {
           if (!specs.length) throw new Error('설치할 패키지 목록(packages) 또는 requirementsPath를 지정하세요.');
           if (specs.length > 100) throw new Error('한 번에 설치할 수 있는 패키지는 최대 100개입니다.');
           const uniqueSpecs = [...new Set(specs)];
+          if (uniqueSpecs.some(spec => !/^[A-Za-z0-9._-]+(?:\[[A-Za-z0-9._,-]+\])?==[A-Za-z0-9.+!_-]+$/.test(spec))) {
+            throw new Error('패키지 설치에는 이름==버전 형태의 고정 버전이 필요합니다.');
+          }
 
+          const ok = await this.options.approveExplicit?.(
+            '사내 PyPI 패키지 설치 (.venv)',
+            `프로젝트: ${project}\n대상: ${venv.venvRoot}\n미러: ${mirror}\n패키지: ${uniqueSpecs.join(', ')}\n고정 버전 wheel만 설치합니다. 전이 의존성은 패키지 목록에 명시하세요.`,
+            combined,
+          );
+          if (!ok) throw new Error('패키지 설치를 명시적으로 승인하지 않았습니다.');
+          combined.throwIfAborted();
           if (!venv.exists) {
             const basePython = await this.resolveBasePython(project);
-            const createArgs = ['-m', 'venv', ...(isWin ? ['--copies'] : []), venv.venvRoot];
-            const okCreate = await this.options.approve(
-              '프로젝트 .venv 자동 생성 및 패키지 설치',
-              `프로젝트: ${project}\n대상 .venv: ${venv.venvRoot}\n기준 인터프리터: ${basePython}\n설치 패키지(${uniqueSpecs.length}개): ${uniqueSpecs.join(', ')}\n\n프로젝트 .venv를 생성한 뒤 사내 PyPI 설정으로 패키지를 설치합니다.`,
-              combined,
-            );
-            if (!okCreate) throw new Error('가상환경 생성 및 패키지 설치를 취소했습니다.');
-            combined.throwIfAborted();
+            const createArgs = ['-I', '-m', 'venv', ...(isWin ? ['--copies'] : []), venv.venvRoot];
             const created = await this.commands.run({ executable: basePython, args: createArgs, cwd: project, env: this.buildOfflineEnv(work) }, combined, 120000);
             if (created.exitCode !== 0) throw new Error(`가상환경 생성 실패 (exit ${created.exitCode}): ${created.output.slice(0, 1500)}`);
-          } else {
-            const { summary } = this.buildPipEnv(work, config);
-            const ok = await this.options.approve(
-              '사내 PyPI 패키지 설치 (.venv)',
-              `프로젝트: ${project}\n대상 .venv: ${venv.venvRoot}\n설치 패키지(${uniqueSpecs.length}개): ${uniqueSpecs.join(', ')}\nPyPI 정책: ${summary}\n\n프로젝트 내부 .venv에만 패키지를 설치합니다.`,
-              combined,
-            );
-            if (!ok) throw new Error('패키지 설치를 취소했습니다.');
           }
-          combined.throwIfAborted();
           const verified = await this.verifyVenvPath(project);
           if (!verified.exists) throw new Error('프로젝트 .venv를 확인하지 못했습니다.');
-          const { env, extraArgs, summary } = this.buildPipEnv(work, config);
-          const args = ['-m', 'pip', 'install', '--no-input', '--disable-pip-version-check', ...extraArgs, '--', ...uniqueSpecs];
+          const env = this.buildOfflineEnv(work, venv.venvRoot);
+          delete env.PIP_NO_INDEX;
+          env.PIP_CONFIG_FILE = isWin ? 'NUL' : '/dev/null';
+          for (const key of ['REQUESTS_CA_BUNDLE', 'SSL_CERT_FILE', 'SSL_CERT_DIR']) if (process.env[key]) env[key] = process.env[key];
+          const args = ['-I', '-m', 'pip', 'install', '--no-input', '--disable-pip-version-check',
+            '--no-deps', '--only-binary=:all:', '--index-url', mirror, '--', ...uniqueSpecs];
           const result = await this.commands.run({ executable: verified.python, args, cwd: project, env }, combined, 300000);
           return {
             status: result.exitCode === 0 ? 'ok' : 'failed',
             exitCode: result.exitCode,
             packages: uniqueSpecs,
             venv: verified.venvRoot,
-            pipPolicy: summary,
+            pipPolicy: { indexUrl: mirror, wheelsOnly: true, resolveDependencies: false },
             output: result.output.slice(-12000),
             outputTruncated: result.outputTruncated,
           };
@@ -306,14 +271,14 @@ export class PythonVenvManager {
           if (!names.length || names.some(n => !PACKAGE_NAME.test(n))) {
             throw new Error('제거할 유효한 패키지 이름을 하나 이상 지정하세요.');
           }
-          const ok = await this.options.approve(
+          const ok = await this.options.approveExplicit?.(
             '프로젝트 .venv 패키지 제거',
             `프로젝트: ${project}\n대상 .venv: ${venv.venvRoot}\n제거 패키지: ${names.join(', ')}`,
             combined,
           );
           if (!ok) throw new Error('패키지 제거를 취소했습니다.');
           combined.throwIfAborted();
-          const res = await this.commands.run({ executable: venv.python, args: ['-m', 'pip', 'uninstall', '-y', '--', ...names], cwd: project, env: this.buildOfflineEnv(work, venv.venvRoot) }, combined, 120000);
+          const res = await this.commands.run({ executable: venv.python, args: ['-I', '-m', 'pip', 'uninstall', '-y', '--', ...names], cwd: project, env: this.buildOfflineEnv(work, venv.venvRoot) }, combined, 120000);
           return {
             status: res.exitCode === 0 ? 'ok' : 'failed',
             exitCode: res.exitCode,
@@ -376,6 +341,10 @@ export class PythonVenvManager {
       throw new Error('유효한 Python 패키지 이름을 지정하세요.');
     }
     const target = await this.resolveProjectPython(project);
+    const inspectorPython = this.options.basePython
+      ? await this.options.basePython()
+      : isWin ? path.join(this.resources, 'runtime/windows-x64/mcp/python/python.exe') : await this.resolveBasePython(project);
+    if (!inspectorPython) throw new Error('정적 패키지 검사기를 실행할 Python을 찾지 못했습니다.');
     const script = this.options.inspectorScript ?? path.join(this.resources, 'ned/python-inspector.py');
     const resolvedScript = await available(script) ? script : path.resolve(typeof __dirname === 'string' ? __dirname : path.join(process.cwd(), 'distribution'), 'python-inspector.py');
     await mkdir(path.join(this.root, 'python-inspect-work'), { recursive: true, mode: 0o700 });
@@ -390,7 +359,7 @@ export class PythonVenvManager {
         maxChars: Math.min(48000, Math.max(1000, input.maxChars ?? 16000)),
       }), { mode: 0o600 });
       const res = await this.commands.run(
-        { executable: target.python, args: ['-I', '-B', resolvedScript, reqFile], cwd: work, env: this.buildOfflineEnv(work, target.prefix) },
+        { executable: inspectorPython, args: ['-I', '-S', '-B', resolvedScript, reqFile], cwd: work, env: this.buildOfflineEnv(work, target.prefix) },
         combined,
         30000,
       );

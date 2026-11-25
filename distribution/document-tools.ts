@@ -1,5 +1,5 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { copyFile, lstat, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { copyFile, lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { ProjectFiles } from '../src/main/files';
 import { OwnedCommand } from './owned-command';
@@ -178,7 +178,7 @@ export class DocumentTools {
     }
   }
 
-  async write(session: string, project: string, input: DocumentWriteInput, signal?: AbortSignal) {
+  async write(_session: string, project: string, input: DocumentWriteInput, signal?: AbortSignal) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
     await this.options.verifyWorkspaceTools?.();
@@ -189,6 +189,10 @@ export class DocumentTools {
     }
     const files = new ProjectFiles(project);
     const targetPath = await files.resolve(input.outputPath, true);
+    if (await lstat(targetPath).then(() => true, (error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return false;
+      throw error;
+    })) throw new Error('대상 파일이 이미 있습니다. 새 출력 경로를 지정하세요.');
 
     await mkdir(path.join(this.root, 'doc-work'), { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(this.root, 'doc-work/write-'));
@@ -259,26 +263,15 @@ export class DocumentTools {
 
       const generatedBytes = await readFile(stagedOut);
       const outHash = sha(generatedBytes);
-      const existed = await lstat(targetPath).then(s => s.isFile(), () => false);
       const ok = await this.options.approve(
-        `문서 파일 ${existed ? '덮어쓰기' : '생성'} 승인: ${input.outputPath}`,
-        `프로젝트: ${project}\n형식: ${input.format.toUpperCase()}\n출력 경로: ${input.outputPath}\n${input.templatePath ? `템플릿: ${input.templatePath}\n` : ''}생성 크기: ${generatedBytes.length} bytes\nSHA-256: ${outHash}\n${existed ? '기존 파일은 호스트 바이너리 스냅샷에 백업 후 교체합니다.' : ''}`,
+        `문서 파일 생성 승인: ${input.outputPath}`,
+        `프로젝트: ${project}\n형식: ${input.format.toUpperCase()}\n출력 경로: ${input.outputPath}\n${input.templatePath ? `템플릿: ${input.templatePath}\n` : ''}생성 크기: ${generatedBytes.length} bytes\nSHA-256: ${outHash}`,
         combined,
       );
       if (!ok) throw new Error('문서 파일 생성을 취소했습니다.');
       combined.throwIfAborted();
 
-      let snapshotId: string | undefined;
-      if (existed) {
-        snapshotId = randomUUID();
-        const snapDir = path.join(this.root, 'snapshots', session);
-        await mkdir(snapDir, { recursive: true, mode: 0o700 });
-        await copyFile(targetPath, path.join(snapDir, `${snapshotId}${expectedExt}`));
-      }
-      await mkdir(path.dirname(targetPath), { recursive: true });
-      const tmpDest = `${targetPath}.${randomUUID()}.tmp`;
-      await writeFile(tmpDest, generatedBytes);
-      await rename(tmpDest, targetPath);
+      await files.createGeneratedFile(input.outputPath, generatedBytes, combined);
 
       return {
         ...workerResult,
@@ -286,7 +279,6 @@ export class DocumentTools {
         path: input.outputPath,
         bytes: generatedBytes.length,
         sha256: outHash,
-        ...(snapshotId ? { snapshot: snapshotId } : {}),
       };
     } finally {
       await rm(work, { recursive: true, force: true }).catch(() => {});

@@ -59,7 +59,7 @@ export interface SessionMemoryPolicy {
 
 const COMPACTION_PROMPT_RE = /^(?:You MUST summarize the conversation above into a structured summary|Update the existing checkpoint in the conversation above into one consolidated summary|The previous response did not fill in the required summary template)/;
 const SESSION_MEMORY_OPTOUT_RE = /(?:(?:이|이번)\s*(?:세션|대화)(?:은|는|을|를|\s+내용)?\s*(?:기억|메모리|저장).*(?:하지\s*마|끄|꺼|중단|금지|제외|사용하지\s*마|쓰지\s*마)|(?:do\s+not|don't)\s+(?:remember|save|store|record|use\s+memor(?:y|ies)\s+for)\s+this\s+(?:session|conversation)|disable\s+memor(?:y|ies)\s+for\s+this\s+(?:session|conversation))/i;
-const TURN_MEMORY_OPTOUT_RE = /(?:(?:기억|메모리).*(?:하지\s*마|사용하지\s*마|쓰지\s*마|참고하지\s*마|저장하지\s*마|남기지\s*마)|(?:이(?:건|것은|내용은?)\s*)?(?:기억|저장)하지\s*마|(?:do\s+not|don't)\s+(?:remember|save\s+to\s+memor(?:y|ies)|use\s+(?:any\s+)?memor(?:y|ies))|\bno\s+memor(?:y|ies)\b)/i;
+const TURN_MEMORY_OPTOUT_RE = /(?:기억에서\s*빼\s*줘|(?:기억|메모리).*(?:하지\s*마|사용하지\s*마|쓰지\s*마|참고하지\s*마|저장하지\s*마|남기지\s*마)|(?:이(?:건|것은|내용은?)\s*)?(?:기억|저장)하지\s*마|(?:do\s+not|don't)\s+(?:remember|save\s+to\s+memor(?:y|ies)|use\s+(?:any\s+)?memor(?:y|ies))|\bno\s+memor(?:y|ies)\b)/i;
 const SKILL_GUIDANCE_MARKER = '\n\n다음 스킬 문서를 작업 지침으로 참고하세요.';
 
 export const DEFAULT_COMMIT_EVERY_TURNS = 6;
@@ -353,7 +353,7 @@ export interface SessionMemoryDependencies {
 
 export class SessionMemoryManager {
   private syncState: Record<string, MemorySyncEntry> = {};
-  private loaded = false;
+  private loading?: Promise<void>;
   private closed = false;
   private activeSessionId?: string;
   private queues = new Map<string, Promise<void>>();
@@ -380,9 +380,11 @@ export class SessionMemoryManager {
   private syncFile() { return path.join(this.deps.root, 'openviking', 'memory-sync.json'); }
   private statusFile() { return path.join(this.deps.root, 'openviking', 'memory-status.json'); }
 
-  async load() {
-    if (this.loaded) return;
-    this.loaded = true;
+  load() {
+    return this.loading ??= this.readState();
+  }
+
+  private async readState() {
     try {
       const parsed = JSON.parse(await readFile(this.syncFile(), 'utf8')) as MemorySyncFile;
       if (parsed?.schemaVersion === 1 && parsed.sessions && typeof parsed.sessions === 'object') {
@@ -396,7 +398,7 @@ export class SessionMemoryManager {
     const keys = Object.keys(this.syncState);
     if (keys.length <= 500) return;
     const prunable = keys
-      .filter(id => id !== this.activeSessionId && (this.syncState[id]?.uncommittedTurns ?? 0) === 0)
+      .filter(id => id !== this.activeSessionId && !this.syncState[id]?.sessionOptedOut && (this.syncState[id]?.uncommittedTurns ?? 0) === 0)
       .sort((a, b) => (this.syncState[a]?.lastCommittedAt ?? '').localeCompare(this.syncState[b]?.lastCommittedAt ?? ''));
     let remaining = keys.length;
     for (const id of prunable) {
@@ -448,6 +450,19 @@ export class SessionMemoryManager {
     }
   }
 
+  async onUserPrompt(sessionId: string, text: string) {
+    if (!this.deps.policy.enabled || this.closed || !isSessionMemoryOptOut(cleanUserMessageText(text))) return;
+    await this.load();
+    await this.enqueue(sessionId, async () => {
+      const entry = this.syncState[sessionId] ?? { ovSessionId: buildOvSessionId(sessionId), syncedIds: [], uncommittedTurns: 0 };
+      if (entry.sessionOptedOut) return;
+      entry.sessionOptedOut = true;
+      this.syncState[sessionId] = entry;
+      this.persistSync();
+      await this.statusWrites;
+    });
+  }
+
   onTurnComplete(sessionId: string) {
     if (!this.deps.policy.enabled || this.closed) return;
     this.activeSessionId = sessionId;
@@ -466,6 +481,7 @@ export class SessionMemoryManager {
 
   private async syncInternal(sessionId: string, forceCommit: boolean) {
     await this.load();
+    if (this.syncState[sessionId]?.sessionOptedOut) return;
     const knowledge = this.deps.knowledge();
     if (!knowledge?.isReady?.() || !knowledge.ensureMemorySession || !knowledge.appendSessionMessages || !knowledge.commitMemorySession) return;
     try {
@@ -534,7 +550,7 @@ export class SessionMemoryManager {
   private async commitInternal(sessionId: string, timeoutMs = 15000) {
     const knowledge = this.deps.knowledge();
     const entry = this.syncState[sessionId];
-    if (!entry || entry.uncommittedTurns <= 0 || !knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
+    if (!entry || entry.sessionOptedOut || entry.uncommittedTurns <= 0 || !knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
     try {
       await knowledge.commitMemorySession(entry.ovSessionId, timeoutMs);
       entry.uncommittedTurns = 0;
@@ -563,11 +579,11 @@ export class SessionMemoryManager {
     await Promise.allSettled(pendingIds.map(sessionId => this.enqueue(sessionId, () => this.commitInternal(sessionId))));
   }
 
-  async recallContext(chatMessages: unknown, requestBytes: number): Promise<string | undefined> {
+  async recallContext(chatMessages: unknown, requestBytes: number, sessionId?: string): Promise<string | undefined> {
     if (!this.deps.policy.enabled || !this.deps.policy.autoRecall || this.closed) return undefined;
     if (requestBytes >= 1024 * 1024) return undefined;
     await this.load();
-    if (this.activeSessionId && this.syncState[this.activeSessionId]?.sessionOptedOut) return undefined;
+    if (!sessionId || this.syncState[sessionId]?.sessionOptedOut) return undefined;
     const knowledge = this.deps.knowledge();
     if (!knowledge?.isReady?.() || !knowledge.recallMemories) return undefined;
 
@@ -606,7 +622,7 @@ export class SessionMemoryManager {
     // Do not fire async OpenViking /commit right before the sidecar stops:
     // keep uncommittedTurns persisted in memory-sync.json so flushPendingCommits()
     // commits them safely once OpenViking is ready on the next launch.
-    if (this.loaded) this.persistSync();
+    if (this.loading) { await this.loading; this.persistSync(); }
     await this.statusWrites.catch(() => {});
   }
 }
