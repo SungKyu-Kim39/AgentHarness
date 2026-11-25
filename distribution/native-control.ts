@@ -1,8 +1,9 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { randomBytes, createHash } from 'node:crypto';
-import { mkdir, readFile, copyFile, access, realpath, stat } from 'node:fs/promises';
+import { mkdir, readFile, copyFile, access, realpath, stat, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { ConfigVault, Redactor, atomicJSON, type Cipher } from '../src/main/config';
+import { inspectIncompleteBatchJournals } from '../src/main/files';
 import { ModelGateway } from '../src/main/model-gateway';
 import { OpenVikingService } from '../src/main/openviking';
 import type { Proposal } from '../src/shared/contracts';
@@ -15,7 +16,7 @@ import {Subagents,subagentReadTools,goldfishReadTools} from './subagents';
 import { ZedModels } from './ned/zed-models';
 import { permissionMode, type PermissionPolicy } from './ned/permission-policy';
 import type { PythonSelector } from './python-projects';
-import { automaticSkillContext, automaticSkillPolicy, reaTurnIntent, specializedToolRequested } from '../src/main/skill-routing';
+import { automaticSkillContext, automaticSkillPolicy, isCompactionPrompt, isContinuationTurn, reaTurnIntent, specializedToolRequested } from '../src/main/skill-routing';
 import { SessionMemoryManager, resolveMemoryPolicy, type OpenCodeSessionMessage } from '../src/main/session-memory';
 
 export interface Credentials { url: string; password: string }
@@ -162,9 +163,35 @@ export class NativeRuntime {
         fetchSessionMessages: async (id, afterCursor) => this.fetchAllSessionMessages(id, afterCursor),
       });
       await this.memory.load();
+      await this.scanBatchJournals();
       // Local skills and the model engine do not depend on knowledge/index availability.
       void this.knowledge.configure(config).catch(() => {});
     } catch (error) { await this.close(); throw error; }
+  }
+  private incompleteBatchCount = 0;
+  private async scanBatchJournals() {
+    const statusFile = path.join(this.root, 'batch-recovery-status.json');
+    const incomplete = await inspectIncompleteBatchJournals(path.join(this.root, 'batch-journals')).catch(() => []);
+    this.incompleteBatchCount = incomplete.length;
+    if (!incomplete.length) {
+      await unlink(statusFile).catch(() => {});
+      return;
+    }
+    await atomicJSON(statusFile, {
+      schemaVersion: 1,
+      recordedAt: new Date().toISOString(),
+      incompleteCount: incomplete.length,
+      batches: incomplete.map(batch => ({
+        id: batch.id,
+        operation: batch.operation,
+        status: batch.status,
+        startedAt: batch.startedAt,
+        updatedAt: batch.updatedAt,
+        appliedCount: batch.entries.filter(e => e.applied && !e.reverted).length,
+        totalCount: batch.entries.length,
+        entries: batch.entries.map(e => ({ path: e.path, operation: e.operation, snapshotId: e.snapshotId, applied: e.applied, ...(e.reverted ? { reverted: true } : {}) })),
+      })),
+    }).catch(() => {});
   }
   async zedConnection() {
     if (!this.config || this.shutdownUnconfirmed) throw new Error('모델 설정을 먼저 확인하세요.');
@@ -197,7 +224,7 @@ export class NativeRuntime {
   }
   async activateEditScope(session: string) { this.tools?.activateEditScope(session,await this.sessionProject(session)); }
   revokeEditApproval() { this.tools?.revokeEditApproval(); }
-  status() { return { models: this.models.map(m => ({ name: m.name, id: m.id })), knowledge: this.knowledge?.state(), memory: this.memory?.policy() }; }
+  status() { return { models: this.models.map(m => ({ name: m.name, id: m.id })), knowledge: this.knowledge?.state(), memory: this.memory?.policy(), incompleteBatches: this.incompleteBatchCount }; }
   async canonicalProject(directory: string) {
     const selected = await realpath(directory);
     if (!(await stat(selected)).isDirectory()) throw new Error('프로젝트 폴더를 선택하세요.');
@@ -240,25 +267,53 @@ export class NativeRuntime {
     await this.memory?.onUserPrompt(session, text);
     const request = text.slice(0, 16000);
     const intent = reaTurnIntent(request);
+    const continuing = isContinuationTurn(request);
     const project = this.attachedProjects.get(session);
+    const existingHistory = this.turnHistory.get(session);
     let previous = this.reaRequests.get(session);
-    if (intent === 'continue' && previous === undefined && project && this.projects.has(project)) {
-      previous = await this.previousReaRequest(session).catch(() => false);
+    let recoveredAnchor: string | undefined;
+    const needHistory = project && this.projects.has(project) && (
+      (intent === 'continue' && previous === undefined) ||
+      (continuing && !existingHistory?.length)
+    );
+    if (needHistory) {
+      const prior = await this.previousSessionContext(session).catch(() => ({ rea: false, anchor: undefined }));
+      if (intent === 'continue' && previous === undefined) previous = prior.rea;
+      if (continuing && !existingHistory?.length) recoveredAnchor = prior.anchor;
     }
     if (project !== this.attachedProjects.get(session)) return;
     this.reaRequests.set(session, intent === 'request' || (intent === 'continue' && previous === true));
-    this.turnHistory.set(session, [...(this.turnHistory.get(session) ?? []), request].slice(-2));
+    if (continuing) {
+      const anchor = [...(existingHistory ?? [])].reverse().find(item => !isContinuationTurn(item)) ?? recoveredAnchor;
+      this.turnHistory.set(session, anchor ? [anchor, request] : [request]);
+    } else {
+      this.turnHistory.set(session, [...(existingHistory ?? []), request].slice(-2));
+    }
   }
 
-  private async previousReaRequest(session: string) {
-    if (!this.backend || await this.sessionProject(session) !== this.attachedProjects.get(session)) return false;
+  private async previousSessionContext(session: string): Promise<{ rea: boolean; anchor?: string }> {
+    if (!this.backend || await this.sessionProject(session) !== this.attachedProjects.get(session)) return { rea: false };
     const result = await this.subagentAPI(`/api/session/${encodeURIComponent(session)}/message?limit=100&order=desc`) as { data?: OpenCodeSessionMessage[] };
+    let reaResolved = false;
+    let rea = false;
+    let anchor: string | undefined;
     for (const message of result.data ?? []) {
       if (message.type !== 'user') continue;
-      const intent = reaTurnIntent(typeof message.text === 'string' ? message.text : '');
-      if (intent !== 'continue') return intent === 'request';
+      const body = typeof message.text === 'string' ? message.text : '';
+      if (!body.trim() || isCompactionPrompt(body)) continue;
+      if (!reaResolved) {
+        const intent = reaTurnIntent(body);
+        if (intent !== 'continue') {
+          rea = intent === 'request';
+          reaResolved = true;
+        }
+      }
+      if (anchor === undefined && !isContinuationTurn(body)) {
+        anchor = body.slice(0, 16000);
+      }
+      if (reaResolved && anchor !== undefined) break;
     }
-    return false;
+    return { rea, anchor };
   }
 
   onSessionActivated(session: string, project: string) {

@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
 import http from 'node:http';
-import { lstat, mkdir, mkdtemp, rm } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, open, rm } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import path from 'node:path';
 import { ProjectFiles } from '../src/main/files';
 import { OwnedCommand } from './owned-command';
@@ -32,6 +33,71 @@ interface PreviewServer {
 }
 
 const UVICORN_TARGET = /^[A-Za-z_][A-Za-z0-9_.]*:[A-Za-z_][A-Za-z0-9_]*$/;
+const MAX_STATIC_FILE_BYTES = 32 * 1024 * 1024;
+const BLOCKED_STATIC_DIRS = new Set(['.git', '.ned', '.zed', '.opencode', '.vscode', '.venv', 'node_modules']);
+const BLOCKED_STATIC_FILE_RE = /^(?:\.env(?:\..*)?|\.npmrc|\.pypirc|\.netrc|\.git-credentials|\.htpasswd|opencode\.jsonc?|\.mcp\.json)$|\.(?:pem|key|pfx|p12|crt|cer)$/i;
+const STATIC_MIME: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8',
+  '.htm': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.ico': 'image/x-icon',
+  '.txt': 'text/plain; charset=utf-8',
+  '.md': 'text/markdown; charset=utf-8',
+  '.csv': 'text/csv; charset=utf-8',
+  '.xml': 'application/xml; charset=utf-8',
+  '.wasm': 'application/wasm',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.pdf': 'application/pdf',
+};
+
+function isBlockedStaticParts(parts: string[]): boolean {
+  if (parts.some(p => BLOCKED_STATIC_DIRS.has(p.toLowerCase()))) return true;
+  const last = parts.at(-1);
+  return !!last && BLOCKED_STATIC_FILE_RE.test(last);
+}
+
+function normalizeStaticRoot(entry: string): string {
+  const normalized = entry.replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/+$/, '');
+  if (!normalized || normalized === '.') return '';
+  const parts = normalized.split('/');
+  if (parts.some(p => !p || p === '.' || p === '..') || isBlockedStaticParts(parts)) {
+    throw new Error('정적 HTTP 프리뷰 루트는 보호 디렉터리를 제외한 프로젝트 내부 경로여야 합니다.');
+  }
+  return normalized;
+}
+
+async function readBoundedRegularFile(filePath: string, maxBytes: number): Promise<Buffer> {
+  const handle = await open(filePath, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
+  try {
+    const st = await handle.stat();
+    if (!st.isFile()) throw Object.assign(new Error('NOT_FILE'), { code: 'EISDIR' });
+    if (st.size > maxBytes) throw Object.assign(new Error('TOO_LARGE'), { code: 'EFBIG' });
+    const chunks: Buffer[] = [];
+    let total = 0;
+    while (true) {
+      const buf = Buffer.alloc(Math.min(64 * 1024, maxBytes - total + 1));
+      const { bytesRead } = await handle.read(buf, 0, buf.length, null);
+      if (!bytesRead) break;
+      total += bytesRead;
+      if (total > maxBytes) throw Object.assign(new Error('TOO_LARGE'), { code: 'EFBIG' });
+      chunks.push(buf.subarray(0, bytesRead));
+    }
+    return Buffer.concat(chunks);
+  } finally {
+    await handle.close();
+  }
+}
 
 async function allocateLoopbackPort(reserved: Set<number>): Promise<number> {
   for (let attempt = 0; attempt < 20; attempt++) {
@@ -104,6 +170,188 @@ export class DataApps {
     };
   }
 
+  private async startStaticHttpServer(
+    session: string,
+    project: string,
+    entry: string,
+    files: ProjectFiles,
+    combined: AbortSignal,
+  ) {
+    const rootRel = normalizeStaticRoot(entry);
+    const dir = rootRel ? await files.resolve(rootRel) : project;
+    const dirStat = await lstat(dir);
+    if (dirStat.isSymbolicLink() || !dirStat.isDirectory()) {
+      throw new Error('정적 HTTP 프리뷰 대상은 프로젝트 내부의 일반 디렉터리여야 합니다.');
+    }
+
+    const reserved = new Set([...(this.options.reservedPorts?.() ?? []), ...this.ports()]);
+    const port = await allocateLoopbackPort(reserved);
+    const url = `http://127.0.0.1:${port}`;
+    const ok = await this.options.approve(
+      '로컬 데이터 앱 프리뷰 시작 (http)',
+      `프로젝트: ${project}\n프레임워크: http (호스트 내장 루프백 정적 서버)\n진입점: ${entry}\n로컬 주소: ${url} (127.0.0.1 루프백 전용)\n\n매 요청마다 프로젝트 경계와 심볼릭 링크·민감 파일(.git, .env 등)을 차단하며 GET/HEAD만 허용합니다. 기동 후 browser_check로 화면과 콘솔 오류를 점검할 수 있습니다.`,
+      combined,
+    );
+    if (!ok) throw new Error('로컬 데이터 앱 프리뷰 시작을 취소했습니다.');
+    combined.throwIfAborted();
+
+    const id = randomUUID();
+    const controller = new AbortController();
+    const jobSignal = AbortSignal.any([controller.signal, this.abort.signal]);
+    const entryObj: PreviewServer = {
+      id,
+      session,
+      project,
+      framework: 'http',
+      entry,
+      port,
+      url,
+      state: 'starting',
+      controller,
+      logs: '',
+      task: Promise.resolve(),
+    };
+    const appendLog = (line: string) => {
+      entryObj.logs = (entryObj.logs + line + '\n').slice(-16000);
+    };
+
+    const server = http.createServer(async (req, res) => {
+      const method = (req.method ?? 'GET').toUpperCase();
+      if (method !== 'GET' && method !== 'HEAD') {
+        res.writeHead(405, { Allow: 'GET, HEAD' }).end();
+        return;
+      }
+      const rawTarget = (req.url ?? '/').split(/[?#]/, 1)[0];
+      if (!rawTarget.startsWith('/') || rawTarget.includes('\\')) {
+        res.writeHead(403).end('Forbidden');
+        return;
+      }
+      const rawSegments = rawTarget.split('/').filter(Boolean);
+      const decodedSegments: string[] = [];
+      for (const seg of rawSegments) {
+        let decoded: string;
+        try { decoded = decodeURIComponent(seg); }
+        catch { res.writeHead(400).end(); return; }
+        if (!decoded || decoded === '.' || decoded === '..' || /[\\/\0:]/.test(decoded) || /[\x00-\x1f]/.test(decoded)) {
+          res.writeHead(403).end('Forbidden');
+          return;
+        }
+        decodedSegments.push(decoded);
+      }
+      const pathname = rawTarget;
+
+      const baseParts = rootRel ? rootRel.split('/') : [];
+      const candidateParts = [...baseParts, ...decodedSegments];
+      const serveRelParts = async (parts: string[]) => {
+        if (!parts.length || isBlockedStaticParts(parts)) {
+          res.writeHead(403).end('Forbidden');
+          return;
+        }
+        const rel = parts.join('/');
+        let resolved: string;
+        try {
+          resolved = await files.resolve(rel, false);
+        } catch (err) {
+          const code = (err as NodeJS.ErrnoException)?.code;
+          if (code === 'ENOENT') {
+            res.writeHead(404).end('Not Found');
+          } else {
+            res.writeHead(403).end('Forbidden');
+          }
+          return;
+        }
+        let st: Awaited<ReturnType<typeof lstat>>;
+        try {
+          st = await lstat(resolved);
+        } catch {
+          res.writeHead(404).end('Not Found');
+          return;
+        }
+        if (st.isSymbolicLink()) {
+          res.writeHead(403).end('Forbidden');
+          return;
+        }
+        if (st.isDirectory()) {
+          await serveRelParts([...parts, 'index.html']);
+          return;
+        }
+        if (!st.isFile()) {
+          res.writeHead(403).end('Forbidden');
+          return;
+        }
+        try {
+          const bytes = await readBoundedRegularFile(resolved, MAX_STATIC_FILE_BYTES);
+          const mime = STATIC_MIME[path.extname(resolved).toLowerCase()] ?? 'application/octet-stream';
+          res.writeHead(200, {
+            'Content-Type': mime,
+            'Content-Length': String(bytes.length),
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+          });
+          res.end(method === 'HEAD' ? undefined : bytes);
+        } catch (err) {
+          const code = (err as NodeJS.ErrnoException)?.code;
+          if (code === 'EFBIG') res.writeHead(413).end('Payload Too Large');
+          else if (code === 'ELOOP' || code === 'EACCES') res.writeHead(403).end('Forbidden');
+          else res.writeHead(404).end('Not Found');
+        }
+      };
+
+      if (!candidateParts.length || pathname.endsWith('/')) {
+        await serveRelParts([...candidateParts, 'index.html']);
+      } else {
+        await serveRelParts(candidateParts);
+      }
+      appendLog(`${method} ${pathname} -> ${res.statusCode}`);
+    });
+
+    this.servers.set(id, entryObj);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(port, '127.0.0.1', resolve);
+      });
+    } catch (err) {
+      entryObj.state = 'failed';
+      entryObj.error = err instanceof Error ? err.message : 'Static preview server failed';
+      server.close();
+      throw new Error(`로컬 프리뷰 서버 시작 실패: ${entryObj.error}`);
+    }
+
+    entryObj.task = new Promise<void>(resolve => {
+      let closing = false;
+      const finish = () => {
+        if (closing) return;
+        closing = true;
+        entryObj.state = 'stopped';
+        entryObj.exitCode = 0;
+        server.closeAllConnections();
+        server.close(() => resolve());
+      };
+      if (jobSignal.aborted) {
+        finish();
+        return;
+      }
+      jobSignal.addEventListener('abort', finish, { once: true });
+      server.once('close', () => {
+        if (!closing) {
+          closing = true;
+          entryObj.state = 'stopped';
+          entryObj.exitCode = 0;
+          resolve();
+        }
+      });
+    });
+
+    if (combined.aborted) {
+      controller.abort();
+      await entryObj.task;
+      combined.throwIfAborted();
+    }
+    entryObj.state = 'running';
+    return { ...this.sanitize(entryObj), ready: true };
+  }
+
   async call(session: string, project: string, input: DataAppInput, signal?: AbortSignal) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
@@ -141,6 +389,11 @@ export class DataApps {
     const entry = input.entry?.trim();
     if (!entry) throw new Error('실행할 앱 진입점(entry)을 지정하세요.');
     const files = new ProjectFiles(project);
+
+    if (framework === 'http') {
+      return this.startStaticHttpServer(session, project, entry, files, combined);
+    }
+
     const python = await this.options.resolvePython(project);
 
     const reserved = new Set([...(this.options.reservedPorts?.() ?? []), ...this.ports()]);
@@ -155,14 +408,9 @@ export class DataApps {
       if (!/\.py$/i.test(entry)) throw new Error('Streamlit 앱은 프로젝트 내부 .py 파일을 지정하세요.');
       resolvedEntry = await files.resolve(entry);
       args = ['-B', '-m', 'streamlit', 'run', resolvedEntry, '--server.address', '127.0.0.1', '--server.port', String(port), '--server.headless', 'true', '--browser.gatherUsageStats', 'false'];
-    } else if (framework === 'uvicorn') {
+    } else {
       if (!UVICORN_TARGET.test(entry)) throw new Error('uvicorn 진입점은 module:app 형식이어야 합니다.');
       args = ['-B', '-m', 'uvicorn', entry, '--host', '127.0.0.1', '--port', String(port)];
-    } else {
-      const dir = entry === '.' ? project : await files.resolve(entry);
-      if (!(await lstat(dir)).isDirectory()) throw new Error('정적 HTTP 프리뷰 대상은 프로젝트 내부 디렉터리여야 합니다.');
-      resolvedEntry = dir;
-      args = ['-B', '-m', 'http.server', String(port), '--bind', '127.0.0.1', '--directory', dir];
     }
 
     const url = `http://127.0.0.1:${port}`;

@@ -281,17 +281,57 @@ export class ProjectFiles {
       snapshot?: (proposal: Proposal) => Promise<void>;
       validate?: (proposal: Proposal) => Promise<void>;
       signal?: AbortSignal;
+      journal?: BatchJournalOptions;
     } = {},
   ): Promise<void> {
     const applied: Proposal[] = [];
+    const journalPath = options.journal
+      ? path.join(options.journal.dir, `${options.journal.batchId ?? randomUUID()}.json`)
+      : undefined;
+    const journalRecord: BatchJournalRecord | undefined = options.journal
+      ? {
+          schemaVersion: 1,
+          id: options.journal.batchId ?? path.basename(journalPath!, ".json"),
+          operation: options.journal.operation,
+          project: this.root,
+          ...(options.journal.session ? { session: options.journal.session } : {}),
+          startedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          status: "in_progress",
+          entries: proposals.map((proposal) => ({
+            path: proposal.path,
+            operation: proposal.operation === "delete" ? "delete" : "write",
+            snapshotId: proposal.id,
+            baseHash: proposal.baseHash,
+            applied: false,
+          })),
+        }
+      : undefined;
+    const writeJournal = async () => {
+      if (!journalPath || !journalRecord) return;
+      journalRecord.updatedAt = new Date().toISOString();
+      await writeAtomicJsonFile(journalPath, journalRecord);
+    };
+    const clearJournal = async () => {
+      if (!journalPath) return;
+      await unlink(journalPath).catch(() => {});
+    };
+
     try {
-      for (const proposal of proposals) {
+      await writeJournal();
+      for (let idx = 0; idx < proposals.length; idx++) {
+        const proposal = proposals[idx];
         options.signal?.throwIfAborted();
         await options.validate?.(proposal);
         await options.snapshot?.(proposal);
         await this.apply(proposal, options.signal);
         applied.push(proposal);
+        if (journalRecord) {
+          journalRecord.entries[idx].applied = true;
+          await writeJournal().catch(() => {});
+        }
       }
+      await clearJournal();
     } catch (error) {
       const rollbackFailures: string[] = [];
       for (let i = applied.length - 1; i >= 0; i--) {
@@ -303,22 +343,101 @@ export class ProjectFiles {
             : await this.proposeDelete(randomUUID(), done.path);
           if (revert.baseHash !== expected) throw new Error("적용 후 다른 변경을 발견해 복구를 보류했습니다.");
           await this.apply(revert);
+          if (journalRecord) {
+            const match = journalRecord.entries.find((e) => e.snapshotId === done.id);
+            if (match) match.reverted = true;
+          }
         } catch {
           rollbackFailures.push(`${done.path} (snapshot ${done.id})`);
         }
       }
       const baseMsg = error instanceof Error ? error.message : String(error);
-      if (applied.length === 0) throw error;
+      if (applied.length === 0) {
+        await clearJournal();
+        throw error;
+      }
       if (rollbackFailures.length > 0) {
+        if (journalRecord) {
+          journalRecord.status = "rollback_failed";
+          journalRecord.error = baseMsg.slice(0, 500);
+          await writeJournal().catch(() => {});
+        }
         throw new Error(
           `다중 파일 적용 중 오류가 발생했고 일부 파일 복구에 실패했습니다(${rollbackFailures.join(", ")}). 스냅샷을 확인하세요. 원인: ${baseMsg}`,
         );
       }
+      await clearJournal();
       throw new Error(
         `다중 파일 적용 중 오류가 발생해 먼저 반영한 ${applied.length}개 파일을 원래 상태로 복구했습니다. 원인: ${baseMsg}`,
       );
     }
   }
+}
+
+export interface BatchJournalOptions {
+  dir: string;
+  operation: string;
+  session?: string;
+  batchId?: string;
+}
+
+export interface BatchJournalEntry {
+  path: string;
+  operation: "write" | "delete";
+  snapshotId: string;
+  baseHash: string;
+  applied: boolean;
+  reverted?: boolean;
+}
+
+export interface BatchJournalRecord {
+  schemaVersion: 1;
+  id: string;
+  operation: string;
+  project: string;
+  session?: string;
+  startedAt: string;
+  updatedAt: string;
+  status: "in_progress" | "committed" | "rolled_back" | "rollback_failed";
+  entries: BatchJournalEntry[];
+  error?: string;
+}
+
+async function writeAtomicJsonFile(file: string, data: unknown) {
+  await mkdir(path.dirname(file), { recursive: true, mode: 0o700 });
+  const temp = `${file}.${randomUUID()}.tmp`;
+  try {
+    await writeFile(temp, JSON.stringify(data, null, 2) + "\n", { mode: 0o600, flag: "wx" });
+    await rename(temp, file);
+  } finally {
+    await unlink(temp).catch(() => {});
+  }
+}
+
+export async function inspectIncompleteBatchJournals(journalDir: string): Promise<BatchJournalRecord[]> {
+  const entries = await readdir(journalDir, { withFileTypes: true }).catch(() => []);
+  const incomplete: BatchJournalRecord[] = [];
+  for (const entry of entries) {
+    if (incomplete.length >= 64) break;
+    if (!entry.isFile() || entry.isSymbolicLink() || !entry.name.endsWith(".json")) continue;
+    try {
+      const full = path.join(journalDir, entry.name);
+      const st = await lstat(full);
+      if (!st.isFile() || st.isSymbolicLink() || st.size > 1024 * 1024) continue;
+      const parsed = JSON.parse(await readFile(full, "utf8")) as BatchJournalRecord;
+      if (
+        parsed?.schemaVersion === 1 &&
+        typeof parsed.id === "string" &&
+        typeof parsed.operation === "string" &&
+        typeof parsed.project === "string" &&
+        Array.isArray(parsed.entries) &&
+        (parsed.status === "in_progress" || parsed.status === "rollback_failed")
+      ) {
+        incomplete.push(parsed);
+      }
+    } catch { /* Ignore corrupt or transient journal files without modifying them. */ }
+  }
+  return incomplete.sort((a, b) => a.startedAt.localeCompare(b.startedAt));
 }
 
 export interface TextPatchEdit {

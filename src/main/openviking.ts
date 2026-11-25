@@ -31,6 +31,7 @@ function isSafePersonalMemoryUri(uri: string) {
   return uri.startsWith(personalMemories + '/') && !/(?:^|\/)\.{1,2}(?:\/|$)|[%\\\x00-\x1f?#]/.test(uri);
 }
 export type MemoryTaskStatus = { status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'not_found' | 'unknown'; error?: string };
+export interface MemoryCommitResult { taskId?: string; skipped?: boolean; reason?: string; archiveUri?: string }
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
   isReady?(): boolean;
@@ -46,7 +47,7 @@ export interface KnowledgeService {
   listNotes?(scope: KnowledgeScope, project: string, signal?: AbortSignal): Promise<string>;
   ensureMemorySession?(sessionId: string, signal?: AbortSignal): Promise<void>;
   appendSessionMessages?(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal): Promise<void>;
-  commitMemorySession?(sessionId: string, timeoutMs?: number): Promise<{ taskId?: string }>;
+  commitMemorySession?(sessionId: string, timeoutMs?: number): Promise<MemoryCommitResult>;
   getTaskStatus?(taskId: string, timeoutMs?: number): Promise<MemoryTaskStatus>;
   recallMemories?(query: string, limit?: number, timeoutMs?: number): Promise<MemoryRecallResult>;
 }
@@ -490,11 +491,21 @@ export class OpenVikingService implements KnowledgeService {
     if (!messages.length) return;
     await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/messages/batch`, { messages }, 15000, 'POST', signal);
   }
-  async commitMemorySession(sessionId: string, timeoutMs = 15000): Promise<{ taskId?: string }> {
+  async commitMemorySession(sessionId: string, timeoutMs = 15000): Promise<MemoryCommitResult> {
     this.ready();
     const response = await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commit`, {}, timeoutMs, 'POST');
-    const taskId = response?.result?.task_id;
-    return typeof taskId === 'string' ? { taskId } : {};
+    const res = response?.result ?? response;
+    const taskId = typeof res?.task_id === 'string' && res.task_id ? res.task_id : undefined;
+    const status = typeof res?.status === 'string' ? res.status.toLowerCase() : undefined;
+    const reason = typeof res?.reason === 'string' ? res.reason : undefined;
+    const archiveUri = typeof res?.archive_uri === 'string' ? res.archive_uri : undefined;
+    const skipped = status === 'skipped' || reason === 'no_messages';
+    return {
+      ...(taskId ? { taskId } : {}),
+      ...(skipped ? { skipped: true } : {}),
+      ...(reason ? { reason } : {}),
+      ...(archiveUri ? { archiveUri } : {}),
+    };
   }
   async getTaskStatus(taskId: string, timeoutMs = 5000): Promise<MemoryTaskStatus> {
     this.ready();

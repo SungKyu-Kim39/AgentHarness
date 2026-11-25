@@ -35,16 +35,26 @@ const reaTrigger = /(?:(?:ned_host_)?rea_(?:ghidra|inspect)\b|\bghidra\b|\brea\b
 const reaOptOut = /(?:\b(?:ned_host_)?rea_(?:ghidra|inspect)\b|\b(?:rea|ghidra)\b|리버싱|역공학|디컴파일).{0,30}(?:쓰지|사용하지|실행하지|하지\s*마|없이|말고|끄|그만|금지|중지\s*해|중단\s*해)|(?:do not|don't|never|without|stop using)\s+(?:use\s+)?(?:(?:ned_host_)?rea_(?:ghidra|inspect)|rea|ghidra)\b/i;
 const taskSwitch = /(?:대신|말고|다른\s*(?:작업|주제|프로젝트|파일)|그만|instead|new topic|different task)/i;
 const continuation = /^(?:(?:아까|지금|이전|직전|중단된|끊긴|하던|남은|방금|그|네|응|답변|응답|작업|분석|정리|내용|결과)(?:을|를|은|는|이|가)?\s*[,.:]?\s*){0,8}(?:이어서|이어\s*(?:서|줘|주세요|가|해)|계속(?:\s|해|해서|$)|마저)|^(?:(?:please|yes|ok|okay)[, ]+)?(?:continue|resume|go on|carry on)\b/i;
+const compactionPrompt = /^(?:You MUST summarize the conversation above into a structured summary|Update the existing checkpoint in the conversation above into one consolidated summary|The previous response did not fill in the required summary template)/;
+
+export function isCompactionPrompt(input: string): boolean {
+  return compactionPrompt.test(input.trim());
+}
 
 function requestText(request: string) {
   return request.split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0].replace(/```[\s\S]*?```/g, ' ').trim();
+}
+
+export function isContinuationTurn(request: string): boolean {
+  const candidate = requestText(request).replace(/^사용자가 선택한 Ned 스킬 /, '');
+  return candidate.length <= 160 && !taskSwitch.test(candidate) && continuation.test(candidate);
 }
 
 export function reaTurnIntent(request: string): 'request' | 'continue' | 'reset' {
   const candidate = requestText(request).replace(/^사용자가 선택한 Ned 스킬 /, '');
   if (reaOptOut.test(candidate)) return 'reset';
   if (reaTrigger.test(candidate)) return 'request';
-  return candidate.length <= 160 && !taskSwitch.test(candidate) && continuation.test(candidate) ? 'continue' : 'reset';
+  return isContinuationTurn(request) ? 'continue' : 'reset';
 }
 
 export const specializedTools = [
@@ -64,12 +74,19 @@ export function specializedToolRequested(name: string, request: string, reaReque
 
 export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: Array<{ function?: { name?: string } }>}, reaRequested?: boolean) {
   if (!Array.isArray(body.tools) || !Array.isArray(body.messages)) return;
-  const recentUsers = body.messages.filter(message => message.role === 'user').slice(-2);
+  const userTexts = body.messages
+    .filter(message => message.role === 'user')
+    .map(message => text(message.content))
+    .filter(raw => !isCompactionPrompt(raw));
+  let anchor = userTexts.length - 1;
+  while (anchor > 0 && isContinuationTurn(userTexts[anchor])) anchor--;
+  const start = Math.min(anchor, Math.max(0, userTexts.length - 2));
+  const recentUsers = userTexts.slice(start);
   const request = recentUsers
-    .map(message => text(message.content).split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0])
+    .map(raw => raw.split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0])
     .join('\n');
-  const rea = reaRequested ?? recentUsers.reduce((allowed, message) => {
-    const intent = reaTurnIntent(text(message.content));
+  const rea = reaRequested ?? recentUsers.reduce((allowed, raw) => {
+    const intent = reaTurnIntent(raw);
     return intent === 'request' || (intent === 'continue' && allowed);
   }, false);
   body.tools = body.tools.filter(tool => specializedToolRequested(tool.function?.name ?? '', request, rea));
@@ -82,7 +99,7 @@ export async function automaticSkillContext(skills: OfflineSkills, input: unknow
   const messages = input.slice(-80) as Message[];
   const users = messages.filter(m => m.role === 'user').slice(-4).map(m => text(m.content).slice(-6000));
   if (!users.length || /(?:스킬.*(?:사용하지|쓰지)\s*마|do not use (?:any )?skills|no skills)/i.test(users.at(-1)!)) return;
-  if (/^(?:You MUST summarize the conversation above into a structured summary|Update the existing checkpoint in the conversation above into one consolidated summary|The previous response did not fill in the required summary template)/.test(users.at(-1)!.trim())) return;
+  if (isCompactionPrompt(users.at(-1)!)) return;
   if (users.at(-1)!.startsWith('사용자가 선택한 Ned 스킬 /skill-')) return;
   const latest = users.at(-1)!.replace(/```[\s\S]*?```/g, ' ');
   const context = users.join('\n');

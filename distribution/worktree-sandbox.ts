@@ -279,6 +279,7 @@ export class WorktreeSandbox {
         signal,
         validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
         snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
+        journal: { dir: path.join(this.root, 'batch-journals'), operation: 'worktree_sandbox_apply', session },
       });
       return {
         status: 'applied',

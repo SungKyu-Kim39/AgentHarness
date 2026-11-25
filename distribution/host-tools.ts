@@ -425,7 +425,7 @@ export class HostTools {
       if (a.operation === 'create') return JSON.stringify(await this.checkpoints.create(project, a.label ?? 'manual', signal));
       if (!a.checkpointId) throw new Error('checkpointId가 필요합니다.');
       if (a.operation === 'diff') return JSON.stringify(await this.checkpoints.diff(project, a.checkpointId, signal));
-      return JSON.stringify(await this.checkpoints.restore(session, project, a.checkpointId, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+      return JSON.stringify(await this.withEditQueue(() => this.checkpoints.restore(session, project, a.checkpointId!, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal)));
     }
     if (name === 'worktree_sandbox') {
       const a = z.object({ operation: z.enum(['list', 'create', 'diff', 'apply', 'discard']), id: z.string().min(1).max(64).optional(), label: z.string().max(120).optional() }).strict().parse(args);
@@ -436,21 +436,26 @@ export class HostTools {
       }
       if (!a.id) throw new Error('worktree id가 필요합니다.');
       if (a.operation === 'diff') return JSON.stringify(await this.worktrees.diff(project, a.id, signal));
-      if (a.operation === 'apply') return JSON.stringify(await this.worktrees.apply(session, project, a.id, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+      if (a.operation === 'apply') return JSON.stringify(await this.withEditQueue(() => this.worktrees.apply(session, project, a.id!, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal)));
       if (!await this.options.approveExplicit?.('Worktree 샌드박스 삭제', `프로젝트: ${project}\n샌드박스: ${a.id}\n반영하지 않은 샌드박스 변경도 제거됩니다.`, signal)) throw new Error('worktree 삭제를 승인하지 않았습니다.');
       return JSON.stringify(await this.worktrees.discard(project, a.id, signal));
     }
     if (name === 'spec_workflow') {
       const a = z.object({ operation: z.enum(['init', 'list', 'status', 'verify']), feature: z.string().max(80).optional(), title: z.string().max(120).optional(), goal: z.string().max(2000).optional() }).strict().parse(args);
-      return JSON.stringify(await this.specs.call(session, project, a, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+      const runSpec = () => this.specs.call(session, project, a, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal);
+      return JSON.stringify(a.operation === 'init' ? await this.withEditQueue(runSpec) : await runSpec());
     }
     if (name === 'ast_search') {
       const a = z.object({ language: z.enum(['python', 'typescript', 'tsx', 'javascript', 'c', 'cpp', 'csharp', 'java', 'go', 'rust', 'html', 'css', 'json']), pattern: z.string().min(1).max(4000), paths: z.array(pathArg).max(100).optional(), rewrite: z.string().max(4000).optional(), apply: z.boolean().default(false) }).strict().parse(args);
-      if (a.apply && !projectOverride) {
-        const request = await this.options.request?.(session);
-        await this.checkpoints.autoCheckpointBeforeEdit(session, project, request, signal);
-      }
-      return JSON.stringify(await this.astAudit.astSearch(session, project, a, { approve: this.options.approve, validateEdit: this.options.validateEdit }, signal));
+      const runAst = () => this.astAudit.astSearch(session, project, a, {
+        approve: this.options.approve,
+        validateEdit: this.options.validateEdit,
+        beforeApply: a.apply && !projectOverride ? async () => {
+          const request = await this.options.request?.(session);
+          await this.checkpoints.autoCheckpointBeforeEdit(session, project, request, signal);
+        } : undefined,
+      }, signal);
+      return JSON.stringify(a.apply ? await this.withEditQueue(runAst) : await runAst());
     }
     if (name === 'code_audit') {
       const a = z.object({ paths: z.array(pathArg).max(200).optional(), categories: z.array(z.enum(['security', 'secrets', 'quality', 'venv-ruff'])).max(4).optional() }).strict().parse(args);
@@ -564,10 +569,7 @@ export class HostTools {
           ? { ...z.object({ path: pathArg, edits: z.array(patchEditSchema).min(1).max(50) }).strict().parse(args), content: undefined }
           : { ...z.object({ path: pathArg, content: z.string().max(2 * 1024 * 1024) }).strict().parse(args), edits: undefined };
       const label = deleting ? '파일 삭제' : patching ? '파일 부분 수정' : '파일 수정';
-      const previous = this.editQueue; let release!: () => void;
-      this.editQueue = new Promise<void>(resolve => { release = resolve; });
-      await previous;
-      try {
+      return this.withEditQueue(async () => {
         if (!this.accepting || signal?.aborted || this.cancelled.has(session) || this.runs.get(session) !== run) throw new Error('중지되었거나 다른 요청으로 전환되었습니다.');
         const policyEpoch = this.editPolicyEpoch;
         const editSignal = signal ? AbortSignal.any([signal, this.editPolicyAbort.signal]) : this.editPolicyAbort.signal;
@@ -631,7 +633,7 @@ export class HostTools {
           });
         }
         return JSON.stringify({ status: deleting ? 'deleted' : 'applied', ...(deleting ? { operation: 'delete' } : {}), path: proposal.path, before: proposal.before, after: deleting ? null : proposal.after, snapshot: proposal.id });
-      } finally { release(); }
+      });
     }
     if (name === 'read_methodology') {
       const a = z.object({ name: z.enum(['aegis', 'conductor']) }).strict().parse(args);
@@ -704,6 +706,14 @@ export class HostTools {
       }
       throw new Error('등록되지 않은 도구입니다.');
     } finally { await rm(temp, { recursive: true, force: true }); }
+  }
+  private async withEditQueue<T>(work: () => Promise<T>): Promise<T> {
+    const previous = this.editQueue;
+    let release!: () => void;
+    this.editQueue = new Promise<void>(resolve => { release = resolve; });
+    await previous;
+    try { return await work(); }
+    finally { release(); }
   }
   private trackChild(session: string, child: ChildProcess) {
     let owned = this.children.get(session);

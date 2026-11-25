@@ -91,17 +91,31 @@ Function CheckInstallDirectory
   ${If} $5 == "yes"
     Return
   ${EndIf}
-  IfFileExists "$0\Ned.exe" 0 check_empty
-  IfFileExists "$0\resources\app.asar" 0 check_empty
-  IfFileExists "$0\resources\ned\agent.cjs" 0 check_empty
+  IfFileExists "$0\Ned.exe" 0 check_backup
+  IfFileExists "$0\resources\app.asar" 0 check_backup
+  IfFileExists "$0\resources\ned\agent.cjs" 0 check_backup
     StrCpy $9 "valid"
     Return
-  check_empty:
-  ; An interrupted upgrade can have moved the live executable and resources.
-  IfFileExists "$0\.ned-upgrade-backup\resources\app.asar" 0 check_empty_directory
-  IfFileExists "$0\.ned-upgrade-backup\resources\ned\agent.cjs" 0 check_empty_directory
-  Goto directory_valid
-  check_empty_directory:
+  check_backup:
+  ; An interrupted upgrade or partial rollback can leave files split between
+  ; the live install directory and .ned-upgrade-backup.
+  ${If} ${FileExists} "$0\.ned-upgrade-backup\*.*"
+    StrCpy $6 "no"
+    ${If} ${FileExists} "$0\Ned.exe"
+    ${OrIf} ${FileExists} "$0\.ned-upgrade-backup\Ned.exe"
+      StrCpy $6 "yes"
+    ${EndIf}
+    ${If} $6 == "yes"
+      ${If} ${FileExists} "$0\resources\app.asar"
+      ${AndIf} ${FileExists} "$0\resources\ned\agent.cjs"
+        Goto directory_valid
+      ${EndIf}
+      ${If} ${FileExists} "$0\.ned-upgrade-backup\resources\app.asar"
+      ${AndIf} ${FileExists} "$0\.ned-upgrade-backup\resources\ned\agent.cjs"
+        Goto directory_valid
+      ${EndIf}
+    ${EndIf}
+  ${EndIf}
   IfFileExists "$0\*.*" 0 directory_valid
   FindFirst $2 $3 "$0\*.*"
   check_next:
@@ -139,18 +153,19 @@ Function VerifyInstallDirectory
   ReadRegStr $0 HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\Ned" "InstallLocation"
   ${If} $0 != ""
   ${AndIf} $0 != $INSTDIR
-    IfFileExists "$0\Ned.exe" 0 previous_missing
-    Call IsPrivateDataDirectory
-    ${If} $5 == "yes"
-      MessageBox MB_OK|MB_ICONSTOP "기존 설치 위치가 사용자 데이터 폴더와 겹칩니다. 기존 제거 프로그램을 실행하기 전에 설정·대화·지식을 별도 위치에 백업하고 설치 파일과 사용자 자료를 분리하세요." /SD IDOK
+    ${If} ${FileExists} "$0\Ned.exe"
+    ${OrIf} ${FileExists} "$0\.ned-upgrade-backup\Ned.exe"
+      Call IsPrivateDataDirectory
+      ${If} $5 == "yes"
+        MessageBox MB_OK|MB_ICONSTOP "기존 설치 위치가 사용자 데이터 폴더와 겹칩니다. 기존 제거 프로그램을 실행하기 전에 설정·대화·지식을 별도 위치에 백업하고 설치 파일과 사용자 자료를 분리하세요." /SD IDOK
+        SetErrorLevel 1
+        Abort
+      ${EndIf}
+      MessageBox MB_OK|MB_ICONSTOP "설치 위치를 옮기려면 기존 Ned를 먼저 제거한 뒤 새 경로에 설치하세요. 설정·대화·지식은 사용자 데이터 폴더에 유지됩니다." /SD IDOK
       SetErrorLevel 1
       Abort
     ${EndIf}
-    MessageBox MB_OK|MB_ICONSTOP "설치 위치를 옮기려면 기존 Ned를 먼저 제거한 뒤 새 경로에 설치하세요. 설정·대화·지식은 사용자 데이터 폴더에 유지됩니다." /SD IDOK
-    SetErrorLevel 1
-    Abort
   ${EndIf}
-  previous_missing:
 FunctionEnd
 
 !macro NedCheckUnlocked FILEPATH
@@ -191,25 +206,96 @@ Function CheckInstallNotRunning
   ${EndIf}
 FunctionEnd
 
-!macro NedRestoreUpgradeItem ITEM PROBE REMOVE
-  ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\${PROBE}"
-    ClearErrors
-    ${REMOVE} "$INSTDIR\${ITEM}"
-    ClearErrors
-    Rename "$INSTDIR\.ned-upgrade-backup\${ITEM}" "$INSTDIR\${ITEM}"
-    ${If} ${Errors}
-      StrCpy $7 "failed"
-    ${EndIf}
+Function BackupNedInstallation
+  StrCpy $7 "ok"
+  ClearErrors
+  CreateDirectory "$INSTDIR\.ned-upgrade-backup"
+  ${If} ${Errors}
+    StrCpy $7 "failed"
+    Return
   ${EndIf}
-!macroend
+  Push ""
+  FindFirst $R0 $R1 "$INSTDIR\*.*"
+  ${DoWhile} $R1 != ""
+    ${If} $R1 != "."
+    ${AndIf} $R1 != ".."
+    ${AndIf} $R1 != ".ned-upgrade-backup"
+      Push "$R1"
+    ${EndIf}
+    FindNext $R0 $R1
+  ${Loop}
+  FindClose $R0
+  ${Do}
+    Pop $R1
+    ${If} $R1 == ""
+      ${ExitDo}
+    ${EndIf}
+    ${If} $7 == "ok"
+      ClearErrors
+      Rename "$INSTDIR\$R1" "$INSTDIR\.ned-upgrade-backup\$R1"
+      ${If} ${Errors}
+        StrCpy $7 "failed"
+      ${EndIf}
+    ${EndIf}
+  ${Loop}
+FunctionEnd
+
+Function CleanPartialNedExtract
+  Push ""
+  FindFirst $R0 $R1 "$INSTDIR\*.*"
+  ${DoWhile} $R1 != ""
+    ${If} $R1 != "."
+    ${AndIf} $R1 != ".."
+    ${AndIf} $R1 != ".ned-upgrade-backup"
+      Push "$R1"
+    ${EndIf}
+    FindNext $R0 $R1
+  ${Loop}
+  FindClose $R0
+  ${Do}
+    Pop $R1
+    ${If} $R1 == ""
+      ${ExitDo}
+    ${EndIf}
+    ${If} ${FileExists} "$INSTDIR\$R1\*.*"
+      RMDir /r "$INSTDIR\$R1"
+    ${Else}
+      Delete "$INSTDIR\$R1"
+    ${EndIf}
+  ${Loop}
+FunctionEnd
 
 Function RestoreNedUpgradeBackup
   StrCpy $7 "ok"
   ; Only replace paths for which a backup still exists. A partial backup move
   ; leaves the other original paths in place.
-  !insertmacro NedRestoreUpgradeItem "resources" "resources\*.*" "RMDir /r"
-  !insertmacro NedRestoreUpgradeItem "locales" "locales\*.*" "RMDir /r"
-  !insertmacro NedRestoreUpgradeItem "Ned.exe" "Ned.exe" "Delete"
+  Push ""
+  FindFirst $R0 $R1 "$INSTDIR\.ned-upgrade-backup\*.*"
+  ${DoWhile} $R1 != ""
+    ${If} $R1 != "."
+    ${AndIf} $R1 != ".."
+      Push "$R1"
+    ${EndIf}
+    FindNext $R0 $R1
+  ${Loop}
+  FindClose $R0
+  ${Do}
+    Pop $R1
+    ${If} $R1 == ""
+      ${ExitDo}
+    ${EndIf}
+    ClearErrors
+    ${If} ${FileExists} "$INSTDIR\$R1\*.*"
+      RMDir /r "$INSTDIR\$R1"
+    ${ElseIf} ${FileExists} "$INSTDIR\$R1"
+      Delete "$INSTDIR\$R1"
+    ${EndIf}
+    ClearErrors
+    Rename "$INSTDIR\.ned-upgrade-backup\$R1" "$INSTDIR\$R1"
+    ${If} ${Errors}
+      StrCpy $7 "failed"
+    ${EndIf}
+  ${Loop}
   ${If} $7 == "ok"
     ; A backup that still contains an item must never be deleted on failure.
     ClearErrors
@@ -231,9 +317,9 @@ Section "Ned"
     SetErrorLevel 1
     Abort
   ${EndIf}
-  ; Back up existing installation folders before replacing them so a mid-upgrade
-  ; failure (disk full, locked file, abort) restores the previous working Ned build.
-  ; User data remains outside INSTDIR.
+  ; Back up the entire existing top-level install set (Electron DLLs/PAKs,
+  ; Ned.exe, locales, resources) before replacing them so a mid-upgrade failure
+  ; restores a consistent previous build. User data remains outside INSTDIR.
   StrCpy $8 "no"
   ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\*.*"
     Call RestoreNedUpgradeBackup
@@ -243,18 +329,8 @@ Section "Ned"
   ${EndIf}
   ${If} ${FileExists} "$INSTDIR\Ned.exe"
     ${OrIf} ${FileExists} "$INSTDIR\resources\*.*"
-    ClearErrors
-    CreateDirectory "$INSTDIR\.ned-upgrade-backup"
-    ${If} ${FileExists} "$INSTDIR\resources\*.*"
-      Rename "$INSTDIR\resources" "$INSTDIR\.ned-upgrade-backup\resources"
-    ${EndIf}
-    ${If} ${FileExists} "$INSTDIR\locales\*.*"
-      Rename "$INSTDIR\locales" "$INSTDIR\.ned-upgrade-backup\locales"
-    ${EndIf}
-    ${If} ${FileExists} "$INSTDIR\Ned.exe"
-      Rename "$INSTDIR\Ned.exe" "$INSTDIR\.ned-upgrade-backup\Ned.exe"
-    ${EndIf}
-    ${If} ${Errors}
+    Call BackupNedInstallation
+    ${If} $7 != "ok"
       Call RestoreNedUpgradeBackup
       ${If} $7 != "ok"
         Goto backup_preserved
@@ -269,6 +345,7 @@ Section "Ned"
   ClearErrors
   File /r "${NED_APP_DIR}\*"
   IfErrors install_failed
+  IfFileExists "$INSTDIR\Ned.exe" 0 install_failed
   IfFileExists "$INSTDIR\resources\zed\Zed.exe" 0 install_failed
   IfFileExists "$INSTDIR\resources\zed\bin\zed.exe" 0 install_failed
   IfFileExists "$INSTDIR\resources\app.asar" 0 install_failed
@@ -278,6 +355,7 @@ Section "Ned"
   Goto install_verified
   install_failed:
     ${If} $8 == "yes"
+      Call CleanPartialNedExtract
       Call RestoreNedUpgradeBackup
       ${If} $7 != "ok"
         Goto backup_preserved

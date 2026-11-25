@@ -127,6 +127,7 @@ export class SpecWorkflow {
         signal,
         validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
         snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
+        journal: { dir: path.join(this.root, 'batch-journals'), operation: 'spec_workflow_init', session },
       });
       return { status: 'created', feature: slug, directory: base, createdFiles: proposals.map(p => p.path) };
     }

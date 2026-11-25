@@ -53,6 +53,8 @@ export interface MemoryStatusSnapshot {
   commitsScheduled: number;
   commitsCompleted?: number;
   commitsFailed?: number;
+  commitsUnconfirmed?: number;
+  commitsSkipped?: number;
   recallsInjected: number;
   lastEventAt?: string;
   lastErrorCode?: string;
@@ -368,8 +370,6 @@ export interface SessionMemoryDependencies {
   fetchSessionMessages: (sessionId: string, afterCursor?: string) => Promise<SessionMessageFetchResult>;
 }
 
-const MAX_COMMIT_RETRIES = 3;
-
 export class SessionMemoryManager {
   private syncState: Record<string, MemorySyncEntry> = {};
   private loading?: Promise<void>;
@@ -392,6 +392,8 @@ export class SessionMemoryManager {
       commitsScheduled: 0,
       commitsCompleted: 0,
       commitsFailed: 0,
+      commitsUnconfirmed: 0,
+      commitsSkipped: 0,
       recallsInjected: 0,
     };
   }
@@ -494,12 +496,15 @@ export class SessionMemoryManager {
 
   onSessionDisconnected(sessionId: string) {
     if (!this.deps.policy.enabled || this.closed) return;
-    void this.enqueue(sessionId, () => this.syncInternal(sessionId, true));
+    // Sync remaining completed messages without triggering an async /commit right before
+    // OpenViking may stop during app shutdown. Pending turns remain persisted and commit
+    // safely on session switch (onSessionActivated) or next launch (flushPendingCommits).
+    void this.enqueue(sessionId, () => this.syncInternal(sessionId, false, true));
   }
 
   async syncAndMaybeCommit(sessionId: string, forceCommit = false) {
     if (!this.deps.policy.enabled || this.closed) return;
-    await this.enqueue(sessionId, () => this.syncInternal(sessionId, forceCommit));
+    await this.enqueue(sessionId, () => this.syncInternal(sessionId, forceCommit, false));
   }
 
   private async reconcilePendingCommitTask(sessionId: string): Promise<'idle' | 'in_flight'> {
@@ -531,27 +536,31 @@ export class SessionMemoryManager {
         return 'idle';
       }
       if (task.status === 'failed' || task.status === 'cancelled') {
-        const retries = (entry.pendingCommitRetries ?? 0) + 1;
-        const restoreTurns = entry.pendingCommitTurns ?? 1;
+        // OpenViking 0.5.5 Phase 1 already archived and drained the live message buffer.
+        // Re-calling POST /commit on an empty buffer is a no-op ("skipped: no_messages")
+        // rather than an archive retry, so record the Phase 2 extraction failure cleanly
+        // without restoring uncommittedTurns into a bogus empty-buffer retry loop.
         entry.pendingCommitTaskId = undefined;
         entry.pendingCommitTurns = undefined;
-        if (retries <= MAX_COMMIT_RETRIES) {
-          entry.pendingCommitRetries = retries;
-          entry.uncommittedTurns = Math.max(entry.uncommittedTurns, restoreTurns);
-        } else {
-          entry.pendingCommitRetries = undefined;
-        }
+        entry.pendingCommitRetries = undefined;
         this.status.commitsFailed = (this.status.commitsFailed ?? 0) + 1;
-        this.status.lastErrorCode = 'OV_MEMORY_COMMIT_FAILED';
+        this.status.lastErrorCode = 'OV_MEMORY_EXTRACTION_FAILED';
         this.status.lastEventAt = new Date().toISOString();
         this.persistSync();
         this.persistStatus();
         return 'idle';
       }
-      // 'not_found' (e.g. after OpenViking sidecar restart) or 'unknown': clear stale task pointer cleanly.
+      // 'not_found' (e.g. after OpenViking sidecar restart; QueueManager resumes Phase 2
+      // from SQLite even though in-memory task lookup returns 404) or 'unknown':
+      // clear stale task metadata and record unconfirmed diagnostic visibility.
       entry.pendingCommitTaskId = undefined;
       entry.pendingCommitTurns = undefined;
+      entry.pendingCommitRetries = undefined;
+      this.status.commitsUnconfirmed = (this.status.commitsUnconfirmed ?? 0) + 1;
+      this.status.lastErrorCode = task.status === 'not_found' ? 'OV_MEMORY_TASK_NOT_FOUND' : 'OV_MEMORY_TASK_UNKNOWN';
+      this.status.lastEventAt = new Date().toISOString();
       this.persistSync();
+      this.persistStatus();
       return 'idle';
     } catch (error) {
       this.recordError(error);
@@ -559,7 +568,7 @@ export class SessionMemoryManager {
     }
   }
 
-  private async syncInternal(sessionId: string, forceCommit: boolean) {
+  private async syncInternal(sessionId: string, forceCommit: boolean, skipCommit = false) {
     await this.load();
     if (this.syncState[sessionId]?.sessionOptedOut) return;
     const knowledge = this.deps.knowledge();
@@ -656,7 +665,7 @@ export class SessionMemoryManager {
         this.persistSync();
       }
 
-      if ((forceCommit && entry.uncommittedTurns > 0) || entry.uncommittedTurns >= this.deps.policy.commitEveryTurns) {
+      if (!skipCommit && ((forceCommit && entry.uncommittedTurns > 0) || entry.uncommittedTurns >= this.deps.policy.commitEveryTurns)) {
         await this.commitInternal(sessionId);
       }
     } catch (error) {
@@ -677,10 +686,22 @@ export class SessionMemoryManager {
     try {
       const res = await knowledge.commitMemorySession(entry.ovSessionId, timeoutMs);
       entry.uncommittedTurns = 0;
+      if (res?.skipped) {
+        entry.pendingCommitTaskId = undefined;
+        entry.pendingCommitTurns = undefined;
+        entry.pendingCommitRetries = undefined;
+        this.syncState[sessionId] = entry;
+        this.status.commitsSkipped = (this.status.commitsSkipped ?? 0) + 1;
+        this.status.lastEventAt = new Date().toISOString();
+        this.persistSync();
+        this.persistStatus();
+        return;
+      }
       entry.lastCommittedAt = new Date().toISOString();
       if (res?.taskId) {
         entry.pendingCommitTaskId = res.taskId;
         entry.pendingCommitTurns = turnsToCommit;
+        entry.pendingCommitRetries = undefined;
       } else {
         entry.pendingCommitTaskId = undefined;
         entry.pendingCommitTurns = undefined;
@@ -694,6 +715,7 @@ export class SessionMemoryManager {
       this.persistSync();
       this.persistStatus();
     } catch (error) {
+      // Phase 1 submission failed before OpenViking archived messages; keep uncommittedTurns for retry.
       this.recordError(error);
     }
   }

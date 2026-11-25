@@ -601,15 +601,17 @@ test('boundary guards clamp commitEveryTurns, prevent 400+ message re-sync via w
   assert.equal(prunedFile.sessions['old_0'], undefined);
 });
 
-test('SessionMemoryManager fails closed on missing session info, reconciles async commit tasks, and syncs incrementally by cursor', async t => {
+test('SessionMemoryManager fails closed on missing session info, reconciles Phase 1/2 commits, handles skipped/not_found, and avoids disconnect /commit race', async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'ned-task-recovery-'));
   t.after(() => rm(root, { recursive: true, force: true }));
 
   const appended: Array<{ sessionId: string; count: number }> = [];
   const commits: string[] = [];
   const seenCursors: Array<string | undefined> = [];
-  let taskState: 'pending' | 'running' | 'failed' | 'completed' = 'running';
+  let taskState: 'pending' | 'running' | 'failed' | 'completed' | 'not_found' = 'running';
   let infoAvailable = false;
+  let failPhase1Once = true;
+  let returnSkipped = false;
 
   const fakeKnowledge: KnowledgeService = {
     state: () => ({ status: 'ready', indexedFiles: 0 }),
@@ -621,7 +623,17 @@ test('SessionMemoryManager fails closed on missing session info, reconciles asyn
     close: async () => {},
     ensureMemorySession: async () => {},
     appendSessionMessages: async (sessionId, messages) => { appended.push({ sessionId, count: messages.length }); },
-    commitMemorySession: async sessionId => { commits.push(sessionId); return { taskId: `task-${commits.length}` }; },
+    commitMemorySession: async sessionId => {
+      commits.push(sessionId);
+      if (failPhase1Once) {
+        failPhase1Once = false;
+        throw new Error('OV_TRANSIENT_HTTP');
+      }
+      if (returnSkipped) {
+        return { skipped: true, reason: 'no_messages' };
+      }
+      return { taskId: `task-${commits.length}` };
+    },
     getTaskStatus: async () => ({ status: taskState }),
   };
 
@@ -633,6 +645,14 @@ test('SessionMemoryManager fails closed on missing session info, reconciles asyn
     { id: 'u2', type: 'user', text: '두 번째 빌드 규칙도 확인해줘', time: { created: 20 } },
     { id: 'a2', type: 'assistant', time: { created: 21, completed: 22 }, content: [{ type: 'text', text: '두 번째 규칙입니다.' }] },
   ];
+  const page3: OpenCodeSessionMessage[] = [
+    { id: 'u3', type: 'user', text: '세 번째 테스트 규칙도 확인해줘', time: { created: 30 } },
+    { id: 'a3', type: 'assistant', time: { created: 31, completed: 32 }, content: [{ type: 'text', text: '세 번째 규칙입니다.' }] },
+  ];
+  const disconnectMsgs: OpenCodeSessionMessage[] = [
+    { id: 'du1', type: 'user', text: '종료 직전 마지막 규칙입니다', time: { created: 40 } },
+    { id: 'da1', type: 'assistant', time: { created: 41, completed: 42 }, content: [{ type: 'text', text: '반영했습니다.' }] },
+  ];
 
   const manager = new SessionMemoryManager({
     root,
@@ -642,8 +662,10 @@ test('SessionMemoryManager fails closed on missing session info, reconciles asyn
       if (!infoAvailable) throw new Error('transient engine error');
       return {};
     },
-    fetchSessionMessages: async (_id, afterCursor) => {
+    fetchSessionMessages: async (id, afterCursor) => {
+      if (id === 'disc-s') return disconnectMsgs;
       seenCursors.push(afterCursor);
+      if (afterCursor === 'cur-2') return { messages: page3, nextCursor: 'cur-3' };
       if (afterCursor === 'cur-1') return { messages: page2, nextCursor: 'cur-2' };
       return { messages: page1, nextCursor: 'cur-1' };
     },
@@ -655,34 +677,57 @@ test('SessionMemoryManager fails closed on missing session info, reconciles asyn
   assert.equal(appended.length, 0);
   assert.equal(commits.length, 0);
 
-  // Turn 1 succeeds and schedules task-1 (currently 'running').
+  // Turn 1: Phase 1 commit HTTP failure preserves uncommittedTurns so flushPendingCommits retries cleanly.
   infoAvailable = true;
   await manager.syncAndMaybeCommit('s1', false);
   assert.equal(appended.length, 1);
   assert.equal(commits.length, 1);
   assert.deepEqual(seenCursors, [undefined]);
 
-  // While task-1 is still 'running', flushPendingCommits must NOT fire a duplicate overlapping commit.
+  // Retry succeeds and schedules task-2 (currently 'running').
   await manager.flushPendingCommits();
-  assert.equal(commits.length, 1);
+  assert.equal(commits.length, 2);
 
-  // When task-1 fails, flushPendingCommits detects failure, restores uncommittedTurns, and retries (task-2).
+  // While task-2 is still 'running', flushPendingCommits must NOT fire a duplicate overlapping commit.
+  await manager.flushPendingCommits();
+  assert.equal(commits.length, 2);
+
+  // Phase 2 extraction failure: archive was already created in Phase 1; do NOT re-call /commit on an empty buffer.
   taskState = 'failed';
   await manager.flushPendingCommits();
   assert.equal(commits.length, 2);
 
-  // When task-2 completes, next sync passes incremental cursor 'cur-1' and increments commitsCompleted.
-  taskState = 'completed';
+  // Turn 2 arrives with incremental cursor 'cur-1' and schedules task-3.
   await manager.syncAndMaybeCommit('s1', false);
   assert.deepEqual(seenCursors, [undefined, 'cur-1']);
   assert.equal(commits.length, 3);
 
+  // Simulate OpenViking sidecar restart returning 404 ('not_found') for task-3 -> clears task and records unconfirmed.
+  taskState = 'not_found';
+  await manager.flushPendingCommits();
+  assert.equal(commits.length, 3);
+
+  // Turn 3 where OpenViking returns skipped ('no_messages') must NOT inflate commitsScheduled.
+  returnSkipped = true;
+  await manager.syncAndMaybeCommit('s1', false);
+  assert.equal(commits.length, 4);
+
+  // Disconnecting a session syncs completed messages but must NOT fire /commit right before OpenViking shutdown.
+  manager.onSessionDisconnected('disc-s');
   await manager.close();
+  assert.equal(commits.length, 4);
+
   const statusFile = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-status.json'), 'utf8'));
+  assert.equal(statusFile.commitsScheduled, 2);
   assert.equal(statusFile.commitsFailed, 1);
-  assert.equal(statusFile.commitsCompleted, 1);
+  assert.equal(statusFile.commitsUnconfirmed, 1);
+  assert.equal(statusFile.commitsSkipped, 1);
+  assert.equal(statusFile.lastErrorCode, 'OV_MEMORY_TASK_NOT_FOUND');
   const syncFile = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8'));
-  assert.equal(syncFile.sessions.s1.lastMessageCursor, 'cur-2');
+  assert.equal(syncFile.sessions.s1.lastMessageCursor, 'cur-3');
+  assert.equal(syncFile.sessions.s1.pendingCommitTaskId, undefined);
+  assert.equal(syncFile.sessions.s1.pendingCommitRetries, undefined);
+  assert.equal(syncFile.sessions['disc-s'].uncommittedTurns, 1);
 });
 
 

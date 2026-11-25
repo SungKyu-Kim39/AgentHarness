@@ -25,6 +25,7 @@ export interface CodeAuditInput {
 export interface AstRewriteHooks {
   approve(message: string, detail: string, signal?: AbortSignal): Promise<boolean>;
   validateEdit?: (session: string, project: string, proposal: Proposal, signal?: AbortSignal) => Promise<void>;
+  beforeApply?: () => Promise<void>;
 }
 
 /** Multilingual AST search/rewrite (ast-grep-py) and offline local security/quality auditing. */
@@ -171,10 +172,12 @@ export class AstAuditTools {
       );
       if (!ok) throw new Error('AST 치환을 취소했습니다.');
       combined.throwIfAborted();
+      await hooks.beforeApply?.();
       await files.applyBatch(proposals, {
         signal: combined,
         validate: proposal => hooks.validateEdit?.(session, project, proposal, combined) ?? Promise.resolve(),
         snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
+        journal: { dir: path.join(this.root, 'batch-journals'), operation: 'ast_search', session },
       });
       return {
         status: 'applied',

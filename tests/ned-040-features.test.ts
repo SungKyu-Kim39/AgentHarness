@@ -578,7 +578,7 @@ test('code_audit and document_read(docling) require approval for project Python,
 
 
 test('batch rollback preserves a concurrent edit made after Ned applied the first file', async t => {
-  const { project } = await makeTempWorkspace(t, 'ned-rollback-conflict-');
+  const { root, project } = await makeTempWorkspace(t, 'ned-rollback-conflict-');
   const firstPath = path.join(project, 'first.txt');
   const secondPath = path.join(project, 'second.txt');
   await writeFile(firstPath, 'first original');
@@ -586,11 +586,126 @@ test('batch rollback preserves a concurrent edit made after Ned applied the firs
   const files = new ProjectFiles(project);
   const first = await files.propose('batch', 'first.txt', 'Ned first');
   const second = await files.propose('batch', 'second.txt', 'Ned second');
-  await assert.rejects(files.applyBatch([first, second], { validate: async proposal => {
-    if (proposal.path !== second.path) return;
-    await writeFile(firstPath, 'new user changes');
-    throw new Error('fixture second file conflict');
-  } }), /일부 파일 복구에 실패했습니다/);
+  const journalDir = path.join(root, 'batch-journals');
+  await assert.rejects(files.applyBatch([first, second], {
+    journal: { dir: journalDir, operation: 'unit_test_batch', session: 'ses1', batchId: 'b-fail' },
+    validate: async proposal => {
+      if (proposal.path !== second.path) return;
+      await writeFile(firstPath, 'new user changes');
+      throw new Error('fixture second file conflict');
+    },
+  }), /일부 파일 복구에 실패했습니다/);
   assert.equal(await readFile(firstPath, 'utf8'), 'new user changes');
   assert.equal(await readFile(secondPath, 'utf8'), 'second original');
+
+  const { inspectIncompleteBatchJournals } = await import('../src/main/files');
+  const incomplete = await inspectIncompleteBatchJournals(journalDir);
+  assert.equal(incomplete.length, 1);
+  assert.equal(incomplete[0].id, 'b-fail');
+  assert.equal(incomplete[0].status, 'rollback_failed');
+  assert.equal(incomplete[0].entries[0].applied, true);
+  assert.equal(incomplete[0].entries[0].reverted, undefined);
+  const rawJournal = await readFile(path.join(journalDir, 'b-fail.json'), 'utf8');
+  assert.ok(!rawJournal.includes('Ned first'), 'journal must not duplicate raw file content');
+});
+
+test('DataApps static HTTP preview enforces symlink/dotfile boundaries without requiring Python', { skip: process.platform === 'win32' }, async t => {
+  const { dir, root, project } = await makeTempWorkspace(t, 'ned-static-http-');
+  const { symlink } = await import('node:fs/promises');
+  const outsideFile = path.join(dir, 'outside-secret.txt');
+  await writeFile(outsideFile, 'OUTSIDE_SECRET_DATA');
+  await writeFile(path.join(project, 'index.html'), '<h1>Safe Index</h1>');
+  await writeFile(path.join(project, '.env'), 'API_KEY=supersecret');
+  await mkdir(path.join(project, '.git'), { recursive: true });
+  await writeFile(path.join(project, '.git/config'), '[core]\n');
+  await mkdir(path.join(project, '.ned'), { recursive: true });
+  await writeFile(path.join(project, '.ned/private.txt'), 'private');
+  await symlink(outsideFile, path.join(project, 'escape.txt'));
+
+  let pythonResolved = 0;
+  const apps = new DataApps(root, '', {
+    approve: async () => true,
+    resolvePython: async () => { pythonResolved++; throw new Error('Python should not be required for static http'); },
+  });
+  t.after(() => apps.close());
+
+  const started = await apps.call('ses1', project, { operation: 'start', framework: 'http', entry: '.' }) as { id: string; url: string; ready?: boolean };
+  assert.equal(started.ready, true);
+  assert.equal(pythonResolved, 0);
+
+  const okIndex = await fetch(started.url + '/');
+  assert.equal(okIndex.status, 200);
+  assert.equal(okIndex.headers.get('x-content-type-options'), 'nosniff');
+  assert.match(await okIndex.text(), /Safe Index/);
+
+  const headRes = await fetch(started.url + '/index.html', { method: 'HEAD' });
+  assert.equal(headRes.status, 200);
+
+  const postRes = await fetch(started.url + '/index.html', { method: 'POST' });
+  assert.equal(postRes.status, 405);
+
+  for (const blockedPath of ['/escape.txt', '/.env', '/.git/config', '/.ned/private.txt']) {
+    const res = await fetch(started.url + blockedPath);
+    assert.equal(res.status, 403, `expected 403 for ${blockedPath}, got ${res.status}`);
+  }
+  for (const rawPath of ['/../outside-secret.txt', '/%2e%2e/outside-secret.txt']) {
+    const status = await new Promise<number>((resolve, reject) => {
+      const u = new URL(started.url);
+      http.get({ hostname: u.hostname, port: Number(u.port), path: rawPath }, res => {
+        res.resume();
+        resolve(res.statusCode ?? 0);
+      }).once('error', reject);
+    });
+    assert.equal(status, 403, `expected 403 for raw ${rawPath}, got ${status}`);
+  }
+
+  await apps.call('ses1', project, { operation: 'stop', id: started.id });
+  await assert.rejects(fetch(started.url + '/'));
+});
+
+test('NativeRuntime surfaces incomplete batch journals on startup and ast_search skips checkpoint when approval is denied', { skip: process.platform === 'win32' }, async t => {
+  const { root, project } = await makeTempWorkspace(t, 'ned-batch-startup-');
+  const resources = path.join(root, 'resources');
+  await mkdir(resources, { recursive: true });
+  await mkdir(path.join(root, 'batch-journals'), { recursive: true });
+  await writeFile(path.join(root, 'batch-journals', 'crash-batch.json'), JSON.stringify({
+    schemaVersion: 1,
+    id: 'crash-batch',
+    operation: 'project_checkpoint_restore',
+    project,
+    session: 'ses1',
+    startedAt: '2026-11-25T00:00:00.000Z',
+    updatedAt: '2026-11-25T00:00:01.000Z',
+    status: 'in_progress',
+    entries: [{ path: 'a.txt', operation: 'write', snapshotId: 'snap-1', baseHash: 'file:abc', applied: true }],
+  }));
+
+  const { NativeRuntime } = await import('../distribution/native-control');
+  const runtime = new NativeRuntime(root, resources, {
+    isEncryptionAvailable: () => true,
+    encryptString: Buffer.from,
+    decryptString: bytes => bytes.toString(),
+  }, async () => false);
+  t.after(() => runtime.close());
+
+  await runtime.initialize(configSchema.parse({ model: { baseUrl: 'http://127.0.0.1:8000/v1', apiKey: 'k', id: 'm' } }));
+  assert.equal(runtime.status().incompleteBatches, 1);
+  const recovery = JSON.parse(await readFile(path.join(root, 'batch-recovery-status.json'), 'utf8'));
+  assert.equal(recovery.incompleteCount, 1);
+  assert.equal(recovery.batches[0].id, 'crash-batch');
+  assert.equal(recovery.batches[0].appliedCount, 1);
+
+  // Verify ast_search(apply: true) does NOT call beforeApply when user denies approval.
+  await writeFile(path.join(project, 'demo.py'), 'old_call(1)\n');
+  let beforeApplyCalls = 0;
+  const astTools = new AstAuditTools(root, '');
+  t.after(() => astTools.close());
+  await assert.rejects(
+    astTools.astSearch('ses1', project, { language: 'python', pattern: 'old_call($X)', rewrite: 'new_call($X)', apply: true }, {
+      approve: async () => false,
+      beforeApply: async () => { beforeApplyCalls++; },
+    }),
+    /취소/,
+  );
+  assert.equal(beforeApplyCalls, 0);
 });

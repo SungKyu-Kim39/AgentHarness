@@ -9,6 +9,10 @@
 소스 `36c5c99c30e2236ad5a35bb0f555e1fa34ade55e`를 사용했습니다. Windows 새 설치·0.4.0-rebuild2 업데이트와 51개 설치본 검사를 통과했습니다. [다운로드](downloads/README.md) · [검증 기록](docs/validation-0.4.0-rebuild3.md)
 
 
+## 0.4.0 rebuild4 교차 검토
+
+`0.4.0-rebuild3` 반영본(`main`, `194567f`)을 기준으로 전체 교차 검토한 보완 사항 5건(설치기 전체 최상위 파일 백업·부분 복구 재시도, 정적 HTTP 프리뷰 호스트 내장화·경계 강제, OpenViking 0.5.5 종료 `/commit` 레이스 제거 및 Phase 1/2 상태 정리, 전문 도구 이어하기 정렬·컴팩션 건너뛰기, 다중 파일 크래시 복구 저널·편집 직렬화)과 후속 확인 항목은 [rebuild4 변경 사항](docs/changes-0.4.0-rebuild4.md)에 기록했습니다. 제품 버전은 0.4.0을 유지합니다.
+
 ## rebuild3 교차 검토 인계
 
 REA 이어가기, 파일 롤백, 설치 백업 복구의 변경과 남은 위험은 [rebuild3 변경 사항](docs/changes-0.4.0-rebuild3.md)에 기록했습니다. 다음 교차 검토의 기준은 이 기록이 반영된 main입니다.

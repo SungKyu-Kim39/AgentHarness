@@ -200,3 +200,77 @@ test('REA continuation uses the same attached session for gateway exposure and h
   assert.equal(reaTurnIntent('Ghidra 분석은 그만'), 'reset');
   assert.equal(reaTurnIntent('이어서 다른 작업을 시작해줘'), 'reset');
 });
+
+test('specialized tools stay aligned across compaction prompts, interruptSession, and reconnects', async t => {
+  const tools = ['ned_host_read_file', 'ned_host_document_write', 'ned_host_diagram_generate', 'ned_host_rea_ghidra'].map(name => ({ function: { name } }));
+  const afterCompaction = {
+    messages: [
+      { role: 'user', content: '엑셀 보고서 만들어줘' },
+      { role: 'assistant', content: '진행 중입니다.' },
+      { role: 'user', content: 'You MUST summarize the conversation above into a structured summary' },
+      { role: 'assistant', content: '요약 완료' },
+      { role: 'user', content: '이어서 해줘' },
+      { role: 'assistant', content: '계속 작성 중' },
+      { role: 'user', content: '마저 계속해줘' },
+    ],
+    tools: [...tools],
+  };
+  hideUnrequestedTools(afterCompaction);
+  assert.deepEqual(afterCompaction.tools.map(x => x.function.name), ['ned_host_read_file', 'ned_host_document_write']);
+
+  const base = await mkdtemp(path.join(tmpdir(), 'ned-specialized-recovery-'));
+  const app = path.join(base, 'data'), resources = path.join(base, 'resources'), project = path.join(base, 'project');
+  await Promise.all([app, resources, project].map(d => mkdir(d)));
+  const histories: Record<string, Array<{ type: string; text?: string }>> = {
+    'doc-s': [
+      { type: 'user', text: 'You MUST summarize the conversation above into a structured summary' },
+      { type: 'user', text: '엑셀 보고서 생성해줘' },
+    ],
+    'rea-compact-s': [
+      { type: 'user', text: 'You MUST summarize the conversation above into a structured summary' },
+      { type: 'user', text: 'Ghidra로 바이너리 분석해줘' },
+    ],
+  };
+  const server = createServer(async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    if (req.url?.includes('/message?')) {
+      const sid = req.url.match(/\/session\/([^/]+)\/message/)?.[1] ?? '';
+      res.end(JSON.stringify({ data: histories[sid] ?? [] }));
+    } else if (req.url?.endsWith('/interrupt')) {
+      res.end('{}');
+    } else {
+      res.end(JSON.stringify({ data: { id: req.url?.split('/').at(-1), location: { directory: project } } }));
+    }
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = (server.address() as { port: number }).port;
+  const address = `http://127.0.0.1:${port}`;
+  const runtime = new NativeRuntime(app, resources, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: bytes => bytes.toString() });
+  t.after(async () => {
+    await runtime.close();
+    server.closeAllConnections();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    await rm(base, { recursive: true, force: true });
+  });
+  await runtime.initialize(configSchema.parse({ model: { baseUrl: address + '/v1', id: 'test', apiKey: 'synthetic-only' } }));
+  runtime['backend'] = { url: address, password: 'fixture' };
+  await runtime['subagents']!.recover();
+  await runtime.authorizeProject(project);
+  const canon = await runtime.canonicalProject(project);
+  runtime.onSessionActivated('doc-s', canon);
+  runtime.onSessionActivated('rea-compact-s', canon);
+
+  // Interrupt wipes turnHistory; follow-up continuation recovers non-REA specialized tool anchor.
+  await runtime.setTurnText('doc-s', '엑셀 보고서 생성해줘');
+  await runtime.interruptSession('doc-s');
+  runtime['tools']!.resumeSession('doc-s');
+  await runtime.setTurnText('doc-s', '이어서 해줘');
+  assert.equal(runtime['tools']!['options'].toolRequested!('doc-s', 'document_write'), true);
+  // Switching to an unrelated task drops the specialized tool after a follow-up.
+  await runtime.setTurnText('doc-s', '이제 README 문구만 다듬어줘');
+  assert.equal(runtime['tools']!['options'].toolRequested!('doc-s', 'document_write'), false);
+
+  // Compaction prompt in history must NOT break REA continuation after reconnect.
+  await runtime.setTurnText('rea-compact-s', '이어서 해줘');
+  assert.equal(runtime['tools']!['options'].toolRequested!('rea-compact-s', 'rea_ghidra'), true);
+});
