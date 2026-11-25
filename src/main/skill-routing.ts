@@ -32,7 +32,7 @@ function text(content: unknown): string {
 }
 
 const reaTrigger = /(?:(?:ned_host_)?rea_(?:ghidra|inspect)\b|\bghidra\b|\brea\b|리버싱|역공학|디컴파일|디스어셈블|decompil|disassembl|binary.*analy|바이너리.*분석)/i;
-const reaOptOut = /(?:\b(?:rea|ghidra)\b|리버싱|역공학|디컴파일).{0,30}(?:쓰지|사용하지|실행하지|하지\s*마|없이|말고|끄|중지)|(?:do not|don't|never|without|stop using)\s+(?:use\s+)?(?:rea|ghidra)\b/i;
+const reaOptOut = /(?:\b(?:ned_host_)?rea_(?:ghidra|inspect)\b|\b(?:rea|ghidra)\b|리버싱|역공학|디컴파일).{0,30}(?:쓰지|사용하지|실행하지|하지\s*마|없이|말고|끄|그만|금지|중지\s*해|중단\s*해)|(?:do not|don't|never|without|stop using)\s+(?:use\s+)?(?:(?:ned_host_)?rea_(?:ghidra|inspect)|rea|ghidra)\b/i;
 const taskSwitch = /(?:대신|말고|다른\s*(?:작업|주제|프로젝트|파일)|그만|instead|new topic|different task)/i;
 const continuation = /^(?:(?:아까|지금|이전|직전|중단된|끊긴|하던|남은|방금|그|네|응|답변|응답|작업|분석|정리|내용|결과)(?:을|를|은|는|이|가)?\s*[,.:]?\s*){0,8}(?:이어서|이어\s*(?:서|줘|주세요|가|해)|계속(?:\s|해|해서|$)|마저)|^(?:(?:please|yes|ok|okay)[, ]+)?(?:continue|resume|go on|carry on)\b/i;
 

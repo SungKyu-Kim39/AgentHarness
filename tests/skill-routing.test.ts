@@ -196,5 +196,7 @@ test('REA continuation uses the same attached session for gateway exposure and h
   await check('other-session', '프로젝트 README를 정리해줘', false);
   await check('other-session', '계속해줘', false);
   assert.equal(reaTurnIntent('ned_host_rea_ghidra로 정적 분석해줘'), 'request');
+  assert.equal(reaTurnIntent('ned_host_rea_ghidra는 사용하지 마'), 'reset');
+  assert.equal(reaTurnIntent('Ghidra 분석은 그만'), 'reset');
   assert.equal(reaTurnIntent('이어서 다른 작업을 시작해줘'), 'reset');
 });
