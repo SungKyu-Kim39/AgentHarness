@@ -30,6 +30,10 @@ export interface MemorySyncEntry {
   uncommittedTurns: number;
   watermarkCount?: number;
   watermarkCreatedAt?: number;
+  lastMessageCursor?: string;
+  pendingCommitTaskId?: string;
+  pendingCommitTurns?: number;
+  pendingCommitRetries?: number;
   sessionOptedOut?: boolean;
   lastCommittedAt?: string;
 }
@@ -46,6 +50,8 @@ export interface MemoryStatusSnapshot {
   commitEveryTurns: number;
   syncedTurns: number;
   commitsScheduled: number;
+  commitsCompleted?: number;
+  commitsFailed?: number;
   recallsInjected: number;
   lastEventAt?: string;
   lastErrorCode?: string;
@@ -342,14 +348,20 @@ export function formatRecalledMemories(result: MemoryRecallResult, maxBytes = MA
   return added > 0 ? block : undefined;
 }
 
+export type SessionMessageFetchResult =
+  | OpenCodeSessionMessage[]
+  | { messages: OpenCodeSessionMessage[]; nextCursor?: string };
+
 export interface SessionMemoryDependencies {
   root: string;
   policy: SessionMemoryPolicy;
   redactor?: Redactor;
   knowledge: () => KnowledgeService | undefined;
   fetchSessionInfo: (sessionId: string) => Promise<{ parentID?: string } | undefined>;
-  fetchSessionMessages: (sessionId: string) => Promise<OpenCodeSessionMessage[]>;
+  fetchSessionMessages: (sessionId: string, afterCursor?: string) => Promise<SessionMessageFetchResult>;
 }
+
+const MAX_COMMIT_RETRIES = 3;
 
 export class SessionMemoryManager {
   private syncState: Record<string, MemorySyncEntry> = {};
@@ -371,6 +383,8 @@ export class SessionMemoryManager {
       commitEveryTurns,
       syncedTurns: 0,
       commitsScheduled: 0,
+      commitsCompleted: 0,
+      commitsFailed: 0,
       recallsInjected: 0,
     };
   }
@@ -398,7 +412,7 @@ export class SessionMemoryManager {
     const keys = Object.keys(this.syncState);
     if (keys.length <= 500) return;
     const prunable = keys
-      .filter(id => id !== this.activeSessionId && !this.syncState[id]?.sessionOptedOut && (this.syncState[id]?.uncommittedTurns ?? 0) === 0)
+      .filter(id => id !== this.activeSessionId && !this.syncState[id]?.sessionOptedOut && (this.syncState[id]?.uncommittedTurns ?? 0) === 0 && !this.syncState[id]?.pendingCommitTaskId)
       .sort((a, b) => (this.syncState[a]?.lastCommittedAt ?? '').localeCompare(this.syncState[b]?.lastCommittedAt ?? ''));
     let remaining = keys.length;
     for (const id of prunable) {
@@ -445,7 +459,7 @@ export class SessionMemoryManager {
     if (!this.deps.policy.enabled || this.closed) return;
     const previous = this.activeSessionId;
     this.activeSessionId = sessionId;
-    if (previous && previous !== sessionId && (this.syncState[previous]?.uncommittedTurns ?? 0) > 0) {
+    if (previous && previous !== sessionId && ((this.syncState[previous]?.uncommittedTurns ?? 0) > 0 || this.syncState[previous]?.pendingCommitTaskId)) {
       void this.enqueue(previous, () => this.commitInternal(previous));
     }
   }
@@ -457,6 +471,8 @@ export class SessionMemoryManager {
       const entry = this.syncState[sessionId] ?? { ovSessionId: buildOvSessionId(sessionId), syncedIds: [], uncommittedTurns: 0 };
       if (entry.sessionOptedOut) return;
       entry.sessionOptedOut = true;
+      entry.pendingCommitTaskId = undefined;
+      entry.pendingCommitTurns = undefined;
       this.syncState[sessionId] = entry;
       this.persistSync();
       await this.statusWrites;
@@ -479,6 +495,63 @@ export class SessionMemoryManager {
     await this.enqueue(sessionId, () => this.syncInternal(sessionId, forceCommit));
   }
 
+  private async reconcilePendingCommitTask(sessionId: string): Promise<'idle' | 'in_flight'> {
+    const entry = this.syncState[sessionId];
+    const knowledge = this.deps.knowledge();
+    if (!entry?.pendingCommitTaskId || !knowledge?.isReady?.()) return 'idle';
+    if (!knowledge.getTaskStatus) {
+      entry.pendingCommitTaskId = undefined;
+      entry.pendingCommitTurns = undefined;
+      entry.pendingCommitRetries = undefined;
+      this.persistSync();
+      return 'idle';
+    }
+    try {
+      const task = await knowledge.getTaskStatus(entry.pendingCommitTaskId, 5000);
+      if (task.status === 'pending' || task.status === 'running') {
+        return 'in_flight';
+      }
+      if (task.status === 'completed') {
+        entry.pendingCommitTaskId = undefined;
+        entry.pendingCommitTurns = undefined;
+        entry.pendingCommitRetries = undefined;
+        this.status.commitsCompleted = (this.status.commitsCompleted ?? 0) + 1;
+        this.status.lastEventAt = new Date().toISOString();
+        this.status.lastErrorCode = undefined;
+        this.recallCache.clear();
+        this.persistSync();
+        this.persistStatus();
+        return 'idle';
+      }
+      if (task.status === 'failed' || task.status === 'cancelled') {
+        const retries = (entry.pendingCommitRetries ?? 0) + 1;
+        const restoreTurns = entry.pendingCommitTurns ?? 1;
+        entry.pendingCommitTaskId = undefined;
+        entry.pendingCommitTurns = undefined;
+        if (retries <= MAX_COMMIT_RETRIES) {
+          entry.pendingCommitRetries = retries;
+          entry.uncommittedTurns = Math.max(entry.uncommittedTurns, restoreTurns);
+        } else {
+          entry.pendingCommitRetries = undefined;
+        }
+        this.status.commitsFailed = (this.status.commitsFailed ?? 0) + 1;
+        this.status.lastErrorCode = 'OV_MEMORY_COMMIT_FAILED';
+        this.status.lastEventAt = new Date().toISOString();
+        this.persistSync();
+        this.persistStatus();
+        return 'idle';
+      }
+      // 'not_found' (e.g. after OpenViking sidecar restart) or 'unknown': clear stale task pointer cleanly.
+      entry.pendingCommitTaskId = undefined;
+      entry.pendingCommitTurns = undefined;
+      this.persistSync();
+      return 'idle';
+    } catch (error) {
+      this.recordError(error);
+      return 'in_flight';
+    }
+  }
+
   private async syncInternal(sessionId: string, forceCommit: boolean) {
     await this.load();
     if (this.syncState[sessionId]?.sessionOptedOut) return;
@@ -486,21 +559,30 @@ export class SessionMemoryManager {
     if (!knowledge?.isReady?.() || !knowledge.ensureMemorySession || !knowledge.appendSessionMessages || !knowledge.commitMemorySession) return;
     try {
       const info = await this.deps.fetchSessionInfo(sessionId).catch(() => undefined);
-      // Only capture primary Ned ACP user conversations, never child subagents or isolated Goldfish reviewers.
-      if (info?.parentID) return;
+      // Fail closed: capture only verified primary Ned ACP user conversations, never subagents or Goldfish reviewers.
+      if (!info || info.parentID) return;
 
-      const engineMessages = await this.deps.fetchSessionMessages(sessionId);
       const entry = this.syncState[sessionId] ?? {
         ovSessionId: buildOvSessionId(sessionId),
         syncedIds: [],
         uncommittedTurns: 0,
       };
+      if (entry.pendingCommitTaskId) {
+        await this.reconcilePendingCommitTask(sessionId);
+      }
+
+      const rawFetch = await this.deps.fetchSessionMessages(sessionId, entry.lastMessageCursor);
+      const isIncremental = !Array.isArray(rawFetch) && Boolean(entry.lastMessageCursor);
+      const engineMessages = Array.isArray(rawFetch) ? rawFetch : rawFetch.messages;
+      const nextCursor = Array.isArray(rawFetch) ? undefined : rawFetch.nextCursor;
+
       const syncedSet = new Set(entry.syncedIds);
       const { messages, newlySyncedIds, completedTurns, sessionOptedOut } = extractMemoryMessages(
         engineMessages,
         {
           syncedIds: syncedSet,
-          watermarkCount: entry.watermarkCount,
+          // When fetching incrementally from a cursor, indices restart at 0 so rely on syncedIds + watermarkCreatedAt.
+          watermarkCount: isIncremental ? undefined : entry.watermarkCount,
           watermarkCreatedAt: entry.watermarkCreatedAt,
           sessionOptedOut: entry.sessionOptedOut,
         },
@@ -511,18 +593,41 @@ export class SessionMemoryManager {
         await knowledge.ensureMemorySession(entry.ovSessionId);
         await knowledge.appendSessionMessages(entry.ovSessionId, messages);
       }
-      if (newlySyncedIds.length > 0 || sessionOptedOut !== Boolean(entry.sessionOptedOut)) {
+      if (newlySyncedIds.length > 0 || sessionOptedOut !== Boolean(entry.sessionOptedOut) || (nextCursor && nextCursor !== entry.lastMessageCursor)) {
+        const allSyncedNow = new Set([...entry.syncedIds, ...newlySyncedIds]);
         const combined = [...entry.syncedIds, ...newlySyncedIds];
+        // Only advance the incremental page cursor when every fetched assistant message is completed (no in-flight streaming gap).
+        const hasStreamingAssistant = engineMessages.some(m => m?.type === 'assistant' && m.time?.completed === undefined);
+        if (nextCursor && !hasStreamingAssistant) {
+          entry.lastMessageCursor = nextCursor;
+        }
         if (combined.length > MAX_SYNCED_IDS_PER_SESSION) {
+          // Advance watermarks strictly across the contiguous synced prefix so an in-flight streaming message is never skipped.
+          const relevant = engineMessages.filter(m => m?.id && (m.type === 'user' || m.type === 'assistant'));
+          let contiguousPrefix = 0;
+          let contiguousMaxCreated = entry.watermarkCreatedAt;
+          if (!isIncremental) {
+            const baseCount = entry.watermarkCount ?? 0;
+            for (let i = baseCount; i < relevant.length; i++) {
+              const m = relevant[i];
+              if (!m.id || !allSyncedNow.has(m.id)) break;
+              contiguousPrefix++;
+              if (typeof m.time?.created === 'number') {
+                contiguousMaxCreated = contiguousMaxCreated === undefined ? m.time.created : Math.max(contiguousMaxCreated, m.time.created);
+              }
+            }
+          }
           const dropCount = combined.length - MAX_SYNCED_IDS_PER_SESSION;
           const droppedIds = new Set(combined.slice(0, dropCount));
-          let droppedMaxCreated = entry.watermarkCreatedAt;
-          for (const msg of engineMessages) {
-            if (msg?.id && droppedIds.has(msg.id) && typeof msg.time?.created === 'number') {
+          let droppedMaxCreated = contiguousMaxCreated;
+          for (const msg of relevant) {
+            if (msg.id && droppedIds.has(msg.id) && typeof msg.time?.created === 'number') {
               droppedMaxCreated = droppedMaxCreated === undefined ? msg.time.created : Math.max(droppedMaxCreated, msg.time.created);
             }
           }
-          entry.watermarkCount = (entry.watermarkCount ?? 0) + dropCount;
+          if (!isIncremental && contiguousPrefix > 0) {
+            entry.watermarkCount = (entry.watermarkCount ?? 0) + Math.min(dropCount, contiguousPrefix);
+          }
           if (droppedMaxCreated !== undefined) entry.watermarkCreatedAt = droppedMaxCreated;
           entry.syncedIds = combined.slice(-MAX_SYNCED_IDS_PER_SESSION);
         } else {
@@ -550,11 +655,25 @@ export class SessionMemoryManager {
   private async commitInternal(sessionId: string, timeoutMs = 15000) {
     const knowledge = this.deps.knowledge();
     const entry = this.syncState[sessionId];
-    if (!entry || entry.sessionOptedOut || entry.uncommittedTurns <= 0 || !knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
+    if (!entry || entry.sessionOptedOut || !knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
+    if (entry.pendingCommitTaskId) {
+      const state = await this.reconcilePendingCommitTask(sessionId);
+      if (state === 'in_flight') return;
+    }
+    if (entry.uncommittedTurns <= 0) return;
+    const turnsToCommit = entry.uncommittedTurns;
     try {
-      await knowledge.commitMemorySession(entry.ovSessionId, timeoutMs);
+      const res = await knowledge.commitMemorySession(entry.ovSessionId, timeoutMs);
       entry.uncommittedTurns = 0;
       entry.lastCommittedAt = new Date().toISOString();
+      if (res?.taskId) {
+        entry.pendingCommitTaskId = res.taskId;
+        entry.pendingCommitTurns = turnsToCommit;
+      } else {
+        entry.pendingCommitTaskId = undefined;
+        entry.pendingCommitTurns = undefined;
+        entry.pendingCommitRetries = undefined;
+      }
       this.syncState[sessionId] = entry;
       this.status.commitsScheduled++;
       this.status.lastEventAt = entry.lastCommittedAt;
@@ -573,7 +692,7 @@ export class SessionMemoryManager {
     const knowledge = this.deps.knowledge();
     if (!knowledge?.isReady?.() || !knowledge.commitMemorySession) return;
     const pendingIds = Object.entries(this.syncState)
-      .filter(([, entry]) => entry.uncommittedTurns > 0 && !entry.sessionOptedOut)
+      .filter(([, entry]) => !entry.sessionOptedOut && (entry.uncommittedTurns > 0 || !!entry.pendingCommitTaskId))
       .map(([sessionId]) => sessionId);
     if (!pendingIds.length) return;
     await Promise.allSettled(pendingIds.map(sessionId => this.enqueue(sessionId, () => this.commitInternal(sessionId))));

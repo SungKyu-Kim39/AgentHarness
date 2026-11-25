@@ -176,6 +176,9 @@ Function CheckInstallNotRunning
   ${If} $5 == "ok"
     !insertmacro NedCheckUnlocked "$INSTDIR\resources\runtime\windows-x64\mcp\python\python.exe"
   ${EndIf}
+  ${If} $5 == "ok"
+    !insertmacro NedCheckUnlocked "$INSTDIR\resources\runtime\windows-x64\agent-desktop\agent-desktop.exe"
+  ${EndIf}
   ${If} $5 == "locked"
     MessageBox MB_OK|MB_ICONSTOP "Ned 또는 편집기가 실행 중입니다. Zed 편집기와 시스템 트레이의 Ned를 모두 종료한 뒤 설치를 다시 실행하세요. 기존 파일과 사용자 데이터는 보존했습니다." /SD IDOK
     SetErrorLevel 1
@@ -194,10 +197,42 @@ Section "Ned"
     SetErrorLevel 1
     Abort
   ${EndIf}
-  ; Only installed product resources are replaced; user data is outside INSTDIR.
-  ; Close the app before upgrading, so runtime files are not in use.
-  RMDir /r "$INSTDIR\resources"
-  RMDir /r "$INSTDIR\locales"
+  ; Back up existing installation folders before replacing them so a mid-upgrade
+  ; failure (disk full, locked file, abort) restores the previous working Ned build.
+  ; User data remains outside INSTDIR.
+  StrCpy $8 "no"
+  RMDir /r "$INSTDIR\.ned-upgrade-backup"
+  ${If} ${FileExists} "$INSTDIR\Ned.exe"
+    ${OrIf} ${FileExists} "$INSTDIR\resources\*.*"
+    ClearErrors
+    CreateDirectory "$INSTDIR\.ned-upgrade-backup"
+    ${If} ${FileExists} "$INSTDIR\resources\*.*"
+      Rename "$INSTDIR\resources" "$INSTDIR\.ned-upgrade-backup\resources"
+    ${EndIf}
+    ${If} ${FileExists} "$INSTDIR\locales\*.*"
+      Rename "$INSTDIR\locales" "$INSTDIR\.ned-upgrade-backup\locales"
+    ${EndIf}
+    ${If} ${FileExists} "$INSTDIR\Ned.exe"
+      Rename "$INSTDIR\Ned.exe" "$INSTDIR\.ned-upgrade-backup\Ned.exe"
+    ${EndIf}
+    ${If} ${Errors}
+      ; Restore anything already moved before aborting so the prior install stays intact.
+      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\resources\*.*"
+        Rename "$INSTDIR\.ned-upgrade-backup\resources" "$INSTDIR\resources"
+      ${EndIf}
+      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\locales\*.*"
+        Rename "$INSTDIR\.ned-upgrade-backup\locales" "$INSTDIR\locales"
+      ${EndIf}
+      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\Ned.exe"
+        Rename "$INSTDIR\.ned-upgrade-backup\Ned.exe" "$INSTDIR\Ned.exe"
+      ${EndIf}
+      RMDir /r "$INSTDIR\.ned-upgrade-backup"
+      MessageBox MB_OK|MB_ICONSTOP "기존 Ned 파일이 사용 중이어서 업그레이드를 시작할 수 없습니다. Ned와 편집기를 모두 종료한 뒤 다시 시도하세요. 기존 설치와 사용자 데이터는 보존했습니다." /SD IDOK
+      SetErrorLevel 1
+      Abort
+    ${EndIf}
+    StrCpy $8 "yes"
+  ${EndIf}
   SetOutPath "$INSTDIR"
   ClearErrors
   File /r "${NED_APP_DIR}\*"
@@ -210,10 +245,28 @@ Section "Ned"
   IfFileExists "$INSTDIR\resources\runtime\windows-x64\agent-desktop\agent-desktop.exe" 0 install_failed
   Goto install_verified
   install_failed:
-    MessageBox MB_OK|MB_ICONSTOP "Ned 설치가 완료되지 않았습니다. 디스크 여유 공간, 설치 폴더 권한 및 실행 중인 프로그램 여부를 확인하고 다시 시도하세요. 사용자 설정과 데이터는 보존했습니다." /SD IDOK
+    ${If} $8 == "yes"
+      RMDir /r "$INSTDIR\resources"
+      RMDir /r "$INSTDIR\locales"
+      Delete "$INSTDIR\Ned.exe"
+      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\resources\*.*"
+        Rename "$INSTDIR\.ned-upgrade-backup\resources" "$INSTDIR\resources"
+      ${EndIf}
+      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\locales\*.*"
+        Rename "$INSTDIR\.ned-upgrade-backup\locales" "$INSTDIR\locales"
+      ${EndIf}
+      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\Ned.exe"
+        Rename "$INSTDIR\.ned-upgrade-backup\Ned.exe" "$INSTDIR\Ned.exe"
+      ${EndIf}
+      RMDir /r "$INSTDIR\.ned-upgrade-backup"
+    ${EndIf}
+    MessageBox MB_OK|MB_ICONSTOP "Ned 설치가 완료되지 않아 이전 설치 상태를 복구했습니다. 디스크 여유 공간, 설치 폴더 권한 및 실행 중인 프로그램 여부를 확인하고 다시 시도하세요. 사용자 설정과 데이터는 보존했습니다." /SD IDOK
     SetErrorLevel 1
     Abort
   install_verified:
+  ${If} $8 == "yes"
+    RMDir /r "$INSTDIR\.ned-upgrade-backup"
+  ${EndIf}
   WriteUninstaller "$INSTDIR\Uninstall Ned.exe"
   CreateDirectory "$SMPROGRAMS\Ned"
   CreateShortcut "$SMPROGRAMS\Ned\Ned.lnk" "$INSTDIR\Ned.exe" "" "$INSTDIR\resources\ned\icon.ico"

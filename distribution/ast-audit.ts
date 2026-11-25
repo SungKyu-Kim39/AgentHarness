@@ -36,6 +36,7 @@ export class AstAuditTools {
     private root: string,
     private resources: string,
     private options: {
+      approve?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
       pythonExecutable?: string;
       workerScript?: string;
       siteDirs?: string[];
@@ -113,10 +114,12 @@ export class AstAuditTools {
     try {
       const { source } = await this.stageSnapshot(project, work, input.paths);
       const reqFile = path.join(work, 'request.json');
+      const resultFile = path.join(work, 'result.json');
       await writeFile(reqFile, JSON.stringify({
         mode: 'ast_search',
         work,
         source,
+        resultFile,
         sites: this.sites(),
         language: input.language,
         pattern: input.pattern,
@@ -129,7 +132,7 @@ export class AstAuditTools {
         60000,
       );
       if (res.exitCode !== 0) throw new Error(`AST 검색 실패: ${res.output.slice(0, 1000)}`);
-      const parsed = JSON.parse(res.stdout);
+      const parsed = JSON.parse(await readFile(resultFile, 'utf8'));
       if (parsed.status !== 'ok') throw new Error(parsed.error || 'AST 검색 오류');
 
       const rewrites: Array<{ path: string; before: string; after: string; replacements: number }> = parsed.rewrites ?? [];
@@ -140,16 +143,23 @@ export class AstAuditTools {
           language: parsed.language,
           pattern: parsed.pattern,
           matchCount: parsed.matchCount,
+          truncated: parsed.truncated === true,
           matches: parsed.matches,
           previewFiles: rewrites.map(r => ({ path: r.path, replacements: r.replacements })),
           applied: false,
         };
+      }
+      if (parsed.truncated) {
+        throw new Error('AST 일치 항목이 상한(200건)을 초과해 부분 치환을 중단했습니다. paths 범위를 좁혀 다시 적용하세요.');
       }
 
       const files = new ProjectFiles(project);
       const proposals: Proposal[] = [];
       for (const rw of rewrites) {
         const proposal = await files.propose(randomUUID(), rw.path, rw.after);
+        if (proposal.before !== rw.before) {
+          throw new Error(`스냅샷 이후 파일이 외부에서 변경되어 AST 치환을 중단했습니다: ${rw.path}`);
+        }
         await hooks.validateEdit?.(session, project, proposal, combined);
         proposals.push(proposal);
       }
@@ -161,11 +171,11 @@ export class AstAuditTools {
       );
       if (!ok) throw new Error('AST 치환을 취소했습니다.');
       combined.throwIfAborted();
-      for (const proposal of proposals) {
-        await hooks.validateEdit?.(session, project, proposal, combined);
-        await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
-        await files.apply(proposal, combined);
-      }
+      await files.applyBatch(proposals, {
+        signal: combined,
+        validate: proposal => hooks.validateEdit?.(session, project, proposal, combined) ?? Promise.resolve(),
+        snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
+      });
       return {
         status: 'applied',
         engine: parsed.engine,
@@ -184,16 +194,18 @@ export class AstAuditTools {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
     await this.options.verifyWorkspaceTools?.();
-    const categories = input.categories?.length ? input.categories : ['security', 'secrets', 'quality', 'venv-ruff'];
+    const categories = input.categories?.length ? input.categories : ['security', 'secrets', 'quality'];
     await mkdir(path.join(this.root, 'audit-work'), { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(this.root, 'audit-work/scan-'));
     try {
       const { source } = await this.stageSnapshot(project, work, input.paths);
       const reqFile = path.join(work, 'request.json');
+      const resultFile = path.join(work, 'result.json');
       await writeFile(reqFile, JSON.stringify({
         mode: 'code_audit',
         work,
         source,
+        resultFile,
         sites: this.sites(),
         paths: input.paths,
         categories,
@@ -204,19 +216,40 @@ export class AstAuditTools {
         60000,
       );
       if (res.exitCode !== 0) throw new Error(`코드 정적 감사 실패: ${res.output.slice(0, 1000)}`);
-      const report = JSON.parse(res.stdout);
+      const report = JSON.parse(await readFile(resultFile, 'utf8'));
 
-      // Optionally merge project .venv ruff diagnostics offline when installed
+      // Optional project .venv ruff diagnostics require explicit category request and host approval.
       let ruffUsed = false;
       if (categories.includes('venv-ruff') && this.options.resolveVenvPython) {
         const pyEnv = await this.options.resolveVenvPython(project).catch(() => undefined);
         if (pyEnv) {
+          if (!this.options.approve) {
+            throw new Error('프로젝트 Python 환경의 Ruff 실행에는 호스트 승인 기능이 필요합니다.');
+          }
+          const files = new ProjectFiles(project);
+          const validatedTargets: string[] = [];
+          if (input.paths?.length) {
+            for (const rel of input.paths) {
+              validatedTargets.push(await files.resolve(rel));
+            }
+          } else {
+            validatedTargets.push(project);
+          }
+          const ok = await this.options.approve(
+            '프로젝트 Python 환경 Ruff 린트 실행',
+            `프로젝트: ${project}\n인터프리터: ${pyEnv.python}\n대상: ${input.paths?.length ? input.paths.join(', ') : project}\n\n선택된 프로젝트 환경의 ruff 모듈을 실행합니다.`,
+            combined,
+          );
+          if (!ok) throw new Error('프로젝트 Ruff 실행을 취소했습니다.');
+          combined.throwIfAborted();
           const ruffRes = await this.commands.run(
-            { executable: pyEnv.python, args: ['-B', '-m', 'ruff', 'check', '--output-format=json', ...(input.paths?.length ? input.paths : ['.'])], cwd: project, env: this.workerEnv(work) },
+            { executable: pyEnv.python, args: ['-I', '-B', '-m', 'ruff', 'check', '--output-format=json', '--', ...validatedTargets], cwd: work, env: this.workerEnv(work) },
             combined,
             30000,
+            undefined,
+            1024 * 1024,
           ).catch(() => undefined);
-          if (ruffRes && (ruffRes.exitCode === 0 || ruffRes.exitCode === 1) && ruffRes.stdout.trim().startsWith('[')) {
+          if (ruffRes && (ruffRes.exitCode === 0 || ruffRes.exitCode === 1) && !ruffRes.outputTruncated && ruffRes.stdout.trim().startsWith('[')) {
             try {
               const ruffItems = JSON.parse(ruffRes.stdout) as Array<{ code?: string; message?: string; filename?: string; location?: { row?: number } }>;
               ruffUsed = true;

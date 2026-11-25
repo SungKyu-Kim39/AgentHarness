@@ -9,9 +9,9 @@ description: 사내 PyPI 미러 라우팅으로 프로젝트 전용 .venv를 구
 
 ## 작업 절차
 
-1. **현재 환경 확인**: 먼저 `manage_python_venv(operation: "status")`로 프로젝트 `.venv` 존재 여부, 설치 패키지 목록, 사내 PyPI 정책(`respectSystemPipConfig`, `indexUrl`)을 확인한다.
-2. **가상환경 생성·패키지 설치**: 필요한 패키지가 없으면 `manage_python_venv(operation: "install", packages: [...])` 또는 `requirementsPath`로 호스트 승인을 받아 `.venv`에만 설치한다. URL·VCS·로컬 경로 지정자는 사용하지 않으며 표준 PEP 508 패키지 이름과 버전 제약만 사용한다.
-3. **실물 API 역추적(오프라인 Context7)**: 최신 오픈소스 패키지나 사내 전용 Python 라이브러리의 함수 시그니처·매개변수·반환 타입이 불확실하면 추측하지 말고 `python_package_docs(package, symbol 또는 query)`로 실제 설치된 wheel의 AST 시그니처와 독스트링을 먼저 확인한다.
+1. **현재 환경 확인**: 먼저 `manage_python_venv(operation: "status")`로 프로젝트 `.venv` 존재 여부와 사내 PyPI 설치 정책(`allowPackageInstall`, 단일 HTTPS `indexUrl`)을 확인한다.
+2. **가상환경 생성·패키지 설치**: 필요한 패키지가 없으면 `python.allowPackageInstall: true`와 승인된 단일 HTTPS `indexUrl`이 설정된 경우에만 `manage_python_venv(operation: "install", packages: ["pkg==1.2.3", ...])` 또는 `requirementsPath`로 명시적 승인을 받아 `.venv`에만 설치한다. 고정 버전(`이름==버전`) wheel만 설치하며 URL·VCS·로컬 경로·pip 옵션 지시어는 사용하지 않는다.
+3. **실물 API 역추적(오프라인 Context7)**: 최신 오픈소스 패키지나 사내 전용 Python 라이브러리의 함수 시그니처·매개변수·반환 타입이 불확실하면 추측하지 말고 `python_package_docs(package, symbol 또는 query)`로 실제 설치된 wheel의 정적 AST 시그니처와 독스트링을 먼저 확인한다.
 4. **오프라인 실행·테스트**: 스크립트 실행과 `pytest` 검증은 `manage_python_venv(operation: "run" | "test")`로 오프라인 환경(`PIP_NO_INDEX=1`)에서 실행하고 실제 종료 코드와 출력을 확인한다.
 
 ## 주의 사항

@@ -275,6 +275,51 @@ export class ProjectFiles {
       },
     };
   }
+  async applyBatch(
+    proposals: Proposal[],
+    options: {
+      snapshot?: (proposal: Proposal) => Promise<void>;
+      validate?: (proposal: Proposal) => Promise<void>;
+      signal?: AbortSignal;
+    } = {},
+  ): Promise<void> {
+    const applied: Proposal[] = [];
+    try {
+      for (const proposal of proposals) {
+        options.signal?.throwIfAborted();
+        await options.validate?.(proposal);
+        await options.snapshot?.(proposal);
+        await this.apply(proposal, options.signal);
+        applied.push(proposal);
+      }
+    } catch (error) {
+      const rollbackFailures: string[] = [];
+      for (let i = applied.length - 1; i >= 0; i--) {
+        const done = applied[i];
+        try {
+          if (done.operation === "delete" || done.baseHash.startsWith("file:")) {
+            const revert = await this.propose(randomUUID(), done.path, done.before);
+            await this.apply(revert);
+          } else {
+            const revert = await this.proposeDelete(randomUUID(), done.path);
+            await this.apply(revert);
+          }
+        } catch {
+          rollbackFailures.push(`${done.path} (snapshot ${done.id})`);
+        }
+      }
+      const baseMsg = error instanceof Error ? error.message : String(error);
+      if (applied.length === 0) throw error;
+      if (rollbackFailures.length > 0) {
+        throw new Error(
+          `다중 파일 적용 중 오류가 발생했고 일부 파일 복구에 실패했습니다(${rollbackFailures.join(", ")}). 스냅샷을 확인하세요. 원인: ${baseMsg}`,
+        );
+      }
+      throw new Error(
+        `다중 파일 적용 중 오류가 발생해 먼저 반영한 ${applied.length}개 파일을 원래 상태로 복구했습니다. 원인: ${baseMsg}`,
+      );
+    }
+  }
 }
 
 export interface TextPatchEdit {

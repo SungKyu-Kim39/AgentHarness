@@ -36,14 +36,21 @@ from xml.etree import ElementTree as ET
 with zipfile.ZipFile(sys.argv[1]) as z:
     sections = sorted(n for n in z.namelist() if re.match(r'^Contents/section\\d+\\.xml$', n))
     paras = []
+    total = 0
     for name in sections:
         root = ET.fromstring(z.read(name))
         for elem in root.iter():
             if elem.tag.endswith('}p') or elem.tag == 'p':
                 texts = [t.text for t in elem.iter() if (t.tag.endswith('}t') or t.tag == 't') and t.text]
                 if texts:
-                    paras.append(''.join(texts))
-    print(json.dumps({'markdown': '\\n\\n'.join(paras), 'sections': len(sections)}, ensure_ascii=False))
+                    joined = ''.join(texts)
+                    paras.append(joined)
+                    total += len(joined) + 2
+                    if total >= 120000:
+                        break
+        if total >= 120000:
+            break
+    print(json.dumps({'markdown': '\\n\\n'.join(paras)[:120000], 'sections': len(sections)}, ensure_ascii=False))
 `;
   const out = execFileSync(config.python || 'python3', ['-I', '-c', py, filePath], { encoding: 'utf8' });
   return JSON.parse(out);
@@ -94,6 +101,15 @@ else:
   return JSON.parse(out);
 }
 
+async function emitResult(payload) {
+  const json = JSON.stringify(payload);
+  if (config.resultFile) {
+    await writeFile(config.resultFile, json, 'utf8');
+  } else {
+    console.log(json);
+  }
+}
+
 const kordoc = await loadKordoc();
 
 if (config.action === 'read') {
@@ -102,10 +118,10 @@ if (config.action === 'read') {
     const buf = await readFile(inputPath);
     const res = await kordoc.parse(buf, { ocr: false });
     const markdown = typeof res === 'string' ? res : res?.markdown ?? res?.text ?? JSON.stringify(res);
-    console.log(JSON.stringify({ status: 'ok', engine: 'kordoc', format: res?.format, markdown: String(markdown).slice(0, 120000) }));
+    await emitResult({ status: 'ok', engine: 'kordoc', format: res?.format, markdown: String(markdown).slice(0, 120000) });
   } else if (inputPath.toLowerCase().endsWith('.hwpx')) {
     const res = extractHwpxTextFallback(inputPath);
-    console.log(JSON.stringify({ status: 'ok', engine: 'hwpx-xml-fallback', markdown: res.markdown.slice(0, 120000), sections: res.sections }));
+    await emitResult({ status: 'ok', engine: 'hwpx-xml-fallback', markdown: res.markdown.slice(0, 120000), sections: res.sections });
   } else {
     throw new Error('바이너리 .hwp 읽기를 위한 kordoc 런타임이 준비되지 않았습니다.');
   }
@@ -117,17 +133,17 @@ if (config.action === 'read') {
     const ab = await kordoc.markdownToHwpx(md, { title: spec.title });
     const buf = toBuffer(ab);
     await writeFile(output, buf);
-    console.log(JSON.stringify({ status: 'ok', format: 'hwpx', engine: 'kordoc', bytes: buf.length }));
+    await emitResult({ status: 'ok', format: 'hwpx', engine: 'kordoc', bytes: buf.length });
   } else if (kordoc && template && typeof kordoc.fillHwpx === 'function' && spec.fields && !spec.replacements) {
     const tplBuf = await readFile(template);
     const ab = tplBuf.buffer.slice(tplBuf.byteOffset, tplBuf.byteOffset + tplBuf.byteLength);
     const res = await kordoc.fillHwpx(ab, spec.fields);
     const buf = toBuffer(res.buffer);
     await writeFile(output, buf);
-    console.log(JSON.stringify({ status: 'ok', format: 'hwpx', engine: 'kordoc-fill', bytes: buf.length, filled: res.filled?.length ?? 0, unmatched: res.unmatched ?? [] }));
+    await emitResult({ status: 'ok', format: 'hwpx', engine: 'kordoc-fill', bytes: buf.length, filled: res.filled?.length ?? 0, unmatched: res.unmatched ?? [] });
   } else {
     const res = writeHwpxFallback(reqFile);
-    console.log(JSON.stringify({ ...res, format: 'hwpx' }));
+    await emitResult({ ...res, format: 'hwpx' });
   }
 } else {
   throw new Error('Unsupported kordoc action: ' + config.action);

@@ -72,7 +72,14 @@ export class ProjectCheckpoints {
     return path.join(this.root, 'checkpoints', sha(project).slice(0, 32) + '.git');
   }
 
-  private async runGit(project: string, gitDir: string, work: string, args: string[], signal?: AbortSignal, omitWorkTree = false) {
+  private async runGit(
+    project: string,
+    gitDir: string,
+    work: string,
+    args: string[],
+    signal?: AbortSignal,
+    options: { omitWorkTree?: boolean; indexFile?: string; maxStdoutBytes?: number } = {},
+  ) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
     const empty = path.join(work, 'empty');
@@ -88,7 +95,8 @@ export class ProjectCheckpoints {
       TEMP: work,
       TMP: work,
       GIT_DIR: gitDir,
-      ...(omitWorkTree ? {} : { GIT_WORK_TREE: project }),
+      ...(options.omitWorkTree ? {} : { GIT_WORK_TREE: project }),
+      ...(options.indexFile ? { GIT_INDEX_FILE: options.indexFile } : {}),
       GIT_CONFIG_NOSYSTEM: '1',
       GIT_CONFIG_SYSTEM: empty,
       GIT_CONFIG_GLOBAL: empty,
@@ -116,7 +124,7 @@ export class ProjectCheckpoints {
       '-c', 'user.email=checkpoint@ned.local',
       ...args,
     ];
-    return this.commands.run({ executable: binary, args: fixed, cwd: project, env }, combined, 60000);
+    return this.commands.run({ executable: binary, args: fixed, cwd: project, env }, combined, 60000, undefined, options.maxStdoutBytes);
   }
 
   private async ensureRepo(project: string, work: string, signal?: AbortSignal): Promise<string> {
@@ -125,17 +133,17 @@ export class ProjectCheckpoints {
     const exists = await lstat(head).then(s => s.isFile(), () => false);
     if (!exists) {
       await mkdir(gitDir, { recursive: true, mode: 0o700 });
-      const init = await this.runGit(project, gitDir, work, ['init', '--bare'], signal, true);
+      const init = await this.runGit(project, gitDir, work, ['init', '--bare'], signal, { omitWorkTree: true });
       if (init.exitCode !== 0) throw new Error(`체크포인트 저장소 초기화 실패: ${init.output.slice(0, 500)}`);
-      await this.runGit(project, gitDir, work, ['config', 'core.bare', 'false'], signal, true);
-      await this.runGit(project, gitDir, work, ['config', 'core.worktree', project], signal, true);
+      await this.runGit(project, gitDir, work, ['config', 'core.bare', 'false'], signal, { omitWorkTree: true });
+      await this.runGit(project, gitDir, work, ['config', 'core.worktree', project], signal, { omitWorkTree: true });
     }
     await mkdir(path.join(gitDir, 'info'), { recursive: true, mode: 0o700 });
     await writeFile(path.join(gitDir, 'info/exclude'), EXCLUDE_RULES, 'utf8');
     return gitDir;
   }
 
-  private async stageProjectFiles(project: string, gitDir: string, work: string, signal?: AbortSignal) {
+  private async stageProjectFiles(project: string, gitDir: string, work: string, signal?: AbortSignal, indexFile?: string) {
     const files = new ProjectFiles(project);
     const listed = await files.list();
     const eligible: string[] = [];
@@ -153,16 +161,35 @@ export class ProjectCheckpoints {
       if (await files.readStrictUtf8(rel).catch(() => undefined) === undefined) continue;
       eligible.push(rel);
     }
+    const gitOpts = indexFile ? { indexFile } : {};
     // Clear index first so deletions are accurately reflected in the shadow commit.
-    const reset = await this.runGit(project, gitDir, work, ['read-tree', '--empty'], signal);
+    const reset = await this.runGit(project, gitDir, work, ['read-tree', '--empty'], signal, gitOpts);
     if (reset.exitCode !== 0) throw new Error('체크포인트 임시 인덱스를 초기화하지 못했습니다.');
     const batchSize = 200;
     for (let i = 0; i < eligible.length; i += batchSize) {
       const chunk = eligible.slice(i, i + batchSize);
-      const added = await this.runGit(project, gitDir, work, ['add', '-f', '--', ...chunk], signal);
+      const added = await this.runGit(project, gitDir, work, ['add', '-f', '--', ...chunk], signal, gitOpts);
       if (added.exitCode !== 0) throw new Error(`체크포인트 인덱싱 실패: ${added.output.slice(0, 500)}`);
     }
     return { indexedFiles: eligible.length, skippedLarge };
+  }
+
+  private async createLocked(project: string, label: string, work: string, signal?: AbortSignal) {
+    const gitDir = await this.ensureRepo(project, work, signal);
+    const { indexedFiles, skippedLarge } = await this.stageProjectFiles(project, gitDir, work, signal);
+    const hasHead = (await this.runGit(project, gitDir, work, ['rev-parse', '--verify', 'HEAD'], signal)).exitCode === 0;
+    if (hasHead) {
+      const diff = await this.runGit(project, gitDir, work, ['diff', '--cached', '--quiet'], signal);
+      if (diff.exitCode === 0) {
+        const headId = (await this.runGit(project, gitDir, work, ['rev-parse', 'HEAD'], signal)).stdout.trim();
+        return { status: 'unchanged', checkpointId: headId, shortId: headId.slice(0, 8), label, indexedFiles, skippedLarge };
+      }
+    }
+    const safeLabel = label.replace(/[\r\n\0]+/g, ' ').trim().slice(0, 160) || 'checkpoint';
+    const commit = await this.runGit(project, gitDir, work, ['commit', '--allow-empty', '-m', safeLabel], signal);
+    if (commit.exitCode !== 0) throw new Error(`체크포인트 저장 실패: ${commit.output.slice(0, 600)}`);
+    const id = (await this.runGit(project, gitDir, work, ['rev-parse', 'HEAD'], signal)).stdout.trim();
+    return { status: 'created', checkpointId: id, shortId: id.slice(0, 8), label: safeLabel, indexedFiles, skippedLarge };
   }
 
   async create(project: string, label = 'manual', signal?: AbortSignal) {
@@ -171,21 +198,7 @@ export class ProjectCheckpoints {
     await mkdir(path.join(this.root, 'checkpoint-work'), { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(this.root, 'checkpoint-work/op-'));
     try {
-      const gitDir = await this.ensureRepo(project, work, signal);
-      const { indexedFiles, skippedLarge } = await this.stageProjectFiles(project, gitDir, work, signal);
-      const hasHead = (await this.runGit(project, gitDir, work, ['rev-parse', '--verify', 'HEAD'], signal)).exitCode === 0;
-      if (hasHead) {
-        const diff = await this.runGit(project, gitDir, work, ['diff', '--cached', '--quiet'], signal);
-        if (diff.exitCode === 0) {
-          const headId = (await this.runGit(project, gitDir, work, ['rev-parse', 'HEAD'], signal)).stdout.trim();
-          return { status: 'unchanged', checkpointId: headId, shortId: headId.slice(0, 8), label, indexedFiles, skippedLarge };
-        }
-      }
-      const safeLabel = label.replace(/[\r\n\0]+/g, ' ').trim().slice(0, 160) || 'checkpoint';
-      const commit = await this.runGit(project, gitDir, work, ['commit', '--allow-empty', '-m', safeLabel], signal);
-      if (commit.exitCode !== 0) throw new Error(`체크포인트 저장 실패: ${commit.output.slice(0, 600)}`);
-      const id = (await this.runGit(project, gitDir, work, ['rev-parse', 'HEAD'], signal)).stdout.trim();
-      return { status: 'created', checkpointId: id, shortId: id.slice(0, 8), label: safeLabel, indexedFiles, skippedLarge };
+      return await this.createLocked(project, label, work, signal);
     } finally {
       this.busy.delete(project);
       await rm(work, { recursive: true, force: true }).catch(() => {});
@@ -245,9 +258,10 @@ export class ProjectCheckpoints {
     await mkdir(path.join(this.root, 'checkpoint-work'), { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(this.root, 'checkpoint-work/diff-'));
     try {
+      const indexFile = path.join(work, 'index');
       const commit = await this.resolveCheckpointCommit(project, gitDir, work, checkpointId, signal);
-      await this.stageProjectFiles(project, gitDir, work, signal);
-      const status = await this.runGit(project, gitDir, work, ['diff', '--cached', '--name-status', '--no-renames', commit], signal);
+      await this.stageProjectFiles(project, gitDir, work, signal, indexFile);
+      const status = await this.runGit(project, gitDir, work, ['diff', '--cached', '--name-status', '--no-renames', commit], signal, { indexFile });
       const changes = status.stdout
         .split('\n')
         .map(l => l.trim())
@@ -256,7 +270,7 @@ export class ProjectCheckpoints {
           const [code, ...parts] = line.split('\t');
           return { change: code, path: parts.join('\t') };
         });
-      const patch = await this.runGit(project, gitDir, work, ['diff', '--cached', '--no-renames', commit], signal);
+      const patch = await this.runGit(project, gitDir, work, ['diff', '--cached', '--no-renames', commit], signal, { indexFile });
       return {
         status: 'ok',
         checkpointId: commit,
@@ -277,20 +291,18 @@ export class ProjectCheckpoints {
     const exists = await lstat(path.join(gitDir, 'HEAD')).then(s => s.isFile(), () => false);
     if (!exists) throw new Error('이 프로젝트에 저장된 체크포인트가 없습니다.');
 
-    // Save a safety checkpoint of the current state before restoring!
-    const safety = await this.create(project, `pre-restore:${checkpointId.slice(0, 8)}`, signal);
-
     this.busy.add(project);
     await mkdir(path.join(this.root, 'checkpoint-work'), { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(this.root, 'checkpoint-work/restore-'));
     try {
       const commit = await this.resolveCheckpointCommit(project, gitDir, work, checkpointId, signal);
-      await this.stageProjectFiles(project, gitDir, work, signal);
+      const indexFile = path.join(work, 'index');
+      await this.stageProjectFiles(project, gitDir, work, signal, indexFile);
       // Compare current staged state against target checkpoint:
       // A in (commit -> current) means added after checkpoint -> delete to restore.
       // D in (commit -> current) means deleted after checkpoint -> recreate from commit.
       // M in (commit -> current) means modified after checkpoint -> overwrite from commit.
-      const status = await this.runGit(project, gitDir, work, ['diff', '--cached', '--name-status', '-z', '--no-renames', commit], signal);
+      const status = await this.runGit(project, gitDir, work, ['diff', '--cached', '--name-status', '-z', '--no-renames', commit], signal, { indexFile });
       if (status.exitCode !== 0 || status.outputTruncated) throw new Error('복원할 파일 목록을 모두 확인하지 못했습니다.');
       const fields = status.stdout.split('\0');
       const entries: Array<{ code: string; relPath: string }> = [];
@@ -301,7 +313,7 @@ export class ProjectCheckpoints {
         entries.push({ code, relPath });
       }
       if (!entries.length) {
-        return { status: 'noop', checkpointId: commit, message: '현재 프로젝트 상태가 선택한 체크포인트와 동일합니다.', safetyCheckpointId: safety.checkpointId };
+        return { status: 'noop', checkpointId: commit, message: '현재 프로젝트 상태가 선택한 체크포인트와 동일합니다.' };
       }
 
       const files = new ProjectFiles(project);
@@ -312,7 +324,7 @@ export class ProjectCheckpoints {
           await hooks.validateEdit?.(session, project, proposal, signal);
           proposals.push(proposal);
         } else if (entry.code === 'M' || entry.code === 'D') {
-          const blob = await this.runGit(project, gitDir, work, ['show', `${commit}:${entry.relPath}`], signal);
+          const blob = await this.runGit(project, gitDir, work, ['show', `${commit}:${entry.relPath}`], signal, { maxStdoutBytes: MAX_CHECKPOINT_FILE_BYTES + 65536 });
           if (blob.exitCode !== 0 || blob.outputTruncated || blob.stdout.includes('\0')) throw new Error(`체크포인트 파일 복원 읽기 실패: ${entry.relPath}`);
           const proposal = await files.propose(randomUUID(), entry.relPath, blob.stdout);
           await hooks.validateEdit?.(session, project, proposal, signal);
@@ -326,17 +338,20 @@ export class ProjectCheckpoints {
         .join('\n');
       const ok = await hooks.approve(
         `프로젝트 체크포인트 복원 (${commit.slice(0, 8)})`,
-        `프로젝트: ${project}\n대상 체크포인트: ${commit}\n복원 전 안전 체크포인트: ${safety.checkpointId}\n변경 파일(${proposals.length}개):\n${summary}${entries.length > 50 ? '\n...(이하 생략)' : ''}`,
+        `프로젝트: ${project}\n대상 체크포인트: ${commit}\n변경 파일(${proposals.length}개):\n${summary}${entries.length > 50 ? '\n...(이하 생략)' : ''}`,
         signal,
       );
       if (!ok) throw new Error('체크포인트 복원을 취소했습니다.');
       signal?.throwIfAborted();
 
-      for (const proposal of proposals) {
-        await hooks.validateEdit?.(session, project, proposal, signal);
-        await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
-        await files.apply(proposal, signal);
-      }
+      // Save a safety checkpoint only after target validation and user approval, while holding this.busy.
+      const safety = await this.createLocked(project, `pre-restore:${commit.slice(0, 8)}`, work, signal);
+
+      await files.applyBatch(proposals, {
+        signal,
+        validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
+        snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
+      });
       return {
         status: 'restored',
         checkpointId: commit,

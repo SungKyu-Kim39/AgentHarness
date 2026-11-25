@@ -123,11 +123,11 @@ export class SpecWorkflow {
       );
       if (!ok) throw new Error('Spec 초기화를 취소했습니다.');
       signal?.throwIfAborted();
-      for (const proposal of proposals) {
-        await hooks.validateEdit?.(session, project, proposal, signal);
-        await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
-        await files.apply(proposal, signal);
-      }
+      await files.applyBatch(proposals, {
+        signal,
+        validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
+        snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
+      });
       return { status: 'created', feature: slug, directory: base, createdFiles: proposals.map(p => p.path) };
     }
 

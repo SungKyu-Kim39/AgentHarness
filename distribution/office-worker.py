@@ -98,6 +98,7 @@ def _write_xlsx(config: dict):
     import openpyxl  # type: ignore
     from openpyxl.styles import Alignment, Font, PatternFill  # type: ignore
     from openpyxl.chart import BarChart, LineChart, PieChart, Reference  # type: ignore
+    from openpyxl.utils import get_column_letter  # type: ignore
 
     spec = config['spec']
     template = config.get('template')
@@ -131,8 +132,10 @@ def _write_xlsx(config: dict):
             ws[str(cell_ref)] = val
         # Auto-fit reasonable column widths
         for col in ws.columns:
+            if not col:
+                continue
             max_len = 0
-            col_letter = col[0].column_letter
+            col_letter = get_column_letter(col[0].column)
             for cell in col:
                 val = '' if cell.value is None else str(cell.value)
                 max_len = max(max_len, len(val))
@@ -327,7 +330,15 @@ def main():
         result = _write_pptx(config)
     else:
         result = {'status': 'error', 'error': f'Unsupported action: {action}'}
-    print(json.dumps(result, ensure_ascii=False))
+    payload = json.dumps(result, ensure_ascii=False)
+    result_file = config.get('resultFile')
+    if result_file:
+        out_path = Path(result_file).resolve()
+        if out_path != work and work not in out_path.parents:
+            raise PermissionError('resultFile outside work directory blocked')
+        out_path.write_text(payload, encoding='utf-8')
+    else:
+        print(payload)
 
 
 if __name__ == '__main__':

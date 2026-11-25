@@ -214,6 +214,7 @@ export class DiagramTools {
       mermaidBundle?: string;
       playwrightNodeDir?: string;
       verifyWorkspaceTools?: () => Promise<void>;
+      verifyMcpRuntime?: () => Promise<void>;
     },
   ) {
     this.commands = new OwnedCommand(resources);
@@ -232,6 +233,7 @@ export class DiagramTools {
   }
 
   private async renderMermaidOffline(mermaidCode: string, kind: 'svg' | 'png', work: string, signal: AbortSignal): Promise<Buffer> {
+    await this.options.verifyMcpRuntime?.();
     const mermaidJs = this.mermaidScriptPath();
     const browser = this.browserPath();
     if (!(await available(mermaidJs))) {
@@ -241,15 +243,15 @@ export class DiagramTools {
       throw new Error('오프라인 다이어그램 렌더링용 격리 브라우저 번들을 찾지 못했습니다.');
     }
     const htmlFile = path.join(work, 'render.html');
+    const localMermaid = path.join(work, 'mermaid.min.js');
     const runnerFile = path.join(work, 'render.cjs');
     const outFile = path.join(work, kind === 'svg' ? 'diagram.svg' : 'diagram.png');
-    const mermaidSource = await readFile(mermaidJs, 'utf8');
-    // Inline pinned mermaid.min.js so Chromium makes zero network requests
+    await writeFile(localMermaid, await readFile(mermaidJs));
     const html = `<!doctype html>
-<html><head><meta charset="utf-8"><style>body{margin:16px;background:#ffffff;font-family:"Malgun Gothic","Segoe UI",sans-serif;}</style></head>
+<html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:"><style>body{margin:16px;background:#ffffff;font-family:"Malgun Gothic","Segoe UI",sans-serif;}</style></head>
 <body>
 <div id="container"></div>
-<script>${mermaidSource}</script>
+<script src="mermaid.min.js"></script>
 <script>
 window.__renderDiagram = async (code) => {
   mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
@@ -263,20 +265,40 @@ window.__renderDiagram = async (code) => {
     const runner = `
 const fs = require('node:fs');
 const path = require('node:path');
-const { pathToFileURL } = require('node:url');
+const { pathToFileURL, fileURLToPath } = require('node:url');
 const pwPath = path.join(process.env.NED_PW_NODE, 'playwright-core');
 const { chromium } = require(pwPath);
+const normPath = p => process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p);
+const allowedFiles = new Set([normPath(process.env.NED_HTML), normPath(process.env.NED_MERMAID_JS)]);
 (async () => {
   const code = fs.readFileSync(process.env.NED_MERMAID_CODE, 'utf8');
   const browser = await chromium.launch({
     executablePath: process.env.NED_BROWSER,
     headless: true,
-    args: ['--disable-gpu', '--disable-background-networking', '--proxy-server=http://127.0.0.1:9'],
+    args: [
+      '--disable-gpu',
+      '--proxy-server=http://127.0.0.1:9',
+      '--host-resolver-rules=MAP * ~NOTFOUND',
+      '--disable-quic',
+      '--force-webrtc-ip-handling-policy=disable_non_proxied_udp',
+      '--disable-background-networking',
+      '--disable-component-update',
+      '--disable-sync',
+      '--disable-default-apps',
+      '--no-first-run',
+      '--no-default-browser-check',
+      '--disable-extensions',
+      '--disable-breakpad',
+      '--disable-domain-reliability',
+    ],
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
     await page.route('**/*', route => {
-      if (route.request().url() === pathToFileURL(process.env.NED_HTML).href) return route.continue();
+      try {
+        const u = route.request().url();
+        if (u.startsWith('file://') && allowedFiles.has(normPath(fileURLToPath(u)))) return route.continue();
+      } catch {}
       return route.abort();
     });
     await page.goto(pathToFileURL(process.env.NED_HTML).href, { waitUntil: 'load' });
@@ -301,9 +323,13 @@ const { chromium } = require(pwPath);
       NED_PW_NODE: this.playwrightNodeDir(),
       NED_BROWSER: browser,
       NED_HTML: htmlFile,
+      NED_MERMAID_JS: localMermaid,
       NED_MERMAID_CODE: codeFile,
       NED_KIND: kind,
       NED_OUT: outFile,
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1',
+      PLAYWRIGHT_BROWSERS_PATH: '0',
+      DO_NOT_TRACK: '1',
       TEMP: work,
       TMP: work,
       HOME: work,
@@ -320,7 +346,7 @@ const { chromium } = require(pwPath);
   async generate(_session: string, project: string, input: DiagramInput, signal?: AbortSignal) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
-    await this.options.verifyWorkspaceTools?.();
+    if (input.format !== 'drawio') await this.options.verifyWorkspaceTools?.();
 
     const extMap = { drawio: '.drawio', 'mermaid-svg': '.svg', 'mermaid-png': '.png' } as const;
     const expectedExt = extMap[input.format];

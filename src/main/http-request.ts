@@ -24,8 +24,9 @@ export function requestJSON(url: string, options: { method?: string; headers?: R
           if (settled) return;
           try {
             const status = incoming.statusCode ?? 502;
+            const contentType = incoming.headers['content-type'];
             const value = new Response([204, 205, 304].includes(status) ? null : Buffer.concat(chunks), { status,
-              headers: { 'Content-Type': String(incoming.headers['content-type'] ?? 'application/json') } });
+              headers: contentType !== undefined ? { 'Content-Type': String(contentType) } : {} });
             settled = true; cleanup(); resolve(value);
           } catch (error) { fail(error); }
         });

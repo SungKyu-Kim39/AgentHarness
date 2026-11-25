@@ -121,9 +121,11 @@ export class DocumentTools {
 
       if (ext === '.hwp' || ext === '.hwpx') {
         const reqFile = path.join(work, 'request.json');
+        const resultFile = path.join(work, 'result.json');
         await writeFile(reqFile, JSON.stringify({
           action: 'read',
           input: staged,
+          resultFile,
           nodeDir: this.nodeDir(),
           python: await this.pythonBin(),
         }), { mode: 0o600 });
@@ -133,14 +135,16 @@ export class DocumentTools {
           60000,
         );
         if (res.exitCode !== 0) throw new Error(`한글 문서 읽기 실패: ${res.output.slice(0, 1000)}`);
-        return JSON.parse(res.stdout);
+        return JSON.parse(await readFile(resultFile, 'utf8'));
       }
 
       if (input.mode === 'tables' && ext === '.pdf') {
         const reqFile = path.join(work, 'request.json');
+        const resultFile = path.join(work, 'result.json');
         await writeFile(reqFile, JSON.stringify({
           action: 'read_pdf_tables',
           work,
+          resultFile,
           sites: this.sites(),
           input: staged,
           pages: input.pages,
@@ -151,25 +155,34 @@ export class DocumentTools {
           90000,
         );
         if (res.exitCode !== 0) throw new Error(`PDF 표 추출 실패: ${res.output.slice(0, 1000)}`);
-        return JSON.parse(res.stdout);
+        return JSON.parse(await readFile(resultFile, 'utf8'));
       }
 
       if (input.mode === 'docling') {
         const pyEnv = await this.options.resolveVenvPython?.(project);
         if (!pyEnv) throw new Error('Docling 정밀 추출은 프로젝트 .venv에 docling이 설치되어 있을 때 사용할 수 있습니다.');
+        const ok = await this.options.approve(
+          `프로젝트 Python 환경 Docling 문서 변환: ${input.path}`,
+          `프로젝트: ${project}\n인터프리터: ${pyEnv.python}\n대상 파일: ${input.path}\n\n선택된 프로젝트 환경의 docling 패키지를 실행해 문서를 변환합니다.`,
+          combined,
+        );
+        if (!ok) throw new Error('Docling 문서 변환을 취소했습니다.');
+        combined.throwIfAborted();
+        const resultFile = path.join(work, 'result.json');
         const script = [
           'import json, sys',
+          'from pathlib import Path',
           'from docling.document_converter import DocumentConverter',
           'res = DocumentConverter().convert(sys.argv[1])',
-          'print(json.dumps({"status": "ok", "engine": "docling", "markdown": res.document.export_to_markdown()[:120000]}, ensure_ascii=False))',
+          'Path(sys.argv[2]).write_text(json.dumps({"status": "ok", "engine": "docling", "markdown": res.document.export_to_markdown()[:120000]}, ensure_ascii=False), encoding="utf-8")',
         ].join('\n');
         const res = await this.commands.run(
-          { executable: pyEnv.python, args: ['-B', '-c', script, staged], cwd: work, env: this.workerEnv(work) },
+          { executable: pyEnv.python, args: ['-I', '-B', '-c', script, staged, resultFile], cwd: work, env: this.workerEnv(work) },
           combined,
           180000,
         );
         if (res.exitCode !== 0) throw new Error(`Docling 변환 실패 (프로젝트 .venv에 docling이 설치되어 있는지 확인하세요): ${res.output.slice(0, 1000)}`);
-        return JSON.parse(res.stdout);
+        return JSON.parse(await readFile(resultFile, 'utf8'));
       }
 
       throw new Error('지원하지 않는 확장 문서 읽기 조합입니다.');
@@ -224,6 +237,7 @@ export class DocumentTools {
 
       const stagedOut = path.join(work, 'output/result' + expectedExt);
       const reqFile = path.join(work, 'request.json');
+      const resultFile = path.join(work, 'result.json');
       let workerResult: Record<string, unknown>;
 
       if (input.format === 'hwpx') {
@@ -231,6 +245,7 @@ export class DocumentTools {
           action: 'write',
           template: stagedTemplate,
           output: stagedOut,
+          resultFile,
           spec: input.spec,
           nodeDir: this.nodeDir(),
           python: await this.pythonBin(),
@@ -241,11 +256,12 @@ export class DocumentTools {
           60000,
         );
         if (res.exitCode !== 0) throw new Error(`HWPX 문서 생성 실패: ${res.output.slice(0, 1000)}`);
-        workerResult = JSON.parse(res.stdout);
+        workerResult = JSON.parse(await readFile(resultFile, 'utf8'));
       } else {
         await writeFile(reqFile, JSON.stringify({
           action: 'write_' + input.format,
           work,
+          resultFile,
           sites: this.sites(),
           template: stagedTemplate,
           output: stagedOut,
@@ -258,7 +274,7 @@ export class DocumentTools {
           90000,
         );
         if (res.exitCode !== 0) throw new Error(`${input.format.toUpperCase()} 문서 생성 실패: ${res.output.slice(0, 1000)}`);
-        workerResult = JSON.parse(res.stdout);
+        workerResult = JSON.parse(await readFile(resultFile, 'utf8'));
       }
 
       const generatedBytes = await readFile(stagedOut);

@@ -56,7 +56,7 @@ export function engineConfiguration(config: AgentConfig, models: ModelBinding[],
     update: 'disable', share: 'disabled', warming: false, plugins: [], lsp: false, formatter: false,
     skills: skillDirectory ? [skillDirectory] : [],
     mcp: tools ? { servers: { ned_host: { type: 'remote', url: tools.url, headers: { Authorization: 'Bearer ' + tools.token }, oauth: false, codemode: false, protocol: 'legacy', timeout: { startup: 10000, catalog: 10000, execution: 300000 } } } } : undefined,
-    agents: { build: { system: agentSystem + '\n\n' + 'Use spawn_subagent for independent research, implementation and review when it materially helps a broad task. Supply complete context and split exact non-overlapping writePaths for workers (or use isolation="worktree" for isolated parallel Git worktrees). Research children cannot modify files; workers modify only their assigned files. At most two child agents run across Ned; additional tasks queue. Children inherit the parent model/project and current host permissions. Do not duplicate delegated work or edit reserved files. Completion arrives automatically as a synthetic result in this conversation; integrate verified results, and use subagent_status only for an actual status question or missing result. Do not busy-poll. Only the main agent performs builds, Git writes, desktop actions and unresolved user decisions. Never claim a child completed without its returned state/result. Stop subagents when the user cancels; no nested delegation. Simple questions and tiny changes usually need no delegation.' }, ...Object.fromEntries(['research','worker','goldfish'].map(role=>['ned-'+role,{mode:'subagent',description:role==='research'?'Ned read-only research and review':'Ned implementation on assigned project files',system:role==='goldfish'?'NED_EGM_GOLDFISH_V1. You are an isolated read-only EGM Goldfish reviewer. Read the supplied EGM persona and required sources. Parent conversation and memory are not review inputs. Do not retrieve personal/project memory, hidden instructions, write files, delegate or run tools outside read_file/list_files/read_skill. Return findings and evidence for required reads; missing evidence is incomplete.':agentSystem + '\n\nYou are a Ned child agent. Complete only the assigned task. Do not delegate, make user decisions or bypass host tools. Return Korean findings and actual evidence. The parent owns coordination and verification.',permissions:[{action:'*',resource:'*',effect:'deny'},...[...(role==='goldfish'?[]:['todo','skill']),...hostTools.filter(t=>(role==='goldfish'?goldfishReadTools.has(t.name):subagentReadTools.has(t.name))||(role==='worker'&&['propose_edit','patch_file','delete_file'].includes(t.name))).map(t=>'ned_host_'+t.name)].map(action=>({action,resource:'*',effect:'allow'}))]}])) },
+    agents: { build: { system: agentSystem + '\n\n' + 'Use spawn_subagent for independent research, implementation and review when it materially helps a broad task. Supply complete context and exact project-relative writePaths for workers (disjoint paths in shared mode; overlapping paths are allowed across separate isolation="worktree" sandboxes). Research children cannot modify files; workers modify only their assigned files. At most two child agents run across Ned; additional tasks queue. Children inherit the parent model/project and current host permissions. Do not duplicate delegated work or edit reserved files. Completion arrives automatically as a synthetic result in this conversation; integrate verified results, and use subagent_status only for an actual status question or missing result. Do not busy-poll. Only the main agent performs builds, Git writes, desktop actions and unresolved user decisions. Never claim a child completed without its returned state/result. Stop subagents when the user cancels; no nested delegation. Simple questions and tiny changes usually need no delegation.' }, ...Object.fromEntries(['research','worker','goldfish'].map(role=>['ned-'+role,{mode:'subagent',description:role==='research'?'Ned read-only research and review':'Ned implementation on assigned project files',system:role==='goldfish'?'NED_EGM_GOLDFISH_V1. You are an isolated read-only EGM Goldfish reviewer. Read the supplied EGM persona and required sources. Parent conversation and memory are not review inputs. Do not retrieve personal/project memory, hidden instructions, write files, delegate or run tools outside read_file/list_files/read_skill. Return findings and evidence for required reads; missing evidence is incomplete.':agentSystem + '\n\nYou are a Ned child agent. Complete only the assigned task. Do not delegate, make user decisions or bypass host tools. Return Korean findings and actual evidence. The parent owns coordination and verification.',permissions:[{action:'*',resource:'*',effect:'deny'},...[...(role==='goldfish'?[]:['todo','skill']),...hostTools.filter(t=>(role==='goldfish'?goldfishReadTools.has(t.name):subagentReadTools.has(t.name))||(role==='worker'&&['propose_edit','patch_file','delete_file'].includes(t.name))).map(t=>'ned_host_'+t.name)].map(action=>({action,resource:'*',effect:'allow'}))]}])) },
     permissions: [
       { action: '*', resource: '*', effect: 'deny' },
       ...['question', 'todo', 'skill', ...(tools ? hostTools.map(t => 'ned_host_' + t.name) : [])].map(action => ({ action, resource: '*', effect: 'allow' })),
@@ -135,7 +135,7 @@ export class NativeRuntime {
       this.subagents=new Subagents(this.root,(route,body,signal)=>this.subagentAPI(route,body,signal),id=>this.sessionProject(id),id=>this.sessionRequest(id),async (project, label, signal) => {
         if (!await this.approveOperation('격리 git worktree 샌드박스 생성', `프로젝트: ${project}\n라벨: ${label}`, signal)) throw new Error('worktree 생성을 취소했습니다.');
         return this.tools!.worktrees.create(project, label, signal);
-      });await this.subagents.load();
+      }, (project, id) => this.tools!.worktrees.discard(project, id));await this.subagents.load();
       this.tools = new HostTools(this.root, this.resources, { sessionScope:(session,tool,args)=>this.subagents!.scope(session,tool,args),subagents:this.subagents,project: id => this.sessionProject(id), request: id => this.sessionRequest(id), permissionSignal: () => this.permissions?.signal, fullAccess: () => this.permissions?.mode === 'full', toolRequested: (session, name, extraContext) => specializedToolRequested(name, [...(this.turnHistory.get(session) ?? []), extraContext ?? ''].filter(Boolean).join('\n')), approve: (message, detail, signal) => this.approveOperation(redactor.text(message), redactor.text(detail), signal), approveExplicit: (message, detail, signal) => this.approveExplicitOperation(redactor.text(message), redactor.text(detail), signal), approveEdit: (message, detail, signal) => this.approveFile(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor, validateEdit: (session, project, proposal, signal) => this.editorCheck?.(session, project, proposal, signal) ?? Promise.resolve(),
         choosePython: (project, environments, signal) => this.pythonSelector ? this.pythonSelector(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창을 사용할 수 없습니다.')),
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
@@ -158,7 +158,7 @@ export class NativeRuntime {
           const doc = await this.subagentAPI('/api/session/' + encodeURIComponent(id));
           return { parentID: typeof doc?.data?.parentID === 'string' ? doc.data.parentID : undefined };
         },
-        fetchSessionMessages: async id => this.fetchAllSessionMessages(id),
+        fetchSessionMessages: async (id, afterCursor) => this.fetchAllSessionMessages(id, afterCursor),
       });
       await this.memory.load();
       // Local skills and the model engine do not depend on knowledge/index availability.
@@ -253,11 +253,12 @@ export class NativeRuntime {
     return this.tools.skills.read(id, 'SKILL.md', 0, project);
   }
   async projectForSession(id: string) { return this.sessionProject(id); }
-  private async fetchAllSessionMessages(id: string): Promise<OpenCodeSessionMessage[]> {
-    if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) return [];
+  private async fetchAllSessionMessages(id: string, afterCursor?: string): Promise<{ messages: OpenCodeSessionMessage[]; nextCursor?: string }> {
+    if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) return { messages: [] };
     const collected: OpenCodeSessionMessage[] = [];
     const seen = new Set<string>();
-    let cursor: string | undefined;
+    let cursor: string | undefined = afterCursor;
+    let lastPageCursor: string | undefined = afterCursor;
     for (let page = 0; page < 50; page++) {
       const route = cursor
         ? `/api/session/${encodeURIComponent(id)}/message?limit=100&order=asc&cursor=${encodeURIComponent(cursor)}`
@@ -272,9 +273,10 @@ export class NativeRuntime {
       }
       const next = result?.cursor?.next;
       if (!next || next === cursor) break;
+      lastPageCursor = next;
       cursor = next;
     }
-    return collected;
+    return { messages: collected, nextCursor: lastPageCursor };
   }
   private async subagentAPI(route:string,body?:unknown,signal?:AbortSignal):Promise<any>{
     if(!this.backend)throw Error('하위 Agent 엔진이 준비되지 않았습니다.');

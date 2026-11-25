@@ -10,13 +10,14 @@ export class OwnedCommand {
   private uncertain = false;
   get stoppingUnconfirmed() { return this.uncertain; }
   constructor(private resources: string) {}
-  run(spec: CommandSpec, signal?: AbortSignal, timeout: number | false = false, progress?: (output: string, truncated: boolean) => void) {
+  run(spec: CommandSpec, signal?: AbortSignal, timeout: number | false = false, progress?: (output: string, truncated: boolean) => void, maxStdoutBytes = 160000) {
     if (this.uncertain || this.abort.signal.aborted) throw new Error('이전 명령 프로세스 종료가 확인되지 않았거나 Ned가 종료 중입니다.');
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
-    const task = this.execute(structuredClone(spec), combined, timeout, progress); this.active.add(task);
+    const boundedStdout = Math.min(4 * 1024 * 1024, Math.max(160000, maxStdoutBytes));
+    const task = this.execute(structuredClone(spec), combined, timeout, progress, boundedStdout); this.active.add(task);
     void task.finally(() => this.active.delete(task)).catch(() => {}); return task;
   }
-  private async execute(spec: CommandSpec, signal: AbortSignal, timeout: number | false, progress?: (output: string, truncated: boolean) => void): Promise<CommandResult> {
+  private async execute(spec: CommandSpec, signal: AbortSignal, timeout: number | false, progress?: (output: string, truncated: boolean) => void, maxStdoutBytes = 160000): Promise<CommandResult> {
     signal.throwIfAborted();
     const windows = process.platform === 'win32';
     const executable = windows ? path.join(this.resources, 'runtime/windows-x64/openviking/python/python.exe') : spec.executable;
@@ -37,8 +38,8 @@ export class OwnedCommand {
       confirm = setTimeout(() => { this.uncertain = true; rejectStop?.(new Error('명령의 자식 프로세스 종료를 확인하지 못했습니다. 새 실행을 차단합니다.')); }, 8000);
     };
     child.stdout.setEncoding('utf8'); child.stderr.setEncoding('utf8');
-    const append = (bytes: string) => { output += bytes; if (output.length > 160000) { output = output.slice(-160000); outputTruncated = true; } try { progress?.(output, outputTruncated); } catch { stop(); } };
-    child.stdout.on('data', (bytes: string) => { stdout = (stdout + bytes).slice(-160000); append(bytes); }); child.stderr.on('data', append);
+    const append = (bytes: string) => { output += bytes; if (output.length > maxStdoutBytes) { output = output.slice(-maxStdoutBytes); outputTruncated = true; } try { progress?.(output, outputTruncated); } catch { stop(); } };
+    child.stdout.on('data', (bytes: string) => { stdout += bytes; if (stdout.length > maxStdoutBytes) { stdout = stdout.slice(-maxStdoutBytes); outputTruncated = true; } append(bytes); }); child.stderr.on('data', append);
     signal.addEventListener('abort', stop, { once: true }); if (signal.aborted) stop();
     if (timeout !== false) deadline = setTimeout(stop, timeout);
     try {

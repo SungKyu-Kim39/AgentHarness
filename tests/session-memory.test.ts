@@ -600,3 +600,87 @@ test('boundary guards clamp commitEveryTurns, prevent 400+ message re-sync via w
   assert.ok(prunedFile.sessions['fresh-session']);
   assert.equal(prunedFile.sessions['old_0'], undefined);
 });
+
+test('SessionMemoryManager fails closed on missing session info, reconciles async commit tasks, and syncs incrementally by cursor', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-task-recovery-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+
+  const appended: Array<{ sessionId: string; count: number }> = [];
+  const commits: string[] = [];
+  const seenCursors: Array<string | undefined> = [];
+  let taskState: 'pending' | 'running' | 'failed' | 'completed' = 'running';
+  let infoAvailable = false;
+
+  const fakeKnowledge: KnowledgeService = {
+    state: () => ({ status: 'ready', indexedFiles: 0 }),
+    isReady: () => true,
+    configure: async () => {},
+    search: async () => '{}',
+    read: async () => '{}',
+    index: async () => '',
+    close: async () => {},
+    ensureMemorySession: async () => {},
+    appendSessionMessages: async (sessionId, messages) => { appended.push({ sessionId, count: messages.length }); },
+    commitMemorySession: async sessionId => { commits.push(sessionId); return { taskId: `task-${commits.length}` }; },
+    getTaskStatus: async () => ({ status: taskState }),
+  };
+
+  const page1: OpenCodeSessionMessage[] = [
+    { id: 'u1', type: 'user', text: '첫 번째 설정 규칙을 확인해줘', time: { created: 10 } },
+    { id: 'a1', type: 'assistant', time: { created: 11, completed: 12 }, content: [{ type: 'text', text: '첫 번째 규칙입니다.' }] },
+  ];
+  const page2: OpenCodeSessionMessage[] = [
+    { id: 'u2', type: 'user', text: '두 번째 빌드 규칙도 확인해줘', time: { created: 20 } },
+    { id: 'a2', type: 'assistant', time: { created: 21, completed: 22 }, content: [{ type: 'text', text: '두 번째 규칙입니다.' }] },
+  ];
+
+  const manager = new SessionMemoryManager({
+    root,
+    policy: { enabled: true, autoRecall: false, commitEveryTurns: 1 },
+    knowledge: () => fakeKnowledge,
+    fetchSessionInfo: async () => {
+      if (!infoAvailable) throw new Error('transient engine error');
+      return {};
+    },
+    fetchSessionMessages: async (_id, afterCursor) => {
+      seenCursors.push(afterCursor);
+      if (afterCursor === 'cur-1') return { messages: page2, nextCursor: 'cur-2' };
+      return { messages: page1, nextCursor: 'cur-1' };
+    },
+  });
+  await manager.load();
+
+  // Fail closed when fetchSessionInfo fails (never accidentally capture subagent/unknown sessions).
+  await manager.syncAndMaybeCommit('s1', true);
+  assert.equal(appended.length, 0);
+  assert.equal(commits.length, 0);
+
+  // Turn 1 succeeds and schedules task-1 (currently 'running').
+  infoAvailable = true;
+  await manager.syncAndMaybeCommit('s1', false);
+  assert.equal(appended.length, 1);
+  assert.equal(commits.length, 1);
+  assert.deepEqual(seenCursors, [undefined]);
+
+  // While task-1 is still 'running', flushPendingCommits must NOT fire a duplicate overlapping commit.
+  await manager.flushPendingCommits();
+  assert.equal(commits.length, 1);
+
+  // When task-1 fails, flushPendingCommits detects failure, restores uncommittedTurns, and retries (task-2).
+  taskState = 'failed';
+  await manager.flushPendingCommits();
+  assert.equal(commits.length, 2);
+
+  // When task-2 completes, next sync passes incremental cursor 'cur-1' and increments commitsCompleted.
+  taskState = 'completed';
+  await manager.syncAndMaybeCommit('s1', false);
+  assert.deepEqual(seenCursors, [undefined, 'cur-1']);
+  assert.equal(commits.length, 3);
+
+  await manager.close();
+  const statusFile = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-status.json'), 'utf8'));
+  assert.equal(statusFile.commitsFailed, 1);
+  assert.equal(statusFile.commitsCompleted, 1);
+  const syncFile = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8'));
+  assert.equal(syncFile.sessions.s1.lastMessageCursor, 'cur-2');
+});

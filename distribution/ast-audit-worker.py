@@ -144,6 +144,7 @@ def _run_ast_search(source_root: Path, config: dict):
 
     matches = []
     rewrites = []
+    truncated = False
     engine = 'ast-grep-py' if sg_root_cls is not None else 'structural-regex-fallback'
     fallback_re = None if sg_root_cls is not None else _pattern_to_regex(pattern)
 
@@ -165,7 +166,10 @@ def _run_ast_search(source_root: Path, config: dict):
             if not nodes:
                 continue
             edits = []
-            for node in nodes:
+            for idx, node in enumerate(nodes):
+                if len(matches) >= 200:
+                    truncated = True
+                    break
                 r = node.range()
                 item = {
                     'path': rel,
@@ -178,7 +182,8 @@ def _run_ast_search(source_root: Path, config: dict):
                     edits.append(replaced)
                     item['after'] = replaced.inserted_text[:600]
                 matches.append(item)
-                if len(matches) >= 200:
+                if len(matches) >= 200 and idx + 1 < len(nodes):
+                    truncated = True
                     break
             if rewrite is not None and edits:
                 new_text = root.commit_edits(edits)
@@ -190,7 +195,11 @@ def _run_ast_search(source_root: Path, config: dict):
                 continue
             parts = []
             cursor = 0
-            for m in file_matches:
+            applied_in_file = 0
+            for idx, m in enumerate(file_matches):
+                if len(matches) >= 200:
+                    truncated = True
+                    break
                 start_line = text.count('\n', 0, m.start()) + 1
                 end_line = text.count('\n', 0, m.end()) + 1
                 item = {'path': rel, 'line': start_line, 'endLine': end_line, 'text': m.group(0)[:600]}
@@ -200,15 +209,17 @@ def _run_ast_search(source_root: Path, config: dict):
                     parts.append(text[cursor:m.start()])
                     parts.append(rep)
                     cursor = m.end()
+                    applied_in_file += 1
                 matches.append(item)
-                if len(matches) >= 200:
+                if len(matches) >= 200 and idx + 1 < len(file_matches):
+                    truncated = True
                     break
             if rewrite is not None and parts:
                 parts.append(text[cursor:])
                 new_text = ''.join(parts)
                 if new_text != text:
-                    rewrites.append({'path': rel, 'before': text, 'after': new_text, 'replacements': len(file_matches)})
-        if len(matches) >= 200:
+                    rewrites.append({'path': rel, 'before': text, 'after': new_text, 'replacements': applied_in_file})
+        if truncated:
             break
 
     return {
@@ -217,6 +228,7 @@ def _run_ast_search(source_root: Path, config: dict):
         'language': language,
         'pattern': pattern,
         'matchCount': len(matches),
+        'truncated': truncated,
         'matches': matches,
         'rewrites': rewrites,
     }
@@ -361,7 +373,15 @@ def main():
         result = _run_code_audit(source_root, config)
     else:
         result = {'status': 'error', 'error': f'Unsupported mode: {mode}'}
-    print(json.dumps(result, ensure_ascii=False))
+    payload = json.dumps(result, ensure_ascii=False)
+    result_file = config.get('resultFile')
+    if result_file:
+        out_path = Path(result_file).resolve()
+        if out_path != work and work not in out_path.parents:
+            raise PermissionError('resultFile outside work directory blocked')
+        out_path.write_text(payload, encoding='utf-8')
+    else:
+        print(payload)
 
 
 if __name__ == '__main__':

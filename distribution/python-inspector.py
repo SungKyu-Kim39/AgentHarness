@@ -191,10 +191,15 @@ def _collect_source_files(site_dirs, package: str, dist):
             if pkg_dir.is_symlink():
                 continue
             if pkg_dir.is_dir():
-                for p in sorted(pkg_dir.rglob('*')):
+                def _priority(p: Path):
+                    rel = p.relative_to(pkg_dir)
+                    is_init = 0 if p.stem == '__init__' else 1
+                    is_stub = 0 if p.suffix == '.pyi' else 1
+                    return (len(rel.parts), is_init, is_stub, rel.as_posix())
+                for p in sorted(pkg_dir.rglob('*'), key=_priority):
                     if len(files) >= 120:
                         break
-                    if not p.is_file() or not p.resolve().is_relative_to(pkg_dir) or p.stat().st_size > 1024 * 1024:
+                    if not p.is_file() or p.is_symlink() or not p.resolve().is_relative_to(pkg_dir) or p.stat().st_size > 1024 * 1024:
                         continue
                     rel_parts = p.relative_to(sp).parts
                     if any(part == '__pycache__' or part == 'tests' or part == 'test' for part in rel_parts):

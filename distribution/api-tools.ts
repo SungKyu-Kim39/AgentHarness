@@ -146,7 +146,7 @@ function buildRoutes(doc: Record<string, any>): ParsedRoute[] {
     if (!pathItem || typeof pathItem !== 'object') continue;
     const escaped = template
       .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/\\\{[^/]+\\\}/g, '[^/]+');
+      .replace(/\\\{[^/{}]+\\\}/g, '[^/]+');
     const regex = new RegExp(`^${escaped}$`);
     for (const [method, operation] of Object.entries(pathItem as Record<string, any>)) {
       if (!methods.has(method.toLowerCase()) || !operation || typeof operation !== 'object') continue;
@@ -289,7 +289,7 @@ export class ApiTools {
     const hasMutating = [...allowedMethods].some(m => !['GET', 'HEAD'].includes(m));
     const loopback = isLoopbackHost(parsedUrl.hostname);
     const port = Number(parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80));
-    const ownedMock = [...this.mocks.values()].find(mock => !mock.closing && mock.port === port && loopback);
+    const ownedMock = [...this.mocks.values()].find(mock => !mock.closing && parsedUrl.protocol === 'http:' && mock.port === port && loopback);
     if (ownedMock && (ownedMock.session !== session || ownedMock.project !== project)) {
       throw new Error('현재 대화·프로젝트에서 시작한 Mock만 검증할 수 있습니다.');
     }

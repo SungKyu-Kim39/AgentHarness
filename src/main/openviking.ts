@@ -30,6 +30,7 @@ function knowledgeNoteUri(scope: KnowledgeScope, project: string, id: string) {
 function isSafePersonalMemoryUri(uri: string) {
   return uri.startsWith(personalMemories + '/') && !/(?:^|\/)\.{1,2}(?:\/|$)|[%\\\x00-\x1f?#]/.test(uri);
 }
+export type MemoryTaskStatus = { status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'not_found' | 'unknown'; error?: string };
 export interface KnowledgeService {
   state(): NonNullable<AppState['knowledge']>;
   isReady?(): boolean;
@@ -46,6 +47,7 @@ export interface KnowledgeService {
   ensureMemorySession?(sessionId: string, signal?: AbortSignal): Promise<void>;
   appendSessionMessages?(sessionId: string, messages: Array<{ role: 'user' | 'assistant'; content: string }>, signal?: AbortSignal): Promise<void>;
   commitMemorySession?(sessionId: string, timeoutMs?: number): Promise<{ taskId?: string }>;
+  getTaskStatus?(taskId: string, timeoutMs?: number): Promise<MemoryTaskStatus>;
   recallMemories?(query: string, limit?: number, timeoutMs?: number): Promise<MemoryRecallResult>;
 }
 export interface VikingLaunch { executable: string; launcher: string; cwd: string; diagnostic?: (text: string) => void; semanticDebounceMs?: number; semanticRetryDelayMs?: number }
@@ -493,6 +495,24 @@ export class OpenVikingService implements KnowledgeService {
     const response = await this.request(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commit`, {}, timeoutMs, 'POST');
     const taskId = response?.result?.task_id;
     return typeof taskId === 'string' ? { taskId } : {};
+  }
+  async getTaskStatus(taskId: string, timeoutMs = 5000): Promise<MemoryTaskStatus> {
+    this.ready();
+    if (!/^[a-zA-Z0-9._:-]{1,128}$/.test(taskId)) return { status: 'unknown' };
+    try {
+      const response = await this.request(`/api/v1/tasks/${encodeURIComponent(taskId)}`, undefined, timeoutMs, 'GET', undefined, 'local-user', { quiet404: true });
+      const raw = String(response?.result?.status ?? response?.status ?? '').toLowerCase();
+      const error = typeof response?.result?.error === 'string' ? response.result.error : undefined;
+      if (raw === 'pending' || raw === 'queued') return { status: 'pending' };
+      if (raw === 'running' || raw === 'processing') return { status: 'running' };
+      if (raw === 'completed' || raw === 'succeeded' || raw === 'done') return { status: 'completed' };
+      if (raw === 'failed' || raw === 'error') return { status: 'failed', error };
+      if (raw === 'cancelled' || raw === 'canceled') return { status: 'cancelled', error };
+      return { status: 'unknown', error };
+    } catch (error) {
+      if ((error as { status?: number })?.status === 404) return { status: 'not_found' };
+      throw error;
+    }
   }
   async recallMemories(query: string, limit = 5, timeoutMs = 4000): Promise<MemoryRecallResult> {
     if (!this.isReady()) return { items: [] };

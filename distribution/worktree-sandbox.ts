@@ -77,7 +77,7 @@ export class WorktreeSandbox {
     await atomicJSON(this.indexFile(), { schemaVersion: 1, worktrees: [...this.records.values()] });
   }
 
-  private async runGit(cwd: string, work: string, args: string[], signal?: AbortSignal) {
+  private async runGit(cwd: string, work: string, args: string[], signal?: AbortSignal, maxStdoutBytes?: number) {
     const combined = signal ? AbortSignal.any([signal, this.abort.signal]) : this.abort.signal;
     combined.throwIfAborted();
     const empty = path.join(work, 'empty');
@@ -115,7 +115,7 @@ export class WorktreeSandbox {
       '-c', 'core.pager=cat',
       ...args,
     ];
-    return this.commands.run({ executable: binary, args: fixed, cwd, env }, combined, 60000);
+    return this.commands.run({ executable: binary, args: fixed, cwd, env }, combined, 60000, undefined, maxStdoutBytes);
   }
 
   async create(project: string, label = 'sandbox', signal?: AbortSignal): Promise<WorktreeRecord> {
@@ -165,7 +165,13 @@ export class WorktreeSandbox {
   async get(project: string, id: string): Promise<WorktreeRecord> {
     await this.ensureLoaded();
     const record = this.records.get(id);
-    if (!record || record.project !== project || await realpath(record.path).catch(() => undefined) !== record.path) {
+    if (!record || record.project !== project) {
+      throw new Error(`현재 프로젝트에 속한 유효한 worktree 샌드박스를 찾지 못했습니다: ${id}`);
+    }
+    const baseReal = await realpath(path.join(this.root, 'worktrees')).catch(() => undefined);
+    const stat = await lstat(record.path).catch(() => undefined);
+    const entryReal = await realpath(record.path).catch(() => undefined);
+    if (!baseReal || !stat?.isDirectory() || stat.isSymbolicLink() || entryReal !== path.join(baseReal, record.id)) {
       throw new Error(`현재 프로젝트에 속한 유효한 worktree 샌드박스를 찾지 못했습니다: ${id}`);
     }
     return record;
@@ -176,7 +182,7 @@ export class WorktreeSandbox {
     const items: Array<WorktreeRecord & { exists: boolean }> = [];
     for (const record of this.records.values()) {
       if (record.project !== project) continue;
-      const exists = await lstat(record.path).then(s => s.isDirectory(), () => false);
+      const exists = await lstat(record.path).then(s => s.isDirectory() && !s.isSymbolicLink(), () => false);
       items.push({ ...record, exists });
     }
     return { status: 'ok', worktrees: items };
@@ -190,8 +196,10 @@ export class WorktreeSandbox {
       const code = token.slice(0, 2);
       const rel = token.slice(3).replaceAll('\\', '/');
       if (!rel) continue;
+      // Added in index then deleted in working tree results in no net file change.
+      if (code === 'AD') continue;
       if (code === '??' || code.includes('A')) changes.push({ kind: 'added', path: rel });
-      else if (code.includes('D')) changes.push({ kind: 'deleted', path: rel });
+      else if (code[1] === 'D' || (code[0] === 'D' && code[1] === ' ')) changes.push({ kind: 'deleted', path: rel });
       else changes.push({ kind: 'modified', path: rel });
     }
     return changes;
@@ -246,7 +254,7 @@ export class WorktreeSandbox {
         if (tree.exitCode !== 0 || tree.outputTruncated) throw new Error(`worktree 기준 파일 확인 실패: ${item.path}`);
         if (tree.stdout) {
           if (!/^100(?:644|755) blob /.test(tree.stdout)) throw new Error(`일반 텍스트 파일만 반영할 수 있습니다: ${item.path}`);
-          const base = await this.runGit(record.path, work, ['show', `${record.baseCommit}:${item.path}`], signal);
+          const base = await this.runGit(record.path, work, ['show', `${record.baseCommit}:${item.path}`], signal, 2 * 1024 * 1024 + 65536);
           if (base.exitCode !== 0 || base.outputTruncated || !proposal.baseHash.startsWith('file:') || base.stdout.replace(/\r\n/g, '\n') !== proposal.before.replace(/\r\n/g, '\n')) {
             throw new Error(`기준 커밋 이후 본 프로젝트 파일이 바뀌어 적용하지 않았습니다: ${item.path}`);
           }
@@ -267,11 +275,11 @@ export class WorktreeSandbox {
       );
       if (!ok) throw new Error('Worktree 변경 반영을 취소했습니다.');
       signal?.throwIfAborted();
-      for (const proposal of proposals) {
-        await hooks.validateEdit?.(session, project, proposal, signal);
-        await atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal);
-        await mainFiles.apply(proposal, signal);
-      }
+      await mainFiles.applyBatch(proposals, {
+        signal,
+        validate: proposal => hooks.validateEdit?.(session, project, proposal, signal) ?? Promise.resolve(),
+        snapshot: proposal => atomicJSON(path.join(this.root, 'snapshots', session, proposal.id + '.json'), proposal),
+      });
       return {
         status: 'applied',
         id: record.id,
@@ -284,12 +292,23 @@ export class WorktreeSandbox {
   }
 
   async discard(project: string, id: string, signal?: AbortSignal) {
-    const record = await this.get(project, id);
+    await this.ensureLoaded();
+    const record = this.records.get(id);
+    if (!record || record.project !== project) {
+      throw new Error(`현재 프로젝트에 속한 유효한 worktree 샌드박스를 찾지 못했습니다: ${id}`);
+    }
+    const stat = await lstat(record.path).catch(() => undefined);
     await mkdir(path.join(this.root, 'worktree-ops'), { recursive: true, mode: 0o700 });
     const work = await mkdtemp(path.join(this.root, 'worktree-ops/rm-'));
     try {
-      const removed = await this.runGit(project, work, ['worktree', 'remove', '--force', record.path], signal);
-      if (removed.exitCode !== 0) throw new Error('Worktree 제거를 확인하지 못했습니다. 작업 기록을 유지합니다.');
+      if (!stat) {
+        const pruned = await this.runGit(project, work, ['worktree', 'prune'], signal);
+        if (pruned.exitCode !== 0) throw new Error('누락된 Worktree 정리를 확인하지 못했습니다. 작업 기록을 유지합니다.');
+      } else {
+        await this.get(project, id);
+        const removed = await this.runGit(project, work, ['worktree', 'remove', '--force', record.path], signal);
+        if (removed.exitCode !== 0) throw new Error('Worktree 제거를 확인하지 못했습니다. 작업 기록을 유지합니다.');
+      }
       this.records.delete(id);
       await this.saveIndex();
       return { status: 'discarded', id };

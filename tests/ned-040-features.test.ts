@@ -398,3 +398,179 @@ test('skill-routing automatically selects 0.4.0 skills and conditionally gates s
   hideUnrequestedTools(body);
   assert.deepEqual(body.tools.map(t => t.function?.name), ['ned_host_patch_file']);
 });
+
+test('ProjectCheckpoints and WorktreeSandbox handle >160 KB files and roll back partial multi-file failures', async t => {
+  const { root, project } = await makeTempWorkspace(t, 'ned-rebuild2-tx-');
+
+  const largeBefore = 'L'.repeat(210_000) + '\noriginal-tail\n';
+  const largeAfter = 'M'.repeat(210_000) + '\nupdated-tail\n';
+  await writeFile(path.join(project, 'a-large.txt'), largeBefore);
+  await writeFile(path.join(project, 'b-second.txt'), 'second-v1\n');
+
+  const cp = new ProjectCheckpoints(root, root);
+  t.after(() => cp.close());
+  const c1 = await cp.create(project, 'v1-large');
+  assert.equal(c1.status, 'created');
+
+  // Invalid checkpoint ID must fail before creating any bogus pre-restore commit.
+  await assert.rejects(
+    cp.restore('ses1', project, 'deadbeef', { approve: async () => true }),
+    /찾지 못했습니다/,
+  );
+  assert.equal((await cp.list(project)).checkpoints.length, 1);
+
+  await writeFile(path.join(project, 'a-large.txt'), largeAfter);
+  await writeFile(path.join(project, 'b-second.txt'), 'second-v2\n');
+
+  // Fail during apply of the second file -> first file must roll back to largeAfter.
+  let applyValidateCalls = 0;
+  await assert.rejects(
+    cp.restore('ses1', project, c1.checkpointId, {
+      approve: async () => true,
+      validateEdit: async (_s, _p, proposal) => {
+        applyValidateCalls++;
+        // First 2 calls are pre-approval validation; 4th call is second file during applyBatch.
+        if (applyValidateCalls === 4 && proposal.path === 'b-second.txt') {
+          throw new Error('simulated mid-batch buffer conflict');
+        }
+      },
+    }),
+    /원래 상태로 복구했습니다/,
+  );
+  assert.equal(await readFile(path.join(project, 'a-large.txt'), 'utf8'), largeAfter);
+  assert.equal(await readFile(path.join(project, 'b-second.txt'), 'utf8'), 'second-v2\n');
+
+  // Clean restore of >160 KB file succeeds without stdout truncation.
+  const restored = await cp.restore('ses1', project, c1.checkpointId, { approve: async () => true });
+  assert.equal(restored.status, 'restored');
+  assert.equal(await readFile(path.join(project, 'a-large.txt'), 'utf8'), largeBefore);
+  assert.equal(await readFile(path.join(project, 'b-second.txt'), 'utf8'), 'second-v1\n');
+
+  // WorktreeSandbox: >160 KB apply + rollback + stale directory discard.
+  const gitEnv = { ...process.env, GIT_AUTHOR_NAME: 'Test', GIT_AUTHOR_EMAIL: 't@local', GIT_COMMITTER_NAME: 'Test', GIT_COMMITTER_EMAIL: 't@local' };
+  execFileSync('git', ['init'], { cwd: project, env: gitEnv });
+  execFileSync('git', ['add', 'a-large.txt', 'b-second.txt'], { cwd: project, env: gitEnv });
+  execFileSync('git', ['commit', '-m', 'init'], { cwd: project, env: gitEnv });
+
+  const wt = new WorktreeSandbox(root, root);
+  t.after(() => wt.close());
+  const rec = await wt.create(project, 'large-exp');
+  await writeFile(path.join(rec.path, 'a-large.txt'), largeAfter);
+  await writeFile(path.join(rec.path, 'b-second.txt'), 'second-wt\n');
+
+  let wtValidateCalls = 0;
+  await assert.rejects(
+    wt.apply('ses1', project, rec.id, {
+      approve: async () => true,
+      validateEdit: async (_s, _p, proposal) => {
+        wtValidateCalls++;
+        if (wtValidateCalls === 4 && proposal.path === 'b-second.txt') {
+          throw new Error('simulated worktree apply failure');
+        }
+      },
+    }),
+    /원래 상태로 복구했습니다/,
+  );
+  assert.equal(await readFile(path.join(project, 'a-large.txt'), 'utf8'), largeBefore);
+
+  const applied = await wt.apply('ses1', project, rec.id, { approve: async () => true });
+  assert.equal(applied.status, 'applied');
+  assert.equal(await readFile(path.join(project, 'a-large.txt'), 'utf8'), largeAfter);
+  assert.equal(await readFile(path.join(project, 'b-second.txt'), 'utf8'), 'second-wt\n');
+
+  // Manually deleting the worktree folder still lets discard() prune the stale index entry.
+  await rm(rec.path, { recursive: true, force: true });
+  const discarded = await wt.discard(project, rec.id);
+  assert.equal(discarded.status, 'discarded');
+  assert.equal((await wt.list(project)).worktrees.length, 0);
+});
+
+test('code_audit and document_read(docling) require approval for project Python, and api_contract_test detects missing Content-Type', async t => {
+  const { root, project } = await makeTempWorkspace(t, 'ned-rebuild2-gates-');
+
+  await writeFile(path.join(project, 'sample.py'), 'x = 1\n');
+  let venvResolved = 0;
+  let approvePrompts = 0;
+  const auditTool = new AstAuditTools(root, root, {
+    approve: async () => { approvePrompts++; return false; },
+    resolveVenvPython: async () => {
+      venvResolved++;
+      return { kind: 'venv', prefix: path.join(project, '.venv'), python: 'python3' };
+    },
+  });
+  t.after(() => auditTool.close());
+
+  // Default read-only code_audit must NOT touch project .venv Python.
+  const defaultReport = await auditTool.audit(project, {});
+  assert.equal(defaultReport.status, 'ok');
+  assert.equal(defaultReport.ruffUsed, false);
+  assert.equal(venvResolved, 0);
+  assert.equal(approvePrompts, 0);
+
+  // Explicit venv-ruff requires host approval.
+  await assert.rejects(auditTool.audit(project, { categories: ['venv-ruff'] }), /취소/);
+  assert.equal(approvePrompts, 1);
+
+  // document_read(mode: "docling") requires host approval before invoking project Python.
+  await writeFile(path.join(project, 'doc.pdf'), '%PDF-1.4\n');
+  let docApprove = 0;
+  const docs = new DocumentTools(root, root, {
+    approve: async () => { docApprove++; return false; },
+    resolveVenvPython: async () => ({ kind: 'venv', prefix: path.join(project, '.venv'), python: 'python3' }),
+  });
+  t.after(() => docs.close());
+  await assert.rejects(docs.readExtended(project, { path: 'doc.pdf', mode: 'docling' }), /취소/);
+  assert.equal(docApprove, 1);
+
+  // Missing Content-Type header must NOT be forged as application/json by requestJSON.
+  const { createServer } = await import('node:http');
+  const rawServer = createServer((req, res) => {
+    if (req.url === '/items/1-a') {
+      res.writeHead(200); // intentionally omit Content-Type
+      res.end('{"id": 1}');
+      return;
+    }
+    res.writeHead(404).end();
+  });
+  await new Promise<void>(resolve => rawServer.listen(0, '127.0.0.1', resolve));
+  t.after(() => { rawServer.closeAllConnections(); rawServer.close(); });
+  const port = (rawServer.address() as any).port;
+
+  await writeFile(path.join(project, 'multi.yaml'), [
+    'openapi: 3.0.3',
+    'info:',
+    '  title: Multi',
+    '  version: 1.0.0',
+    'paths:',
+    '  /items/{id}-{sub}:',
+    '    get:',
+    '      parameters:',
+    '        - name: id',
+    '          in: path',
+    '          example: 1',
+    '        - name: sub',
+    '          in: path',
+    '          example: a',
+    '      responses:',
+    '        "200":',
+    '          description: ok',
+    '          content:',
+    '            application/json:',
+    '              schema:',
+    '                type: object',
+    '                required: [id]',
+    '                properties:',
+    '                  id: { type: integer }',
+  ].join('\n'));
+  const api = new ApiTools(root, { approve: async () => true, approveExplicit: async () => true });
+  t.after(() => api.close());
+  const ct = await api.contractTest('ses1', project, { specPath: 'multi.yaml', baseUrl: `http://127.0.0.1:${port}`, methods: ['GET'] });
+  assert.equal(ct.status, 'failed');
+  assert.match(ct.results[0].errors.join(';'), /Expected JSON response Content-Type/);
+
+  // agent-config.example.json must match pythonConfigSchema safe defaults.
+  const { configSchema } = await import('../src/shared/contracts');
+  const example = configSchema.parse(JSON.parse(await readFile(path.resolve('agent-config.example.json'), 'utf8')));
+  assert.equal(example.python?.allowPackageInstall, false);
+  assert.equal(example.python?.respectSystemPipConfig, false);
+});

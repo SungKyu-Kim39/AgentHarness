@@ -80,7 +80,7 @@
     "disableQwenThinking": true
   },
   "python": {
-    "respectSystemPipConfig": true,
-    "allowPackageInstall": true
+    "allowPackageInstall": false,
+    "indexUrl": "https://pypi.internal.example/simple"
   }
 }

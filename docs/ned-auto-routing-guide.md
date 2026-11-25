@@ -164,8 +164,8 @@ Ned는 Windows 10·11 x64 폐쇄망 환경을 위해 **Zed 편집기 + 전용 Op
 
 - **자연어 요청 예시**: "결제 연동 기능의 명세와 계획·작업 목록을 만들고 체크하면서 구현해줘", "이 프로젝트 전체에서 SQL 인젝션과 하드코딩 시크릿을 감사해줘", "현재 구조를 `.drawio`와 Mermaid PNG 다이어그램으로 그려줘", "이 OpenAPI YAML로 로컬 Mock 서버를 띄우고 계약 테스트해줘"
 - **자동 부착 스킬**: `spec-driven-dev`, `architecture-diagramming`, `security-best-practices`, `api-design`
-- **자동 연결 도구**: `spec_workflow`, `ast_search`(`ast-grep-py`), `code_audit`(시크릿·SAST·`bandit`·선택적 `ruff`), `diagram_generate`(조건부 노출: `.drawio` XML·오프라인 Mermaid SVG/PNG), `api_mock_server`·`api_contract_test`(조건부 노출: 로컬 루프백 Mock·계약 테스트·선택적 Schemathesis)
-- **동작 특징**: Spec-Driven 문서는 `specs/<feature>/`에 일관된 형식으로 관리하며, `ast_search` 치환은 `dryRun` 미리보기 후 적용합니다. `api_contract_test`는 루프백 GET/HEAD 외 대상이나 변경성 HTTP 메서드에 대해 별도 승인을 요구합니다.
+- **자동 연결 도구**: `spec_workflow`, `ast_search`(`ast-grep-py`), `code_audit`(시크릿·SAST·`bandit`, 명시 요청·승인 시 프로젝트 `ruff`), `diagram_generate`(조건부 노출: `.drawio` XML·오프라인 Mermaid SVG/PNG), `api_mock_server`·`api_contract_test`(조건부 노출: 로컬 루프백 Mock·OpenAPI 계약 테스트)
+- **동작 특징**: Spec-Driven 문서는 `specs/<feature>/`에 일관된 형식으로 관리하며, `ast_search` 치환은 `apply=false` 미리보기 후 적용합니다. `api_contract_test`는 현재 대화의 Mock 외 대상이나 변경성 HTTP 메서드에 대해 별도 승인을 요구합니다.
 
 ---
 

@@ -99,6 +99,7 @@ export class Subagents {
     private project: (id: string) => Promise<string>,
     private request: (id: string) => Promise<string>,
     private createWorktree?: (project: string, label: string, signal?: AbortSignal) => Promise<{ id: string; path: string }>,
+    private discardWorktree?: (project: string, id: string) => Promise<unknown>,
   ) {}
   private file() {
     return path.join(this.root, "subagents.json");
@@ -123,12 +124,19 @@ export class Subagents {
     )
       throw Error("하위 Agent 기록 형식 오류. 기존 기록을 보존했습니다.");
     for (const j of data.jobs) {
+      const hasWorktree = j.worktreeId !== undefined || j.worktreePath !== undefined;
+      const validWorktree = !hasWorktree || (
+        typeof j.worktreeId === "string" &&
+        /^wt-[a-f0-9]{12}$/.test(j.worktreeId) &&
+        j.worktreePath === path.join(this.root, "worktrees", j.worktreeId)
+      );
       if (
         !valid(j.id) ||
         !valid(j.parent) ||
         !valid(j.request) ||
         !["research", "worker", "goldfish"].includes(j.role) ||
         (j.role === "goldfish" && (!goldfishReviewers.has(j.reviewer) || j.writes?.length !== 0)) ||
+        !validWorktree ||
         typeof j.title !== "string" ||
         j.title.length > 200 ||
         typeof j.project !== "string" ||
@@ -380,11 +388,13 @@ export class Subagents {
       await this.save();
     } catch (e) {
       this.jobs.delete(j.id);
+      if (worktreeId) await this.discardWorktree?.(project, worktreeId).catch(() => {});
       throw e;
     }
     if (!current() || j.state !== "queued") {
       j.abort?.abort();
       j.state = "stopped";
+      if (worktreeId) await this.discardWorktree?.(project, worktreeId).catch(() => {});
       await this.save();
       throw Error("하위 Agent 시작 전에 작업이 중지되었습니다.");
     }

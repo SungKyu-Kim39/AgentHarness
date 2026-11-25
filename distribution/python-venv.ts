@@ -187,7 +187,7 @@ export class PythonVenvManager {
         if (!await this.options.approveExplicit?.('Python 패키지 목록 조회', target.python + '\n선택된 인터프리터를 실행합니다.', combined)) {
           throw new Error('인터프리터 실행을 승인하지 않았습니다.');
         }
-        const list = await this.commands.run({ executable: target.python, args: ['-m', 'pip', 'list', '--format=json', '--disable-pip-version-check'], cwd: project, env: this.buildOfflineEnv(work, target.prefix) }, combined, 30000);
+        const list = await this.commands.run({ executable: target.python, args: ['-I', '-m', 'pip', 'list', '--format=json', '--disable-pip-version-check'], cwd: work, env: this.buildOfflineEnv(work, target.prefix) }, combined, 30000);
         if (list.exitCode !== 0) throw new Error(`패키지 목록 조회 실패 (exit ${list.exitCode}): ${list.output.slice(0, 1000)}`);
         const packages = JSON.parse(list.stdout);
         return { status: 'ok', kind: target.kind, prefix: target.prefix, count: packages.length, packages };
