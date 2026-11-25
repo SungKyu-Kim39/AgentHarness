@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "version": "0.3.16",
+  "version": "0.4.0",
   "supervisorSha256": "e9b13ee63a9bfd44f8b8bb5753ce5ae7d3ba1242dcb5c34710cff88fd12a88b7",
   "launcherSha256": "0994851131e4e02d8f6e3485ac16577666f1a0a338ba8f71e5c7fd15d21872d4",
   "mcpNodeWorkerSha256": "44194a16a83fd6fb911c5c0cca2d68c5419ad0d623fe96db24e4d8fbf158b0fc",
@@ -11,7 +11,7 @@
     "sourceCommit": "5dab50279b91fdb0bb135793df699b57410c6e3d"
   },
   "optimizerSha256": "6b9a223237c968bb6669e35429a2f619b8d46716c1c830f497386e4ea7256de3",
-  "reportSha256": "7d11b0acb755d42811fef90dd7bedad5b8797be2c78630e603494622bb050aba",
+  "reportSha256": "52cdd3f0ad8242f615ef82368d683629b6ed713741a8f48f285e6a5edddcccd8",
   "components": {
     "openviking": {
       "originalManifestSha256": "bd4d0e02913ce85d78d8b26b4cc016001043982ba280c2793b9bc0cf7a766d71",
@@ -37,6 +37,11 @@
       "originalManifestSha256": "c59be72fd4c4c765f6b1a6f950d452e730ef46fb1667cfecb41073a568bfa2f3",
       "manifestSha256": "c59be72fd4c4c765f6b1a6f950d452e730ef46fb1667cfecb41073a568bfa2f3",
       "files": 3659
+    },
+    "workspace-tools": {
+      "originalManifestSha256": "ca5b6e7e854ee7d9fd6430698dd95a83d38c7d44c2a844a2601dd01f865f62ae",
+      "manifestSha256": "ca5b6e7e854ee7d9fd6430698dd95a83d38c7d44c2a844a2601dd01f865f62ae",
+      "files": 5565
     }
   },
   "ghidraInputs": {
@@ -44,5 +49,10 @@
     "scripts/bundle-ghidra.py": "143686cd4a89d17b9bcbdba34a43a9344f3458bdf1f4602860b5492039d3aa29",
     "scripts/CompileGhidraGuard.java": "692dcdce5c3394580746b1e85824a857241f4c3666f3f661286373668b8b59e6",
     "distribution/NedOfflineNetworkGuard.java": "f88062fdb7dabbdb416bfdf1b8e320f538aef643d3d34fa308595badcaa25e0a"
+  },
+  "workspaceToolsInputs": {
+    "workspace-tools-lock.json": "089d8921fd3b3e5d7676dd8b5f67d925758e8d86aaf52f3e8d9c6cde7d88f26e",
+    "workspace-tools-node-lock.json": "988093096b4bf56fd12c4d40f8034f9fc1a17cf59f9646c78eafb0f0d6878baf",
+    "scripts/bundle-workspace-tools.py": "95b7679836c8592c58e2278ab835fdeab7ce8ea2362650da3260ae817ed2a793"
   }
 }
