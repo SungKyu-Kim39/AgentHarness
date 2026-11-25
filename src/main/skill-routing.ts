@@ -31,27 +31,48 @@ function text(content: unknown): string {
   return '';
 }
 
+const reaTrigger = /(?:(?:ned_host_)?rea_(?:ghidra|inspect)\b|\bghidra\b|\brea\b|리버싱|역공학|디컴파일|디스어셈블|decompil|disassembl|binary.*analy|바이너리.*분석)/i;
+const reaOptOut = /(?:\b(?:rea|ghidra)\b|리버싱|역공학|디컴파일).{0,30}(?:쓰지|사용하지|실행하지|하지\s*마|없이|말고|끄|중지)|(?:do not|don't|never|without|stop using)\s+(?:use\s+)?(?:rea|ghidra)\b/i;
+const taskSwitch = /(?:대신|말고|다른\s*(?:작업|주제|프로젝트|파일)|그만|instead|new topic|different task)/i;
+const continuation = /^(?:(?:아까|지금|이전|직전|중단된|끊긴|하던|남은|방금|그|네|응|답변|응답|작업|분석|정리|내용|결과)(?:을|를|은|는|이|가)?\s*[,.:]?\s*){0,8}(?:이어서|이어\s*(?:서|줘|주세요|가|해)|계속(?:\s|해|해서|$)|마저)|^(?:(?:please|yes|ok|okay)[, ]+)?(?:continue|resume|go on|carry on)\b/i;
+
+function requestText(request: string) {
+  return request.split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0].replace(/```[\s\S]*?```/g, ' ').trim();
+}
+
+export function reaTurnIntent(request: string): 'request' | 'continue' | 'reset' {
+  const candidate = requestText(request).replace(/^사용자가 선택한 Ned 스킬 /, '');
+  if (reaOptOut.test(candidate)) return 'reset';
+  if (reaTrigger.test(candidate)) return 'request';
+  return candidate.length <= 160 && !taskSwitch.test(candidate) && continuation.test(candidate) ? 'continue' : 'reset';
+}
+
 export const specializedTools = [
   { prefix: 'desktop_', trigger: /(?:desktop|\bGUI\b|데스크톱|데스크탑|계산기|메모장|그림판|앱.*(?:클릭|실행|열어)|창.*(?:열어|클릭)|open.*calculator|click.*window)/i },
-  { prefix: 'rea_', trigger: /(?:\bghidra\b|\brea\b|리버싱|역공학|디컴파일|디스어셈블|decompil|disassembl|binary.*analy|바이너리.*분석)/i },
+  { prefix: 'rea_', trigger: reaTrigger },
   { prefix: 'document_write', trigger: /(?:\bhwpx?\b|\bxlsx\b|\bdocx\b|\bpptx?\b|한글\s*(?:문서|양식|공문)|엑셀|워드|파워포인트|보고서.*(?:만들|생성|작성)|양식.*채워|export.*(?:excel|word|ppt|hwpx))/i },
   { prefix: 'diagram_', trigger: /(?:\bdrawio\b|\.drawio|\bmermaid\b|다이어그램|구성도|흐름도|아키텍처.*(?:그려|그림|도식)|시퀀스.*다이어그램|flowchart|diagram)/i },
   { prefix: 'api_', trigger: /(?:\bopenapi\b|\bswagger\b|\bmock\b.*(?:서버|api)|계약\s*검증|contract\s*test|\bschemathesis\b|api.*(?:목|모의|검증|퍼징|테스트))/i },
   { prefix: 'worktree_', trigger: /(?:\bworktree\b|워크트리|격리.*(?:브랜치|샌드박스|비교)|병렬.*(?:비교|실험|구현)|a안.*b안)/i },
 ];
 
-export function specializedToolRequested(name: string, request: string) {
+export function specializedToolRequested(name: string, request: string, reaRequested?: boolean) {
   const group = specializedTools.find(group => name.replace(/^ned_host_/, '').startsWith(group.prefix));
+  if (group?.prefix === 'rea_') return reaRequested ?? (reaTurnIntent(request) === 'request');
   return !group || group.trigger.test(request.replace(/```[\s\S]*?```/g, ' '));
 }
 
-export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: Array<{ function?: { name?: string } }>}) {
+export function hideUnrequestedTools(body: {messages?: Array<Message>; tools?: Array<{ function?: { name?: string } }>}, reaRequested?: boolean) {
   if (!Array.isArray(body.tools) || !Array.isArray(body.messages)) return;
   const recentUsers = body.messages.filter(message => message.role === 'user').slice(-2);
   const request = recentUsers
     .map(message => text(message.content).split('\n\n다음 스킬 문서를 작업 지침으로 참고하세요.', 1)[0])
     .join('\n');
-  body.tools = body.tools.filter(tool => specializedToolRequested(tool.function?.name ?? '', request));
+  const rea = reaRequested ?? recentUsers.reduce((allowed, message) => {
+    const intent = reaTurnIntent(text(message.content));
+    return intent === 'request' || (intent === 'continue' && allowed);
+  }, false);
+  body.tools = body.tools.filter(tool => specializedToolRequested(tool.function?.name ?? '', request, rea));
 }
 
 /** Local shortlist only; the answering model still checks semantic relevance and may choose another skill. */

@@ -97,6 +97,11 @@ Function CheckInstallDirectory
     StrCpy $9 "valid"
     Return
   check_empty:
+  ; An interrupted upgrade can have moved the live executable and resources.
+  IfFileExists "$0\.ned-upgrade-backup\resources\app.asar" 0 check_empty_directory
+  IfFileExists "$0\.ned-upgrade-backup\resources\ned\agent.cjs" 0 check_empty_directory
+  Goto directory_valid
+  check_empty_directory:
   IfFileExists "$0\*.*" 0 directory_valid
   FindFirst $2 $3 "$0\*.*"
   check_next:
@@ -186,6 +191,35 @@ Function CheckInstallNotRunning
   ${EndIf}
 FunctionEnd
 
+!macro NedRestoreUpgradeItem ITEM PROBE REMOVE
+  ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\${PROBE}"
+    ClearErrors
+    ${REMOVE} "$INSTDIR\${ITEM}"
+    ClearErrors
+    Rename "$INSTDIR\.ned-upgrade-backup\${ITEM}" "$INSTDIR\${ITEM}"
+    ${If} ${Errors}
+      StrCpy $7 "failed"
+    ${EndIf}
+  ${EndIf}
+!macroend
+
+Function RestoreNedUpgradeBackup
+  StrCpy $7 "ok"
+  ; Only replace paths for which a backup still exists. A partial backup move
+  ; leaves the other original paths in place.
+  !insertmacro NedRestoreUpgradeItem "resources" "resources\*.*" "RMDir /r"
+  !insertmacro NedRestoreUpgradeItem "locales" "locales\*.*" "RMDir /r"
+  !insertmacro NedRestoreUpgradeItem "Ned.exe" "Ned.exe" "Delete"
+  ${If} $7 == "ok"
+    ; A backup that still contains an item must never be deleted on failure.
+    ClearErrors
+    RMDir "$INSTDIR\.ned-upgrade-backup"
+    ${If} ${Errors}
+      StrCpy $7 "failed"
+    ${EndIf}
+  ${EndIf}
+FunctionEnd
+
 Section "Ned"
   SetShellVarContext current
   Call VerifyInstallDirectory
@@ -201,7 +235,12 @@ Section "Ned"
   ; failure (disk full, locked file, abort) restores the previous working Ned build.
   ; User data remains outside INSTDIR.
   StrCpy $8 "no"
-  RMDir /r "$INSTDIR\.ned-upgrade-backup"
+  ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\*.*"
+    Call RestoreNedUpgradeBackup
+    ${If} $7 != "ok"
+      Goto backup_preserved
+    ${EndIf}
+  ${EndIf}
   ${If} ${FileExists} "$INSTDIR\Ned.exe"
     ${OrIf} ${FileExists} "$INSTDIR\resources\*.*"
     ClearErrors
@@ -216,17 +255,10 @@ Section "Ned"
       Rename "$INSTDIR\Ned.exe" "$INSTDIR\.ned-upgrade-backup\Ned.exe"
     ${EndIf}
     ${If} ${Errors}
-      ; Restore anything already moved before aborting so the prior install stays intact.
-      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\resources\*.*"
-        Rename "$INSTDIR\.ned-upgrade-backup\resources" "$INSTDIR\resources"
+      Call RestoreNedUpgradeBackup
+      ${If} $7 != "ok"
+        Goto backup_preserved
       ${EndIf}
-      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\locales\*.*"
-        Rename "$INSTDIR\.ned-upgrade-backup\locales" "$INSTDIR\locales"
-      ${EndIf}
-      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\Ned.exe"
-        Rename "$INSTDIR\.ned-upgrade-backup\Ned.exe" "$INSTDIR\Ned.exe"
-      ${EndIf}
-      RMDir /r "$INSTDIR\.ned-upgrade-backup"
       MessageBox MB_OK|MB_ICONSTOP "기존 Ned 파일이 사용 중이어서 업그레이드를 시작할 수 없습니다. Ned와 편집기를 모두 종료한 뒤 다시 시도하세요. 기존 설치와 사용자 데이터는 보존했습니다." /SD IDOK
       SetErrorLevel 1
       Abort
@@ -246,21 +278,18 @@ Section "Ned"
   Goto install_verified
   install_failed:
     ${If} $8 == "yes"
-      RMDir /r "$INSTDIR\resources"
-      RMDir /r "$INSTDIR\locales"
-      Delete "$INSTDIR\Ned.exe"
-      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\resources\*.*"
-        Rename "$INSTDIR\.ned-upgrade-backup\resources" "$INSTDIR\resources"
+      Call RestoreNedUpgradeBackup
+      ${If} $7 != "ok"
+        Goto backup_preserved
       ${EndIf}
-      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\locales\*.*"
-        Rename "$INSTDIR\.ned-upgrade-backup\locales" "$INSTDIR\locales"
-      ${EndIf}
-      ${If} ${FileExists} "$INSTDIR\.ned-upgrade-backup\Ned.exe"
-        Rename "$INSTDIR\.ned-upgrade-backup\Ned.exe" "$INSTDIR\Ned.exe"
-      ${EndIf}
-      RMDir /r "$INSTDIR\.ned-upgrade-backup"
+      MessageBox MB_OK|MB_ICONSTOP "설치를 완료하지 못해 기존 Ned 파일을 복구했습니다. 디스크 여유 공간과 설치 폴더 권한을 확인한 뒤 다시 시도하세요." /SD IDOK
+    ${Else}
+      MessageBox MB_OK|MB_ICONSTOP "설치를 완료하지 못했습니다. 디스크 여유 공간과 설치 폴더 권한을 확인한 뒤 다시 시도하세요." /SD IDOK
     ${EndIf}
-    MessageBox MB_OK|MB_ICONSTOP "Ned 설치가 완료되지 않아 이전 설치 상태를 복구했습니다. 디스크 여유 공간, 설치 폴더 권한 및 실행 중인 프로그램 여부를 확인하고 다시 시도하세요. 사용자 설정과 데이터는 보존했습니다." /SD IDOK
+    SetErrorLevel 1
+    Abort
+  backup_preserved:
+    MessageBox MB_OK|MB_ICONSTOP "이전 Ned 파일을 모두 복구하지 못했습니다. 남은 백업은 설치 폴더의 .ned-upgrade-backup에 보존했습니다. 잠금과 권한을 확인한 뒤 같은 경로에서 설치를 다시 실행하세요." /SD IDOK
     SetErrorLevel 1
     Abort
   install_verified:

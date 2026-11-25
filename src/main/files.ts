@@ -297,13 +297,12 @@ export class ProjectFiles {
       for (let i = applied.length - 1; i >= 0; i--) {
         const done = applied[i];
         try {
-          if (done.operation === "delete" || done.baseHash.startsWith("file:")) {
-            const revert = await this.propose(randomUUID(), done.path, done.before);
-            await this.apply(revert);
-          } else {
-            const revert = await this.proposeDelete(randomUUID(), done.path);
-            await this.apply(revert);
-          }
+          const expected = done.operation === "delete" ? `missing:${hash("")}` : `file:${hash(done.after)}`;
+          const revert = done.operation === "delete" || done.baseHash.startsWith("file:")
+            ? await this.propose(randomUUID(), done.path, done.before)
+            : await this.proposeDelete(randomUUID(), done.path);
+          if (revert.baseHash !== expected) throw new Error("적용 후 다른 변경을 발견해 복구를 보류했습니다.");
+          await this.apply(revert);
         } catch {
           rollbackFailures.push(`${done.path} (snapshot ${done.id})`);
         }

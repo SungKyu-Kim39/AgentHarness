@@ -15,7 +15,7 @@ import {Subagents,subagentReadTools,goldfishReadTools} from './subagents';
 import { ZedModels } from './ned/zed-models';
 import { permissionMode, type PermissionPolicy } from './ned/permission-policy';
 import type { PythonSelector } from './python-projects';
-import { automaticSkillContext, automaticSkillPolicy, specializedToolRequested } from '../src/main/skill-routing';
+import { automaticSkillContext, automaticSkillPolicy, reaTurnIntent, specializedToolRequested } from '../src/main/skill-routing';
 import { SessionMemoryManager, resolveMemoryPolicy, type OpenCodeSessionMessage } from '../src/main/session-memory';
 
 export interface Credentials { url: string; password: string }
@@ -119,7 +119,8 @@ export class NativeRuntime {
             ]);
             const parts = [skillsGuidance, memoryGuidance].filter((part): part is string => !!part);
             return parts.length ? parts.join('\n\n') : undefined;
-          }, definition?.limit?.output ?? 4096);
+          }, definition?.limit?.output ?? 4096, 'ned',
+          (session, parent) => Boolean(session && this.reaRequested(parent ?? session)));
         await gateway.start();
         this.models.push({ provider: m.providerID ?? providerID(m.name), name: m.name, id: m.modelKey ?? m.id, gateway });
       }
@@ -136,7 +137,7 @@ export class NativeRuntime {
         if (!await this.approveOperation('격리 git worktree 샌드박스 생성', `프로젝트: ${project}\n라벨: ${label}`, signal)) throw new Error('worktree 생성을 취소했습니다.');
         return this.tools!.worktrees.create(project, label, signal);
       }, (project, id) => this.tools!.worktrees.discard(project, id));await this.subagents.load();
-      this.tools = new HostTools(this.root, this.resources, { sessionScope:(session,tool,args)=>this.subagents!.scope(session,tool,args),subagents:this.subagents,project: id => this.sessionProject(id), request: id => this.sessionRequest(id), permissionSignal: () => this.permissions?.signal, fullAccess: () => this.permissions?.mode === 'full', toolRequested: (session, name, extraContext) => specializedToolRequested(name, [...(this.turnHistory.get(session) ?? []), extraContext ?? ''].filter(Boolean).join('\n')), approve: (message, detail, signal) => this.approveOperation(redactor.text(message), redactor.text(detail), signal), approveExplicit: (message, detail, signal) => this.approveExplicitOperation(redactor.text(message), redactor.text(detail), signal), approveEdit: (message, detail, signal) => this.approveFile(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor, validateEdit: (session, project, proposal, signal) => this.editorCheck?.(session, project, proposal, signal) ?? Promise.resolve(),
+      this.tools = new HostTools(this.root, this.resources, { sessionScope:(session,tool,args)=>this.subagents!.scope(session,tool,args),subagents:this.subagents,project: id => this.sessionProject(id), request: id => this.sessionRequest(id), permissionSignal: () => this.permissions?.signal, fullAccess: () => this.permissions?.mode === 'full', toolRequested: (session, name, extraContext) => specializedToolRequested(name, [...(this.turnHistory.get(session) ?? []), extraContext ?? ''].filter(Boolean).join('\n'), this.reaRequested(session)), approve: (message, detail, signal) => this.approveOperation(redactor.text(message), redactor.text(detail), signal), approveExplicit: (message, detail, signal) => this.approveExplicitOperation(redactor.text(message), redactor.text(detail), signal), approveEdit: (message, detail, signal) => this.approveFile(redactor.text(message), redactor.text(detail), signal), knowledge: () => this.knowledge, redactor, validateEdit: (session, project, proposal, signal) => this.editorCheck?.(session, project, proposal, signal) ?? Promise.resolve(),
         choosePython: (project, environments, signal) => this.pythonSelector ? this.pythonSelector(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창을 사용할 수 없습니다.')),
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
         pythonConfig: () => this.config?.python,
@@ -228,17 +229,44 @@ export class NativeRuntime {
     await atomicJSON(path.join(this.root, 'approved-projects.json'), []);
   }
   private turnHistory = new Map<string, string[]>();
+  private reaRequests = new Map<string, boolean>();
+
+  private reaRequested(session: string) {
+    const project = this.attachedProjects.get(session);
+    return !!project && this.projects.has(project) && this.reaRequests.get(session) === true;
+  }
+
   async setTurnText(session: string, text: string) {
     await this.memory?.onUserPrompt(session, text);
-    const history = [...(this.turnHistory.get(session) ?? []), text.slice(0, 16000)].slice(-2);
-    this.turnHistory.set(session, history);
+    const request = text.slice(0, 16000);
+    const intent = reaTurnIntent(request);
+    const project = this.attachedProjects.get(session);
+    let previous = this.reaRequests.get(session);
+    if (intent === 'continue' && previous === undefined && project && this.projects.has(project)) {
+      previous = await this.previousReaRequest(session).catch(() => false);
+    }
+    if (project !== this.attachedProjects.get(session)) return;
+    this.reaRequests.set(session, intent === 'request' || (intent === 'continue' && previous === true));
+    this.turnHistory.set(session, [...(this.turnHistory.get(session) ?? []), request].slice(-2));
   }
+
+  private async previousReaRequest(session: string) {
+    if (!this.backend || await this.sessionProject(session) !== this.attachedProjects.get(session)) return false;
+    const result = await this.subagentAPI(`/api/session/${encodeURIComponent(session)}/message?limit=100&order=desc`) as { data?: OpenCodeSessionMessage[] };
+    for (const message of result.data ?? []) {
+      if (message.type !== 'user') continue;
+      const intent = reaTurnIntent(typeof message.text === 'string' ? message.text : '');
+      if (intent !== 'continue') return intent === 'request';
+    }
+    return false;
+  }
+
   onSessionActivated(session: string, project: string) {
     this.attachedProjects.set(session, project);
     this.memory?.onSessionActivated(session);
   }
   onTurnComplete(session: string) { this.memory?.onTurnComplete(session); }
-  onSessionDisconnected(session: string) { this.attachedProjects.delete(session); this.turnHistory.delete(session); this.memory?.onSessionDisconnected(session); }
+  onSessionDisconnected(session: string) { this.attachedProjects.delete(session); this.turnHistory.delete(session); this.reaRequests.delete(session); this.memory?.onSessionDisconnected(session); }
   async skillCommands(session: string) {
     if (!this.tools) throw new Error('Ned 스킬이 준비되지 않았습니다.');
     const project = await this.sessionProject(session);

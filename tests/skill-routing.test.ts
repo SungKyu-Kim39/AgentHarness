@@ -4,10 +4,12 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { hideUnrequestedTools, automaticSkillContext, specializedToolRequested } from '../src/main/skill-routing';
+import { hideUnrequestedTools, automaticSkillContext, reaTurnIntent, specializedToolRequested } from '../src/main/skill-routing';
 import { OfflineSkills } from '../src/main/skills';
 import { ModelGateway } from '../src/main/model-gateway';
 import { createServer } from 'node:http';
+import { NativeRuntime } from '../distribution/native-control';
+import { configSchema } from '../src/shared/contracts';
 
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
   const base = await mkdtemp(path.join(tmpdir(), 'ned-routing-')); t.after(() => rm(base,{recursive:true,force:true}));
@@ -119,4 +121,80 @@ test('automaticSkillContext loads project .ned/skills and newly added global ski
   const projectCtx = await automaticSkillContext(offline, [{ role: 'user', content: 'team-api 규격에 맞춰 엔드포인트 작성해줘' }], 6500, projectRoot);
   assert.match(projectCtx ?? '', /Automatically loaded project skill: team-api/);
   assert.match(projectCtx ?? '', /PROJECT_SCOPED_GUIDE/);
+});
+
+
+test('REA continuation uses the same attached session for gateway exposure and host execution after interrupt or reconnect', async t => {
+  const base = await mkdtemp(path.join(tmpdir(), 'ned-rea-continuation-'));
+  const app = path.join(base, 'data'), resources = path.join(base, 'resources');
+  const project = path.join(base, 'project');
+  await Promise.all([app, resources, project].map(directory => mkdir(directory)));
+  let forwardedTools: string[] = [];
+  const userHistory = [
+    { type: 'assistant', content: [{ type: 'text', text: '이어서 하겠습니다.' }] },
+    { type: 'user', text: '답변을 이어서 달아줘' },
+    { type: 'user', text: 'Ghidra로 파일을 분석해줘' },
+  ];
+  const server = createServer(async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    if (req.url?.endsWith('/chat/completions')) {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const body = JSON.parse(Buffer.concat(chunks).toString());
+      forwardedTools = body.tools.map((tool: {function: {name:string}}) => tool.function.name);
+      res.end('{"choices":[{"message":{"content":"ok"}}]}');
+    } else if (req.url?.includes('/message?')) res.end(JSON.stringify({ data: userHistory }));
+    else if (req.url?.endsWith('/interrupt')) res.end('{}');
+    else res.end(JSON.stringify({ data: { id: req.url?.split('/').at(-1), location: { directory: project } } }));
+  });
+  await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+  const port = (server.address() as { port:number }).port;
+  const address = `http://127.0.0.1:${port}`;
+  const runtime = new NativeRuntime(app, resources, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: bytes => bytes.toString() });
+  t.after(async () => {
+    await runtime.close();
+    server.closeAllConnections();
+    await new Promise<void>(resolve => server.close(() => resolve()));
+    await rm(base, { recursive: true, force: true });
+  });
+  await runtime.initialize(configSchema.parse({ model: { baseUrl: address + '/v1', id: 'test', apiKey: 'synthetic-only' } }));
+  runtime['backend'] = { url: address, password: 'fixture' };
+  await runtime['subagents']!.recover();
+  await runtime.authorizeProject(project);
+  runtime.onSessionActivated('rea-session', await runtime.canonicalProject(project));
+  runtime.onSessionActivated('other-session', await runtime.canonicalProject(project));
+  const host = runtime['tools']!;
+  host['ghidra'].call = async () => 'SYNTHETIC_REA_RESULT';
+  const { gateway } = runtime['models'][0];
+  const rea = 'ned_host_rea_ghidra';
+  async function check(session: string, prompt: string, allowed: boolean) {
+    await runtime.setTurnText(session, prompt);
+    const response = await fetch(gateway.baseUrl + '/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + gateway.token, 'Content-Type': 'application/json', 'X-OpenCode-Session-Id': session },
+      body: JSON.stringify({ model: 'test', messages: [{ role: 'user', content: prompt }], tools: [{ type: 'function', function: { name: rea } }] }),
+    });
+    assert.equal(response.status, 200);
+    await response.text();
+    assert.equal(forwardedTools.includes(rea), allowed);
+    const result = host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, session);
+    if (allowed) assert.equal(await result, 'SYNTHETIC_REA_RESULT');
+    else await assert.rejects(result, /관련 작업/);
+  }
+
+  await check('rea-session', 'Ghidra로 파일을 분석해줘', true);
+  await runtime.interruptSession('rea-session');
+  host.resumeSession('rea-session');
+  await check('rea-session', '답변을 이어서 달아줘', true);
+  await check('rea-session', '끊긴 작업을 마저 해줘', true);
+  await check('rea-session', '계속해줘', true);
+  runtime.onSessionDisconnected('rea-session');
+  runtime.onSessionActivated('rea-session', await runtime.canonicalProject(project));
+  await check('rea-session', '아까 하던 분석을 이어서 진행해줘', true);
+  await check('rea-session', 'Ghidra는 사용하지 말고 결과를 정리해줘', false);
+  await check('rea-session', '이어서 해줘', false);
+  await check('other-session', '프로젝트 README를 정리해줘', false);
+  await check('other-session', '계속해줘', false);
+  assert.equal(reaTurnIntent('ned_host_rea_ghidra로 정적 분석해줘'), 'request');
+  assert.equal(reaTurnIntent('이어서 다른 작업을 시작해줘'), 'reset');
 });

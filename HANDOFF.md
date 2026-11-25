@@ -3,6 +3,13 @@
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.4.0 rebuild2**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
 
 
+
+<!-- current-release -->
+
+## rebuild3 교차 검토 인계
+
+REA 이어가기, 파일 롤백, 설치 백업 복구의 변경과 남은 위험은 [rebuild3 변경 사항](docs/changes-0.4.0-rebuild3.md)에 기록했습니다. 다음 교차 검토의 기준은 이 기록이 반영된 main입니다.
+
 ## 0.4.0 rebuild2 교차 검토
 
 `0.4.0-rebuild1` 반영본(`main`)을 기준으로 전체 교차 검토한 보완 사항과 후속 확인 항목은 [rebuild2 변경 사항](docs/changes-0.4.0-rebuild2.md)에 기록했습니다. 제품 버전은 0.4.0을 유지하며, 기존 `0.4.0`·`0.4.0-rebuild1` 태그와 설치본 검증 기록은 그대로 보존합니다.

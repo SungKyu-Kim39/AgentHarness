@@ -5,6 +5,7 @@ import http from 'node:http';
 import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { ProjectFiles } from '../src/main/files';
 import { configSchema } from '../src/shared/contracts';
 import { PythonVenvManager, parseRequirementsText, validatePackageSpec } from '../distribution/python-venv';
 import { DataApps } from '../distribution/data-apps';
@@ -573,4 +574,23 @@ test('code_audit and document_read(docling) require approval for project Python,
   const example = configSchema.parse(JSON.parse(await readFile(path.resolve('agent-config.example.json'), 'utf8')));
   assert.equal(example.python?.allowPackageInstall, false);
   assert.equal(example.python?.respectSystemPipConfig, false);
+});
+
+
+test('batch rollback preserves a concurrent edit made after Ned applied the first file', async t => {
+  const { project } = await makeTempWorkspace(t, 'ned-rollback-conflict-');
+  const firstPath = path.join(project, 'first.txt');
+  const secondPath = path.join(project, 'second.txt');
+  await writeFile(firstPath, 'first original');
+  await writeFile(secondPath, 'second original');
+  const files = new ProjectFiles(project);
+  const first = await files.propose('batch', 'first.txt', 'Ned first');
+  const second = await files.propose('batch', 'second.txt', 'Ned second');
+  await assert.rejects(files.applyBatch([first, second], { validate: async proposal => {
+    if (proposal.path !== second.path) return;
+    await writeFile(firstPath, 'new user changes');
+    throw new Error('fixture second file conflict');
+  } }), /일부 파일 복구에 실패했습니다/);
+  assert.equal(await readFile(firstPath, 'utf8'), 'new user changes');
+  assert.equal(await readFile(secondPath, 'utf8'), 'second original');
 });
