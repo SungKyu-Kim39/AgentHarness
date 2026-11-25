@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.4.0-rebuild4",
+  "sourceCommit": "8de1cf93c30fb80e033bd75e5f80df454ee2d316",
+  "artifactCommit": "ea676f0a6210fe9489069882fe137600f4e2fff2",
+  "releaseUrl": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.4.0-rebuild4",
+  "filesPublished": true,
+  "releaseAssetsPublished": true,
+  "publicDownloadsFullyVerified": true,
+  "windowsRunId": 45561248114,
+  "installer": {
+    "name": "Ned-0.4.0-rebuild4-win-x64.exe",
+    "bytes": 1551458764,
+    "sha256": "fbf85591b1adbacd3bb6d3def6e12f53c012c8ef8efef21cc4fd65665aa0feaa"
+  },
+  "bundle": {
+    "name": "Ned-0.4.0-rebuild4-windows-x64.tgz",
+    "bytes": 1931591106,
+    "sha256": "5e34f528b313c8ebb0b708b717b8fe7717fafcccd74029d83adb14cb31574745"
+  },
+  "releaseReady": false,
+  "isPrerelease": true,
+  "releaseAssetCount": 7,
+  "assets": [
+    {
+      "name": "Ned-0.4.0-rebuild4-bundle-manifest.json",
+      "bytes": 682,
+      "sha256": "10454f7db7407332da44390ad46c82741ecd45baa80fa35de4474218183e47da",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild4/Ned-0.4.0-rebuild4-bundle-manifest.json"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild4-installer-audit.json",
+      "bytes": 17163,
+      "sha256": "5659f14deeaf3eff241b299db5b64f25034c37e331b987f839b8ccee9d899478",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild4/Ned-0.4.0-rebuild4-installer-audit.json"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild4-payload-manifest.json",
+      "bytes": 10966712,
+      "sha256": "b085e9e31f4d748302c0be56fca83ae00f58ef233e6a02c5c20757870a026ffe",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild4/Ned-0.4.0-rebuild4-payload-manifest.json"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild4-win-x64.exe",
+      "bytes": 1551458764,
+      "sha256": "fbf85591b1adbacd3bb6d3def6e12f53c012c8ef8efef21cc4fd65665aa0feaa",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild4/Ned-0.4.0-rebuild4-win-x64.exe"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild4-win-x64.exe.sha256",
+      "bytes": 97,
+      "sha256": "2fdcf99008e2e1573dd978fadfdfce92b959a8ecfb9dde48133a714d5d4dde89",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild4/Ned-0.4.0-rebuild4-win-x64.exe.sha256"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild4-windows-x64.tgz",
+      "bytes": 1931591106,
+      "sha256": "5e34f528b313c8ebb0b708b717b8fe7717fafcccd74029d83adb14cb31574745",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild4/Ned-0.4.0-rebuild4-windows-x64.tgz"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild4-windows-x64.tgz.sha256",
+      "bytes": 101,
+      "sha256": "44d2a46864586ad0cc4306408d9f0dba10a20ee8b73ff6a6d10e1d7bf69beaef",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild4/Ned-0.4.0-rebuild4-windows-x64.tgz.sha256"
+    }
+  ]
+}
