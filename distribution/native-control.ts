@@ -281,12 +281,13 @@ export class NativeRuntime {
     return this.tools.skills.read(id, 'SKILL.md', 0, project);
   }
   async projectForSession(id: string) { return this.sessionProject(id); }
-  private async fetchAllSessionMessages(id: string, afterCursor?: string): Promise<{ messages: OpenCodeSessionMessage[]; nextCursor?: string }> {
+  private async fetchAllSessionMessages(id: string, afterCursor?: string): Promise<{ messages: OpenCodeSessionMessage[]; nextCursor?: string; nextCursorOffset?: number }> {
     if (!this.backend || !/^[a-zA-Z0-9_-]{1,128}$/.test(id)) return { messages: [] };
     const collected: OpenCodeSessionMessage[] = [];
     const seen = new Set<string>();
     let cursor: string | undefined = afterCursor;
     let lastPageCursor: string | undefined = afterCursor;
+    let nextCursorOffset = 0;
     for (let page = 0; page < 50; page++) {
       const route = cursor
         ? `/api/session/${encodeURIComponent(id)}/message?limit=100&order=asc&cursor=${encodeURIComponent(cursor)}`
@@ -302,9 +303,10 @@ export class NativeRuntime {
       const next = result?.cursor?.next;
       if (!next || next === cursor) break;
       lastPageCursor = next;
+      nextCursorOffset = collected.length;
       cursor = next;
     }
-    return { messages: collected, nextCursor: lastPageCursor };
+    return { messages: collected, nextCursor: lastPageCursor, nextCursorOffset };
   }
   private async subagentAPI(route:string,body?:unknown,signal?:AbortSignal):Promise<any>{
     if(!this.backend)throw Error('하위 Agent 엔진이 준비되지 않았습니다.');

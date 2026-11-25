@@ -684,3 +684,42 @@ test('SessionMemoryManager fails closed on missing session info, reconciles asyn
   const syncFile = JSON.parse(await readFile(path.join(root, 'openviking', 'memory-sync.json'), 'utf8'));
   assert.equal(syncFile.sessions.s1.lastMessageCursor, 'cur-2');
 });
+
+
+test('incremental memory persists turn opt-out at the cursor and keeps the next normal turn', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'ned-memory-page-opt-out-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const appended: Array<{ role: string; content: string }> = [];
+  const knowledge = {
+    isReady: () => true,
+    ensureMemorySession: async () => {},
+    appendSessionMessages: async (_id: string, messages: Array<{ role: string; content: string }>) => { appended.push(...messages); },
+    commitMemorySession: async () => ({}),
+  } as unknown as KnowledgeService;
+  const skip = { id: 'u0', type: 'user', text: '이건 기억하지 마. 임시 시험을 시작해줘.' };
+  const hidden = { id: 'a0', type: 'assistant', time: { completed: 1 }, content: [{ type: 'text', text: 'SYNTHETIC_EXCLUDED_REPLY' }] };
+  const user = { id: 'u1', type: 'user', text: '이제 일반 빌드 규칙을 정리해줘' };
+  const reply = { id: 'a1', type: 'assistant', time: { completed: 2 }, content: [{ type: 'text', text: 'SYNTHETIC_ALLOWED_REPLY' }] };
+  const make = (includeNext: boolean) => new SessionMemoryManager({
+    root, policy: { enabled: true, autoRecall: false, commitEveryTurns: 6 }, knowledge: () => knowledge, fetchSessionInfo: async () => ({}),
+    fetchSessionMessages: async (_id, cursor) => cursor === 'page-2'
+      ? { messages: [hidden, user, reply], nextCursor: 'page-2', nextCursorOffset: 0 }
+      : { messages: includeNext ? [skip, hidden, user, reply] : [skip], nextCursor: 'page-2', nextCursorOffset: 1 },
+  });
+  const first = make(false);
+  await first.syncAndMaybeCommit('split');
+  await first.close();
+  assert.equal(appended.length, 0);
+
+  const reopened = make(true);
+  await reopened.syncAndMaybeCommit('split');
+  await reopened.close();
+  assert.deepEqual(appended.map(message => message.content), [user.text, 'SYNTHETIC_ALLOWED_REPLY']);
+
+  // The returned cursor can also point inside a multi-page fetch.
+  const overlap = make(true);
+  await overlap.syncAndMaybeCommit('overlap');
+  await overlap.syncAndMaybeCommit('overlap');
+  await overlap.close();
+  assert.ok(appended.every(message => message.content !== 'SYNTHETIC_EXCLUDED_REPLY'));
+});

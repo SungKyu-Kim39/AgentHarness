@@ -31,6 +31,7 @@ export interface MemorySyncEntry {
   watermarkCount?: number;
   watermarkCreatedAt?: number;
   lastMessageCursor?: string;
+  skipTurnAtCursor?: boolean;
   pendingCommitTaskId?: string;
   pendingCommitTurns?: number;
   pendingCommitRetries?: number;
@@ -198,6 +199,8 @@ export interface ExtractMemoryState {
   watermarkCount?: number;
   watermarkCreatedAt?: number;
   sessionOptedOut?: boolean;
+  skipInitialTurn?: boolean;
+  nextCursorOffset?: number;
 }
 
 export interface ExtractedMemoryBatch {
@@ -205,6 +208,7 @@ export interface ExtractedMemoryBatch {
   newlySyncedIds: string[];
   completedTurns: number;
   sessionOptedOut: boolean;
+  skipTurnAtCursor: boolean;
 }
 
 export function extractMemoryMessages(
@@ -219,10 +223,12 @@ export function extractMemoryMessages(
   const newlySyncedIds: string[] = [];
   let completedTurns = 0;
   let sessionOptedOut = state.sessionOptedOut ?? false;
-  let skipCurrentTurn = false;
+  let skipCurrentTurn = state.skipInitialTurn ?? false;
+  let skipTurnAtCursor = skipCurrentTurn;
   let relevantIndex = 0;
 
-  for (const msg of engineMessages) {
+  for (const [offset, msg] of engineMessages.entries()) {
+    if (offset === state.nextCursorOffset) skipTurnAtCursor = skipCurrentTurn;
     if (!msg?.id || typeof msg.id !== 'string') continue;
     if (msg.type !== 'user' && msg.type !== 'assistant') continue;
 
@@ -285,7 +291,8 @@ export function extractMemoryMessages(
     }
   }
 
-  return { messages, newlySyncedIds, completedTurns, sessionOptedOut };
+  if (state.nextCursorOffset === engineMessages.length) skipTurnAtCursor = skipCurrentTurn;
+  return { messages, newlySyncedIds, completedTurns, sessionOptedOut, skipTurnAtCursor };
 }
 
 function extractChatMessageText(content: unknown): string {
@@ -350,7 +357,7 @@ export function formatRecalledMemories(result: MemoryRecallResult, maxBytes = MA
 
 export type SessionMessageFetchResult =
   | OpenCodeSessionMessage[]
-  | { messages: OpenCodeSessionMessage[]; nextCursor?: string };
+  | { messages: OpenCodeSessionMessage[]; nextCursor?: string; nextCursorOffset?: number };
 
 export interface SessionMemoryDependencies {
   root: string;
@@ -577,7 +584,7 @@ export class SessionMemoryManager {
       const nextCursor = Array.isArray(rawFetch) ? undefined : rawFetch.nextCursor;
 
       const syncedSet = new Set(entry.syncedIds);
-      const { messages, newlySyncedIds, completedTurns, sessionOptedOut } = extractMemoryMessages(
+      const { messages, newlySyncedIds, completedTurns, sessionOptedOut, skipTurnAtCursor } = extractMemoryMessages(
         engineMessages,
         {
           syncedIds: syncedSet,
@@ -585,6 +592,10 @@ export class SessionMemoryManager {
           watermarkCount: isIncremental ? undefined : entry.watermarkCount,
           watermarkCreatedAt: entry.watermarkCreatedAt,
           sessionOptedOut: entry.sessionOptedOut,
+          // Older persisted cursors carry no preceding user intent. Skip leading
+          // assistant messages until a user message establishes it.
+          skipInitialTurn: isIncremental && (entry.skipTurnAtCursor ?? true),
+          nextCursorOffset: Array.isArray(rawFetch) ? undefined : rawFetch.nextCursorOffset ?? engineMessages.length,
         },
         this.deps.redactor,
       );
@@ -598,8 +609,9 @@ export class SessionMemoryManager {
         const combined = [...entry.syncedIds, ...newlySyncedIds];
         // Only advance the incremental page cursor when every fetched assistant message is completed (no in-flight streaming gap).
         const hasStreamingAssistant = engineMessages.some(m => m?.type === 'assistant' && m.time?.completed === undefined);
-        if (nextCursor && !hasStreamingAssistant) {
+        if (nextCursor && nextCursor !== entry.lastMessageCursor && !hasStreamingAssistant) {
           entry.lastMessageCursor = nextCursor;
+          entry.skipTurnAtCursor = skipTurnAtCursor;
         }
         if (combined.length > MAX_SYNCED_IDS_PER_SESSION) {
           // Advance watermarks strictly across the contiguous synced prefix so an in-flight streaming message is never skipped.
