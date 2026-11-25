@@ -29,3 +29,11 @@ Linux 단위·통합 테스트와 Windows Server 스모크 검증은 실제 Wind
 - 실제 Windows 10·11 직원 PC에서 사내 PyPI 미러(`pip.ini`/라우팅 및 `python.indexUrl`)를 통한 `.venv` 패키지 설치(`numpy`, `marimo` 등) 및 `python_app_preview` + `browser_check` 연계 GUI 확인
 - 실제 Windows 10·11 환경에서 `document_write`(XLSX/DOCX/PPTX/HWPX)와 `diagram_generate`(Mermaid PNG/SVG 및 `.drawio`) 산출물을 Excel/Word/PowerPoint/한컴오피스/Draw.io로 열어 서식 및 한글 폰트 확인
 - 실제 사내 LLM·임베딩 서버와 외부망 차단 환경에서의 최종 GUI 수용 확인 (`releaseReady: false` 유지)
+
+## 설치 파일과 Windows 결과
+
+제품 소스는 `fa3a630fb4699b13c45a9034a60af81ce7ffd692`입니다. Windows Server에 최종 EXE를 새로 설치해 48건 중 48건 통과, 0건 제외, 실패 0건을 확인했습니다. 0.3.16-rebuild1에서 제자리 업데이트해 사용자 스킬 원본과 참조 문서의 SHA-256이 유지됐고 제거한 등록·복구 리소스가 설치 폴더에 남지 않았습니다.
+
+설치 EXE는 1551427889 bytes, SHA-256 `5ac9b74ea922cfeb45af8ae853f0160672aadbee70377ba2a1e4a2a1c9757e38`입니다. 준비본과 추출본의 65712개 파일을 모두 대조했습니다.
+
+[실행 결과](../downloads/Ned-0.4.0-windows-offline-smoke.json) · [설치 감사](../downloads/Ned-0.4.0-installer-audit.json) · [반입 TGZ](../downloads/README.md)
