@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "version": "0.4.0-rebuild3",
+  "releaseUrl": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.4.0-rebuild3",
+  "recordedAt": "2026-11-25T04:57:36.195Z",
+  "authenticated": false,
+  "verifiedFullDownloads": true,
+  "assets": [
+    {
+      "name": "Ned-0.4.0-rebuild3-bundle-manifest.json",
+      "bytes": 682,
+      "sha256": "cb024ce2b6a5c4bfb2a543e16f4bdc81583dbfb6553db3a345e732d24c7d2dc4",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild3/Ned-0.4.0-rebuild3-bundle-manifest.json"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild3-installer-audit.json",
+      "bytes": 17163,
+      "sha256": "f7f95b40963a6002f8a85af2ffaba9156c8ef4a221c7a024bf3e44d61d0fe8a8",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild3/Ned-0.4.0-rebuild3-installer-audit.json"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild3-payload-manifest.json",
+      "bytes": 10966364,
+      "sha256": "47f57f4fc5275fd74fe42c5ddb05730f92a5e962f21dc68d1847e628fe860d6b",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild3/Ned-0.4.0-rebuild3-payload-manifest.json"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild3-win-x64.exe",
+      "bytes": 1551446671,
+      "sha256": "04cf4d54d48a8f0faca67e1ddcd6aee40d1b7ad70e487c5a7e7c267f36f48da4",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild3/Ned-0.4.0-rebuild3-win-x64.exe"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild3-win-x64.exe.sha256",
+      "bytes": 97,
+      "sha256": "2a09d38a30328628d7793b85ad5fb283ea4a0fd322085618ec41ebbe6fce32f7",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild3/Ned-0.4.0-rebuild3-win-x64.exe.sha256"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild3-windows-x64.tgz",
+      "bytes": 1931557188,
+      "sha256": "7216759fabb2a2fb9b07d736291d5c3ba3f02e65f6353f24b1548f01b1d004d9",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild3/Ned-0.4.0-rebuild3-windows-x64.tgz"
+    },
+    {
+      "name": "Ned-0.4.0-rebuild3-windows-x64.tgz.sha256",
+      "bytes": 101,
+      "sha256": "77ddf3c590e736e64377be8172e229e090a46cd07085d695ff2b80618bbab788",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.0-rebuild3/Ned-0.4.0-rebuild3-windows-x64.tgz.sha256"
+    }
+  ]
+}
