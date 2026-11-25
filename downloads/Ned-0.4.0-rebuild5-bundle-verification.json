@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "version": "0.4.0-rebuild5",
+  "sourceCommit": "35ae913afc548f50b195b2b489956bbdd54e5efa",
+  "bundleSourceCommit": "3e3781760caafc991f8e6b172bd8a6e690e8fbd8",
+  "archive": "Ned-0.4.0-rebuild5-windows-x64.tgz",
+  "bytes": 1931617782,
+  "sha256": "4408835a71ef4d81c35f1e6a7c6f67146037d096e92fe8a8d799ce749caa688b",
+  "files": {
+    "encoding": "ascii",
+    "files": 54,
+    "directories": 2
+  },
+  "allPathsAscii": true,
+  "correspondingSourcesChecked": true,
+  "installer": {
+    "name": "Ned-0.4.0-rebuild5-win-x64.exe",
+    "bytes": 1551464980,
+    "sha256": "19d42eda6e97bc3110a1f7ee296b5f58aeac8434651f3691eef52ded366ee8f9"
+  },
+  "windowsRunId": 45577047036
+}
