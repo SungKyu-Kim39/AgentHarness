@@ -31,7 +31,7 @@ export class ModelGateway {
   private server?: Server;
   private requests = new Set<AbortController>();
   constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void,
-    private skillContext?: (messages: unknown, requestBytes: number, sessionId?: string) => Promise<string | undefined>, private outputLimit = 4096, private behavior: 'ned' | 'native' = 'ned',
+    private skillContext?: (messages: unknown, requestBytes: number, sessionId?: string, parentSessionId?: string) => Promise<string | undefined>, private outputLimit = 4096, private behavior: 'ned' | 'native' = 'ned',
     private reaRequested?: (sessionId?: string, parentSessionId?: string) => boolean) {}
   async start() {
     this.server = createServer(async (req, res) => {
@@ -79,10 +79,11 @@ export class ModelGateway {
         const withoutThinking = (policy?.disableQwenThinking ?? true) && /qwen/i.test(this.config.model.id);
         if (compacting) body = summaryRequest(original, summaryLimit, false, withoutThinking);
         const sessionId = localSessionId(req.headers['x-opencode-session-id']);
+        const parentSessionId = localSessionId(req.headers['x-opencode-parent-session-id']);
         if (this.behavior === 'ned' && this.skillContext && !compacting) {
-          hideUnrequestedTools(body, this.reaRequested?.(sessionId, localSessionId(req.headers['x-opencode-parent-session-id'])));
+          hideUnrequestedTools(body, this.reaRequested?.(sessionId, parentSessionId));
         }
-        const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages, requestBytes, sessionId);
+        const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages, requestBytes, sessionId, parentSessionId);
         if (guidance && Array.isArray(body.messages)) {
           const first = body.messages[0];
           // Several OpenAI-compatible chat templates accept only one initial

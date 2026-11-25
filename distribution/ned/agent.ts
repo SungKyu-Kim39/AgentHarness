@@ -12,6 +12,7 @@ import { MessageDelivery } from './message-delivery';
 import { localStreamFetch } from '../../src/main/local-stream-fetch';
 import { permissionMode, permissionOption, permissionConfigId, type PermissionMode } from './permission-policy';
 import { verifyEditorBuffer } from './buffer-check';
+import { extractModeFromConfigOptions, formatModeConfigOptions } from '../../src/main/skill-routing';
 
 async function main() {
   const descriptor = JSON.parse(await readFile(process.argv[2], 'utf8'));
@@ -46,7 +47,7 @@ async function main() {
   };
   let editorWriter: WritableStreamDefaultWriter<any> | undefined;
   const options = (session: string, original?: any[]) => {
-    if (original) sessionOptions.set(session, original.filter(option => option.id !== permissionConfigId && !option.id.startsWith(permissionConfigId + '.')));
+    if (original) sessionOptions.set(session, formatModeConfigOptions(original.filter(option => option.id !== permissionConfigId && !option.id.startsWith(permissionConfigId + '.'))));
     return [...(sessionOptions.get(session) ?? []), permissionOption(mode, revision)];
   };
   const peer = new Peer(socket, async (method, params) => {
@@ -77,7 +78,7 @@ async function main() {
       sessionUpdate: 'available_commands_update', availableCommands: [{ name: 'compact', description: '대화 요약' }, ...skills],
     } } });
   };
-  const pending = new Map<string | number, { method: string; cwd?: string; session?: string }>();
+  const pending = new Map<string | number, { method: string; cwd?: string; session?: string; configId?: string; mode?: string }>();
   const output = new WritableStream<any>({
     async write(message) {
       let attachedSession: string | undefined;
@@ -87,7 +88,9 @@ async function main() {
         if(['session/load','session/resume'].includes(request.method)&&request.session)replaying.delete(request.session);
         if (message.result && ['session/new', 'session/load', 'session/resume', 'session/fork'].includes(request.method)) {
           const session = message.result.sessionId ?? request.session;
-          try { await peer.call('bind', { session }); trackSession(session); attachedSession = session; }
+          const sessionMode = extractModeFromConfigOptions(message.result.configOptions)
+            ?? (typeof message.result.modes?.currentModeId === 'string' ? message.result.modes.currentModeId : undefined);
+          try { await peer.call('bind', { session, ...(sessionMode ? { mode: sessionMode } : {}) }); trackSession(session); attachedSession = session; }
           catch { message = { jsonrpc: '2.0', id: message.id, error: { code: -32000, message: 'Ned session scope could not be verified' } }; }
         }
         if (request.method === 'session/prompt' && !message.error && request.session && sessions.has(request.session)) {
@@ -95,6 +98,15 @@ async function main() {
         }
         if (request.method === 'initialize' && message.result) message.result.agentInfo = { name: 'Ned', version: NED_VERSION, title: 'Ned' };
         const session = message.result?.sessionId ?? request.session;
+        if (!message.error && session && sessions.has(session)) {
+          if (request.method === 'session/set_mode' && request.mode) {
+            await peer.call('session/mode', { session, mode: request.mode }).catch(() => {});
+          } else if (request.method === 'session/set_config_option') {
+            const nextMode = extractModeFromConfigOptions(message.result?.configOptions)
+              ?? (request.configId === 'mode' ? request.mode : undefined);
+            if (nextMode) await peer.call('session/mode', { session, mode: nextMode }).catch(() => {});
+          }
+        }
         if (message.result?.configOptions && session && sessions.has(session)) {
           state(await peer.call('permissions/get'));
           message.result.configOptions = options(session, message.result.configOptions);
@@ -111,8 +123,16 @@ async function main() {
         if(!text)return;
         message={...message,params:{...message.params,update:{...update,content:{...update.content,text}}}};
       }
-      if (message.method === 'session/update' && message.params?.update?.sessionUpdate === 'config_option_update')
+      if (update?.sessionUpdate === 'current_mode_update' && typeof update.currentModeId === 'string' && sessions.has(message.params.sessionId)) {
+        await peer.call('session/mode', { session: message.params.sessionId, mode: update.currentModeId }).catch(() => {});
+      }
+      if (message.method === 'session/update' && message.params?.update?.sessionUpdate === 'config_option_update') {
+        const nextMode = extractModeFromConfigOptions(message.params.update.configOptions);
+        if (nextMode && sessions.has(message.params.sessionId)) {
+          await peer.call('session/mode', { session: message.params.sessionId, mode: nextMode }).catch(() => {});
+        }
         message.params.update.configOptions = options(message.params.sessionId, message.params.update.configOptions);
+      }
       await writer.write(message);
       if (attachedSession) await publishCommands(attachedSession);
       if (completedPromptSession) void peer.call('turn/complete', { session: completedPromptSession }).catch(() => {});
@@ -159,7 +179,17 @@ async function main() {
           if (message.method === 'session/cancel') await peer.call('cancel', { session: message.params.sessionId });
         }
         if (['session/load','session/resume'].includes(message.method)&&typeof message.params?.sessionId==='string'){delivered.reset(message.params.sessionId);replaying.add(message.params.sessionId);}
-        if (message.id !== undefined && message.method) pending.set(message.id, { method: message.method, cwd: message.params?.cwd, session: message.params?.sessionId });
+        if (message.id !== undefined && message.method) pending.set(message.id, {
+          method: message.method,
+          cwd: message.params?.cwd,
+          session: message.params?.sessionId,
+          configId: typeof message.params?.configId === 'string' ? message.params.configId : undefined,
+          mode: message.method === 'session/set_mode' && typeof message.params?.modeId === 'string'
+            ? message.params.modeId
+            : message.method === 'session/set_config_option' && message.params?.configId === 'mode' && typeof message.params?.value === 'string'
+              ? message.params.value
+              : undefined,
+        });
         controller.enqueue(message);
       } catch (error: any) {
         if (message.id !== undefined) await writer.write({ jsonrpc: '2.0', id: message.id, error: { code: -32000, message: error.message } });

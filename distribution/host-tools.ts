@@ -28,6 +28,7 @@ import { OfflineSkills } from '../src/main/skills';
 import { McpExtensions, extensionTools } from '../src/main/mcp-extensions';
 import type { Proposal, PythonConfig } from '../src/shared/contracts';
 import { savedKnowledgeId, type KnowledgeService } from '../src/main/openviking';
+import { isReaMode, reaModeRequiredWarning } from '../src/main/skill-routing';
 
 export interface ToolSpec { name: string; description: string; inputSchema: Record<string, unknown> }
 const object = (properties: Record<string, unknown>, required: string[] = []) => ({ type: 'object', properties, required, additionalProperties: false });
@@ -298,6 +299,7 @@ export class HostTools {
     request?: (session: string) => Promise<string>;
     permissionSignal?: () => AbortSignal | undefined;
     fullAccess?: () => boolean;
+    sessionMode?: (session: string) => string;
     toolRequested?: (session: string, name: string, extraContext?: string) => boolean;
     choosePython?: PythonSelector;
     locateConda?: (project: string, signal?: AbortSignal) => Promise<string | undefined>;
@@ -393,6 +395,10 @@ export class HostTools {
     if (!hostTools.some(t => t.name === name)) throw new Error('등록되지 않은 도구입니다.');
     const run = this.runs.get(session) ?? Symbol(); this.runs.set(session, run);
     const project = projectOverride ?? await this.options.project(session), files = new ProjectFiles(project);
+    if ((name === 'rea_ghidra' || name === 'rea_inspect') && this.options.sessionMode) {
+      const mode = this.options.sessionMode(session);
+      if (!isReaMode(mode)) throw new Error(reaModeRequiredWarning(mode));
+    }
     if (this.options.toolRequested && !this.options.toolRequested(session, name, extraContext)) throw new Error('이 도구는 관련 작업을 사용자가 요청했을 때 사용할 수 있습니다.');
     this.activateEditScope(session,project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);

@@ -4,11 +4,14 @@ import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
-import { hideUnrequestedTools, automaticSkillContext, reaTurnIntent, specializedToolRequested } from '../src/main/skill-routing';
+import { hideUnrequestedTools, automaticSkillContext, reaTurnIntent, specializedToolRequested, formatModeConfigOptions, extractModeFromConfigOptions, reaModeGuidance, reaModeRequiredWarning } from '../src/main/skill-routing';
 import { OfflineSkills } from '../src/main/skills';
 import { ModelGateway } from '../src/main/model-gateway';
 import { createServer } from 'node:http';
-import { NativeRuntime } from '../distribution/native-control';
+import { connect } from 'node:net';
+import { NativeRuntime, engineConfiguration } from '../distribution/native-control';
+import { AgentOwner } from '../distribution/ned/owner';
+import { Peer } from '../distribution/ned/rpc';
 import { configSchema } from '../src/shared/contracts';
 
 async function fixture(t: { after(fn: () => Promise<unknown>): void }) {
@@ -124,31 +127,39 @@ test('automaticSkillContext loads project .ned/skills and newly added global ski
 });
 
 
-test('REA continuation uses the same attached session for gateway exposure and host execution after interrupt or reconnect', async t => {
-  const base = await mkdtemp(path.join(tmpdir(), 'ned-rea-continuation-'));
+test('REA conversation mode enables REA tools immediately without keywords and warns in Plan/Build modes', async t => {
+  const base = await mkdtemp(path.join(tmpdir(), 'ned-rea-mode-'));
   const app = path.join(base, 'data'), resources = path.join(base, 'resources');
   const project = path.join(base, 'project');
   await Promise.all([app, resources, project].map(directory => mkdir(directory)));
   let forwardedTools: string[] = [];
-  const userHistory = [
-    { type: 'assistant', content: [{ type: 'text', text: '이어서 하겠습니다.' }] },
-    { type: 'user', text: '답변을 이어서 달아줘' },
-    { type: 'user', text: 'Ghidra로 파일을 분석해줘' },
-  ];
+  let forwardedSystem = '';
+  const sessionAgents: Record<string, string> = {
+    'rea-session': 'rea',
+    'build-session': 'build',
+    'plan-session': 'plan',
+  };
   const server = createServer(async (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     if (req.url?.endsWith('/chat/completions')) {
       const chunks = [];
       for await (const chunk of req) chunks.push(chunk);
       const body = JSON.parse(Buffer.concat(chunks).toString());
-      forwardedTools = body.tools.map((tool: {function: {name:string}}) => tool.function.name);
+      forwardedTools = (body.tools ?? []).map((tool: { function: { name: string } }) => tool.function.name);
+      const sys = (body.messages ?? []).find((m: any) => m.role === 'system');
+      forwardedSystem = typeof sys?.content === 'string' ? sys.content : '';
       res.end('{"choices":[{"message":{"content":"ok"}}]}');
-    } else if (req.url?.includes('/message?')) res.end(JSON.stringify({ data: userHistory }));
-    else if (req.url?.endsWith('/interrupt')) res.end('{}');
-    else res.end(JSON.stringify({ data: { id: req.url?.split('/').at(-1), location: { directory: project } } }));
+    } else if (req.url?.includes('/message?')) {
+      res.end(JSON.stringify({ data: [] }));
+    } else if (req.url?.endsWith('/interrupt')) {
+      res.end('{}');
+    } else {
+      const sid = req.url?.split('/').at(-1) ?? '';
+      res.end(JSON.stringify({ data: { id: sid, agent: sessionAgents[sid] ?? 'build', location: { directory: project } } }));
+    }
   });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-  const port = (server.address() as { port:number }).port;
+  const port = (server.address() as { port: number }).port;
   const address = `http://127.0.0.1:${port}`;
   const runtime = new NativeRuntime(app, resources, { isEncryptionAvailable: () => true, encryptString: Buffer.from, decryptString: bytes => bytes.toString() });
   t.after(async () => {
@@ -161,44 +172,125 @@ test('REA continuation uses the same attached session for gateway exposure and h
   runtime['backend'] = { url: address, password: 'fixture' };
   await runtime['subagents']!.recover();
   await runtime.authorizeProject(project);
-  runtime.onSessionActivated('rea-session', await runtime.canonicalProject(project));
-  runtime.onSessionActivated('other-session', await runtime.canonicalProject(project));
+  const canon = await runtime.canonicalProject(project);
+  runtime.onSessionActivated('rea-session', canon, 'rea');
+  runtime.onSessionActivated('build-session', canon, 'build');
+  runtime.onSessionActivated('plan-session', canon, 'plan');
   const host = runtime['tools']!;
   host['ghidra'].call = async () => 'SYNTHETIC_REA_RESULT';
   const { gateway } = runtime['models'][0];
-  const rea = 'ned_host_rea_ghidra';
-  async function check(session: string, prompt: string, allowed: boolean) {
-    await runtime.setTurnText(session, prompt);
+  const reaTools = ['ned_host_read_file', 'ned_host_rea_ghidra', 'ned_host_rea_inspect'].map(name => ({ type: 'function', function: { name } }));
+
+  async function checkGateway(session: string, prompt: string, parent?: string) {
+    forwardedTools = [];
+    forwardedSystem = '';
+    if (!parent) await runtime.setTurnText(session, prompt);
     const response = await fetch(gateway.baseUrl + '/chat/completions', {
       method: 'POST',
-      headers: { Authorization: 'Bearer ' + gateway.token, 'Content-Type': 'application/json', 'X-OpenCode-Session-Id': session },
-      body: JSON.stringify({ model: 'test', messages: [{ role: 'user', content: prompt }], tools: [{ type: 'function', function: { name: rea } }] }),
+      headers: {
+        Authorization: 'Bearer ' + gateway.token,
+        'Content-Type': 'application/json',
+        'X-OpenCode-Session-Id': session,
+        ...(parent ? { 'X-OpenCode-Parent-Session-Id': parent } : {}),
+      },
+      body: JSON.stringify({ model: 'test', messages: [{ role: 'system', content: 'Host base policy' }, { role: 'user', content: prompt }], tools: reaTools }),
     });
     assert.equal(response.status, 200);
     await response.text();
-    assert.equal(forwardedTools.includes(rea), allowed);
-    const result = host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, session);
-    if (allowed) assert.equal(await result, 'SYNTHETIC_REA_RESULT');
-    else await assert.rejects(result, /관련 작업/);
   }
 
-  await check('rea-session', 'Ghidra로 파일을 분석해줘', true);
+  // 1. In REA mode, REA tools are exposed and executable immediately WITHOUT any REA/Ghidra keywords.
+  await checkGateway('rea-session', '이 폴더의 핵심 구조를 파악해줘');
+  assert.ok(forwardedTools.includes('ned_host_rea_ghidra'));
+  assert.ok(forwardedTools.includes('ned_host_rea_inspect'));
+  assert.doesNotMatch(forwardedSystem, /REA 대화 모드 전환 필요/);
+  assert.equal(await host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'rea-session'), 'SYNTHETIC_REA_RESULT');
+
+  // 2. Research child under an REA parent session also sees REA tools.
+  await checkGateway('child-under-rea', '함수를 조사해줘', 'rea-session');
+  assert.ok(forwardedTools.includes('ned_host_rea_ghidra'));
+  assert.ok(forwardedTools.includes('ned_host_rea_inspect'));
+
+  // 3. Survives interrupt and reconnect (recovers agent='rea' from GET /api/session/:id).
   await runtime.interruptSession('rea-session');
   host.resumeSession('rea-session');
-  await check('rea-session', '답변을 이어서 달아줘', true);
-  await check('rea-session', '끊긴 작업을 마저 해줘', true);
-  await check('rea-session', '계속해줘', true);
+  await checkGateway('rea-session', '계속해줘');
+  assert.ok(forwardedTools.includes('ned_host_rea_ghidra'));
+  assert.equal(await host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'rea-session'), 'SYNTHETIC_REA_RESULT');
   runtime.onSessionDisconnected('rea-session');
-  runtime.onSessionActivated('rea-session', await runtime.canonicalProject(project));
-  await check('rea-session', '아까 하던 분석을 이어서 진행해줘', true);
-  await check('rea-session', 'Ghidra는 사용하지 말고 결과를 정리해줘', false);
-  await check('rea-session', '이어서 해줘', false);
-  await check('other-session', '프로젝트 README를 정리해줘', false);
-  await check('other-session', '계속해줘', false);
+  runtime.onSessionActivated('rea-session', canon);
+  await checkGateway('rea-session', '이 파일 좀 살펴봐줘');
+  assert.ok(forwardedTools.includes('ned_host_rea_ghidra'));
+  assert.equal(await host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'rea-session'), 'SYNTHETIC_REA_RESULT');
+
+  // 4. In Build mode: REA tools are hidden, REA requests inject mode-switch warning, and host calls reject with Build->REA warning.
+  await checkGateway('build-session', 'Ghidra로 바이너리를 분석해줘');
+  assert.ok(!forwardedTools.includes('ned_host_rea_ghidra'));
+  assert.ok(!forwardedTools.includes('ned_host_rea_inspect'));
+  assert.match(forwardedSystem, /REA 대화 모드 전환 필요/);
+  assert.match(forwardedSystem, /Build/);
+  assert.match(forwardedSystem, /대화 모드를 REA로 변경/);
+  await assert.rejects(host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'build-session'), /REA 대화 모드에서만.*Build.*대화 모드를 REA로 변경/);
+  await assert.rejects(host.call('rea_inspect', { path: 'fixture.pyc', kind: 'python-pyc' }, 'build-session'), /REA 대화 모드에서만.*Build.*대화 모드를 REA로 변경/);
+
+  // 5. In Plan mode: REA tools are hidden, binary analysis requests inject Plan->REA warning, and host calls reject with Plan->REA warning.
+  await checkGateway('plan-session', 'sample.exe 분석해줘');
+  assert.ok(!forwardedTools.includes('ned_host_rea_ghidra'));
+  assert.match(forwardedSystem, /REA 대화 모드 전환 필요/);
+  assert.match(forwardedSystem, /Plan/);
+  await assert.rejects(host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'plan-session'), /REA 대화 모드에서만.*Plan.*대화 모드를 REA로 변경/);
+
+  // 6. Ordinary Build/Plan prompts and explicit opt-out prompts do NOT emit spurious REA warnings.
+  await checkGateway('build-session', 'README 문구를 정리해줘');
+  assert.doesNotMatch(forwardedSystem, /REA 대화 모드 전환 필요/);
+  await checkGateway('build-session', 'Ghidra는 사용하지 말고 코드만 정리해줘');
+  assert.doesNotMatch(forwardedSystem, /REA 대화 모드 전환 필요/);
+
+  // 7. Switching an REA session back to Plan immediately blocks REA tools with the Plan->REA warning.
+  sessionAgents['rea-session'] = 'plan';
+  runtime.setSessionMode('rea-session', 'plan');
+  await checkGateway('rea-session', '이어서 분석해줘');
+  assert.ok(!forwardedTools.includes('ned_host_rea_ghidra'));
+  await assert.rejects(host.call('rea_ghidra', { path: 'fixture.exe', operation: 'functions' }, 'rea-session'), /Plan.*대화 모드를 REA로 변경/);
+
+  // 8. Pure helpers & AgentOwner bind(mode) / session/mode RPC.
+  const formatted = formatModeConfigOptions([{
+    id: 'mode', name: 'Session Mode', category: 'mode', type: 'select', currentValue: 'rea',
+    options: [{ value: 'build', name: 'Build' }, { value: 'plan', name: 'Plan' }, { value: 'rea', name: 'rea' }],
+  }]);
+  assert.equal(formatted[0].options.find((o: any) => o.value === 'rea')?.name, 'REA');
+  assert.equal(extractModeFromConfigOptions(formatted), 'rea');
+  assert.match(reaModeRequiredWarning('plan'), /Plan.*대화 모드를 REA로 변경/);
+  assert.equal(reaModeGuidance([{ role: 'user', content: 'Ghidra 분석해줘' }], 'rea'), undefined);
   assert.equal(reaTurnIntent('ned_host_rea_ghidra로 정적 분석해줘'), 'request');
   assert.equal(reaTurnIntent('ned_host_rea_ghidra는 사용하지 마'), 'reset');
   assert.equal(reaTurnIntent('Ghidra 분석은 그만'), 'reset');
   assert.equal(reaTurnIntent('이어서 다른 작업을 시작해줘'), 'reset');
+
+  const owner = new AgentOwner(app, runtime, { url: address, password: 'fixture' }, async () => true);
+  t.after(() => owner.close());
+  const descriptorPath = await owner.start();
+  const { readFile } = await import('node:fs/promises');
+  const descriptor = JSON.parse(await readFile(descriptorPath, 'utf8'));
+  const sock = connect(descriptor.socket);
+  const peer = new Peer(sock, async () => ({}));
+  t.after(() => peer.close());
+  await peer.call('hello', { token: descriptor.token });
+  await peer.call('authorize', { cwd: project });
+  sessionAgents['owner-session'] = 'build';
+  await peer.call('bind', { session: 'owner-session', mode: 'build' });
+  assert.equal(runtime.currentSessionMode('owner-session'), 'build');
+  await peer.call('session/mode', { session: 'owner-session', mode: 'rea' });
+  assert.equal(runtime.currentSessionMode('owner-session'), 'rea');
+  await peer.call('session/mode', { session: 'owner-session', mode: 'plan' });
+  assert.equal(runtime.currentSessionMode('owner-session'), 'plan');
+
+  // Verify engineConfiguration registers Build, Plan, and primary REA agents.
+  const cfg = configSchema.parse({ model: { baseUrl: address + '/v1', id: 'test', apiKey: 'synthetic-only' } });
+  const engine = engineConfiguration(cfg, runtime['models']);
+  assert.equal(engine.agents.rea.mode, 'primary');
+  assert.ok(engine.agents.build.system.includes('REA conversation mode'));
+  assert.ok(engine.agents.plan.system.includes('REA conversation mode'));
 });
 
 test('specialized tools stay aligned across compaction prompts, interruptSession, and reconnects', async t => {
@@ -228,7 +320,7 @@ test('specialized tools stay aligned across compaction prompts, interruptSession
     ],
     'rea-compact-s': [
       { type: 'user', text: 'You MUST summarize the conversation above into a structured summary' },
-      { type: 'user', text: 'Ghidra로 바이너리 분석해줘' },
+      { type: 'user', text: '이 파일 구조 봐줘' },
     ],
   };
   const server = createServer(async (req, res) => {
@@ -239,7 +331,8 @@ test('specialized tools stay aligned across compaction prompts, interruptSession
     } else if (req.url?.endsWith('/interrupt')) {
       res.end('{}');
     } else {
-      res.end(JSON.stringify({ data: { id: req.url?.split('/').at(-1), location: { directory: project } } }));
+      const sid = req.url?.split('/').at(-1) ?? '';
+      res.end(JSON.stringify({ data: { id: sid, agent: sid === 'rea-compact-s' ? 'rea' : 'build', location: { directory: project } } }));
     }
   });
   await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
@@ -270,7 +363,7 @@ test('specialized tools stay aligned across compaction prompts, interruptSession
   await runtime.setTurnText('doc-s', '이제 README 문구만 다듬어줘');
   assert.equal(runtime['tools']!['options'].toolRequested!('doc-s', 'document_write'), false);
 
-  // Compaction prompt in history must NOT break REA continuation after reconnect.
+  // Compaction prompt in history must NOT break REA mode recovery after reconnect.
   await runtime.setTurnText('rea-compact-s', '이어서 해줘');
   assert.equal(runtime['tools']!['options'].toolRequested!('rea-compact-s', 'rea_ghidra'), true);
 });

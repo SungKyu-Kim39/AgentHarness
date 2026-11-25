@@ -24,10 +24,17 @@ test('initial profile includes the exact Korean block; repeated startup preserve
  assert.equal(await readFile(path.join(directory, 'AGENTS.md'), 'utf8'), crlf);
  const config = configSchema.parse({ model: { baseUrl: 'http://127.0.0.1:19350/v1', apiKey: 'synthetic', id: 'coding' } });
  const models: any = [{ provider: 'intranet', name: 'Coding', id: 'coding', gateway: { baseUrl: 'http://127.0.0.1:19351/v1', token: 'local' } }];
- const system = engineConfiguration(config, models).agents.build.system;
+ const engine = engineConfiguration(config, models);
+ const system = engine.agents.build.system;
  assert.ok(system.includes('\n\n' + koreanInstructions + '\n\n'));
  assert.equal(system.split(koreanInstructions).length - 1, 1);
  assert.ok(system.includes(automaticSkillPolicy));
+ assert.match(system, /REA conversation mode/);
+ assert.equal(engine.agents.rea.mode, 'primary');
+ assert.match(engine.agents.rea.system, /REA \(Reverse Engineering & Analysis\) conversation mode/);
+ assert.ok(engine.agents.rea.system.includes(koreanInstructions));
+ assert.ok(engine.agents.plan.system.includes(koreanInstructions));
+ assert.match(engine.agents.plan.system, /switch the conversation mode to REA/i);
 });
 
 test('missing instruction file is created, while a linked file outside the profile is preserved', async t => {

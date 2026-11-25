@@ -32,10 +32,33 @@ function text(content: unknown): string {
 }
 
 const reaTrigger = /(?:(?:ned_host_)?rea_(?:ghidra|inspect)\b|\bghidra\b|\brea\b|리버싱|역공학|디컴파일|디스어셈블|decompil|disassembl|binary.*analy|바이너리.*분석)/i;
+const reaBinaryPrompt = /(?:\.(?:exe|dll|so|elf|sys|bin|pyc)\b.{0,30}(?:분석|역공학|디컴파일|디스어셈블|리버싱|함수\s*(?:분석|추출|찾)|inspect|analyz|reverse)|(?:분석|역공학|디컴파일|디스어셈블|리버싱).{0,30}\.(?:exe|dll|so|elf|sys|bin|pyc)\b)/i;
 const reaOptOut = /(?:\b(?:ned_host_)?rea_(?:ghidra|inspect)\b|\b(?:rea|ghidra)\b|리버싱|역공학|디컴파일).{0,30}(?:쓰지|사용하지|실행하지|하지\s*마|없이|말고|끄|그만|금지|중지\s*해|중단\s*해)|(?:do not|don't|never|without|stop using)\s+(?:use\s+)?(?:(?:ned_host_)?rea_(?:ghidra|inspect)|rea|ghidra)\b/i;
 const taskSwitch = /(?:대신|말고|다른\s*(?:작업|주제|프로젝트|파일)|그만|instead|new topic|different task)/i;
 const continuation = /^(?:(?:아까|지금|이전|직전|중단된|끊긴|하던|남은|방금|그|네|응|답변|응답|작업|분석|정리|내용|결과)(?:을|를|은|는|이|가)?\s*[,.:]?\s*){0,8}(?:이어서|이어\s*(?:서|줘|주세요|가|해)|계속(?:\s|해|해서|$)|마저)|^(?:(?:please|yes|ok|okay)[, ]+)?(?:continue|resume|go on|carry on)\b/i;
 const compactionPrompt = /^(?:You MUST summarize the conversation above into a structured summary|Update the existing checkpoint in the conversation above into one consolidated summary|The previous response did not fill in the required summary template)/;
+
+export function normalizeConversationMode(mode?: string): string {
+  const value = typeof mode === 'string' ? mode.trim().toLowerCase() : '';
+  return value || 'build';
+}
+
+export function isReaMode(mode?: string): boolean {
+  return normalizeConversationMode(mode) === 'rea';
+}
+
+export function conversationModeLabel(mode?: string): string {
+  const normalized = normalizeConversationMode(mode);
+  if (normalized === 'rea') return 'REA';
+  if (normalized === 'plan') return 'Plan';
+  if (normalized === 'build') return 'Build';
+  return mode?.trim() || 'Build';
+}
+
+export function reaModeRequiredWarning(currentMode?: string): string {
+  const label = conversationModeLabel(currentMode);
+  return `REA 도구(rea_ghidra, rea_inspect)는 REA 대화 모드에서만 사용할 수 있습니다. 현재 대화 모드(${label})에서는 실행할 수 없으므로 대화 모드를 REA로 변경한 뒤 다시 시도하세요.`;
+}
 
 export function isCompactionPrompt(input: string): boolean {
   return compactionPrompt.test(input.trim());
@@ -55,6 +78,50 @@ export function reaTurnIntent(request: string): 'request' | 'continue' | 'reset'
   if (reaOptOut.test(candidate)) return 'reset';
   if (reaTrigger.test(candidate)) return 'request';
   return isContinuationTurn(request) ? 'continue' : 'reset';
+}
+
+export function reaPromptNeedsModeWarning(request: string): boolean {
+  const candidate = requestText(request).replace(/^사용자가 선택한 Ned 스킬 /, '');
+  if (!candidate || reaOptOut.test(candidate)) return false;
+  return reaTrigger.test(candidate) || reaBinaryPrompt.test(candidate);
+}
+
+export function reaModeGuidance(input: unknown, currentMode?: string): string | undefined {
+  if (isReaMode(currentMode) || !Array.isArray(input)) return undefined;
+  const userTexts = (input as Message[])
+    .filter(message => message?.role === 'user')
+    .map(message => text(message.content))
+    .filter(raw => raw.trim() && !isCompactionPrompt(raw));
+  if (!userTexts.length) return undefined;
+  const latest = userTexts.at(-1)!;
+  if (reaOptOut.test(requestText(latest))) return undefined;
+  let candidate = latest;
+  if (!reaPromptNeedsModeWarning(latest) && isContinuationTurn(latest)) {
+    let anchor = userTexts.length - 1;
+    while (anchor > 0 && isContinuationTurn(userTexts[anchor])) anchor--;
+    candidate = userTexts[anchor];
+  }
+  if (!reaPromptNeedsModeWarning(candidate)) return undefined;
+  const label = conversationModeLabel(currentMode);
+  return `[REA 대화 모드 전환 필요] 현재 대화 모드는 ${label}입니다. REA 도구(rea_ghidra, rea_inspect)는 REA 대화 모드에서만 사용할 수 있습니다. 사용자에게 "현재 대화 모드가 ${label}이므로 REA 도구를 사용할 수 없습니다. 대화 모드를 REA로 변경한 뒤 다시 요청해 주세요."라고 명확히 경고하고 안내하세요. REA 도구를 실행했거나 분석을 완료한 것처럼 답하지 마세요.`;
+}
+
+export function formatModeConfigOptions<T extends Record<string, any>>(list: T[]): T[] {
+  return list.map(option => {
+    if ((option?.id !== 'mode' && option?.category !== 'mode') || !Array.isArray(option.options)) return option;
+    return {
+      ...option,
+      options: option.options.map((entry: any) =>
+        typeof entry?.value === 'string' && entry.value.toLowerCase() === 'rea' ? { ...entry, name: 'REA' } : entry
+      ),
+    };
+  });
+}
+
+export function extractModeFromConfigOptions(list?: unknown): string | undefined {
+  if (!Array.isArray(list)) return undefined;
+  const item = list.find((option: any) => option?.id === 'mode' || option?.category === 'mode');
+  return typeof item?.currentValue === 'string' && item.currentValue.trim() ? item.currentValue.trim() : undefined;
 }
 
 export const specializedTools = [
