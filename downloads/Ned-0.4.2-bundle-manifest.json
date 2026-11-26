@@ -1,0 +1,20 @@
+{
+  "product": "Ned",
+  "version": "0.4.2",
+  "auditSourceCommit": "cee6ea0778e7ed477f0bef109907ce7449c54cbb",
+  "bundleSourceCommit": "3345796383d6d38022997de157c973a911442385",
+  "sourceCommit": "cee6ea0778e7ed477f0bef109907ce7449c54cbb",
+  "archive": "Ned-0.4.2-windows-x64.tgz",
+  "bytes": 1931722432,
+  "sha256": "f2758a1f603d87482a3ee823e64313fbf9feb756878ba23325e896c9e42f437e",
+  "files": {
+    "encoding": "ascii",
+    "files": 54,
+    "directories": 2
+  },
+  "installer": {
+    "name": "Ned-0.4.2-win-x64.exe",
+    "bytes": 1551493751,
+    "sha256": "cf3a66fcf7aa7c36b3b828c527b1d2e2839110a98e4a7f42920cb091f067392f"
+  }
+}
