@@ -157,7 +157,18 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $install = Join-Path $env:RUNNER_TEMP 'ned-smoke\missing-parent\Ned'
           if ((Split-Path $env:NED_TEST_NODE) -ne $install) { throw 'Unexpected disposable installer path' }
-          $baseline = if ($env:NED_ARTIFACT_VERSION -eq '0.3.13') { '0.3.12-rebuild2' } elseif ($env:NED_ARTIFACT_VERSION -eq '0.4.0') { '0.3.16-rebuild1' } elseif ($env:NED_ARTIFACT_VERSION -match '^(0\.[34]\.\d+)-rebuild(\d+)$') { $n = [int]$Matches[2]; if ($n -gt 1) { "$($Matches[1])-rebuild$($n - 1)" } else { $Matches[1] } } elseif ($env:NED_ARTIFACT_VERSION -match '^0\.([34])\.(\d+)$') { "0.$($Matches[1]).$([int]$Matches[2] - 1)" } else { throw "Unsupported artifact version: $env:NED_ARTIFACT_VERSION" }
+          $baseline = switch -Regex ($env:NED_ARTIFACT_VERSION) {
+            '^0\.3\.13$' { '0.3.12-rebuild2'; break }
+            '^0\.4\.0$' { '0.3.16-rebuild1'; break }
+            '^0\.4\.1$' { '0.4.0-rebuild6'; break }
+            '^(0\.[34]\.\d+)-rebuild(\d+)$' { $n = [int]$Matches[2]; if ($n -gt 1) { "$($Matches[1])-rebuild$($n - 1)" } else { $Matches[1] }; break }
+            '^0\.([34])\.(\d+)$' { "0.$($Matches[1]).$([int]$Matches[2] - 1)"; break }
+            default { throw "Unsupported artifact version: $env:NED_ARTIFACT_VERSION" }
+          }
+          $verifyUninstallPreservation = $env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild6','0.4.1')
+          $verifyInstallFolderPreservation = $verifyUninstallPreservation -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5'
+          $verifyTopLevelRestore = $verifyInstallFolderPreservation -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild4'
+          $verifyInterruptedUpdate = $verifyTopLevelRestore -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild3'
           $previous = Join-Path $env:RUNNER_TEMP "Ned-$baseline-previous.exe"
           $audit = Get-Content "downloads/Ned-$baseline-installer-audit.json" -Raw | ConvertFrom-Json
           $url = "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v$baseline/Ned-$baseline-win-x64.exe"
@@ -187,7 +198,7 @@ jobs:
             if (!(Test-Path -LiteralPath $file)) { Set-Content -LiteralPath $file -Value 'Ned installer preservation fixture' }
             $file
           }
-          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild5','0.4.0-rebuild6')) {
+          if ($verifyInstallFolderPreservation) {
             $extra = Join-Path $install 'user-file-fixture.txt'
             Set-Content -LiteralPath $extra -Value 'Ned does not own this file'
             $savedPaths = @($savedPaths) + @($extra)
@@ -197,11 +208,11 @@ jobs:
           }
           $before = Get-FileHash -LiteralPath (@($main,$reference)+$savedPaths)
           $interruptedUpgradeRecovered = $false
-          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild3','0.4.0-rebuild4','0.4.0-rebuild5','0.4.0-rebuild6')) {
+          if ($verifyInterruptedUpdate) {
             $backup = Join-Path $install '.ned-upgrade-backup'
             New-Item -ItemType Directory -Path $backup | Out-Null
-            if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild4','0.4.0-rebuild5','0.4.0-rebuild6')) {
-              if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild5','0.4.0-rebuild6')) {
+            if ($verifyTopLevelRestore) {
+              if ($verifyInstallFolderPreservation) {
                 Move-Item -LiteralPath $legacyExtra -Destination $backup
               }
               # Simulate partial rollback failure: resources already restored to live,
@@ -274,10 +285,10 @@ jobs:
           $proof | Add-Member -NotePropertyName userGlobalSkillsPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName userDataPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName interruptedUpgradeRecovered -NotePropertyValue $interruptedUpgradeRecovered
-          if ($env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild5','0.4.0-rebuild6')) {
+          if ($verifyInstallFolderPreservation) {
             $proof | Add-Member -NotePropertyName installFolderUserFilesPreserved -NotePropertyValue $true
           }
-          if ($env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild6') {
+          if ($verifyUninstallPreservation) {
             $unrestored = Join-Path $backup 'unrecovered-fixture.txt'
             New-Item -ItemType Directory -Path $backup | Out-Null
             Set-Content -LiteralPath $unrestored -Value 'Unrecovered user backup fixture'
