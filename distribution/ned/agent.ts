@@ -13,6 +13,7 @@ import { localStreamFetch } from '../../src/main/local-stream-fetch';
 import { permissionMode, permissionOption, permissionConfigId, type PermissionMode } from './permission-policy';
 import { verifyEditorBuffer } from './buffer-check';
 import { extractModeFromConfigOptions, formatModeConfigOptions } from '../../src/main/skill-routing';
+import { mcpPromptWithTicket, userMcpCommandPattern } from '../../src/shared/user-mcp';
 
 async function main() {
   const descriptor = JSON.parse(await readFile(process.argv[2], 'utf8'));
@@ -58,6 +59,10 @@ async function main() {
       } });
       return {};
     }
+    if (method === 'mcpChanged') {
+      if (editorWriter) await Promise.all([...sessions].map(publishCommands));
+      return {};
+    }
     if (method !== 'checkBuffer' || !sessions.has(params?.session) || !acp || !canRead) throw new Error('Editor buffer check unavailable');
     return verifyEditorBuffer(
       () => acp.client.request(methods.client.fs.readTextFile, { sessionId: params.session, path: params.path },
@@ -72,19 +77,28 @@ async function main() {
   const stream = ndJsonStream(Writable.toWeb(process.stdout), Readable.toWeb(process.stdin));
   const writer = stream.writable.getWriter();
   editorWriter = writer;
+  const commandUpdates = new Map<string, symbol>();
   const publishCommands = async (sessionId: string) => {
-    const skills = await peer.call('skills/list', { session: sessionId }).catch(() => []);
+    const update = Symbol(); commandUpdates.set(sessionId, update);
+    const [skills, mcp] = await Promise.all([
+      peer.call('skills/list', { session: sessionId }).catch(() => []),
+      peer.call('mcp/commands', { session: sessionId }).catch(() => []),
+    ]);
+    if (commandUpdates.get(sessionId) !== update) return;
+    commandUpdates.delete(sessionId);
+    if (!sessions.has(sessionId)) return;
     await writer.write({ jsonrpc: '2.0', method: 'session/update', params: { sessionId, update: {
-      sessionUpdate: 'available_commands_update', availableCommands: [{ name: 'compact', description: '대화 요약' }, ...skills],
+      sessionUpdate: 'available_commands_update', availableCommands: [{ name: 'compact', description: '대화 요약' }, ...skills, ...mcp],
     } } });
   };
-  const pending = new Map<string | number, { method: string; cwd?: string; session?: string; mode?: string }>();
+  const pending = new Map<string | number, { method: string; cwd?: string; session?: string; mode?: string; mcpTicket?: string }>();
   const output = new WritableStream<any>({
     async write(message) {
       let attachedSession: string | undefined;
       let completedPromptSession: string | undefined;
       if (!message.method && pending.has(message.id)) {
         const request = pending.get(message.id)!; pending.delete(message.id);
+        if (request.mcpTicket && request.session) await peer.call('mcp/finish', { session: request.session, ticket: request.mcpTicket }).catch(() => {});
         if(['session/load','session/resume'].includes(request.method)&&request.session)replaying.delete(request.session);
         if (message.result && ['session/new', 'session/load', 'session/resume', 'session/fork'].includes(request.method)) {
           const session = message.result.sessionId ?? request.session;
@@ -147,6 +161,7 @@ async function main() {
   });
   const input = stream.readable.pipeThrough(new TransformStream<any, any>({
     async transform(message, controller) {
+      let mcpTicket: string | undefined;
       try {
         if (message.method === 'initialize') canRead = message.params?.clientCapabilities?.fs?.readTextFile === true;
         if (message.method?.startsWith('session/')) {
@@ -167,7 +182,15 @@ async function main() {
             const { sessionId, prompt } = message.params;
             const first = prompt?.[0];
             const skill = first?.type === 'text' ? /^\s*\/skill-([a-z0-9]+(?:-[a-z0-9]+)*)(?:\s|$)/.exec(first.text) : null;
-            if (skill) {
+            const mcp = first?.type === 'text' ? userMcpCommandPattern.exec(first.text) : null;
+            if (mcp) {
+              const request = first.text.slice(mcp[0].length).trim();
+              if (!request && !prompt.slice(1).some((part: any) => part.type === 'text' && part.text?.trim())) throw Error('이 MCP로 처리할 요청을 슬래시 명령 뒤에 입력하세요.');
+              if (message.id === undefined) throw Error('사용자 MCP 요청을 확인할 수 없습니다.');
+              mcpTicket = await peer.call('mcp/prepare', { session: sessionId, id: mcp[1] });
+            } else if (first?.type === 'text' && /^\s*\/mcp-/.test(first.text)) {
+              throw new Error('사용할 MCP 명령은 / 목록에서 확인하세요.');
+            } else if (skill) {
               const guidance = await peer.call('skills/read', { session: sessionId, id: skill[1] });
               const followUp = first.text.slice(skill[0].length).trim();
               prompt[0] = { ...first, text: '사용자가 선택한 Ned 스킬 /skill-' + skill[1] + (followUp ? '\n요청: ' + followUp : '') +
@@ -180,6 +203,7 @@ async function main() {
               ? ['/skill-' + skill[1], first.text.slice(skill[0].length).trim(), ...rawBlocks.slice(1)].filter(Boolean).join('\n')
               : rawBlocks.join('\n');
             await peer.call('turn/text', { session: sessionId, text: turnSummary.slice(0, 16000) });
+            if (mcpTicket) prompt[0] = { ...first, text: mcpPromptWithTicket(mcpTicket, first.text) };
             await publishCommands(sessionId);
           }
           if (message.method === 'session/cancel') await peer.call('cancel', { session: message.params.sessionId });
@@ -189,6 +213,7 @@ async function main() {
           method: message.method,
           cwd: message.params?.cwd,
           session: message.params?.sessionId,
+          mcpTicket,
           mode: message.method === 'session/set_mode' && typeof message.params?.modeId === 'string'
             ? message.params.modeId
             : message.method === 'session/set_config_option' && message.params?.configId === 'mode' && typeof message.params?.value === 'string'
@@ -197,6 +222,7 @@ async function main() {
         });
         controller.enqueue(message);
       } catch (error: any) {
+        if (mcpTicket) await peer.call('mcp/finish', { session: message.params.sessionId, ticket: mcpTicket }).catch(() => {});
         if (message.id !== undefined) await writer.write({ jsonrpc: '2.0', id: message.id, error: { code: -32000, message: error.message } });
       }
     },

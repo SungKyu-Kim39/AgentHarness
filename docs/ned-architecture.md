@@ -1,6 +1,6 @@
 # Ned의 구성과 데이터 흐름
 
-Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.4.1 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
+Ned는 Zed 편집기, 전용 OpenCode 엔진, 도구와 서비스를 관리하는 호스트로 구성됩니다. 직원이 IDE와 에이전트, 지식 서버를 각각 설치하지 않아도 사용할 수 있도록 한 배포판입니다. 현재 설명은 0.4.2 기준이며, OpenCode Desktop 화면을 사용하던 L-Vibe 0.2.7은 이전 구성으로 보관합니다.
 
 Zed는 코드 편집과 탐색, 대화 화면을 제공합니다. Ned Agent를 선택하면 OpenCode가 세션을 진행하고 필요한 호스트 도구를 호출합니다. 기본 Zed Agent를 선택하면 Zed 자체 하네스가 도구를 선택·실행하며 OpenCode나 Ned ACP를 사용하지 않습니다. Ned 호스트는 설정과 키, 승인, 프로젝트 접근, 프로세스 실행·종료와 사내 모델 연결을 관리합니다. Aegis·Conductor, 스킬 79개, OpenViking, Serena, Graphify, REA, Workspace Tools(0.4.0)와 MCP도 이 호스트를 통해 연결합니다.
 
@@ -93,7 +93,7 @@ Windows ACP 실행은 Zed → 번들 Python 콘솔 감독 프로세스 → Elect
 
 Zed는 주로 GPL-3.0-or-later이며 Apache-2.0 구성 요소도 있습니다. 대응 소스와 제3자 고지를 함께 제공하며, Ned 호스트의 라이선스와 구분합니다. 최소 OS는 Windows 10 1903 이상·Windows 11 22H2 이상 x64입니다.
 
-Windows Server 설치와 실제 사내 Windows GUI·모델·네트워크 검증의 범위는 버전별 기록에서 확인합니다. [0.4.1 검증 기록](validation-0.4.1.md)
+Windows Server 설치와 실제 사내 Windows GUI·모델·네트워크 검증의 범위는 버전별 기록에서 확인합니다. [0.4.2 검증 기록](validation-0.4.2.md)
 
 ## 편집기 표시와 Astryx
 

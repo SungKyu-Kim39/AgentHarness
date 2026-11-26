@@ -63,7 +63,7 @@ export async function refreshReleaseHost(root,cache,staged,version,sourceCommit)
  execFileSync(process.execPath,[path.join(root,'scripts/prepare-acp.mjs')],{cwd:root,stdio:'inherit'});
  execFileSync(process.execPath,[path.join(root,'scripts/ned-build.mjs')],{cwd:root,stdio:'inherit'});
  const app=path.join(cache,'release-asar');await rm(app,{recursive:true,force:true});await mkdir(app,{recursive:true});
- for(const name of ['main.cjs','studio-preload.cjs','package.json'])await cp(path.join(cache,'app',name),path.join(app,name));
+ for(const name of ['main.cjs','studio-preload.cjs','user-mcp-preload.cjs','package.json'])await cp(path.join(cache,'app',name),path.join(app,name));
  const smoke=verifyBundledHost(await readFile(path.join(app,'main.cjs')));
  // Fully bundled host needs only Electron/builtins: do not copy unused React/CLI development dependencies into ASAR.
  await createPackage(app,path.join(staged,'resources/app.asar'));

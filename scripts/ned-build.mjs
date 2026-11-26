@@ -64,6 +64,7 @@ if (process.argv[2] !== 'agent') {
     alias: hostAliases,
     define: { NED_VERSION: JSON.stringify(version+(process.env.NED_BUILD_REVISION?" · "+process.env.NED_BUILD_REVISION:"")) } });
   await build({ ...common, entryPoints: [path.join(root, 'distribution/ned/studio-preload.ts')], outfile: path.join(output, 'studio-preload.cjs') });
+  await build({ ...common, entryPoints: [path.join(root, 'distribution/ned/user-mcp-preload.ts')], outfile: path.join(output, 'user-mcp-preload.cjs') });
   verifyBundledHost(await readFile(path.join(output, 'main.cjs')));
   await writeFile(path.join(output, 'package.json'), JSON.stringify({ name: 'ned', productName: 'Ned', version, main: 'main.cjs', private: true, description: 'Managed offline Zed and OpenCode workspace', author: 'SungKyu Kim', license: 'MIT' }, null, 2));
 }

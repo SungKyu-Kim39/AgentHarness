@@ -4,6 +4,7 @@ import path from 'node:path';
 import { atomicJSON, type Redactor } from './config';
 import type { KnowledgeService, MemoryProgress, MemoryRecallResult } from './openviking';
 import type { AgentConfig } from '../shared/contracts';
+import { userMcpCommandPattern } from '../shared/user-mcp';
 
 export interface OpenCodeSessionMessage {
   id?: string;
@@ -91,7 +92,7 @@ const RECALL_CACHE_TTL_MS = 60_000;
 const RECALL_CACHE_MAX = 32;
 
 export function isSessionMemoryOptOut(text: string): boolean {
-  return SESSION_MEMORY_OPTOUT_RE.test(text);
+  return SESSION_MEMORY_OPTOUT_RE.test(text) || userMcpCommandPattern.test(text);
 }
 
 export function isTurnMemoryOptOut(text: string): boolean {

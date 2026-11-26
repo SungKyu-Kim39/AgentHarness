@@ -38,9 +38,10 @@ const optionalName=`${prefix}-optional-packages.json`;
 const optional=version==='0.3.11'?await json(`${candidatePath}/${optionalName}`):undefined;
 if(optional&&(optional.sourceCommit!==source||optional.assets.length!==2||proof.coreAndReversingPackVerified!==true||proof.userDataPreserved!==true))throw Error('Optional packages or user data preservation lack installed validation');
 if(isUserDataPreservedVersion(version)&&proof.userDataPreserved!==true)throw Error('User data preservation lacks installed validation');
-const verifyUninstallPreservation=['0.4.0-rebuild6','0.4.1'].includes(artifactVersion);
+const verifyUninstallPreservation=['0.4.0-rebuild6','0.4.1','0.4.2'].includes(artifactVersion);
 if((verifyUninstallPreservation||artifactVersion==='0.4.0-rebuild5')&&(proof.installFolderUserFilesPreserved!==true||proof.interruptedUpgradeRecovered!==true))throw Error('Install-folder files or interrupted upgrade lack installed validation');
 if(verifyUninstallPreservation&&proof.uninstallUserFilesPreserved!==true)throw Error('Uninstall file preservation lacks installed validation');
+if(artifactVersion==='0.4.2'&&proof.userMcpRegistryPreserved!==true)throw Error('User MCP registration file preservation lacks installed validation');
 if(proof.version!==artifactVersion||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){
@@ -95,7 +96,7 @@ await writeFile(path.join(root,`downloads/${prefix}-windows-offline-smoke.json`)
 const notesFile=`docs/release-${artifactVersion}.md`;
 const notes=await readFile(path.join(root,notesFile),'utf8');
 const verificationSummary=`설치 파일 ${audit.payloadComparison.files.toLocaleString('en-US')}개를 준비본과 대조했습니다. Windows Server에서 새 설치, ${previousVersion} 업데이트와 사용자 글로벌 스킬 보존을 확인했고 설치본 대상 검사 ${passed}건이 통과했습니다.${isPrerelease?' 직원 PC의 Windows 10·11 GUI와 실제 사내 모델 검증은 남아 있어 사전 릴리스로 제공합니다.':''}\n\n[Windows 검사](https://github.com/${repo}/actions/runs/${validationRun}) · [검증 기록](https://github.com/${repo}/blob/main/docs/validation-${artifactVersion}.md)\n`;
-await writeFile(path.join(root,notesFile),notes.replace('<!-- windows-verification -->',verificationSummary));
+await writeFile(path.join(root,notesFile),notes.replace('<!-- windows-verification -->',verificationSummary.trimEnd()));
 const validationFile=`docs/validation-${artifactVersion}.md`;
 let record=await readFile(path.join(root,validationFile),'utf8');
 record=record.split('\n## 설치 파일과 Windows 결과\n')[0].replace(/현재 게시된 배포본은 .*?\.\n/,'').trimEnd()+'\n';

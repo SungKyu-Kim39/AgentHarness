@@ -19,6 +19,7 @@ export class AgentOwner {
   private cancelled = new Set<Promise<void>>();
   private releases = new Map<string, Promise<void>>();
   private unwatchPermissions?: () => void;
+  private unwatchMcp?: () => void;
   constructor(private root: string, private runtime: NativeRuntime, private connection: Credentials,
     private selectProject: (directory: string) => Promise<boolean>) {
     this.descriptor = path.join(root, 'runtime', 'ned-agent.json');
@@ -91,6 +92,14 @@ export class AgentOwner {
           if (!attached.has(params?.session)) throw new Error('Session not attached');
           return method === 'skills/list' ? this.runtime.skillCommands(params.session) : this.runtime.slashSkill(params.session, params.id);
         }
+        if (method === 'mcp/commands' || method === 'mcp/prepare' || method === 'mcp/finish') {
+          if (!attached.has(params?.session) || this.sessions.get(params.session) !== peer) throw new Error('Session not attached');
+          if (method === 'mcp/commands') return this.runtime.userMcp.commands();
+          if (method === 'mcp/prepare') return this.runtime.userMcp.prepare(params.session, params.id);
+          if (typeof params.ticket !== 'string') throw new Error('MCP request ticket required');
+          this.runtime.userMcp.finish(params.session, params.ticket);
+          return {};
+        }
         if (method === 'session/release') {
           if (!attached.has(params?.session) || this.sessions.get(params.session) !== peer) throw new Error('Session not attached');
           attached.delete(params.session);
@@ -125,6 +134,9 @@ export class AgentOwner {
     this.unwatchPermissions = this.runtime.onPermissionChange(() => {
       for (const peer of new Set(this.sessions.values())) void peer.call('permissionsChanged', this.runtime.permissionStatus()).catch(() => {});
     });
+    this.unwatchMcp = this.runtime.userMcp.onChange(() => {
+      for (const peer of new Set(this.sessions.values())) void peer.call('mcpChanged').catch(() => {});
+    });
     await atomicJSON(this.descriptor, { schemaVersion: 1, socket: this.endpoint, token: this.token });
     return this.descriptor;
   }
@@ -152,6 +164,7 @@ export class AgentOwner {
   }
   async close() {
     this.unwatchPermissions?.();
+    this.unwatchMcp?.();
     this.stopping = true; await rm(this.descriptor, { force: true });
     for (const peer of this.peers) peer.close();
     await new Promise<void>(resolve => { if (!this.server?.listening) resolve(); else this.server.close(() => resolve()); });

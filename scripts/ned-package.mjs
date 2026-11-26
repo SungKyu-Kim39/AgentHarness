@@ -112,7 +112,7 @@ async function packageApp(compileInstaller=true) {
   await mkdir(output,{recursive:true});
   const config={
     appId:'com.lig.ned',productName:'Ned',electronVersion:(await json(path.join(root,'upstream-lock.json'))).electronVersion,
-    directories:{app:path.join(cache,'app'),output},files:['main.cjs','studio-preload.cjs','package.json'],asar:true,npmRebuild:false,publish:null,
+    directories:{app:path.join(cache,'app'),output},files:['main.cjs','studio-preload.cjs','user-mcp-preload.cjs','package.json'],asar:true,npmRebuild:false,publish:null,
     win:{target:'dir',signAndEditExecutable:false,icon:path.join(root,'assets/ned-icon.ico')},
     extraResources:[
       {from:path.join(root,'vendor/runtime'),to:'runtime',filter:['windows-x64/openviking/**/*','windows-x64/rea/**/*','windows-x64/mcp/**/*','windows-x64/agent-desktop/**/*','windows-x64/ghidra/**/*']},

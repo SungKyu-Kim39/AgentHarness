@@ -22,6 +22,8 @@ import { AstAuditTools } from './ast-audit';
 import { DocumentTools } from './document-tools';
 import { DiagramTools } from './diagram-tools';
 import { ApiTools } from './api-tools';
+import type { UserMcp } from './user-mcp';
+import { userMcpToolName } from '../src/shared/user-mcp';
 import { inspectBatchRecovery, inspectIncompleteBatchJournals, ProjectFiles } from '../src/main/files';
 import { atomicJSON, Redactor } from '../src/main/config';
 import { OfflineSkills } from '../src/main/skills';
@@ -209,6 +211,7 @@ export async function isHighRiskShellCommand(files: ProjectFiles, shell: 'cmd' |
 }
 
 export const hostTools: ToolSpec[] = [
+  { name: userMcpToolName, description: 'Call a user-selected intranet MCP tool for this explicit slash request only.', inputSchema: object({ grant: string, tool: string, arguments: { type: 'object', additionalProperties: true } }, ['grant', 'tool', 'arguments']) },
   { name: 'list_files', description: 'List files inside the user-selected project. Excludes links and runtime/config directories.', inputSchema: object({}) },
   { name: 'read_file', description: 'Read a project text file. Relative path only.', inputSchema: object({ path: string }, ['path']) },
   { name: 'read_external_file', description: 'Read one explicitly targeted local UTF-8 file outside the project, up to 2 MiB. Absolute path required. Prompts for approval in ask/edits modes and auto-approves in full-access mode. Read-only; no external writes, network paths or Ned/profile protected paths.', inputSchema: object({ path: string }, ['path']) },
@@ -306,6 +309,7 @@ export class HostTools {
     choosePython?: PythonSelector;
     locateConda?: (project: string, signal?: AbortSignal) => Promise<string | undefined>;
     pythonConfig?: () => PythonConfig | undefined;
+    userMcp?: UserMcp;
     approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveExplicit?: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean>;
     approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>;
@@ -371,7 +375,7 @@ export class HostTools {
           const work = (async()=>{const scope=await this.scope(session,input.params.name,input.params.arguments??{});if(session!==scope.session){controllers.delete(abort);if(!controllers.size)this.operations.delete(session);session=scope.session;controllers=this.operations.get(session)??new Set<AbortController>();controllers.add(abort);this.operations.set(session,controllers);}return this.callScoped(input.params.name,input.params.arguments??{},session,scope.signal?AbortSignal.any([abort.signal,scope.signal]):abort.signal,scope.contextText,scope.projectOverride);})(); this.active.add(work);
           try {
             const text = await work;
-            if (extensionTools.some(t => t.name === input.params.name) || desktopToolNames.includes(input.params.name)) {
+            if (input.params.name === userMcpToolName || extensionTools.some(t => t.name === input.params.name) || desktopToolNames.includes(input.params.name)) {
               const response = JSON.parse(text);
               result = { isError: response.isError, content: response.content.map((item: { type: string; text?: string; data?: string; mimeType?: string }) => item.type === 'text' ? { type: 'text', text: this.options.redactor.text(item.text ?? '') } : { type: 'image', data: item.data, mimeType: item.mimeType }) };
             } else result = { ...(input.params.name === 'rea_ghidra' ? { isError: !!(JSON.parse(text).isError || JSON.parse(text).result?.isError) } : {}), content: [{ type: 'text', text: this.options.redactor.text(text) }] };
@@ -404,6 +408,11 @@ export class HostTools {
     if (this.options.toolRequested && !this.options.toolRequested(session, name, extraContext)) throw new Error('이 도구는 관련 작업을 사용자가 요청했을 때 사용할 수 있습니다.');
     this.activateEditScope(session,project);
     const projectID = createHash('sha256').update(project).digest('hex').slice(0, 32);
+    if (name === userMcpToolName) {
+      const { userMcp, request, approveExplicit, redactor } = this.options;
+      if (!userMcp || !request || !approveExplicit || projectOverride) throw Error('현재 대화에서 사용자 MCP를 사용할 수 없습니다.');
+      return JSON.stringify(await userMcp.call(session, args, () => request(session), approveExplicit, value => redactor.text(value), signal));
+    }
     if (name === 'document_read') {
       const a = z.object({ path: pathArg, mode: z.enum(['markdown', 'tables', 'docling']).optional(), pages: z.string().max(128).optional() }).strict().parse(args);
       const ext = path.extname(a.path).toLowerCase();

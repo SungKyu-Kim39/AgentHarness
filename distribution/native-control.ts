@@ -18,6 +18,7 @@ import { permissionMode, type PermissionPolicy } from './ned/permission-policy';
 import type { PythonSelector } from './python-projects';
 import { automaticSkillContext, automaticSkillPolicy, isCompactionPrompt, isContinuationTurn, isReaMode, normalizeConversationMode, reaModeGuidance, specializedToolRequested } from '../src/main/skill-routing';
 import { SessionMemoryManager, resolveMemoryPolicy, type OpenCodeSessionMessage } from '../src/main/session-memory';
+import { UserMcp } from './user-mcp';
 
 export interface Credentials { url: string; password: string }
 export interface ModelBinding { provider: string; name: string; id: string; gateway: ModelGateway }
@@ -80,6 +81,7 @@ export function engineConfiguration(config: AgentConfig, models: ModelBinding[],
 
 export class NativeRuntime {
   readonly vault: ConfigVault;
+  readonly userMcp: UserMcp;
   private models: ModelBinding[] = [];
   private knowledge?: OpenVikingService;
   private memory?: SessionMemoryManager;
@@ -106,6 +108,7 @@ export class NativeRuntime {
   setEditorCheck(check: NonNullable<NativeRuntime['editorCheck']>) { this.editorCheck = check; }
   constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean> = async () => false, private approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>, private permissions?: PermissionPolicy) {
     this.vault = new ConfigVault(root, cipher);
+    this.userMcp = new UserMcp(root, cipher);
   }
   async load() { return this.vault.load(); }
   async initialize(config: AgentConfig, progress: (stage: 'models' | 'skills', detail?:string) => void = () => {}) {
@@ -113,6 +116,7 @@ export class NativeRuntime {
     this.config = config;
     const configured = config.models ?? [{ ...config.model, name: config.model.id }];
     try {
+      await this.userMcp.load();
       progress('models');
       for (const m of configured) {
         const provider = m.providerID ? config.providers?.[m.providerID] : undefined;
@@ -138,6 +142,13 @@ export class NativeRuntime {
           (session, parent) => {
             const owner = parent ?? session;
             return owner && this.attachedProjects.has(owner) ? this.turnHistory.get(owner)?.join('\n') : undefined;
+          }, async session => {
+            const selected = this.userMcp.modelTools(session, undefined);
+            const project = this.attachedProjects.get(session);
+            if (!selected || !project || !this.projects.has(project)) return undefined;
+            if (await this.sessionRequest(session).catch(() => undefined) !== selected.requestID) return undefined;
+            const current = this.userMcp.modelTools(session, undefined);
+            return current?.grant === selected.grant ? current : undefined;
           });
         await gateway.start();
         this.models.push({ provider: m.providerID ?? providerID(m.name), name: m.name, id: m.modelKey ?? m.id, gateway });
@@ -159,6 +170,7 @@ export class NativeRuntime {
         choosePython: (project, environments, signal) => this.pythonSelector ? this.pythonSelector(project, environments, signal) : Promise.reject(new Error('Python 환경 선택창을 사용할 수 없습니다.')),
         locateConda: (project, signal) => this.condaLocator ? this.condaLocator(project, signal) : Promise.resolve(undefined),
         pythonConfig: () => this.config?.python,
+        userMcp: this.userMcp,
         batchRecovered: () => this.scanBatchJournals(),
         reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...(this.zedModels?.ports() ?? []), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
       });
@@ -360,6 +372,7 @@ export class NativeRuntime {
   }
   onTurnComplete(session: string) { this.memory?.onTurnComplete(session); }
   onSessionDisconnected(session: string, deleted = false) {
+    this.userMcp.finish(session);
     this.attachedProjects.delete(session);
     this.turnHistory.delete(session);
     this.sessionModes.delete(session);
@@ -421,6 +434,7 @@ export class NativeRuntime {
   private async cancelChildren(id:string){this.tools?.cancelSession(id);await this.subagents?.stopParent(id);await this.tools?.waitSessionStop(id);}
   async interruptSession(id: string) {
     if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new Error('Invalid session');
+    this.userMcp.finish(id);
     this.turnHistory.delete(id);
     const engine = this.backend ? this.subagentAPI('/api/session/' + id + '/interrupt', {}).then(() => {}) : Promise.resolve();
     const results = await Promise.allSettled([engine, this.cancelChildren(id)]);
@@ -432,7 +446,7 @@ export class NativeRuntime {
     let cursor: string | undefined;
     for (let page = 0; page < 10; page++) {
       const url = new URL('/api/session/' + id + '/message', this.backend.url);
-      url.searchParams.set('limit', '100'); if (cursor) url.searchParams.set('cursor', cursor);
+      url.searchParams.set('limit', '100'); url.searchParams.set('order', 'desc'); if (cursor) url.searchParams.set('cursor', cursor);
       const response = await fetch(url, { headers: { Authorization: 'Basic ' + Buffer.from('opencode:' + this.backend.password).toString('base64') }, signal: AbortSignal.timeout(10000) });
       if (!response.ok) throw new Error('엔진 요청을 확인할 수 없습니다.');
       const result = await response.json() as { data?: Array<{ id?: string; type?: string }>; cursor?: { next?: string } };
@@ -512,7 +526,14 @@ export class NativeRuntime {
           child.stdout.on('data', onData); child.once('exit', onError); child.once('error', onError);
         });
         child.stdout.on('data', () => {});
-        this.backend = { url, password };await this.subagents?.recover(); this.proxy = new SidecarProxy(this.backend,{cancelSession:id=>this.cancelChildren(id),resumeSession:async id=>{await this.cancelChildren(id);this.tools?.resumeSession(id);}});
+        this.backend = { url, password };await this.subagents?.recover(); this.proxy = new SidecarProxy(this.backend,{
+          cancelSession: id => { this.userMcp.finish(id); return this.cancelChildren(id); },
+          resumeSession: async (id, body) => {
+            await this.cancelChildren(id);
+            if (body) this.userMcp.begin(id, body);
+            this.tools?.resumeSession(id);
+          },
+        });
         this.current = await this.proxy.start();
         void this.memory?.flushPendingCommits().catch(() => {});
         return this.current;
@@ -532,6 +553,7 @@ export class NativeRuntime {
     } finally { clearTimeout(timer); }
   }
   async close() {
+    this.userMcp.close();
     let childFailure=false;try{await this.subagents?.close();}catch{childFailure=true;}
     await this.memory?.close().catch(() => {}); this.memory = undefined;
     const results = await Promise.allSettled([

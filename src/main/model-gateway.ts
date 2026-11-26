@@ -5,6 +5,7 @@ import type { AgentConfig } from '../shared/contracts';
 import { isCompaction, summaryRequest, summaryOutcome, summaryUsage, withSummaryUsage } from './compaction-policy';
 import { hideUnrequestedTools } from './skill-routing';
 import { classifyModelHttpError, modelRequestShape, modelHttpExplanation } from './model-http-error';
+import { userMcpModelToolName } from '../shared/user-mcp';
 
 export interface ModelTransport {
   timeout?: unknown;
@@ -33,7 +34,8 @@ export class ModelGateway {
   constructor(private config: AgentConfig, private transport: ModelTransport = {}, private diagnostic?: (event: ModelFailure) => void,
     private skillContext?: (messages: unknown, requestBytes: number, sessionId?: string, parentSessionId?: string) => Promise<string | undefined>, private outputLimit = 4096, private behavior: 'ned' | 'native' = 'ned',
     private reaRequested?: (sessionId?: string, parentSessionId?: string) => boolean,
-    private toolRequestContext?: (sessionId?: string, parentSessionId?: string) => string | undefined) {}
+    private toolRequestContext?: (sessionId?: string, parentSessionId?: string) => string | undefined,
+    private userMcpContext?: (sessionId: string) => Promise<{ grant: string; names: string[]; guidance: string } | undefined>) {}
   async start() {
     this.server = createServer(async (req, res) => {
       if (req.headers.authorization !== `Bearer ${this.token}`) { res.writeHead(401).end(); return; }
@@ -84,7 +86,23 @@ export class ModelGateway {
         if (this.behavior === 'ned' && this.skillContext && !compacting) {
           hideUnrequestedTools(body, this.reaRequested?.(sessionId, parentSessionId), this.toolRequestContext?.(sessionId, parentSessionId));
         }
-        const guidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages, requestBytes, sessionId, parentSessionId);
+        const customTool = Array.isArray(body.tools) ? body.tools.find((tool: any) => tool?.function?.name === userMcpModelToolName) : undefined;
+        let mcpGuidance: string | undefined;
+        if (customTool) {
+          const selected = !compacting && !parentSessionId && sessionId && body.tool_choice !== 'none' ? await this.userMcpContext?.(sessionId) : undefined;
+          if (!selected) body.tools = body.tools.filter((tool: any) => tool?.function?.name !== userMcpModelToolName);
+          else {
+            const properties = customTool.function.parameters?.properties;
+            if (!properties?.grant || !properties?.tool) body.tools = body.tools.filter((tool: any) => tool !== customTool);
+            else {
+              properties.grant = { type: 'string', enum: [selected.grant] };
+              properties.tool = { type: 'string', enum: selected.names };
+              mcpGuidance = selected.guidance;
+            }
+          }
+        }
+        const standardGuidance = this.behavior === 'native' || compacting || body.tool_choice === 'none' ? undefined : await this.skillContext?.(body.messages, requestBytes, sessionId, parentSessionId);
+        const guidance = [standardGuidance, mcpGuidance].filter(Boolean).join('\n\n');
         if (guidance && Array.isArray(body.messages)) {
           const first = body.messages[0];
           // Several OpenAI-compatible chat templates accept only one initial

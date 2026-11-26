@@ -4,7 +4,7 @@ import type { Credentials } from './native-control';
 /** Native API boundary: no global config writes, remote connections or saved approvals. */
 export class SidecarProxy {
   private server?: Server;
-  constructor(private backend: Credentials, private sessions?: { cancelSession(session: string): void|Promise<void>; resumeSession(session: string): void|Promise<void> }) {}
+  constructor(private backend: Credentials, private sessions?: { cancelSession(session: string): void|Promise<void>; resumeSession(session: string, body?: { id?: unknown; text?: unknown }): void|Promise<void> }) {}
   async start(): Promise<Credentials> {
     this.server = createServer(async (req, res) => {
       const auth = 'Basic ' + Buffer.from('opencode:' + this.backend.password).toString('base64');
@@ -14,10 +14,8 @@ export class SidecarProxy {
         if (target.origin !== new URL(this.backend.url).origin) { res.writeHead(403).end(); return; }
         const pathname = decodeURIComponent(target.pathname).replace(/\/{2,}/g, '/');
         const operation = /^\/api\/session\/([^/]+)\/(interrupt|prompt)$/.exec(pathname);
-        if (req.method === 'POST' && operation) {
-          if (operation[2] === 'interrupt') await this.sessions?.cancelSession(operation[1]);
-          else await this.sessions?.resumeSession(operation[1]);
-        }
+        if (req.method === 'POST' && operation?.[2] === 'interrupt') await this.sessions?.cancelSession(operation[1]);
+        const prompt = req.method === 'POST' && operation?.[2] === 'prompt';
         const modifying = !['GET', 'HEAD', 'OPTIONS'].includes(req.method ?? '');
         if (modifying && (
           /^\/api\/(?:experimental\/(?:config|mcp)|config|integration|credential|plugin|mcp|pty|shell|schedule|server|permission\/saved)(?:\/|$)/.test(pathname) ||
@@ -27,6 +25,9 @@ export class SidecarProxy {
         const chunks: Buffer[] = []; let size = 0;
         for await (const bytes of req) { size += bytes.length; if (size > 8 * 1024 * 1024) throw new Error('Request too large'); chunks.push(bytes); }
         let body = Buffer.concat(chunks);
+        if (prompt && (!body.length || !/application\/json/i.test(req.headers['content-type'] ?? ''))) {
+          res.writeHead(400).end(); return;
+        }
         if (body.length && /application\/json/i.test(req.headers['content-type'] ?? '')) {
           const document = JSON.parse(body.toString());
           if (document.permissions !== undefined) {
@@ -34,6 +35,7 @@ export class SidecarProxy {
             else { res.writeHead(403).end(); return; }
           }
           if (/^\/api\/session\/[^/]+\/permission\/[^/]+\/reply$/.test(pathname) && document.decision === 'always') document.decision = 'once';
+          if (prompt) await this.sessions?.resumeSession(operation![1], document);
           body = Buffer.from(JSON.stringify(document));
         }
         const upstream = request(target, { method: req.method, headers: { ...req.headers, host: new URL(this.backend.url).host, authorization: auth, 'accept-encoding': 'identity', 'content-length': String(body.length) } }, response => {

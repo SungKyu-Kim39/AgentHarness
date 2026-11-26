@@ -1,6 +1,6 @@
 # Ned
 
-[0.4.1 변경 사항](docs/changes-0.4.1.md) · [0.4.1 검증](docs/validation-0.4.1.md) · [자연어 자동 도구 연결 소개·안내(무링크)](docs/ned-auto-routing-guide.md)
+[0.4.2 변경 사항](docs/changes-0.4.2.md) · [0.4.2 검증](docs/validation-0.4.2.md) · [자연어 자동 도구 연결 소개·안내(무링크)](docs/ned-auto-routing-guide.md)
 
 최신 정식 릴리스는 [Ned 0.4.1](https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.4.1)입니다. [설치 EXE·반입 TGZ](downloads/README.md) · [검증 기록](docs/validation-0.4.1.md).
 

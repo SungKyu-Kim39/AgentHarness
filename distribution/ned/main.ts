@@ -19,6 +19,7 @@ import { EditorNetwork, prepareEditor } from './profile';
 import { migrateLegacy, migrationNeedsBootstrap } from './migration';
 import { PermissionPolicy, permissionModes, type PermissionMode } from './permission-policy';
 import { withTopmostDialogOwner } from './topmost-dialog';
+import { UserMcpWindow } from './user-mcp-window';
 declare const NED_VERSION: string;
 app.setName('Ned');
 app.setAppUserModelId('com.lig.ned');
@@ -49,6 +50,7 @@ const configurationRestart = new ConfigurationRestart(replaceConfiguration, () =
 });
 const startup = new StartupWindow();
 const studio = new OpenVikingStudio(event => { void atomicJSON(path.join(root,'openviking/studio-status.json'),{schemaVersion:1,recordedAt:new Date().toISOString(),...event}).catch(()=>{}); });
+const userMcpWindow = new UserMcpWindow();
 const messageBox = (options: Electron.MessageBoxOptions) => startup.duringDialog(() => withTopmostDialogOwner(owner => dialog.showMessageBox(owner, options)));
 const openDialog = (options: Electron.OpenDialogOptions) => startup.duringDialog(() => withTopmostDialogOwner(owner => dialog.showOpenDialog(owner, options)));
 if (!app.requestSingleInstanceLock()) app.exit(0);
@@ -64,7 +66,7 @@ async function shutdown() {
   try {
     // Ask the editor to close normally; its own close UI protects unsaved buffers.
     if (editor && editor.exitCode === null && editor.signalCode === null) throw new Error('편집기에서 저장을 확인한 뒤 창을 닫아 주세요. 편집기 종료와 함께 Ned 서비스도 종료됩니다.');
-    studio.close(); await owner?.close(); await getRuntime().close(); await network.close();
+    studio.close(); userMcpWindow.close(); await owner?.close(); await getRuntime().close(); await network.close();
     closed = true; startup.close(); tray?.destroy();
   } catch (error) {
     quitting = false;
@@ -206,6 +208,7 @@ async function start() {
   trayMenu = Menu.buildFromTemplate([
     { label: 'Ned ' + NED_VERSION + ' · Zed + OpenCode', enabled: false },
     { label: '프로젝트 폴더 열기', click: openProject },
+    { label: '사용자 MCP 관리', click: () => { if (!quitting && !configurationRestart.pending) userMcpWindow.open(runtime.userMcp, icon); } },
     { id: 'permissions', label: '권한', submenu: [
       ...permissionModes.map(mode => ({ id: 'permission-' + mode.value, label: mode.name, type: 'radio' as const, checked: permissions.mode === mode.value, click: () => setPermission(mode.value) })),
       { type: 'separator' },
@@ -221,17 +224,10 @@ async function start() {
       catch(error){await messageBox({type:'error',title:'Ned 대화 가져오기',message:errorMessage(error)});}
     } },
     { label: '사용 안내', submenu: [
-      { label: '설치와 첫 실행', click: () => { void shell.openPath(path.join(resources, 'ned/GETTING_STARTED.md')); } },
-      { label: '자연어 자동 도구 연결 소개·안내', click: () => { void shell.openPath(path.join(resources, 'ned/ned-auto-routing-guide.md')); } },
-      { label: '요약 출력 한도 오류 해결', click: () => { void shell.openPath(path.join(resources, 'ned/compaction-troubleshooting.md')); } },
-      { label: 'OpenViking Studio 사용', click: () => { void shell.openPath(path.join(resources, 'ned/openviking-studio.md')); } },
+      { label: '설치와 첫 실행', click: () => { void shell.openPath(path.join(resources, 'ned/offline-setup.md')); } },
+      { label: 'Ned 통합 사용 가이드', click: () => { void shell.openPath(path.join(resources, 'ned/ned-user-guide.md')); } },
+      { label: '사용자 스킬·MCP 등록', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },
       { label: NED_VERSION.split(' ')[0] + ' 변경 사항', click: () => { void shell.openPath(path.join(resources, 'ned/changes-' + NED_VERSION.split(' ')[0] + '.md')); } },
-      { label: '지식 저장·검색 안내', click: () => { void shell.openPath(path.join(resources, 'ned/knowledge-notes.md')); } },
-      { label: '기존 Zed 대화 가져오기 안내', click: () => { void shell.openPath(path.join(resources, 'ned/zed-history-import.md')); } },
-      { label: 'EGM 설계·검토 사용', click: () => { void shell.openPath(path.join(resources, 'ned/egm.md')); } },
-      { label: '새 스킬·MCP 추가 방법', click: () => { void shell.openPath(path.join(resources, 'ned/extension-guide.md')); } },
-      { label: 'Python·Conda 실행과 환경 기억', click: () => { void shell.openPath(path.join(resources, 'ned/python-conda.md')); } },
-      { label: 'Git 커밋·Ghidra·외부 자료 읽기', click: () => { void shell.openPath(path.join(resources, 'ned/git-and-binary-analysis.md')); } },
     ] },
     { label: '모든 자동 승인 해제 · 승인 요청으로 전환', click: async () => {
       confirmed.clear();
