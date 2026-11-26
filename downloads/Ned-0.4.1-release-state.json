@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "product": "Ned",
+  "version": "0.4.1",
+  "sourceCommit": "31a50262687e62607273f5f5086f2d251a7927c9",
+  "artifactCommit": "2097225e8fc7b704e73a495e8de0f1b150d8b7b0",
+  "releaseUrl": "https://github.com/SungKyu-Kim39/AgentHarness/releases/tag/v0.4.1",
+  "filesPublished": true,
+  "releaseAssetsPublished": true,
+  "publicDownloadsFullyVerified": true,
+  "windowsRunId": 45745586659,
+  "installer": {
+    "name": "Ned-0.4.1-win-x64.exe",
+    "bytes": 1551476943,
+    "sha256": "e819cca9352fc37d4bcf39e42a4719c2fe9d75d51369a1d162b48af0e42715d6"
+  },
+  "bundle": {
+    "name": "Ned-0.4.1-windows-x64.tgz",
+    "bytes": 1931658277,
+    "sha256": "4976295e8dcd5299b3d130e2c989bd0742e8296113301fc24bb46ab0f0057be6"
+  },
+  "releaseReady": false,
+  "isPrerelease": false,
+  "releaseAssetCount": 7,
+  "assets": [
+    {
+      "name": "Ned-0.4.1-bundle-manifest.json",
+      "bytes": 633,
+      "sha256": "b53b9d3a21078e511aa89147122f5e43c52852d8b241b48c20961394e3c01bf6",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.1/Ned-0.4.1-bundle-manifest.json"
+    },
+    {
+      "name": "Ned-0.4.1-installer-audit.json",
+      "bytes": 17123,
+      "sha256": "14d384d0507a91c8a8a5548f2632ad5773e11101c9bdcabca54c51322266213d",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.1/Ned-0.4.1-installer-audit.json"
+    },
+    {
+      "name": "Ned-0.4.1-payload-manifest.json",
+      "bytes": 10967729,
+      "sha256": "350a38d528442b2d172bbe85199f6f49b5a7b4647f4d951be2ebbb0c94fbb505",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.1/Ned-0.4.1-payload-manifest.json"
+    },
+    {
+      "name": "Ned-0.4.1-win-x64.exe",
+      "bytes": 1551476943,
+      "sha256": "e819cca9352fc37d4bcf39e42a4719c2fe9d75d51369a1d162b48af0e42715d6",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.1/Ned-0.4.1-win-x64.exe"
+    },
+    {
+      "name": "Ned-0.4.1-win-x64.exe.sha256",
+      "bytes": 88,
+      "sha256": "c711ec4bcf12b118653c8e5a0659876c545dbf73503a8901b4527004771e791f",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.1/Ned-0.4.1-win-x64.exe.sha256"
+    },
+    {
+      "name": "Ned-0.4.1-windows-x64.tgz",
+      "bytes": 1931658277,
+      "sha256": "4976295e8dcd5299b3d130e2c989bd0742e8296113301fc24bb46ab0f0057be6",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.1/Ned-0.4.1-windows-x64.tgz"
+    },
+    {
+      "name": "Ned-0.4.1-windows-x64.tgz.sha256",
+      "bytes": 92,
+      "sha256": "4980566cf62d4103ff7e4ca5c2762b969d36d3a564b276fdf94a6aff6b42baeb",
+      "url": "https://github.com/SungKyu-Kim39/AgentHarness/releases/download/v0.4.1/Ned-0.4.1-windows-x64.tgz.sha256"
+    }
+  ]
+}
