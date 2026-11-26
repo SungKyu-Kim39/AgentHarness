@@ -4,9 +4,9 @@ on:
     inputs:
       artifact_version:
         description: Exact immutable installer build
-        default: 0.4.0
+        default: 0.4.1
         type: choice
-        options: ['0.4.0', '0.3.16-rebuild1', '0.3.16', '0.3.15', '0.3.14', '0.3.13', '0.3.12-rebuild2', '0.3.12-rebuild1', '0.3.12', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', 'editor-source-build']
+        options: ['0.4.1', '0.4.0', '0.3.16-rebuild1', '0.3.16', '0.3.15', '0.3.14', '0.3.13', '0.3.12-rebuild2', '0.3.12-rebuild1', '0.3.12', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', 'editor-source-build']
       build_revision:
         description: Optional same-version repair revision (e.g. rebuild1)
         type: string
@@ -32,7 +32,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     env:
-      NED_ARTIFACT_VERSION: ${{ inputs.build_revision && format('{0}-{1}', inputs.artifact_version, inputs.build_revision) || inputs.artifact_version || '0.4.0' }}
+      NED_ARTIFACT_VERSION: ${{ inputs.build_revision && format('{0}-{1}', inputs.artifact_version, inputs.build_revision) || inputs.artifact_version || '0.4.1' }}
       NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262

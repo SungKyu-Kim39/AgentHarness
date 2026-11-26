@@ -57,5 +57,6 @@ test('release-policy covers historical 0.3.x versions and generalizes cleanly to
   assert.equal(previousReleaseVersion('0.3.15', 'rebuild2'), '0.3.15-rebuild1');
   assert.equal(previousReleaseVersion('0.4.0', ''), '0.3.16-rebuild1');
   assert.equal(previousReleaseVersion('0.4.0', 'rebuild1'), '0.4.0');
-  assert.equal(previousReleaseVersion('0.4.1', ''), '0.4.0');
+  assert.equal(previousReleaseVersion('0.4.1', ''), '0.4.0-rebuild6');
+  assert.equal(previousReleaseVersion('0.4.1', 'rebuild1'), '0.4.1');
 });

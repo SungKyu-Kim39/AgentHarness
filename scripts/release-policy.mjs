@@ -63,6 +63,7 @@ export function previousReleaseVersion(version, revision = '') {
   if (artifact === '0.3.12-rebuild2') return '0.3.12-rebuild1';
   if (artifact === '0.3.12-rebuild1') return '0.3.12';
   if (version === '0.3.13') return revision ? '0.3.13' : '0.3.12-rebuild2';
+  if (artifact === '0.4.1') return '0.4.0-rebuild6';
   const parsed = parseReleaseSemver(version);
   if (!parsed) return '0.3.9';
   if (revision && isValidRevision(revision)) {
