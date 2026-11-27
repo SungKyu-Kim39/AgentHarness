@@ -132,6 +132,25 @@ jobs:
             realWin10Win11GuiAcceptance=$false
           } | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
           Get-Content windows-offline-smoke.json
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        if: env.NED_TEST_RESOURCES != ''
+        with:
+          node-version: '24.22.1'
+      - name: Exercise the installed user MCP management window
+        if: env.NED_TEST_RESOURCES != ''
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          & npm ci --ignore-scripts --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { throw 'GUI fixture dependency installation failed' }
+          $install = Split-Path $env:NED_TEST_NODE
+          $fixture = Join-Path $env:RUNNER_TEMP 'ned-user-mcp-window-smoke'
+          New-NetFirewallRule -DisplayName $env:NED_FIREWALL_GROUP -Group $env:NED_FIREWALL_GROUP -Direction Outbound -Action Block -Program (Join-Path $fixture 'ned-runtime\Ned.exe') -RemoteAddress Internet | Out-Null
+          & node scripts/user-mcp-window-smoke.mjs $install $fixture
+          if ($LASTEXITCODE -ne 0) { throw 'Installed user MCP management window failed' }
+          $proof = Get-Content windows-offline-smoke.json -Raw | ConvertFrom-Json
+          $proof | Add-Member -NotePropertyName userMcpManagementWindow -NotePropertyValue (Get-Content (Join-Path $fixture 'result.json') -Raw | ConvertFrom-Json)
+          $proof | ConvertTo-Json | Set-Content windows-offline-smoke.json -Encoding utf8
       - name: Verify skills, history, settings and terminal behavior after installation
         if: always() && env.NED_TEST_NODE != ''
         shell: pwsh

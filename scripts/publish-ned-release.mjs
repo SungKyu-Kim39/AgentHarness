@@ -43,6 +43,7 @@ if((verifyUninstallPreservation||artifactVersion==='0.4.0-rebuild5')&&(proof.ins
 if(verifyUninstallPreservation&&proof.uninstallUserFilesPreserved!==true)throw Error('Uninstall file preservation lacks installed validation');
 if(version==='0.4.2'&&proof.userMcpRegistryPreserved!==true)throw Error('User MCP registration file preservation lacks installed validation');
 if(artifactVersion==='0.4.2-rebuild1'&&audit.userMcpPreloadSmoke?.passed!==true)throw Error('User MCP management preload lacks installer validation');
+if(artifactVersion==='0.4.2-rebuild1'&&['loadedFromAsar','registered','checked','persistence'].some(key=>proof.userMcpManagementWindow?.[key]!==true))throw Error('User MCP management window lacks installed GUI validation');
 if(proof.version!==artifactVersion||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){
