@@ -4,9 +4,9 @@ on:
     inputs:
       artifact_version:
         description: Exact immutable installer build
-        default: 0.4.1
+        default: 0.4.3
         type: choice
-        options: ['0.4.2', '0.4.1', '0.4.0', '0.3.16-rebuild1', '0.3.16', '0.3.15', '0.3.14', '0.3.13', '0.3.12-rebuild2', '0.3.12-rebuild1', '0.3.12', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', 'editor-source-build']
+        options: ['0.4.3', '0.4.2', '0.4.1', '0.4.0', '0.3.16-rebuild1', '0.3.16', '0.3.15', '0.3.14', '0.3.13', '0.3.12-rebuild2', '0.3.12-rebuild1', '0.3.12', 'terminal-source-probe', 'terminal-editor-probe', 'global-skills-source-probe', 'release-build', 'editor-source-build']
       build_revision:
         description: Optional same-version repair revision (e.g. rebuild1)
         type: string
@@ -32,7 +32,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 30
     env:
-      NED_ARTIFACT_VERSION: ${{ inputs.build_revision && format('{0}-{1}', inputs.artifact_version, inputs.build_revision) || inputs.artifact_version || '0.4.1' }}
+      NED_ARTIFACT_VERSION: ${{ inputs.build_revision && format('{0}-{1}', inputs.artifact_version, inputs.build_revision) || inputs.artifact_version || '0.4.3' }}
       NED_CANDIDATE_SOURCE: ${{ inputs.candidate_source }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -114,7 +114,7 @@ jobs:
           "NED_TEST_SKILLS_DIR=$(Join-Path $install 'resources\ned\skills')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_ENGINE=$(Join-Path $install 'resources\opencode-cli.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          if ($env:NED_ARTIFACT_VERSION -match '^0\.4\.2(?:-rebuild\d+)?$') { "NED_TEST_RESOURCES=$(Join-Path $install 'resources')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8 }
+          if ($env:NED_ARTIFACT_VERSION -match '^0\.4\.(?:[2-9]|[1-9]\d+)(?:-rebuild\d+)?$') { "NED_TEST_RESOURCES=$(Join-Path $install 'resources')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8 }
           $files = @(Get-ChildItem $install -Recurse -File)
           [ordered]@{
             schemaVersion=1; product='Ned'; version=$env:NED_ARTIFACT_VERSION; openVikingVersion=$expectedVersion
@@ -181,11 +181,12 @@ jobs:
             '^0\.3\.13$' { '0.3.12-rebuild2'; break }
             '^0\.4\.0$' { '0.3.16-rebuild1'; break }
             '^0\.4\.1$' { '0.4.0-rebuild6'; break }
+            '^0\.4\.3$' { '0.4.2-rebuild3'; break }
             '^(0\.[34]\.\d+)-rebuild(\d+)$' { $n = [int]$Matches[2]; if ($n -gt 1) { "$($Matches[1])-rebuild$($n - 1)" } else { $Matches[1] }; break }
             '^0\.([34])\.(\d+)$' { "0.$($Matches[1]).$([int]$Matches[2] - 1)"; break }
             default { throw "Unsupported artifact version: $env:NED_ARTIFACT_VERSION" }
           }
-          $verifyUserMcp = $env:NED_ARTIFACT_VERSION -match '^0\.4\.2(?:-rebuild\d+)?$'
+          $verifyUserMcp = [bool]$env:NED_TEST_RESOURCES
           $verifyUninstallPreservation = $verifyUserMcp -or $env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild6','0.4.1')
           $verifyInstallFolderPreservation = $verifyUninstallPreservation -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5'
           $verifyTopLevelRestore = $verifyInstallFolderPreservation -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild4'
