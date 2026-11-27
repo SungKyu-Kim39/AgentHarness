@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import manifest from '../package.json' with { type: 'json' };
 import { UserMcp } from '../distribution/user-mcp';
 import { isIntranetAddress, UserMcpHttp } from '../distribution/user-mcp-http';
 import { SidecarProxy } from '../distribution/sidecar-proxy';
@@ -38,6 +39,7 @@ function fakeMcp() {
     const message = JSON.parse(raw);
     requests.push(message.method);
     if (message.method === 'initialize') {
+      assert.deepEqual(message.params.clientInfo, { name: 'Ned', version: manifest.version });
       response.writeHead(200, { 'Content-Type': 'application/json', 'Mcp-Session-Id': 'synthetic' })
         .end(rpcReply(message.id, { protocolVersion: '2025-06-18', capabilities: { tools: {} } }));
       return;

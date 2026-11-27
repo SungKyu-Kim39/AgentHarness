@@ -18,10 +18,11 @@ test('blank startup uses the launchpad and passes no project path to the editor'
 test('blank editor ownership does not authorize app data; real project access needs a user decision before binding',async t=>{
  const root=await mkdtemp(path.join(tmpdir(),'ned-blank-'));let approvals=0,allow=false;const authorized:string[]=[];
  const project=path.join(root,'project');
- const runtime={onPermissionChange:()=>()=>{},canonicalProject:async(p:string)=>{if(p===root)throw new Error('Open a project folder first');return p;},authorizeProject:async(p:string)=>{authorized.push(p);}} as unknown as NativeRuntime;
+ const runtime={onPermissionChange:()=>()=>{},userMcp:{onChange:()=>()=>{}},canonicalProject:async(p:string)=>{if(p===root)throw new Error('Open a project folder first');return p;},authorizeProject:async(p:string)=>{authorized.push(p);}} as unknown as NativeRuntime;
  const owner=new AgentOwner(root,runtime,{url:'http://127.0.0.1:1',password:'test-only'},async()=>{approvals++;return allow;});
- const descriptor=JSON.parse(await readFile(await owner.start(),'utf8'));const socket=connect(descriptor.socket);const peer=new Peer(socket,async()=>{throw new Error('No client callback');});
- t.after(async()=>{peer.close();await owner.close();await rm(root,{recursive:true,force:true});});
+ let peer:Peer|undefined;
+ t.after(async()=>{peer?.close();await owner.close();await rm(root,{recursive:true,force:true});});
+ const descriptor=JSON.parse(await readFile(await owner.start(),'utf8'));const socket=connect(descriptor.socket);peer=new Peer(socket,async()=>{throw new Error('No client callback');});
  await peer.call('hello',{token:descriptor.token});assert.equal(approvals,0);assert.deepEqual(authorized,[]);
  await assert.rejects(peer.call('authorize',{cwd:root}),/Open a project/);assert.equal(approvals,0);
  await assert.rejects(peer.call('authorize',{cwd:project}),/거절/);assert.deepEqual(authorized,[]);

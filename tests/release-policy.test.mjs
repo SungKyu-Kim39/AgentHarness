@@ -10,6 +10,8 @@ import {
   isWorkspaceToolsVersion,
   isSupportedReleaseVersion,
   isRebuiltEditorReusable,
+  hasUserMcp,
+  isStableRelease,
   pinnedEditorRevision,
   previousReleaseVersion,
 } from '../scripts/release-policy.mjs';
@@ -41,6 +43,13 @@ test('release-policy covers historical 0.3.x versions and generalizes cleanly to
   assert.equal(isNoSeedVersion('0.4.0'), true);
   assert.equal(isActionsTransportVersion('0.4.0'), true);
   assert.equal(isUserDataPreservedVersion('0.4.0'), true);
+  assert.equal(hasUserMcp('0.4.1'), false);
+  assert.equal(hasUserMcp('0.4.2'), true);
+  assert.equal(hasUserMcp('0.4.3'), true);
+  assert.equal(isStableRelease('0.4.1'), true);
+  assert.equal(isStableRelease('0.4.2', 'rebuild3'), false);
+  assert.equal(isStableRelease('0.4.3'), true);
+  assert.equal(isStableRelease('0.4.3', 'rebuild1'), false);
 
   assert.equal(isRebuiltEditorReusable('0.3.11', 'rebuild1'), false);
   assert.equal(isRebuiltEditorReusable('0.3.12', 'rebuild2'), true);
@@ -64,4 +73,6 @@ test('release-policy covers historical 0.3.x versions and generalizes cleanly to
   assert.equal(previousReleaseVersion('0.4.0', 'rebuild1'), '0.4.0');
   assert.equal(previousReleaseVersion('0.4.1', ''), '0.4.0-rebuild6');
   assert.equal(previousReleaseVersion('0.4.1', 'rebuild1'), '0.4.1');
+  assert.equal(previousReleaseVersion('0.4.3', ''), '0.4.2-rebuild3');
+  assert.equal(previousReleaseVersion('0.4.3', 'rebuild1'), '0.4.3');
 });

@@ -1,6 +1,6 @@
 # Ned와 Zed는 어떻게 다른가
 
-Ned의 편집 화면은 Zed입니다. 파일을 열고 코드를 수정하며 패널을 배치하는 기능은 Zed가 담당합니다. Ned는 여기에 전용 OpenCode 엔진, 사내 모델 설정, 자연어 요청에 맞는 자동 스킬·도구 연결, 개발 도구와 Workspace Tools, 스킬 79개, OpenViking 개인화 지식 저장소를 연결하고 한 번에 설치할 수 있도록 묶었습니다. 이 글은 **Ned 0.4.2** 기본 배포 구성을 기준으로 설명합니다.
+Ned의 편집 화면은 Zed입니다. 파일을 열고 코드를 수정하며 패널을 배치하는 기능은 Zed가 담당합니다. Ned는 여기에 전용 OpenCode 엔진, 사내 모델 설정, 자연어 요청에 맞는 자동 스킬·도구 연결, 개발 도구와 Workspace Tools, 스킬 79개, OpenViking 개인화 지식 저장소를 연결하고 한 번에 설치할 수 있도록 묶었습니다. 이 글은 **Ned 0.4.3** 기본 배포 구성을 기준으로 설명합니다.
 
 자연어 요청이 어떤 스킬과 도구로 자동 연결되는지 링크 없는 독립 문서로 보려면 [자연어 자동 도구 연결 소개·안내·상세 가이드](ned-auto-routing-guide.md)를, Aegis·Conductor·Serena·Graphify·REA·OpenViking·agent-desktop과 스킬 79개의 요청 예시를 보려면 [Ned 상세 사용 안내서](ned-user-guide.md)를 참고하세요. 이 글에서는 구성과 운영의 차이를 요약합니다.
 
@@ -12,7 +12,7 @@ Ned는 배포 담당자가 도구와 런타임을 미리 준비합니다. 사용
 
 Zed 자체도 AI 기능과 외부 에이전트 연결을 지원합니다. 비교할 때는 기능의 존재뿐 아니라 기본 배포 구성과 도구를 연결·관리하는 주체를 함께 살펴봐야 합니다.
 
-| 항목 | Zed를 직접 구성할 때 | Ned 0.4.2 기본 배포판 |
+| 항목 | Zed를 직접 구성할 때 | Ned 0.4.3 기본 배포판 |
 | --- | --- | --- |
 | 코드 편집 | Zed에서 탐색·편집·저장 | 같은 Zed 편집 기능 사용 (AI는 부분 편집 `patch_file` 우선, 수정 전 Shadow Git 자동 체크포인트 지원) |
 | 에이전트 | Zed 자체 AI 또는 사용자가 연결한 에이전트 | Ned 전용 OpenCode 또는 기본 Zed Agent 선택 |
@@ -36,7 +36,7 @@ Zed 자체도 AI 기능과 외부 에이전트 연결을 지원합니다. 비교
 ```mermaid
 flowchart LR
     User[사용자 자연어 요청] --> Zed[Zed 편집기와 대화 화면]
-    subgraph Ned[Ned 0.4.2 통합 환경]
+    subgraph Ned[Ned 0.4.3 통합 환경]
         Zed -->|ACP 연결| Engine[전용 OpenCode 엔진]
         Engine -->|자동 스킬·기억 주입| Gateway[호스트 모델 게이트웨이]
         Engine --> Tools[Ned 도구 중계·권한 가드]
@@ -97,7 +97,7 @@ OpenViking 0.5.5는 Ned와 함께 백그라운드에서 실행됩니다. 사용�
 
 프로젝트는 알림 영역의 **Ned → 프로젝트 폴더 열기**에서 선택합니다. 이 창은 실제 Windows의 바탕화면·즐겨찾기를 탐색하고, 편집기 내부 Open Folder는 내부 경로 선택창을 사용합니다. 설치 위치는 D 드라이브 등으로 바꿀 수 있지만 사용자 데이터는 `%APPDATA%\Ned`에 유지됩니다.
 
-[자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md) · [소개와 활용](ned-introduction.md) · [설치 안내](offline-setup.md) · [0.4.2 변경 사항](changes-0.4.2.md) · [0.4.2 검증 기록](validation-0.4.2.md) · [라이선스](license-policy.md)
+[자연어 자동 도구 연결 가이드](ned-auto-routing-guide.md) · [소개와 활용](ned-introduction.md) · [설치 안내](offline-setup.md) · [0.4.3 변경 사항](changes-0.4.3.md) · [0.4.3 검증 기록](validation-0.4.3.md) · [라이선스](license-policy.md)
 
 ## 기본 Zed Agent만 사용하고 싶다면
 

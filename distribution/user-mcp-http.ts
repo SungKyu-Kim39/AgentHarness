@@ -4,6 +4,7 @@ import { request as httpsRequest } from 'node:https';
 import { isIP } from 'node:net';
 import { getCACertificates } from 'node:tls';
 import { z } from 'zod';
+import manifest from '../package.json' with { type: 'json' };
 
 const addressLimit = 2 * 1024 * 1024;
 const protocolVersions = ['2025-11-25', '2025-06-18', '2025-03-26'];
@@ -199,7 +200,7 @@ export class UserMcpHttp {
   async list(signal: AbortSignal): Promise<RemoteTool[]> {
     const combined = AbortSignal.any([signal, AbortSignal.timeout(25000)]);
     const hello = z.object({ protocolVersion: z.string(), capabilities: z.object({ tools: z.object({}).passthrough() }) })
-      .safeParse(await this.send('initialize', { protocolVersion: this.protocol, capabilities: {}, clientInfo: { name: 'Ned', version: '0.4.2' } }, combined));
+      .safeParse(await this.send('initialize', { protocolVersion: this.protocol, capabilities: {}, clientInfo: { name: 'Ned', version: manifest.version } }, combined));
     if (!hello.success || !protocolVersions.includes(hello.data.protocolVersion)) throw Error('지원하는 Streamable HTTP MCP 서버인지 확인하세요.');
     this.protocol = hello.data.protocolVersion;
     await this.send('notifications/initialized', {}, combined, true);
