@@ -1,7 +1,7 @@
 // Run an isolated GUI fixture with the installed Electron runtime and exact installed preload bytes.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFile, cp, link, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { access, copyFile, cp, link, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { createPackage, extractFile } from '@electron/asar';
 import { build } from 'esbuild';
@@ -26,7 +26,15 @@ for (const entry of await readdir(installerRoot, { withFileTypes: true })) {
   await link(from, to).catch(() => copyFile(from, to));
 }
 await cp(path.join(installerRoot, 'locales'), path.join(image, 'locales'), { recursive: true });
-const env = { ...process.env, NED_MCP_UI_FIXTURE_ROOT: fixtureRoot };
+const testCert = path.join(fixtureRoot, 'test-cert.pem');
+const testKey = path.join(fixtureRoot, 'test-key.pem');
+const gitOpenSSL = path.join(process.env.ProgramFiles ?? 'C:\\Program Files', 'Git', 'usr', 'bin', 'openssl.exe');
+const openssl = windows && await access(gitOpenSSL).then(() => true, () => false) ? gitOpenSSL : 'openssl';
+const tls = spawnSync(openssl, ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-days', '2', '-subj', '/CN=localhost',
+  '-addext', 'subjectAltName=IP:127.0.0.1,DNS:localhost', '-keyout', testKey, '-out', testCert], { shell: false, windowsHide: true, timeout: 15000 });
+if (tls.error) throw tls.error;
+assert.equal(tls.status, 0, tls.stderr?.toString() || 'Loopback HTTPS fixture certificate generation failed');
+const env = { ...process.env, NED_MCP_UI_FIXTURE_ROOT: fixtureRoot, NODE_EXTRA_CA_CERTS: testCert };
 delete env.ELECTRON_RUN_AS_NODE;
 const executable = path.join(image, windows ? 'Ned.exe' : 'electron');
 const flags = windows ? ['--disable-gpu'] : ['--no-sandbox', '--ozone-platform=headless', '--disable-gpu'];
@@ -35,4 +43,5 @@ if (result.error) throw result.error;
 assert.equal(result.status, 0, 'Installed Ned management-window fixture did not finish');
 const proof = JSON.parse(await readFile(path.join(fixtureRoot, 'result.json'), 'utf8'));
 for (const key of ['loadedFromAsar', 'registered', 'checked', 'persistence']) assert.equal(proof[key], true, key);
+assert.equal(proof.transport, 'https-loopback');
 console.log(JSON.stringify(proof));

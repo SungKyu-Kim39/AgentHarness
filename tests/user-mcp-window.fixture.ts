@@ -1,16 +1,19 @@
 import assert from 'node:assert/strict';
-import { createServer } from 'node:http';
+import { createServer } from 'node:https';
+import { readFileSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { app, BrowserWindow } from 'electron';
 import { UserMcp } from '../distribution/user-mcp';
-import { UserMcpHttp } from '../distribution/user-mcp-http';
 import { UserMcpWindow } from '../distribution/ned/user-mcp-window';
 const fixture = process.env.NED_MCP_UI_FIXTURE_ROOT;
 if (!fixture) throw Error('MCP GUI fixture directory is required');
 for (const flag of ['disable-background-networking', 'disable-component-update', 'disable-sync', 'disable-domain-reliability']) app.commandLine.appendSwitch(flag);
 app.setPath('userData', path.join(fixture, 'gui-data'));
-const model = createServer(async (req, res) => {
+const model = createServer({
+  key: readFileSync(path.join(fixture, 'test-key.pem')),
+  cert: readFileSync(path.join(fixture, 'test-cert.pem')),
+}, async (req, res) => {
   let text = '';
   for await (const chunk of req) text += chunk;
   const call = JSON.parse(text);
@@ -27,7 +30,7 @@ const cipher = { isEncryptionAvailable: () => true, encryptString: (value: strin
 app.whenReady().then(async () => {
   await new Promise<void>(resolve => model.listen(0, '127.0.0.1', resolve));
   const { port } = model.address() as { port: number };
-  const registry = new UserMcp(fixture, cipher, server => new UserMcpHttp(server.endpoint, async () => ({ family: 4, address: '127.0.0.1' })));
+  const registry = new UserMcp(fixture, cipher);
   const manager = new UserMcpWindow();
   await registry.load();
   manager.open(registry, '');
@@ -48,7 +51,11 @@ app.whenReady().then(async () => {
     };
     await until(() => get('entries').textContent.includes('등록된 MCP가 없습니다'));
     get('add').click();
-    get('name').value = '사내 검색'; get('id').value = 'team-search'; get('url').value = 'http://mcp.internal.test:${port}/mcp';
+    get('name').value = '사내 검색'; get('id').value = 'team-search';
+    get('url').value = 'https://192.0.2.42/mcp';
+    get('check').click();
+    await until(() => get('message').textContent.includes('사내 사설 IP 또는 이 PC'));
+    get('url').value = 'https://127.0.0.1:${port}/mcp';
     get('check').click();
     await until(() => get('toolChoices').textContent.includes('fixture_search'));
     get('toolChoices').querySelector('input').click();
@@ -68,6 +75,6 @@ app.whenReady().then(async () => {
   await loaded.load();
   assert.equal(loaded.commands()[0].name, 'mcp-team-search');
   manager.close(); registry.close(); model.closeAllConnections(); model.close();
-  await writeFile(path.join(fixture, 'result.json'), JSON.stringify({ electron: process.versions.electron, loadedFromAsar: app.getAppPath().endsWith('.asar'), ...result, persistence: true }) + '\n');
+  await writeFile(path.join(fixture, 'result.json'), JSON.stringify({ electron: process.versions.electron, loadedFromAsar: app.getAppPath().endsWith('.asar'), ...result, persistence: true, transport: 'https-loopback' }) + '\n');
   app.exit(0);
 }).catch(error => { process.stderr.write(error.stack + '\n'); app.exit(1); });

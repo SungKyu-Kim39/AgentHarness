@@ -19,6 +19,7 @@ import type { PythonSelector } from './python-projects';
 import { automaticSkillContext, automaticSkillPolicy, isCompactionPrompt, isContinuationTurn, isReaMode, normalizeConversationMode, reaModeGuidance, specializedToolRequested } from '../src/main/skill-routing';
 import { SessionMemoryManager, resolveMemoryPolicy, type OpenCodeSessionMessage } from '../src/main/session-memory';
 import { UserMcp } from './user-mcp';
+import { UserMcpHttp } from './user-mcp-http';
 
 export interface Credentials { url: string; password: string }
 export interface ModelBinding { provider: string; name: string; id: string; gateway: ModelGateway }
@@ -108,7 +109,11 @@ export class NativeRuntime {
   setEditorCheck(check: NonNullable<NativeRuntime['editorCheck']>) { this.editorCheck = check; }
   constructor(readonly root: string, readonly resources: string, cipher: Cipher, private approve: (message: string, detail: string, signal?: AbortSignal) => Promise<boolean> = async () => false, private approveEdit?: (message: string, detail: string, signal?: AbortSignal) => Promise<EditDecision>, private permissions?: PermissionPolicy) {
     this.vault = new ConfigVault(root, cipher);
-    this.userMcp = new UserMcp(root, cipher);
+    this.userMcp = new UserMcp(root, cipher, server => new UserMcpHttp(server.endpoint, undefined, () => this.localServicePorts()));
+  }
+  private localServicePorts() {
+    const endpoints = [...this.models.map(model => model.gateway.baseUrl), this.current?.url, this.backend?.url, this.tools?.url];
+    return [...endpoints.filter((url): url is string => !!url).map(url => Number(new URL(url).port)), ...(this.zedModels?.ports() ?? []), ...(this.knowledge?.localPorts() ?? [])];
   }
   async load() { return this.vault.load(); }
   async initialize(config: AgentConfig, progress: (stage: 'models' | 'skills', detail?:string) => void = () => {}) {
@@ -172,7 +177,7 @@ export class NativeRuntime {
         pythonConfig: () => this.config?.python,
         userMcp: this.userMcp,
         batchRecovered: () => this.scanBatchJournals(),
-        reservedPorts: () => [...this.models.map(m => Number(new URL(m.gateway.baseUrl).port)), ...(this.zedModels?.ports() ?? []), ...[this.current?.url, this.backend?.url].filter((u): u is string => !!u).map(u => Number(new URL(u).port)), ...(this.knowledge?.localPorts() ?? [])],
+        reservedPorts: () => this.localServicePorts(),
       });
       progress('skills');
       await this.tools.start((done,total)=>{if(done%100===0||done===total)progress('skills',`${done}/${total}개 문서`);});

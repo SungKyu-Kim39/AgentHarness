@@ -15,10 +15,13 @@ export const mcpEndpointSchema = z.object({
       const url = new URL(value);
       if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw Error();
       const host = url.hostname.replace(/^\[|\]$/g, '');
-      if (isIP(host) && !isIntranetAddress(host)) throw Error();
+      if (isIP(host) && !isIntranetAddress(host) && !isMcpLoopbackHost(host)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: '사내 사설 IP 또는 이 PC의 로컬 주소를 입력하세요.' });
+        return z.NEVER;
+      }
       return url.href;
     } catch {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: '사내 HTTP(S) MCP 주소를 입력하세요.' });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'MCP URL에 http:// 또는 https://를 사용하고 주소에 인증 정보, 쿼리, 프래그먼트를 넣지 마세요.' });
       return z.NEVER;
     }
   }),
@@ -37,6 +40,10 @@ export const remoteToolSchema = z.object({
 export type RemoteTool = z.infer<typeof remoteToolSchema>;
 
 type Address = { address: string; family: number };
+function isMcpLoopbackHost(host: string): boolean {
+  return ['localhost', '127.0.0.1', '::1'].includes(host);
+}
+
 export function isIntranetAddress(address: string): boolean {
   const family = isIP(address);
   if (family === 6) return /^f[cd][0-9a-f]{2}:/i.test(address);
@@ -47,6 +54,8 @@ export function isIntranetAddress(address: string): boolean {
 
 async function resolveIntranet(hostname: string): Promise<Address> {
   const host = hostname.replace(/^\[|\]$/g, '');
+  if (host === 'localhost' || host === '127.0.0.1') return { address: '127.0.0.1', family: 4 };
+  if (host === '::1') return { address: '::1', family: 6 };
   const resolved = await lookup(host, { all: true }).catch(() => { throw Error('사내 MCP 주소를 찾을 수 없습니다.'); });
   if (!resolved.length || resolved.some(({ address }) => !isIntranetAddress(address))) throw Error('사내 사설 주소로 연결되는 MCP만 등록할 수 있습니다.');
   return resolved[0]!;
@@ -109,8 +118,14 @@ export class UserMcpHttp {
   private sessionId?: string;
   private sequence = 0;
   private address?: Address;
-  constructor(private endpoint: McpEndpoint, private resolve = resolveIntranet) {
+  constructor(private endpoint: McpEndpoint, private resolve = resolveIntranet, private reservedPorts?: () => number[]) {
     this.url = new URL(mcpEndpointSchema.parse(endpoint).url);
+  }
+
+  private assertAvailablePort() {
+    const host = this.url.hostname.replace(/^\[|\]$/g, '');
+    const port = Number(this.url.port || (this.url.protocol === 'https:' ? 443 : 80));
+    if (isMcpLoopbackHost(host) && this.reservedPorts?.().includes(port)) throw Error('Ned 내부 서비스 주소는 사용자 MCP로 등록할 수 없습니다.');
   }
 
   private async send(method: string, params: unknown, signal: AbortSignal, notification = false) {
@@ -121,14 +136,23 @@ export class UserMcpHttp {
   }
 
   private async request(method: 'POST' | 'DELETE', signal: AbortSignal, payload?: Buffer, id?: number, notification = false, initializing = false, toolCall = false) {
+    this.assertAvailablePort();
     const combined = AbortSignal.any([signal, AbortSignal.timeout(toolCall ? 120000 : 12000)]);
     combined.throwIfAborted();
     this.address ??= await withCancellation(this.resolve(this.url.hostname), combined);
     combined.throwIfAborted();
+    this.assertAvailablePort();
     const { address, family } = this.address;
     return new Promise<unknown>((resolve, reject) => {
       let sent = false;
-      const failed = () => reject(Error(sent && toolCall ? '사내 MCP 요청의 실행 결과를 확인할 수 없습니다. 대상에서 결과를 확인한 뒤 다시 요청하세요.' : '사내 MCP 서버와 연결하지 못했습니다.'));
+      const failed = (error?: NodeJS.ErrnoException) => {
+        const code = error?.code ?? '';
+        if (code === 'ERR_TLS_CERT_ALTNAME_INVALID') return reject(Error('MCP HTTPS 인증서에 등록한 URL의 호스트 이름이나 IP가 포함되지 않습니다.'));
+        if (/^(?:CERT_|SELF_SIGNED_CERT_|DEPTH_ZERO_SELF_SIGNED_CERT|UNABLE_TO_(?:VERIFY_LEAF_SIGNATURE|GET_ISSUER_CERT))/.test(code)) {
+          return reject(Error('MCP HTTPS 인증서를 신뢰할 수 없습니다. 인증서 유효기간과 Windows의 신뢰 인증서 설정을 확인하세요.'));
+        }
+        reject(Error(sent && toolCall ? '사내 MCP 요청의 실행 결과를 확인할 수 없습니다. 대상에서 결과를 확인한 뒤 다시 요청하세요.' : '사내 MCP 서버와 연결하지 못했습니다.'));
+      };
       const tls = this.url.protocol === 'https:';
       const request = (tls ? httpsRequest : httpRequest)(this.url, {
         method, agent: false, signal: combined, family,

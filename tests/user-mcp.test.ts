@@ -127,10 +127,12 @@ test('registered Streamable HTTP MCP is scoped to a single authenticated request
   await assert.rejects(registry.check(input, unbounded), /인증 또는 접근 권한/);
 });
 
-test('address policy accepts intranet-only endpoints and never follows redirects', async t => {
+test('address policy allows explicitly registered localhost, blocks internal ports and never follows redirects', async t => {
   for (const value of ['127.0.0.1', '169.254.1.2', '8.8.8.8', '::1', '::ffff:10.0.0.1']) assert.equal(isIntranetAddress(value), false);
   for (const value of ['10.1.1.1', '172.16.1.1', '192.168.1.1', 'fd20::1']) assert.equal(isIntranetAddress(value), true);
-  assert.throws(() => new UserMcpHttp({ url: 'http://127.0.0.1/mcp' }));
+  assert.throws(() => new UserMcpHttp({ url: 'http://192.0.2.42/mcp' }));
+  assert.doesNotThrow(() => new UserMcpHttp({ url: 'https://127.0.0.1:18081/mcp' }));
+  assert.doesNotThrow(() => new UserMcpHttp({ url: 'http://[::1]:8081/mcp' }));
   assert.throws(() => new UserMcpHttp({ url: 'http://10.0.0.1/mcp', auth: { header: 'Authorization', value: 'Bearer fake-key' } }));
   let redirected = 0;
   const server = createServer((req, res) => {
@@ -139,8 +141,10 @@ test('address policy accepts intranet-only endpoints and never follows redirects
   });
   const port = await listening(server);
   t.after(() => close(server));
-  const client = new UserMcpHttp({ url: `http://mcp.internal.test:${port}/mcp` }, async () => ({ address: '127.0.0.1', family: 4 }));
+  const client = new UserMcpHttp({ url: `http://127.0.0.1:${port}/mcp` });
   await assert.rejects(client.list(unbounded), /주소 이동/);
+  const reserved = new UserMcpHttp({ url: `http://localhost:${port}/mcp` }, undefined, () => [port]);
+  await assert.rejects(reserved.list(unbounded), /Ned 내부 서비스/);
   assert.equal(redirected, 0);
 });
 

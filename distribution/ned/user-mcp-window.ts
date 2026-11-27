@@ -13,7 +13,7 @@ function view(nonce: string) {
 <section id="editView" hidden><form id="form"><h2 id="editTitle">MCP 등록</h2>
 <label>Server name<input id="name" required maxlength="80" placeholder="예: 사내 문서 검색"></label>
 <label>명령 ID <small>영문 소문자·숫자·하이픈. 예: doc-search → /mcp-doc-search</small><input id="id" required maxlength="48" pattern="[a-z0-9]+(?:-[a-z0-9]+)*"></label>
-<label>URL <small>사내 Streamable HTTP 엔드포인트</small><input id="url" type="url" required maxlength="2048" placeholder="https://mcp.internal.example/mcp"></label>
+<label>URL <small>사내 또는 이 PC의 Streamable HTTP 주소</small><input id="url" type="url" required maxlength="2048" placeholder="https://127.0.0.1:18081/mcp"></label>
 <label>인증 헤더<select id="header"><option value="">없음</option><option>Authorization</option><option>X-API-Key</option></select></label>
 <label id="secretLabel" hidden>인증 값 <small id="secretHint">Authorization이면 Bearer 접두사를 포함한 헤더 값을 입력하세요.</small><input id="secret" type="password" autocomplete="new-password" maxlength="4096"></label>
 <fieldset id="tools" hidden><legend>사용할 도구</legend><div id="toolChoices"></div></fieldset>

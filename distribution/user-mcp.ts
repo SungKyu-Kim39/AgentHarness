@@ -94,7 +94,16 @@ export class UserMcp {
 
   async check(input: unknown, signal: AbortSignal) {
     const parsed = serverInput.extend({ keepAuth: z.boolean().optional() }).safeParse(input);
-    if (!parsed.success) throw Error(parsed.error.issues.some(issue => issue.path.includes('auth')) ? '인증 헤더와 값을 확인하세요. 인증 정보를 보내려면 HTTPS가 필요합니다.' : '이름, 영문 명령 ID, 사내 HTTP(S) 주소를 확인하세요.');
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      if (first.path[0] === 'id') throw Error('명령 ID는 영문 소문자·숫자·하이픈으로 입력하세요. 예: doc-search');
+      if (first.path[0] === 'name') throw Error('Server name을 1~80자로 입력하세요.');
+      if (first.path[0] === 'endpoint' && first.path[1] === 'url') {
+        throw Error(first.code === 'custom' ? first.message : 'MCP URL을 입력하세요.');
+      }
+      if (first.path.includes('auth')) throw Error('인증 헤더와 값을 확인하세요. 인증 정보를 보내려면 HTTPS가 필요합니다.');
+      throw Error('사용자 MCP 등록 양식을 확인하세요.');
+    }
     if (this.storeError) throw Error('저장된 사용자 MCP 설정을 확인하세요.');
     const { keepAuth, ...server } = parsed.data;
     if (keepAuth) {
