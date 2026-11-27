@@ -3,7 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {readFile,writeFile,mkdir,cp,access} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileHash} from './installer-audit.mjs';
-import {isActionsTransportVersion,isRebuiltEditorReusable,isSupportedReleaseVersion,isUserDataPreservedVersion,previousReleaseVersion} from './release-policy.mjs';
+import {isActionsTransportVersion,isRebuiltEditorReusable,isSupportedReleaseVersion,isUserDataPreservedVersion,pinnedEditorRevision,previousReleaseVersion} from './release-policy.mjs';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..'),repo=process.env.GH_REPO,branch=process.env.GITHUB_REF_NAME;
 const run=(cmd,args,options={})=>execFileSync(cmd,args,{cwd:root,stdio:'inherit',...options});
@@ -20,7 +20,8 @@ if(!isSupportedReleaseVersion(version)||(requested!==version&&!isRebuiltEditorRe
 const artifactVersion=version+(revision?'-'+revision:'');
 const isPrerelease=artifactVersion!=='0.4.1';
 const releaseChannel=isPrerelease?'사전 릴리스':'정식 릴리스';
-const editorArtifactVersion=isRebuiltEditorReusable(version,revision)?version:artifactVersion;
+const editorRevision=pinnedEditorRevision(version,revision);
+const editorArtifactVersion=version+(editorRevision?'-'+editorRevision:'');
 const prefix=`Ned-${artifactVersion}`,tag=`v${artifactVersion}`,groups=['upgrade'];
 const validationRun=process.env.NED_VALIDATION_RUN,candidateRun=process.env.NED_CANDIDATE_RUN,source=process.env.NED_CANDIDATE_SOURCE;
 if((branch!==`codex/ned-${version}`&&branch!=='AG-work')||!/^\d+$/.test(validationRun??'')||!/^\d+$/.test(candidateRun??'')||!/^[a-f0-9]{40}$/.test(source??''))throw Error('Invalid immutable release inputs');

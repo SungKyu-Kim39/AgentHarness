@@ -183,9 +183,9 @@ test('prompt boundary strips the private ticket and the model sees only the sele
 
 const installedEngine = process.env.NED_TEST_ENGINE;
 const installedResources = process.env.NED_TEST_RESOURCES;
-test('installed Ned ACP refreshes commands and executes only a slash-selected external MCP',
+test('installed Ned ACP categorizes slash commands and executes only a slash-selected external MCP',
   { skip: !installedEngine || !installedResources, timeout: 60000 }, async t => {
-    const { mkdir } = await import('node:fs/promises');
+    const { mkdir, writeFile } = await import('node:fs/promises');
     const { spawn } = await import('node:child_process');
     const { createInterface } = await import('node:readline');
     const { NativeRuntime } = await import('../distribution/native-control');
@@ -223,6 +223,11 @@ test('installed Ned ACP refreshes commands and executes only a slash-selected ex
     });
     const modelPort = await listening(model);
     const data = path.join(root, 'data');
+    for (const [scope, id] of [[path.join(data, 'skills'), 'fixture-team-notes'], [path.join(project, '.ned', 'skills'), 'fixture-project-notes']]) {
+      const folder = path.join(scope, id);
+      await mkdir(folder, { recursive: true });
+      await writeFile(path.join(folder, 'SKILL.md'), `---\nname: ${id}\ndescription: Slash command category fixture.\n---\nSummarize notes.\n`);
+    }
     const registry = new UserMcp(data, cipher, server => new UserMcpHttp(server.endpoint, async () => ({ address: '127.0.0.1', family: 4 })));
     const runtime = new NativeRuntime(data, installedResources!, cipher, async message => {
       if (message === '사용자 MCP 도구 실행') approvals++;
@@ -272,9 +277,13 @@ test('installed Ned ACP refreshes commands and executes only a slash-selected ex
     };
     await rpc('initialize', { protocolVersion: 1, clientCapabilities: {} });
     const { sessionId } = await rpc('session/new', { cwd: project, mcpServers: [] });
-    assert.ok((await waitCommand(sessionId, false)).some((item: any) => item.name === 'compact'));
+    const coreCommands = [
+      ['compact', undefined], ['skill-fixture-project-notes', 'skill'], ['skill-fixture-team-notes', 'skill'],
+    ];
+    const categories = (commands: any[]) => commands.map(item => [item.name, item._meta?.command_category]);
+    assert.deepEqual(categories(await waitCommand(sessionId, false)), coreCommands);
     await registry.toggle('team-query', true);
-    assert.ok((await waitCommand(sessionId, true)).some((item: any) => item.name === 'compact'));
+    assert.deepEqual(categories(await waitCommand(sessionId, true)), [...coreCommands, ['mcp-team-query', 'mcp']]);
     await rpc('session/prompt', { sessionId, prompt: [{ type: 'text', text: 'ordinary user request' }] });
     assert.equal(remote.calls.length, 0);
     await rpc('session/prompt', { sessionId, prompt: [{ type: 'text', text: '/mcp-team-query selected user request' }] });
@@ -283,7 +292,7 @@ test('installed Ned ACP refreshes commands and executes only a slash-selected ex
     assert.ok(seen.some(entry => !entry.selected && entry.request.includes('ordinary user request')));
     assert.ok(seen.some(entry => entry.selected && entry.request.includes('selected user request')));
     await registry.toggle('team-query', false);
-    await waitCommand(sessionId, false);
+    assert.deepEqual(categories(await waitCommand(sessionId, false)), coreCommands);
     await assert.rejects(rpc('session/prompt', { sessionId, prompt: [{ type: 'text', text: '/mcp-team-query after disable' }] }), /목록에서 다시 선택/);
     assert.equal(remote.calls.length, 1);
   });

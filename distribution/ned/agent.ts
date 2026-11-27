@@ -87,8 +87,13 @@ async function main() {
     if (commandUpdates.get(sessionId) !== update) return;
     commandUpdates.delete(sessionId);
     if (!sessions.has(sessionId)) return;
+    const availableCommands = [
+      { name: 'compact', description: '대화 요약' },
+      ...skills.map((command: { name: string; description: string }) => ({ ...command, _meta: { command_category: 'skill' } })),
+      ...mcp.map((command: { name: string; description: string }) => ({ ...command, _meta: { command_category: 'mcp' } })),
+    ];
     await writer.write({ jsonrpc: '2.0', method: 'session/update', params: { sessionId, update: {
-      sessionUpdate: 'available_commands_update', availableCommands: [{ name: 'compact', description: '대화 요약' }, ...skills, ...mcp],
+      sessionUpdate: 'available_commands_update', availableCommands,
     } } });
   };
   const pending = new Map<string | number, { method: string; cwd?: string; session?: string; mode?: string; mcpTicket?: string }>();

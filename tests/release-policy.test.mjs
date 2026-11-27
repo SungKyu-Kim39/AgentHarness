@@ -10,6 +10,7 @@ import {
   isWorkspaceToolsVersion,
   isSupportedReleaseVersion,
   isRebuiltEditorReusable,
+  pinnedEditorRevision,
   previousReleaseVersion,
 } from '../scripts/release-policy.mjs';
 
@@ -46,6 +47,10 @@ test('release-policy covers historical 0.3.x versions and generalizes cleanly to
   assert.equal(isRebuiltEditorReusable('0.3.15', 'rebuild1'), true);
   assert.equal(isRebuiltEditorReusable('0.3.15', ''), false);
   assert.equal(isRebuiltEditorReusable('0.4.0', 'rebuild1'), true);
+  assert.equal(pinnedEditorRevision('0.3.8', 'rebuild1'), 'rebuild1');
+  assert.equal(pinnedEditorRevision('0.4.2', 'rebuild2'), '');
+  assert.equal(pinnedEditorRevision('0.4.2', 'rebuild3'), 'rebuild3');
+  assert.equal(pinnedEditorRevision('0.4.2', 'rebuild4'), 'rebuild3');
 
   assert.equal(previousReleaseVersion('0.3.12', ''), '0.3.11');
   assert.equal(previousReleaseVersion('0.3.12', 'rebuild1'), '0.3.12');
