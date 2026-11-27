@@ -353,6 +353,7 @@ jobs:
     permissions:
       contents: read
     env:
+      NED_BUILD_REVISION: ${{ inputs.build_revision }}
       CARGO_BUILD_JOBS: 2
       CARGO_INCREMENTAL: 0
       CARGO_PROFILE_RELEASE_DEBUG: 0

@@ -40,12 +40,30 @@ if(mode==='candidate'){
  if(editor.conclusion!=='success'||editor.path!=='.github/workflows/windows-offline-smoke.yml'||(!reuseEditor&&editor.head_branch!==branch))throw Error('Unverified editor build');
  if(reuseEditor)run('git',['merge-base','--is-ancestor',editor.head_sha,'HEAD']);
  run('git',['diff','--exit-code',editor.head_sha,'HEAD','--','scripts/patch-ned-editor.mjs','scripts/ned-editor-version.mjs','scripts/release-policy.mjs','ned-editor-source-lock.json','assets/ned-icon.png','package.json']);
- run('gh',['run','download',editorRun,'--pattern',`ned-editor-${editorArtifactVersion}-*`,'--dir','.cache/ned/editor-download']);
- const {readdir}=await import('node:fs/promises');const records=(await readdir(path.join(root,'.cache/ned/editor-download'),{recursive:true})).filter(name=>path.basename(name)===`build-${editorArtifactVersion}.json`);
- if(records.length!==1)throw Error('Ambiguous editor artifact');const editorFolder=path.dirname(records[0]);
- for(const name of [`Ned-editor-${editorArtifactVersion}.exe`,`zed-ned-editor-source-v1.28.1-${editorArtifactVersion}.tar.gz`,`build-${editorArtifactVersion}.json`])await cp(path.join(root,'.cache/ned/editor-download',editorFolder,name),path.join(root,'downloads/editor',name));
+ const editorArtifacts=gh(['api',`repos/${process.env.GH_REPO}/actions/runs/${editorRun}/artifacts`]).artifacts.filter(item=>!item.expired);
+ const artifactName=value=>`ned-editor-${value}-${editor.head_sha}`;
+ // This patched editor ran before the source-build job exported build_revision.
+ const missedRevision=version==='0.4.2'&&editorRevision==='rebuild3'&&!editorArtifacts.some(item=>item.name===artifactName(editorArtifactVersion));
+ const compiledArtifactVersion=missedRevision?version:editorArtifactVersion;
+ if(editorArtifacts.filter(item=>item.name===artifactName(compiledArtifactVersion)).length!==1)throw Error('Missing or ambiguous editor artifact');
+ const editorFolder='.cache/ned/editor-download';
+ run('gh',['run','download',editorRun,'--name',artifactName(compiledArtifactVersion),'--dir',editorFolder]);
+ const editorBuild=await json(`${editorFolder}/build-${compiledArtifactVersion}.json`);
+ if(editorBuild.sourceCommit!==editor.head_sha)throw Error('Editor artifact source mismatch');
+ if(missedRevision){
+  if(editorBuild.buildRevision!==undefined)throw Error('Unexpected revision for the compiled editor');
+  editorBuild.releaseRevision=editorRevision;
+  editorBuild.compiledArtifactVersion=compiledArtifactVersion;
+ }
+ for(const filename of [value=>`Ned-editor-${value}.exe`,value=>`zed-ned-editor-source-v1.28.1-${value}.tar.gz`]){
+  const compiled=filename(compiledArtifactVersion),pinned=filename(editorArtifactVersion);
+  const item=editorBuild.files.find(record=>record.name===compiled);
+  if(!item)throw Error('Editor artifact manifest does not include '+compiled);
+  await cp(path.join(root,editorFolder,compiled),path.join(root,'downloads/editor',pinned));
+  item.name=pinned;
+ }
+ await writeFile(path.join(root,'downloads/editor',`build-${editorArtifactVersion}.json`),JSON.stringify(editorBuild,null,2)+'\n');
  const editorInputs=await sourceEditorInputs(root);
- if(editorInputs.build.sourceCommit!==editor.head_sha)throw Error('Editor artifact source mismatch');
  run(process.execPath,['scripts/windows-test-bundle.mjs']);
  const fixtureGroups=['upgrade'];
  const artifactTransport=isActionsTransportVersion(version);

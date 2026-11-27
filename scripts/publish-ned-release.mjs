@@ -84,12 +84,13 @@ let binaryDirectory=candidatePath;
 if(actionsTransport){
  binaryDirectory='.cache/ned/candidate-binaries';
  run('gh',['run','download',candidateRun,'--name',`ned-${artifactVersion}-installer-assets-${source}`,'--dir',binaryDirectory]);
- run('gh',['run','download',String(state.editorRun),'--pattern',`ned-editor-${editorArtifactVersion}-*`,'--dir','.cache/ned/final-editor']);
- const {readdir}=await import('node:fs/promises');
- const archive=`zed-ned-editor-source-v1.28.1-${editorArtifactVersion}.tar.gz`;
- const editorFile=(await readdir(path.join(root,'.cache/ned/final-editor'),{recursive:true})).find(name=>path.basename(name)===archive);
  const editorBuild=await json(`downloads/editor/build-${editorArtifactVersion}.json`);
- const pinned=editorBuild.files.find(item=>item.name===archive), editorSource=path.join(root,'.cache/ned/final-editor',editorFile??'missing');
+ const compiledEditorVersion=editorBuild.compiledArtifactVersion??editorArtifactVersion;
+ const archive=`zed-ned-editor-source-v1.28.1-${editorArtifactVersion}.tar.gz`;
+ const editorFolder='.cache/ned/final-editor';
+ run('gh',['run','download',String(state.editorRun),'--name',`ned-editor-${compiledEditorVersion}-${editorBuild.sourceCommit}`,'--dir',editorFolder]);
+ const pinned=editorBuild.files.find(item=>item.name===archive);
+ const editorSource=path.join(root,editorFolder,`zed-ned-editor-source-v1.28.1-${compiledEditorVersion}.tar.gz`);
  if(!pinned||await fileHash(editorSource)!==pinned.sha256)throw Error('Corresponding editor source does not match build metadata');
  await cp(editorSource,path.join(root,'downloads/editor',archive));
  run('git',['-c','credential.helper=!gh auth git-credential','lfs','pull','--include=downloads/astryx/*.zip']);
