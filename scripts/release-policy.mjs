@@ -58,6 +58,12 @@ export function isRebuiltEditorReusable(version, revision) {
   return isUserDataPreservedVersion(version) && isValidRevision(revision);
 }
 
+export function pinnedEditorRevision(version, revision = '') {
+  if (!isRebuiltEditorReusable(version, revision)) return revision;
+  // 0.4.2 rebuild3 is the first editor with the ACP skill completion group.
+  return version === '0.4.2' && Number(revision.slice(7)) >= 3 ? 'rebuild3' : '';
+}
+
 export function previousReleaseVersion(version, revision = '') {
   const artifact = version + (revision ? '-' + revision : '');
   if (artifact === '0.3.12-rebuild2') return '0.3.12-rebuild1';

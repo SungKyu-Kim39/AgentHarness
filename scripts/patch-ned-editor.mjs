@@ -120,6 +120,30 @@ function patchProjectTerminals(text) {
             settings.shell = shell;
         }`);
 }
+
+function patchSlashCategories(text) {
+ text=replaceOne(text,'Only the native Zed agent annotates its commands; commands\n/// from external ACP agents carry no category and are grouped on their own.',
+  'Zed and external ACP agents may annotate commands; unannotated ACP commands are grouped on their own.');
+ text=replaceOne(text,'    Mcp,\n}', '    Mcp,\n    /// Slash commands supplied by an external ACP agent for its registered skills.\n    Skill,\n}');
+ text=replaceOne(text,'            Self::Mcp => "mcp",','            Self::Mcp => "mcp",\n            Self::Skill => "skill",');
+ text=replaceOne(text,'            "mcp" => Some(Self::Mcp),','            "mcp" => Some(Self::Mcp),\n            "skill" => Some(Self::Skill),');
+ text=replaceOne(text,'let all = [CommandCategory::Native, CommandCategory::Mcp];','let all = [CommandCategory::Native, CommandCategory::Mcp, CommandCategory::Skill];');
+ return replaceOne(text,'CommandCategory::Native | CommandCategory::Mcp => {}','CommandCategory::Native | CommandCategory::Mcp | CommandCategory::Skill => {}');
+}
+
+function patchSlashCompletion(text) {
+ text=replaceOne(text,`            Some(acp_thread::CommandCategory::Native) => 0,
+            Some(acp_thread::CommandCategory::Mcp) => 1,
+            None => 2,`,`            Some(acp_thread::CommandCategory::Skill) => 0,
+            Some(acp_thread::CommandCategory::Native) => 1,
+            Some(acp_thread::CommandCategory::Mcp) => 2,
+            None => 3,`);
+ text=replaceOne(text,'            Some(acp_thread::CommandCategory::Native) => ("commands", "Commands"),',
+  '            Some(acp_thread::CommandCategory::Skill) => ("skills", "Skills"),\n            Some(acp_thread::CommandCategory::Native) => ("commands", "Commands"),');
+ return replaceOne(text,'SlashCompletionCandidate::Command(command) => 1 + command.category_order() as u32,',
+  'SlashCompletionCandidate::Command(command) => command.category_order() as u32,');
+}
+
 const outputs=[];
 for(const [file,expected] of Object.entries(lock.files)){
  const filename=path.join(directory,file),bytes=await readFile(filename);
@@ -134,6 +158,10 @@ for(const [file,expected] of Object.entries(lock.files)){
   text=patchTerminalPanel(text);
  }else if(file.endsWith('terminals.rs')){
   text=patchProjectTerminals(text);
+ }else if(file.endsWith('/acp_thread.rs')){
+  text=patchSlashCategories(text);
+ }else if(file.endsWith('/completion_provider.rs')){
+  text=patchSlashCompletion(text);
  }else{
   const at=text.indexOf('fn open_about_window('),end=text.indexOf('\nfn quit(',at);if(at<0||end<at)throw Error('About source boundary changed');
   let block=text.slice(at,end);
