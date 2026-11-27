@@ -29,6 +29,27 @@ export function verifyBundledHost(bytes) {
   }
   throw new Error('Host did not reach its application entry point');
 }
+
+/** The sandboxed management preload can use Electron's runtime IPC only. */
+export function verifyUserMcpPreload(bytes) {
+  const reply = Symbol('Ned MCP IPC reply');
+  let api;
+  let invoked;
+  const electron = {
+    contextBridge: { exposeInMainWorld(name, value) { if (name === 'nedMcp') api = value; } },
+    ipcRenderer: { invoke(...args) { invoked = args; return reply; } },
+  };
+  const context = vm.createContext({ exports: {}, require(id) {
+    if (id !== 'electron') throw new Error('Unexpected user MCP preload dependency: ' + id);
+    return electron;
+  } });
+  new vm.Script(Buffer.from(bytes).toString('utf8'), { filename: 'user-mcp-preload.cjs' }).runInContext(context, { timeout: 1000 });
+  if (typeof api?.request !== 'function' || api.request('list') !== reply || invoked?.[0] !== 'ned-user-mcp' || invoked[1] !== 'list') {
+    throw new Error('User MCP preload did not expose the management request bridge');
+  }
+  return { passed: true, exposed: 'nedMcp.request', channel: 'ned-user-mcp' };
+}
+
 if (process.argv[1] === import.meta.filename) {
   console.log(JSON.stringify(verifyBundledHost(await readFile(process.argv[2]))));
 }

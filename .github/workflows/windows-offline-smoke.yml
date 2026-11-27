@@ -114,7 +114,7 @@ jobs:
           "NED_TEST_SKILLS_DIR=$(Join-Path $install 'resources\ned\skills')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_NODE=$(Join-Path $install 'Ned.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
           "NED_TEST_ENGINE=$(Join-Path $install 'resources\opencode-cli.exe')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8
-          if ($env:NED_ARTIFACT_VERSION -eq '0.4.2') { "NED_TEST_RESOURCES=$(Join-Path $install 'resources')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8 }
+          if ($env:NED_ARTIFACT_VERSION -match '^0\.4\.2(?:-rebuild\d+)?$') { "NED_TEST_RESOURCES=$(Join-Path $install 'resources')" | Out-File $env:GITHUB_ENV -Append -Encoding utf8 }
           $files = @(Get-ChildItem $install -Recurse -File)
           [ordered]@{
             schemaVersion=1; product='Ned'; version=$env:NED_ARTIFACT_VERSION; openVikingVersion=$expectedVersion
@@ -166,7 +166,8 @@ jobs:
             '^0\.([34])\.(\d+)$' { "0.$($Matches[1]).$([int]$Matches[2] - 1)"; break }
             default { throw "Unsupported artifact version: $env:NED_ARTIFACT_VERSION" }
           }
-          $verifyUninstallPreservation = $env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild6','0.4.1','0.4.2')
+          $verifyUserMcp = $env:NED_ARTIFACT_VERSION -match '^0\.4\.2(?:-rebuild\d+)?$'
+          $verifyUninstallPreservation = $verifyUserMcp -or $env:NED_ARTIFACT_VERSION -in @('0.4.0-rebuild6','0.4.1')
           $verifyInstallFolderPreservation = $verifyUninstallPreservation -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild5'
           $verifyTopLevelRestore = $verifyInstallFolderPreservation -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild4'
           $verifyInterruptedUpdate = $verifyTopLevelRestore -or $env:NED_ARTIFACT_VERSION -eq '0.4.0-rebuild3'
@@ -193,7 +194,7 @@ jobs:
           Set-Content $reference -Encoding utf8 -Value 'Persistent reference'
           $dataRoot = Join-Path $env:APPDATA 'Ned'
           $saved = @('settings.enc.json','editor\threads\threads.db','openviking\data\update-fixture.txt')
-          if ($env:NED_ARTIFACT_VERSION -eq '0.4.2') { $saved += 'user-mcp.enc.json' }
+          if ($verifyUserMcp) { $saved += 'user-mcp.enc.json' }
           $savedPaths = foreach ($relative in $saved) {
             $file = Join-Path $dataRoot $relative
             New-Item -ItemType Directory -Path (Split-Path $file) -Force | Out-Null
@@ -286,7 +287,7 @@ jobs:
           $proof | Add-Member -NotePropertyName upgradedFrom -NotePropertyValue $baseline
           $proof | Add-Member -NotePropertyName userGlobalSkillsPreserved -NotePropertyValue $true
           $proof | Add-Member -NotePropertyName userDataPreserved -NotePropertyValue $true
-          if ($env:NED_ARTIFACT_VERSION -eq '0.4.2') { $proof | Add-Member -NotePropertyName userMcpRegistryPreserved -NotePropertyValue $true }
+          if ($verifyUserMcp) { $proof | Add-Member -NotePropertyName userMcpRegistryPreserved -NotePropertyValue $true }
           $proof | Add-Member -NotePropertyName interruptedUpgradeRecovered -NotePropertyValue $interruptedUpgradeRecovered
           if ($verifyInstallFolderPreservation) {
             $proof | Add-Member -NotePropertyName installFolderUserFilesPreserved -NotePropertyValue $true

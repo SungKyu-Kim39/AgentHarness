@@ -11,7 +11,7 @@ import { Data, Resource } from 'resedit';
 import { verifyAsciiTree, verifyAsciiTar } from './package-paths.mjs';
 import { verifyManifest, fileHash, payloadInventory } from './installer-audit.mjs';
 import { brandEditor, verifyEditorIcon } from './ned-editor-branding.mjs';
-import { verifyBundledHost } from './ned-host-smoke.mjs';
+import { verifyBundledHost, verifyUserMcpPreload } from './ned-host-smoke.mjs';
 import { prepareRelease, refreshReleaseHost } from './ned-release.mjs';
 import {nedSigning} from './ned-signing.mjs';
 import {installSourceEditor,verifySourceEditor} from './ned-source-editor.mjs';
@@ -189,6 +189,7 @@ async function audit() {
     const app=JSON.parse(extractFile(path.join(resources,'app.asar'),'package.json'));
     if (app.name!=='ned'||app.version!==version) throw new Error('Wrong app in installer');
     const hostModuleSmoke=verifyBundledHost(extractFile(path.join(resources,'app.asar'),'main.cjs'));
+    const userMcpPreloadSmoke=verifyUserMcpPreload(extractFile(path.join(resources,'app.asar'),'user-mcp-preload.cjs'));
     for(const file of compared)
       if(await fileHash(path.join(extracted,file))!==payloadHashes[file]) throw new Error('Installer bytes differ: '+file);
     const editorBranding=await json(path.join(resources,'ned/editor-branding.json'));
@@ -228,7 +229,7 @@ async function audit() {
       await writeFile(path.join(output,'payload-manifest.json'),bytes);
       payloadComparison={files:Object.keys(actual).length,allStagedBytesVerified:true,manifestSha256:createHash('sha256').update(bytes).digest('hex'),generatedInstallerFiles};
     }
-    const report={auditSourceCommit:verifierCommit,buildRevision:revision||undefined,runtimeOptimization,payloadComparison,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,sourceEditor,astryx,hostModuleSmoke,windowsAcceptance:false};
+    const report={auditSourceCommit:verifierCommit,buildRevision:revision||undefined,runtimeOptimization,payloadComparison,sourceCommit:buildCommit,schemaVersion:1,product:'Ned',version,verifiedFrom:'installer-archive',os:process.platform,createdAt:new Date().toISOString(),installer:{name:path.basename(installer),bytes:(await stat(installer)).size,sha256:await fileHash(installer)},paths,components,editorBranding,sourceEditor,astryx,hostModuleSmoke,userMcpPreloadSmoke,windowsAcceptance:false};
     await writeFile(path.join(output,'installer-audit.json'),JSON.stringify(report,null,2)+'\n');return report;
   } finally {await rm(extracted,{recursive:true,force:true});}
 }

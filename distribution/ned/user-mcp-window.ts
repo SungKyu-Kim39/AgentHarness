@@ -99,7 +99,11 @@ find('form').onsubmit = event => {
     await back(); status('저장했습니다. 사용을 켜면 / 목록에 표시됩니다.');
   });
 };
-void work(render);
+if (typeof window.nedMcp?.request === 'function') void work(render);
+else {
+  find('add').disabled = true;
+  status('사용자 MCP 관리 창을 초기화하지 못했습니다. Ned를 다시 실행하세요. [NED_MCP_UI_PRELOAD]', true);
+}
 </script></body></html>`;
 }
 

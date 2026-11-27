@@ -1,6 +1,9 @@
 # Ned 개발 인계
 
 새 PC나 Codex 세션에서 개발을 이어갈 때 확인할 정보입니다. 최신 사전 릴리스는 **Ned 0.4.2**입니다. Zed, 전용 OpenCode 엔진, Aegis·Conductor·OpenViking과 개발 도구를 한 번에 설치해 사내 모델로 사용하는 폐쇄망 환경을 목표로 합니다.
+
+<!-- current-release -->
+
 ## 0.4.2 사용자 MCP
 
 트레이에서 사내 MCP를 등록하고 Ned Agent의 슬래시 명령으로 요청별 호출 권한을 부여합니다. [변경 사항](docs/changes-0.4.2.md) · [검증 기록](docs/validation-0.4.2.md)
