@@ -45,13 +45,15 @@ if(verifyUninstallPreservation&&proof.uninstallUserFilesPreserved!==true)throw E
 if(version==='0.4.2'&&proof.userMcpRegistryPreserved!==true)throw Error('User MCP registration file preservation lacks installed validation');
 if(version==='0.4.2'&&revision&&audit.userMcpPreloadSmoke?.passed!==true)throw Error('User MCP management preload lacks installer validation');
 if(version==='0.4.2'&&revision&&['loadedFromAsar','registered','checked','persistence'].some(key=>proof.userMcpManagementWindow?.[key]!==true))throw Error('User MCP management window lacks installed GUI validation');
-if(artifactVersion==='0.4.2-rebuild2'&&proof.userMcpManagementWindow?.transport!=='https-loopback')throw Error('Local HTTPS MCP registration lacks installed GUI validation');
+const categorizedSlash=version==='0.4.2'&&editorRevision==='rebuild3';
+if((artifactVersion==='0.4.2-rebuild2'||categorizedSlash)&&proof.userMcpManagementWindow?.transport!=='https-loopback')throw Error('Local HTTPS MCP registration lacks installed GUI validation');
 if(proof.version!==artifactVersion||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){
  const text=await readFile(path.join(root,`.cache/ned/windows-validation/windows-${name}-test.txt`),'utf8');
  const field=key=>Number(text.match(new RegExp('^# '+key+' (\\d+)','m'))?.[1]);
  if(!Number.isSafeInteger(field('tests'))||field('tests')<1||field('fail')!==0||field('cancelled')!==0)throw Error('Incomplete installed Windows report: '+name);
+ if(categorizedSlash&&name==='upgrade'&&!/^ok \d+ - installed Ned ACP categorizes slash commands and executes only a slash-selected external MCP\r?$/m.test(text))throw Error('Categorized slash commands lack installed ACP validation');
  tests+=field('tests');passed+=field('pass');skipped+=field('skipped');
 }
 const finalManifest=`downloads/${prefix}-bundle-manifest.json`;
