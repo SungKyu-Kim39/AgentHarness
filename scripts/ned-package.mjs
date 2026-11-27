@@ -15,7 +15,7 @@ import { verifyBundledHost, verifyUserMcpPreload } from './ned-host-smoke.mjs';
 import { prepareRelease, refreshReleaseHost } from './ned-release.mjs';
 import {nedSigning} from './ned-signing.mjs';
 import {installSourceEditor,verifySourceEditor} from './ned-source-editor.mjs';
-import {isReleaseVersion,isGhidraVersion,isModernVersion,isNoSeedVersion,isActionsTransportVersion,isWorkspaceToolsVersion,isRebuiltEditorReusable,isValidRevision} from './release-policy.mjs';
+import {isReleaseVersion,isGhidraVersion,isModernVersion,isNoSeedVersion,isActionsTransportVersion,isWorkspaceToolsVersion,isValidRevision} from './release-policy.mjs';
 const root = path.resolve(import.meta.dirname, '..');
 const json = async p => JSON.parse(await readFile(p, 'utf8'));
 const version = (await json(path.join(root,'package.json'))).version;
@@ -278,10 +278,7 @@ async function bundle() {
       if (await fileHash(archive) !== original.sha256) throw Error('Vendor corresponding source hash mismatch');
       await cp(archive,path.join(stage,'source',original.file));
     } else {
-      const saved=process.env.NED_BUILD_REVISION;
-      let editor;
-      if(isRebuiltEditorReusable(version,revision)){delete process.env.NED_BUILD_REVISION;try{editor=await editorVersion(root);}finally{process.env.NED_BUILD_REVISION=saved;}}
-      else editor=await editorVersion(root);
+      const editor=await editorVersion(root,{forRelease:true});
       await cp(path.join(root,'downloads/editor',editor.archive),path.join(stage,'source',editor.archive));
     }
   }

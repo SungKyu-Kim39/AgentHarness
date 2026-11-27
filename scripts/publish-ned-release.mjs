@@ -3,7 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {readFile,writeFile,mkdir,cp,access} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {fileHash} from './installer-audit.mjs';
-import {isActionsTransportVersion,isRebuiltEditorReusable,isSupportedReleaseVersion,isUserDataPreservedVersion,previousReleaseVersion} from './release-policy.mjs';
+import {isActionsTransportVersion,isRebuiltEditorReusable,isSupportedReleaseVersion,isUserDataPreservedVersion,pinnedEditorRevision,previousReleaseVersion} from './release-policy.mjs';
 import path from 'node:path';
 const root=path.resolve(import.meta.dirname,'..'),repo=process.env.GH_REPO,branch=process.env.GITHUB_REF_NAME;
 const run=(cmd,args,options={})=>execFileSync(cmd,args,{cwd:root,stdio:'inherit',...options});
@@ -20,7 +20,8 @@ if(!isSupportedReleaseVersion(version)||(requested!==version&&!isRebuiltEditorRe
 const artifactVersion=version+(revision?'-'+revision:'');
 const isPrerelease=artifactVersion!=='0.4.1';
 const releaseChannel=isPrerelease?'사전 릴리스':'정식 릴리스';
-const editorArtifactVersion=isRebuiltEditorReusable(version,revision)?version:artifactVersion;
+const editorRevision=pinnedEditorRevision(version,revision);
+const editorArtifactVersion=version+(editorRevision?'-'+editorRevision:'');
 const prefix=`Ned-${artifactVersion}`,tag=`v${artifactVersion}`,groups=['upgrade'];
 const validationRun=process.env.NED_VALIDATION_RUN,candidateRun=process.env.NED_CANDIDATE_RUN,source=process.env.NED_CANDIDATE_SOURCE;
 if((branch!==`codex/ned-${version}`&&branch!=='AG-work')||!/^\d+$/.test(validationRun??'')||!/^\d+$/.test(candidateRun??'')||!/^[a-f0-9]{40}$/.test(source??''))throw Error('Invalid immutable release inputs');
@@ -44,13 +45,15 @@ if(verifyUninstallPreservation&&proof.uninstallUserFilesPreserved!==true)throw E
 if(version==='0.4.2'&&proof.userMcpRegistryPreserved!==true)throw Error('User MCP registration file preservation lacks installed validation');
 if(version==='0.4.2'&&revision&&audit.userMcpPreloadSmoke?.passed!==true)throw Error('User MCP management preload lacks installer validation');
 if(version==='0.4.2'&&revision&&['loadedFromAsar','registered','checked','persistence'].some(key=>proof.userMcpManagementWindow?.[key]!==true))throw Error('User MCP management window lacks installed GUI validation');
-if(artifactVersion==='0.4.2-rebuild2'&&proof.userMcpManagementWindow?.transport!=='https-loopback')throw Error('Local HTTPS MCP registration lacks installed GUI validation');
+const categorizedSlash=version==='0.4.2'&&editorRevision==='rebuild3';
+if((artifactVersion==='0.4.2-rebuild2'||categorizedSlash)&&proof.userMcpManagementWindow?.transport!=='https-loopback')throw Error('Local HTTPS MCP registration lacks installed GUI validation');
 if(proof.version!==artifactVersion||proof.candidateSource!==source||proof.installerSha256!==audit.installer.sha256||audit.sourceCommit!==source||!audit.payloadComparison?.allStagedBytesVerified||proof.runtimeSourceOverride||proof.upgradedFrom!==previousVersion||proof.userGlobalSkillsPreserved!==true)throw Error('Windows installed bytes/provenance mismatch');
 let tests=0,passed=0,skipped=0;
 for(const name of groups){
  const text=await readFile(path.join(root,`.cache/ned/windows-validation/windows-${name}-test.txt`),'utf8');
  const field=key=>Number(text.match(new RegExp('^# '+key+' (\\d+)','m'))?.[1]);
  if(!Number.isSafeInteger(field('tests'))||field('tests')<1||field('fail')!==0||field('cancelled')!==0)throw Error('Incomplete installed Windows report: '+name);
+ if(categorizedSlash&&name==='upgrade'&&!/^ok \d+ - installed Ned ACP categorizes slash commands and executes only a slash-selected external MCP\r?$/m.test(text))throw Error('Categorized slash commands lack installed ACP validation');
  tests+=field('tests');passed+=field('pass');skipped+=field('skipped');
 }
 const finalManifest=`downloads/${prefix}-bundle-manifest.json`;
@@ -137,7 +140,9 @@ readme=readme.replace(/^최신 (?:게시 )?(?:사전|정식) 릴리스는 .*$/m,
 await writeFile(path.join(root,'README.md'),readme);
 const optionalLinks=optional?'\n- '+optional.assets.map(item=>`[${item.name.includes('-core-')?'Core 설치 EXE':'리버싱 팩'}](${releaseUrl.replace('/tag/','/download/')}/${item.name}) · [SHA-256](${item.name}.sha256)`).join('\n- '):'';
 const oldDownloads=await readFile(path.join(root,'downloads/README.md'),'utf8');
-await writeFile(path.join(root,'downloads/README.md'),`# Ned ${displayVersion}\n\nWindows x64 ${releaseChannel}입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식과 사용자 글로벌 스킬은 보존됩니다.\n\n- [반입 TGZ](https://github.com/${repo}/releases/download/${tag}/${prefix}-windows-x64.tgz) · ${bundle.bytes} bytes\n- [설치 EXE](https://github.com/${repo}/releases/download/${tag}/${prefix}-win-x64.exe) · ${audit.installer.bytes} bytes${optionalLinks}\n- [TGZ SHA-256](${prefix}-windows-x64.tgz.sha256) · [EXE SHA-256](${prefix}-win-x64.exe.sha256)\n- [변경 사항](../docs/changes-${version}.md) · [사용 안내](../docs/ned-user-guide.md) · [검증](../${validationFile})\n- [설치 감사](${prefix}-installer-audit.json) · [TGZ 검사](${prefix}-bundle-verification.json) · [Windows 결과](${prefix}-windows-offline-smoke.json) · [공개 다운로드 검증](${prefix}-public-verification.json) · [배포 상태](${prefix}-release-state.json)\n\n---\n\n`+oldDownloads.replace(/최신 사전 릴리스입니다\./,'이전 사전 릴리스입니다.'));
+const exactChanges=`docs/changes-${artifactVersion}.md`;
+const changesFile=await exists(exactChanges)?exactChanges:`docs/changes-${version}.md`;
+await writeFile(path.join(root,'downloads/README.md'),`# Ned ${displayVersion}\n\nWindows x64 ${releaseChannel}입니다. Ned와 개인 Zed를 종료하고 TGZ를 새 폴더에 푼 뒤 EXE를 실행합니다. 기존 설정·대화·지식과 사용자 글로벌 스킬은 보존됩니다.\n\n- [반입 TGZ](https://github.com/${repo}/releases/download/${tag}/${prefix}-windows-x64.tgz) · ${bundle.bytes} bytes\n- [설치 EXE](https://github.com/${repo}/releases/download/${tag}/${prefix}-win-x64.exe) · ${audit.installer.bytes} bytes${optionalLinks}\n- [TGZ SHA-256](${prefix}-windows-x64.tgz.sha256) · [EXE SHA-256](${prefix}-win-x64.exe.sha256)\n- [변경 사항](../${changesFile}) · [사용 안내](../docs/ned-user-guide.md) · [검증](../${validationFile})\n- [설치 감사](${prefix}-installer-audit.json) · [TGZ 검사](${prefix}-bundle-verification.json) · [Windows 결과](${prefix}-windows-offline-smoke.json) · [공개 다운로드 검증](${prefix}-public-verification.json) · [배포 상태](${prefix}-release-state.json)\n\n---\n\n`+oldDownloads.replace(/최신 사전 릴리스입니다\./,'이전 사전 릴리스입니다.'));
 await commit(['README.md','downloads/README.md',...files.filter(name=>!actionsTransport||!binaryAsset(name)).map(name=>'downloads/'+name),`downloads/${prefix}-bundle-verification.json`],`release: record Ned ${artifactVersion} installer and offline bundle`);
 artifactCommit=sha();
 }

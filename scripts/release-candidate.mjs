@@ -4,7 +4,7 @@ import {readFile,writeFile,mkdir,cp,stat,appendFile,access} from 'node:fs/promis
 import path from 'node:path';
 import {fileHash} from './installer-audit.mjs';
 import {sourceEditorInputs} from './ned-source-editor.mjs';
-import {isActionsTransportVersion,isRebuiltEditorReusable,isSupportedReleaseVersion,isValidRevision} from './release-policy.mjs';
+import {isActionsTransportVersion,isRebuiltEditorReusable,isSupportedReleaseVersion,isValidRevision,pinnedEditorRevision} from './release-policy.mjs';
 const root=path.resolve(import.meta.dirname,'..');
 const branch=process.env.GITHUB_REF_NAME;
 const run=(cmd,args,options={})=>execFileSync(cmd,args,{cwd:root,stdio:'inherit',...options});
@@ -23,7 +23,8 @@ const {version}=await json('package.json');
 const revision=process.env.NED_BUILD_REVISION??'';
 if(!isSupportedReleaseVersion(version)||(revision&&!isValidRevision(revision))||(branch!==`codex/ned-${version}`&&branch!=='AG-work'))throw Error('Unexpected release version or branch');
 const artifactVersion=version+(revision?'-'+revision:'');
-const editorArtifactVersion=isRebuiltEditorReusable(version,revision)?version:artifactVersion;
+const editorRevision=pinnedEditorRevision(version,revision);
+const editorArtifactVersion=version+(editorRevision?'-'+editorRevision:'');
 const prefix=`Ned-${artifactVersion}`;
 const mode=process.argv[2];
 if(mode==='candidate'){
